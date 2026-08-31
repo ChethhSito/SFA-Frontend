@@ -91,6 +91,21 @@ export default function LoginPortal() {
       detectedRole = "administrador";
       detectedIdentifier = "admin";
     }
+    // 1.5 Check MPA (Módulo de Planificación Académica)
+    else if (uTrim === "mpa" || uTrim === "mpa@iestpsfa.edu.pe") {
+      detectedRole = "mpa";
+      detectedIdentifier = "mpa";
+    }
+    // 1.6 Check MAF (Módulo de Administración y Finanzas)
+    else if (uTrim === "maf" || uTrim === "maf@iestpsfa.edu.pe") {
+      detectedRole = "maf";
+      detectedIdentifier = "maf";
+    }
+    // 1.7 Check MGE (Módulo de Gestión de Estudiantes)
+    else if (uTrim === "mge" || uTrim === "mge@iestpsfa.edu.pe") {
+      detectedRole = "mge";
+      detectedIdentifier = "mge";
+    }
     // 2. Check Docente
     else if (uTrim === "docente" || uTrim === "mramos@iestpsfa.edu.pe" || uTrim === "99887766") {
       detectedRole = "docente";
@@ -138,7 +153,7 @@ export default function LoginPortal() {
     }
 
     // Isolate sessions: Clear other roles' sessions
-    ["administrador", "postulante", "alumno", "docente"].forEach((r) => {
+    ["administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"].forEach((r) => {
       localStorage.removeItem(`sfa_session_${r}`);
     });
 

@@ -1,0 +1,115 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User account mapping indicating core roles and credentials.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique identifier matching the user's Firebase Authentication UID."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["postulante", "admin", "alumno", "docente"],
+          "description": "Assigned institutional access role."
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address."
+        },
+        "applicantCode": {
+          "type": "string",
+          "description": "Assigned institutional code for applicant roles (if applicable)."
+        }
+      },
+      "required": ["uid", "role", "email"]
+    },
+    "Applicant": {
+      "title": "Applicant",
+      "description": "Comprehensive admission process record of an applicant.",
+      "type": "object",
+      "properties": {
+        "applicantCode": {
+          "type": "string",
+          "description": "Unique institutional applicant code."
+        },
+        "dni": {
+          "type": "string",
+          "description": "National identification number."
+        },
+        "name": {
+          "type": "string",
+          "description": "Given names."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Surnames."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address matching authentication."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Telephone number for SMS/coordination."
+        },
+        "programId": {
+          "type": "string",
+          "description": "Technical career program ID selected."
+        },
+        "periodId": {
+          "type": "string",
+          "description": "Admission period identifier."
+        },
+        "paymentStatus": {
+          "type": "string",
+          "description": "Status of the admission payment."
+        },
+         "paymentOperation": {
+          "type": "string",
+          "description": "Operation number or voucher reference."
+        },
+        "folderStatus": {
+          "type": "string",
+          "description": "Validation stage of the document folder."
+        },
+        "folderObservations": {
+          "type": "string",
+          "description": "General observations from the reviewer."
+        },
+        "admitted": {
+          "type": "boolean",
+          "description": "Admission vacancy assignment status."
+        },
+        "docs": {
+          "type": "object",
+          "description": "Map representing uploaded school files."
+        },
+        "examStatus": {
+          "type": "string",
+          "description": "Status of the admission test."
+        },
+        "examScore": {
+          "type": "number",
+          "description": "Acquired mark in admission exam."
+        },
+        "examDate": {
+          "type": "string",
+          "description": "Date schedule for admission evaluation."
+        }
+      },
+      "required": ["applicantCode", "dni", "name", "lastName", "email"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile information mapping. Document identifier is the Firebase Auth UID."
+    },
+    "/applicants/{userId}": {
+      "schema": "Applicant",
+      "description": "Applicant specific records including admission status, payments, and files. Document identifier is the Firebase Auth UID."
+    }
+  }
+}

@@ -2,40 +2,35 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import AdminDashboard from "@/components/AdminDashboard";
-import { Applicant, Enrollment, StudentPersonalData, Classroom, Teacher, Graduation, AdmissionPeriod, Course, CourseAssignment, AttendanceRecord } from "@/types";
+import MgeRouter from "@/components/routers/MgeRouter";
+import { Applicant, Enrollment, StudentPersonalData, Course, CourseAssignment, AttendanceRecord, Graduation, AdmissionPeriod } from "@/types";
 import {
   INITIAL_APPLICANTS,
-  INITIAL_STUDENTS_DATA,
   INITIAL_ENROLLMENTS,
-  GENERAL_TEACHERS,
-  GENERAL_CLASSROOMS,
-  INITIAL_GRADUATIONS,
+  INITIAL_STUDENTS_DATA,
   INITIAL_COURSES,
   INITIAL_ASSIGNMENTS,
-  INITIAL_ATTENDANCE
+  INITIAL_ATTENDANCE,
+  INITIAL_GRADUATIONS
 } from "@/lib/mockData";
 
-export default function AdministradorPage() {
+export default function MgePage() {
   const router = useRouter();
   const [session, setSession] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Database States
+  // States
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [studentsList, setStudentsList] = useState<{ [dni: string]: StudentPersonalData }>({});
-  const [classrooms, setClassrooms] = useState<Classroom[]>([]);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [graduations, setGraduations] = useState<Graduation[]>([]);
-  const [admissionPeriods, setAdmissionPeriods] = useState<AdmissionPeriod[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [assignments, setAssignments] = useState<CourseAssignment[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+  const [graduations, setGraduations] = useState<Graduation[]>([]);
+  const [admissionPeriods, setAdmissionPeriods] = useState<AdmissionPeriod[]>([]);
 
   useEffect(() => {
-    // Session validation
-    const s = localStorage.getItem("sfa_session_administrador");
+    const s = localStorage.getItem("sfa_session_mge");
     if (!s) {
       router.push("/ingresar");
       return;
@@ -46,23 +41,19 @@ export default function AdministradorPage() {
     const savedApps = localStorage.getItem("sfa_applicants");
     const savedEnrolls = localStorage.getItem("sfa_enrollments");
     const savedStudents = localStorage.getItem("sfa_students");
-    const savedClass = localStorage.getItem("sfa_classrooms");
-    const savedTeachers = localStorage.getItem("sfa_teachers");
-    const savedGrad = localStorage.getItem("sfa_graduations");
-    const savedPeriods = localStorage.getItem("sfa_admission_periods");
     const savedCourses = localStorage.getItem("sfa_courses");
     const savedAsgs = localStorage.getItem("sfa_assignments");
     const savedAtt = localStorage.getItem("sfa_attendance");
+    const savedGrad = localStorage.getItem("sfa_graduations");
+    const savedPeriods = localStorage.getItem("sfa_admission_periods");
 
     setApplicants(savedApps ? JSON.parse(savedApps) : INITIAL_APPLICANTS);
     setEnrollments(savedEnrolls ? JSON.parse(savedEnrolls) : INITIAL_ENROLLMENTS);
     setStudentsList(savedStudents ? JSON.parse(savedStudents) : INITIAL_STUDENTS_DATA);
-    setClassrooms(savedClass ? JSON.parse(savedClass) : GENERAL_CLASSROOMS);
-    setTeachers(savedTeachers ? JSON.parse(savedTeachers) : GENERAL_TEACHERS);
-    setGraduations(savedGrad ? JSON.parse(savedGrad) : INITIAL_GRADUATIONS);
     setCourses(savedCourses ? JSON.parse(savedCourses) : INITIAL_COURSES);
     setAssignments(savedAsgs ? JSON.parse(savedAsgs) : INITIAL_ASSIGNMENTS);
     setAttendance(savedAtt ? JSON.parse(savedAtt) : INITIAL_ATTENDANCE);
+    setGraduations(savedGrad ? JSON.parse(savedGrad) : INITIAL_GRADUATIONS);
 
     if (savedPeriods) {
       setAdmissionPeriods(JSON.parse(savedPeriods));
@@ -84,40 +75,34 @@ export default function AdministradorPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("sfa_session_administrador");
+    localStorage.removeItem("sfa_session_mge");
     router.push("/ingresar");
   };
 
-  if (loading) {
+  if (loading || !session) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <span className="text-white text-xs font-bold uppercase tracking-widest">Validando Sesión de Administrador...</span>
+        <span className="text-white text-xs font-bold uppercase tracking-widest">Validando Sesión de Gestión de Estudiantes (MGE)...</span>
       </div>
     );
   }
 
   return (
-    <AdminDashboard
+    <MgeRouter
       applicants={applicants}
       enrollments={enrollments}
       studentsList={studentsList}
-      classrooms={classrooms}
-      teachers={teachers}
-      graduations={graduations}
-      admissionPeriods={admissionPeriods}
       courses={courses}
       assignments={assignments}
       attendance={attendance}
-      onUpdateApplicants={(updated) => saveState("sfa_applicants", updated, setApplicants)}
+      graduations={graduations}
+      admissionPeriods={admissionPeriods}
       onUpdateEnrollments={(updated) => saveState("sfa_enrollments", updated, setEnrollments)}
-      onUpdateClassrooms={(updated) => saveState("sfa_classrooms", updated, setClassrooms)}
-      onUpdateTeachers={(updated) => saveState("sfa_teachers", updated, setTeachers)}
-      onUpdateGraduations={(updated) => saveState("sfa_graduations", updated, setGraduations)}
-      onUpdateAdmissionPeriods={(updated) => saveState("sfa_admission_periods", updated, setAdmissionPeriods)}
       onUpdateStudentsList={(updated) => saveState("sfa_students", updated, setStudentsList)}
       onUpdateCourses={(updated) => saveState("sfa_courses", updated, setCourses)}
       onUpdateAssignments={(updated) => saveState("sfa_assignments", updated, setAssignments)}
       onUpdateAttendance={(updated) => saveState("sfa_attendance", updated, setAttendance)}
+      onUpdateGraduations={(updated) => saveState("sfa_graduations", updated, setGraduations)}
       onLogout={handleLogout}
     />
   );

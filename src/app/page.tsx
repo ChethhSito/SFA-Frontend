@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Phone, Mail, MapPin, ChevronLeft, ChevronRight, 
@@ -9,7 +9,11 @@ import {
   ChevronDown, Globe, Users, Award as MedalIcon, Calendar, CheckSquare, Menu, X
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { AdmissionPeriod } from "@/types";
+import { AdmissionPeriod } from "../types";
+import { isFirebaseEnabled } from "../firebase/config";
+import { registerWithEmailAndPassword } from "../firebase/auth";
+import { saveDocumentGeneric, listCollectionGeneric } from "../firebase/firestore";
+import { sendWelcomeEmailBrevo } from "../firebase/emailService";
 
 // Local SVG components for brand logos (removed in lucide-react v1+)
 const Facebook = ({ className }: { className?: string }) => (
@@ -24,46 +28,40 @@ const Youtube = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// Fallbacks / Stubs for simulated Firebase features in standby mode
-const isFirebaseEnabled = false;
-const registerWithEmailAndPassword = async (email: string, pass: string) => null;
-const saveDocumentGeneric = async (col: string, id: string, data: any) => {};
-const listCollectionGeneric = async (col: string) => [];
-const sendWelcomeEmailBrevo = async (data: any) => {};
-
 export default function PortalHome() {
   const router = useRouter();
   const onEnterIntranet = () => {
-    router.push('/ingresar');
+    router.push("/ingresar");
   };
 
-  const [admissionPeriods, setAdmissionPeriods] = useState<AdmissionPeriod[]>(() => {
-    if (typeof window === "undefined") return [];
+  const [admissionPeriods, setAdmissionPeriods] = useState<AdmissionPeriod[]>([]);
+
+  useEffect(() => {
     const saved = localStorage.getItem("sfa_admission_periods");
     try {
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        setAdmissionPeriods(JSON.parse(saved));
+      } else {
+        const defaultPeriods: AdmissionPeriod[] = [
+          { id: "1", name: "2026-I", isActive: true, status: "APERTURADO", preEnrollmentStartDate: "2026-02-01", preEnrollmentEndDate: "2026-03-20", admissionDate: "2026-03-22", enrollmentStartDate: "2026-03-24", enrollmentEndDate: "2026-03-29", classesStartDate: "2026-04-06" },
+          { id: "2", name: "2026-II", isActive: false, status: "PENDIENTE", preEnrollmentStartDate: "2026-07-01", preEnrollmentEndDate: "2026-08-14", admissionDate: "2026-08-16", enrollmentStartDate: "2026-08-18", enrollmentEndDate: "2026-08-23", classesStartDate: "2026-09-01" }
+        ];
+        setAdmissionPeriods(defaultPeriods);
+        localStorage.setItem("sfa_admission_periods", JSON.stringify(defaultPeriods));
+      }
     } catch (e) {
       console.error(e);
     }
-    return [
-      { 
-        id: "1", 
-        name: "2026-I", 
-        isActive: true, 
-        status: "APERTURADO",
-        preEnrollmentStartDate: "2026-02-01",
-        preEnrollmentEndDate: "2026-03-20",
-        admissionDate: "2026-03-22", 
-        enrollmentStartDate: "2026-03-24",
-        enrollmentEndDate: "2026-03-29", 
-        classesStartDate: "2026-04-06" 
-      }
-    ];
-  });
+  }, []);
 
-  const activePeriod = admissionPeriods.find(p => p.status === "APERTURADO");
-  const displayPeriod = activePeriod || admissionPeriods.find(p => p.status !== "PENDIENTE") || admissionPeriods[0];
+  // Dynamic active/matching period check using current date validation
+  const todayStr = new Date().toISOString().split("T")[0];
+  const activePeriod = admissionPeriods.find(p => p.status === "APERTURADO" && todayStr <= (p.preEnrollmentEndDate || "")) || 
+                       admissionPeriods.find(p => todayStr <= (p.preEnrollmentEndDate || "")) || 
+                       admissionPeriods.find(p => p.status === "APERTURADO") || 
+                       (admissionPeriods.length > 0 ? admissionPeriods[0] : null);
 
+  const displayPeriod = activePeriod || admissionPeriods.find(p => p.status !== "PENDIENTE") || (admissionPeriods.length > 0 ? admissionPeriods[0] : null);
 
   // Navigation State
   const [currentTab, setCurrentTab] = useState<
@@ -249,6 +247,7 @@ export default function PortalHome() {
             admitted: false,
             periodId: activePeriod?.id || "1",
             folderStatus: "Pending",
+            registeredAt: new Date().toISOString().split("T")[0],
             docs: {
               dniFile: { status: "No Enviado", fileName: "" },
               certificadoFile: { status: "No Enviado", fileName: "" },
@@ -283,7 +282,8 @@ export default function PortalHome() {
         admitted: false,
         periodId: activePeriod?.id || "1",
         folderStatus: "Pending" as const,
-        password: tempPass
+        password: tempPass,
+        registeredAt: new Date().toISOString().split("T")[0]
       };
 
       applicantsList.push(newApplicant);
@@ -1152,12 +1152,12 @@ export default function PortalHome() {
           <div className="py-12 max-w-7xl mx-auto px-4 sm:px-8 space-y-10">
             <div className="border-b border-slate-200 pb-4 text-center">
               <span className="text-[#9F062A] text-xs font-black tracking-widest uppercase">
-                {displayPeriod ? `PROCESO ADMISIÓN ORDINARIA ${displayPeriod.name}` : "PROCESO DE ADMISIÓN INSTITUCIONAL"}
+                {displayPeriod ? `PROCESO ADMISIÓN ORDINARIA ${displayPeriod?.name}` : "PROCESO DE ADMISIÓN INSTITUCIONAL"}
               </span>
               <h2 className="text-2xl sm:text-3xl font-black uppercase text-slate-950 mt-1">Convocatoria y Expedientes Escolares</h2>
               <p className="text-slate-500 text-xs sm:text-sm font-semibold mt-1">
                 {displayPeriod 
-                  ? `Examen General de Admisión programado para el periodo ${displayPeriod.name}. Revise requisitos institucionales y pre-inscríbase de forma simulada en línea.`
+                  ? `Examen General de Admisión programado para el periodo ${displayPeriod?.name}. Revise requisitos institucionales y pre-inscríbase de forma simulada en línea.`
                   : "Estado de las convocatorias para los exámenes de admisión ordinaria."}
               </p>
             </div>
@@ -1274,7 +1274,7 @@ export default function PortalHome() {
                     {displayPeriod?.status === "EXAMEN" ? (
                       <>
                         <div className="space-y-1.5">
-                          <span className="text-[10px] font-black uppercase text-[#9F062A] tracking-wider block">PROCESO {displayPeriod.name}</span>
+                          <span className="text-[10px] font-black uppercase text-[#9F062A] tracking-wider block">PROCESO {displayPeriod?.name}</span>
                           <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
                             Evaluación de Admisión en Curso
                           </h3>
@@ -1285,14 +1285,14 @@ export default function PortalHome() {
                         <div className="bg-[#9F062A]/5 border border-[#9F062A]/20 p-5 rounded-lg text-xs font-bold text-[#9F062A] leading-relaxed max-w-md mx-auto uppercase tracking-wide text-left space-y-2">
                           <p className="font-extrabold text-[#9F062A] text-center text-[10px]">¡ATENCIÓN POSTULANTE REGISTRADO!</p>
                           <p className="text-[11px] normal-case text-slate-800">
-                            El Examen General de Admisión Virtual está programado para el <strong>{displayPeriod.admissionDate ? new Date(displayPeriod.admissionDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}</strong>. Por favor, inicie sesión en la intranet con su DNI para validar sus archivos y resolver el simulacro de examen.
+                            El Examen General de Admisión Virtual está programado para el <strong>{displayPeriod?.admissionDate ? new Date(displayPeriod?.admissionDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}</strong>. Por favor, inicie sesión en la intranet con su DNI para validar sus archivos y resolver el simulacro de examen.
                           </p>
                         </div>
                       </>
                     ) : displayPeriod?.status === "MATRICULA" ? (
                       <>
                         <div className="space-y-1.5">
-                          <span className="text-[10px] font-black uppercase text-indigo-600 tracking-wider block">PROCESO {displayPeriod.name}</span>
+                          <span className="text-[10px] font-black uppercase text-indigo-600 tracking-wider block">PROCESO {displayPeriod?.name}</span>
                           <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
                             Periodo de Matrícula Regular
                           </h3>
@@ -1303,14 +1303,14 @@ export default function PortalHome() {
                         <div className="bg-indigo-50/80 border border-indigo-150 p-5 rounded-lg text-xs font-bold text-indigo-900 leading-relaxed max-w-md mx-auto uppercase tracking-wide text-left space-y-2">
                           <p className="font-black text-indigo-850 text-center text-[10px] tracking-wider">RECEPCIÓN DE EXPEDIENTES ESCOLARES</p>
                           <p className="text-[11px] normal-case text-slate-800">
-                            La recepción obligatoria de carpetas de matrícula virtual vence el <strong>{displayPeriod.enrollmentEndDate ? new Date(displayPeriod.enrollmentEndDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}</strong>. Acceda con sus credenciales de ingresante para subir sus documentos requeridos.
+                            La recepción obligatoria de carpetas de matrícula virtual vence el <strong>{displayPeriod?.enrollmentEndDate ? new Date(displayPeriod?.enrollmentEndDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}</strong>. Acceda con sus credenciales de ingresante para subir sus documentos requeridos.
                           </p>
                         </div>
                       </>
                     ) : displayPeriod?.status === "CERRADO" ? (
                       <>
                         <div className="space-y-1.5">
-                          <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">PROCESO {displayPeriod.name}</span>
+                          <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">PROCESO {displayPeriod?.name}</span>
                           <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
                             Proceso de Admisión Concluido
                           </h3>
@@ -1319,7 +1319,7 @@ export default function PortalHome() {
                           </p>
                         </div>
                         <div className="bg-slate-50 border border-slate-200 p-5 rounded-lg text-xs font-black text-slate-700 leading-relaxed max-w-md mx-auto uppercase tracking-wide shadow-3xs text-center">
-                          Inicio de Clases: {displayPeriod.classesStartDate ? new Date(displayPeriod.classesStartDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}
+                          Inicio de Clases: {displayPeriod?.classesStartDate ? new Date(displayPeriod?.classesStartDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}
                         </div>
                       </>
                     ) : (
@@ -1736,3 +1736,4 @@ export default function PortalHome() {
     </div>
   );
 }
+

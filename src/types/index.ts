@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type Role = "portal" | "postulante" | "alumno" | "docente" | "administrador";
+export type Role = "portal" | "postulante" | "alumno" | "docente" | "administrador" | "mpa" | "mge" | "maf";
 
 export type ProgramId = 
   | "sistemas" 
@@ -22,6 +22,8 @@ export interface Program {
 }
 
 export interface Applicant {
+  id?: string;
+  uid?: string;
   applicantCode: string;
   dni: string;
   name: string;
@@ -32,9 +34,13 @@ export interface Applicant {
   paymentStatus: "No Pagado" | "Pendiente" | "Validado" | "Rechazado" | "Observado";
   paymentOperation?: string;
   paymentObservations?: string;
+  paymentType?: "number" | "voucher";
+  paymentVoucherUrl?: string;
+  paymentVoucherFileName?: string;
   examStatus: "No Programado" | "Programado" | "Rindiendo" | "Finalizado";
   examScore?: number;
-  admitted: boolean;
+  examClassroom?: string;
+  admitted: boolean | "PENDIENTE" | "ADMITIDO" | "NO ADMITIDO";
   docs?: {
     dniFile: StudentDoc;
     certificadoFile: StudentDoc;
@@ -45,6 +51,9 @@ export interface Applicant {
   folderStatus: "Pending" | "Observed" | "Approved" | "Enrolled";
   folderObservations?: string;
   password?: string;
+  registeredAt?: string;
+  paymentValidatedAt?: string;
+  folderApprovedAt?: string;
   supportMessages?: {
     id: string;
     sender: "postulante" | "admin";
@@ -91,7 +100,13 @@ export interface Enrollment {
   };
   paymentStatus: "No Pagado" | "Pendiente" | "Validado" | "Observado";
   paymentOperation?: string;
+  paymentType?: "number" | "voucher";
+  paymentVoucherUrl?: string;
+  paymentVoucherFileName?: string;
+  paymentObservations?: string;
+  updatedAt?: string;
   shift?: "Mañana" | "Tarde" | "Noche";
+  groupId?: string;
 }
 
 export interface Course {
@@ -108,6 +123,8 @@ export interface Course {
   startDate?: string;
   endDate?: string;
   studentCount?: number;
+  description?: string;
+  cycle?: string;
 }
 
 export interface CourseMaterial {
@@ -190,6 +207,8 @@ export interface Teacher {
   lastName: string;
   email: string;
   specialty: string;
+  specialties?: string[];
+  status?: "Disponible" | "Licencia" | "Inactivo";
 }
 
 export interface AdmissionPeriod {
@@ -203,4 +222,101 @@ export interface AdmissionPeriod {
   enrollmentStartDate: string;
   enrollmentEndDate: string;
   classesStartDate: string;
+  resultsPublicationDate?: string;
+  academicPeriodId?: string;
 }
+
+export interface MpaPeriod {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  status?: "Planificación" | "Activo" | "Cerrado";
+}
+
+export interface MpaCareer {
+  id: string;
+  name: string;
+  code: string;
+  durationSemesters: number;
+  description?: string;
+  status?: "Activo" | "Inactivo";
+}
+
+export interface MpaCourse {
+  id: string;
+  name: string;
+  code: string;
+  credits: number;
+  theoryHours?: number;
+  labHours?: number;
+  status?: "Activo" | "Inactivo";
+  careerId?: string;
+  referenceCycle?: number;
+  type?: "General" | "Especialidad";
+}
+
+export interface MpaCurriculumItem {
+  id: string;
+  careerId: string;
+  courseId: string;
+  cycle: number;
+  versionId?: string;
+}
+
+export interface MpaShift {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+}
+
+export interface MpaSchedule {
+  id: string;
+  dayOfWeek: string;
+  startTime?: string;
+  endTime?: string;
+  timeSlot: string;
+  shiftId?: string;
+}
+
+export interface MpaClassroom {
+  id: string;
+  name: string;
+  type: "Teoría" | "Laboratorio";
+  location: string;
+  capacity: number;
+  careerId?: string;
+}
+
+export interface MpaAcademicGroup {
+  id: string;
+  name: string;
+  periodId: string;
+  careerId: string;
+  cycle: number;
+  shiftId: string;
+  capacity: number;
+  curriculumVersionId?: string;
+}
+
+export interface MpaProgramTask {
+  id: string;
+  groupId: string;
+  courseId: string;
+  teacherDni: string;
+  classroomId: string;
+  scheduleId?: string;
+  sessionType: "Teoría" | "Laboratorio";
+  grpNum?: string;
+  subGrpNum?: string;
+  sessionClassType?: "Teo" | "Lab" | "Tal";
+  dayOfWeek?: string;
+  startTime?: string;
+  endTime?: string;
+  shiftId?: string;
+  pedagogicalHours?: number;
+}
+
+

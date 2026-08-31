@@ -2,10 +2,11 @@ import React, { useState, useEffect } from "react";
 import { 
   FileText, CreditCard, Award, HelpCircle, Upload, LogOut, ArrowRight, CheckCircle2, 
   XCircle, Clock, ChevronRight, Download, RefreshCw, AlertTriangle, Play, HelpCircle as HelpIcon,
-  ChevronLeft, ArrowLeft, Terminal, LayoutDashboard, Compass, Info, CheckSquare, Settings
+  ChevronLeft, ArrowLeft, Terminal, LayoutDashboard, Compass, Info, CheckSquare, Settings,
+  Landmark, Store, Smartphone, Printer, Check, Lock
 } from "lucide-react";
-import { Applicant, ProgramId } from "@/types";
-import { ACADEMIC_PROGRAMS } from "@/lib/mockData";
+import { Applicant, ProgramId, Enrollment } from "../types";
+import { ACADEMIC_PROGRAMS, REAL_MPA_COURSES } from "../lib/mockData";
 import { motion, AnimatePresence } from "motion/react";
 
 // Reusable Custom Design System Components
@@ -22,19 +23,62 @@ interface PostulanteDashboardProps {
   applicant: Applicant;
   onUpdateApplicant: (updated: Applicant) => void;
   onLogout: () => void;
+  enrollments?: Enrollment[];
+  onUpdateEnrollment?: (updated: Enrollment) => void;
 }
 
-export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLogout }: PostulanteDashboardProps) {
-  // Navigation tabs matching screenshots: Documentos de Admisión, Pagos, Resultados, Soporte, Dashboard
-  const [activeTab, setActiveTab] = useState<"dashboard" | "documentos" | "pagos" | "resultados" | "soporte">("dashboard");
-  const [showSimConsole, setShowSimConsole] = useState(false);
-  
-  // Custom states for interactive simulation upload files
-  const [uploadedDniFile, setUploadedDniFile] = useState(applicant.docs?.dniFile?.fileName || "");
-  const [uploadedCertificadoFile, setUploadedCertificadoFile] = useState(applicant.docs?.certificadoFile?.fileName || "");
-  const [uploadedPartidaFile, setUploadedPartidaFile] = useState(applicant.docs?.partidaFile?.fileName || "");
-  const [uploadedFotoFile, setUploadedFotoFile] = useState(applicant.docs?.fotoFile?.fileName || "");
+export default function PostulanteDashboard({ 
+  applicant, 
+  onUpdateApplicant, 
+  onLogout,
+  enrollments = [],
+  onUpdateEnrollment
+}: PostulanteDashboardProps) {
+  // Navigation tabs matching screenshots: Documentos de Admisión, Pagos, Resultados, Soporte, Dashboard, Pago de Matrícula
+  const [activeTab, setActiveTab] = useState<"dashboard" | "documentos" | "pagos" | "resultados" | "soporte" | "matricula">("dashboard");
+
+  const getFormattedDate = (isoDate?: string, fallback: string = "12/03/2026") => {
+    if (!isoDate) return fallback;
+    if (/\d{2}\/\d{2}\/\d{4}/.test(isoDate)) return isoDate;
+    const parts = isoDate.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return isoDate;
+  };
+
+  const registrationDate = getFormattedDate(applicant.registeredAt, new Date().toLocaleDateString('es-PE'));
+  const paymentDate = getFormattedDate(applicant.paymentValidatedAt, registrationDate);
+  const folderApprovalDate = getFormattedDate(applicant.folderApprovedAt, new Date().toLocaleDateString('es-PE'));
   const [paymentVoucher, setPaymentVoucher] = useState(applicant.paymentOperation || "");
+  const [paymentType, setPaymentType] = useState<"number" | "voucher">(applicant.paymentType || "number");
+  const [stagedVoucherFile, setStagedVoucherFile] = useState<string>("");
+  const [stagedVoucherPreview, setStagedVoucherPreview] = useState<string>("");
+
+  // Enrollment / Matrícula states
+  const [matriculaVoucher, setMatriculaVoucher] = useState("");
+  const [matriculaPaymentType, setMatriculaPaymentType] = useState<"number" | "voucher">("voucher");
+  const [stagedMatriculaFile, setStagedMatriculaFile] = useState<string>("");
+  const [stagedMatriculaPreview, setStagedMatriculaPreview] = useState<string>("");
+  const [isSubmittingMatricula, setIsSubmittingMatricula] = useState(false);
+  const [isEditingMatricula, setIsEditingMatricula] = useState(false);
+
+  const handleStartEditMatricula = (myEnrollment: any) => {
+    if (myEnrollment) {
+      if (myEnrollment.paymentType === "number") {
+        setMatriculaPaymentType("number");
+        setMatriculaVoucher(myEnrollment.paymentOperation || "");
+        setStagedMatriculaFile("");
+        setStagedMatriculaPreview("");
+      } else {
+        setMatriculaPaymentType("voucher");
+        setMatriculaVoucher("");
+        setStagedMatriculaFile(myEnrollment.paymentVoucherFileName || "");
+        setStagedMatriculaPreview(myEnrollment.paymentVoucherUrl || "");
+      }
+    }
+    setIsEditingMatricula(true);
+  };
 
   // Local staged files and image preview URLs
   const [stagedDniFile, setStagedDniFile] = useState<string>("");
@@ -59,6 +103,7 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
   // Support inputs state
   const [supportCategory, setSupportCategory] = useState("Dificultad con el formato o visualizacion del PDF");
   const [supportMessage, setSupportMessage] = useState("");
+  const [isConstanciaModalOpen, setIsConstanciaModalOpen] = useState(false);
 
   const triggerPreview = (title: string, fileName: string, fileType: "image" | "receipt", customMeta?: any) => {
     // Resolve program name
@@ -73,7 +118,7 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
       programName: prg,
       transactionId: applicant.paymentOperation || "PRE-620323",
       amount: "S/. 120.00",
-      date: "15/03/2026",
+      date: paymentDate,
       concept: "Derecho de Examen Ordinario 2026",
       ...customMeta
     });
@@ -98,7 +143,51 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
   
   const globalProgressPercentage = Math.round((approvedCount / totalDocs) * 100);
 
-  // Helper function to handle image selection
+  const isActuallyAdmitted = applicant.admitted === true || applicant.admitted === "ADMITIDO";
+
+  // Compress and resize images on client-side to fit within Firestore's 1MB limit and guarantee fast loading
+  const compressAndResizeImage = (file: File, callback: (resizedDataUrl: string) => void) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1000;
+        const MAX_HEIGHT = 1000;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+          callback(dataUrl);
+        } else {
+          callback(event.target?.result as string);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Helper function to handle image selection with automatic compression
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     docKey: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile"
@@ -107,24 +196,21 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
     if (!file) return;
 
     const fileName = file.name;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
+    compressAndResizeImage(file, (compressedDataUrl) => {
       if (docKey === "dniFile") {
         setStagedDniFile(fileName);
-        setStagedDniPreview(dataUrl);
+        setStagedDniPreview(compressedDataUrl);
       } else if (docKey === "certificadoFile") {
         setStagedCertFile(fileName);
-        setStagedCertPreview(dataUrl);
+        setStagedCertPreview(compressedDataUrl);
       } else if (docKey === "partidaFile") {
         setStagedPartidaFile(fileName);
-        setStagedPartidaPreview(dataUrl);
+        setStagedPartidaPreview(compressedDataUrl);
       } else if (docKey === "fotoFile") {
         setStagedFotoFile(fileName);
-        setStagedFotoPreview(dataUrl);
+        setStagedFotoPreview(compressedDataUrl);
       }
-    };
-    reader.readAsDataURL(file);
+    });
   };
 
   // Save/Submit selected file to institutional verification
@@ -136,7 +222,6 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
         alert("Por favor, seleccione una imagen para la Copia de DNI primero.");
         return;
       }
-      setUploadedDniFile(filename);
       setStagedDniFile("");
     } else if (docKey === "certificadoFile") {
       filename = stagedCertFile;
@@ -144,7 +229,6 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
         alert("Por favor, seleccione una imagen para el Certificado de Secundaria primero.");
         return;
       }
-      setUploadedCertificadoFile(filename);
       setStagedCertFile("");
     } else if (docKey === "partidaFile") {
       filename = stagedPartidaFile;
@@ -152,7 +236,6 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
         alert("Por favor, seleccione una imagen para la Partida de Nacimiento primero.");
         return;
       }
-      setUploadedPartidaFile(filename);
       setStagedPartidaFile("");
     } else if (docKey === "fotoFile") {
       filename = stagedFotoFile;
@@ -160,7 +243,6 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
         alert("Por favor, seleccione una imagen para la Foto primero.");
         return;
       }
-      setUploadedFotoFile(filename);
       setStagedFotoFile("");
     }
 
@@ -186,123 +268,93 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
   // Submit payment operaton code from screen 4
   const handleSubmitPaymentVoucher = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!paymentVoucher.trim()) {
-      alert("Ingrese un número de operación bancario correcto.");
-      return;
-    }
-    const updated = {
+    let updated: any = {
       ...applicant,
       paymentStatus: "Pendiente" as const,
-      paymentOperation: paymentVoucher,
-      paymentObservations: ""
+      paymentObservations: "",
+      paymentType: paymentType
     };
-    onUpdateApplicant(updated);
-    alert(`Comprobante de pago S/. 120.00 enviado para validación institucional de derecho de admisión.`);
-  };
 
-  // Quick helper simulation presets from console
-  const setSimPreset = (type: "new" | "pending_docs" | "observed" | "all_approved") => {
-    let updated: Applicant;
-
-    if (type === "new") {
-      updated = {
-        ...applicant,
-        paymentStatus: "No Pagado",
-        paymentOperation: "",
-        admitted: false,
-        docs: {
-          dniFile: { status: "No Enviado" },
-          certificadoFile: { status: "No Enviado" },
-          partidaFile: { status: "No Enviado" },
-          fotoFile: { status: "No Enviado" }
-        }
-      };
-      setUploadedDniFile("");
-      setUploadedCertificadoFile("");
-      setUploadedPartidaFile("");
-      setUploadedFotoFile("");
-      setPaymentVoucher("");
-    } else if (type === "pending_docs") {
-      updated = {
-        ...applicant,
-        paymentStatus: "Validado",
-        paymentOperation: "OP-998241",
-        admitted: false,
-        docs: {
-          dniFile: { status: "Pendiente", fileName: "dni_anverso_reverso.pdf" },
-          certificadoFile: { status: "Validado", fileName: "certificado_secundaria_regular.pdf" },
-          partidaFile: { status: "Pendiente", fileName: "partida_nacimiento_fiel.pdf" },
-          fotoFile: { status: "No Enviado" }
-        }
-      };
-      setUploadedDniFile("dni_anverso_reverso.pdf");
-      setUploadedCertificadoFile("certificado_secundaria_regular.pdf");
-      setUploadedPartidaFile("partida_nacimiento_fiel.pdf");
-      setUploadedFotoFile("");
-      setPaymentVoucher("OP-998241");
-    } else if (type === "observed") {
-      updated = {
-        ...applicant,
-        paymentStatus: "Validado",
-        paymentOperation: "OP-104523",
-        admitted: false,
-        docs: {
-          dniFile: { status: "Validado", fileName: "dni_copia_legible.pdf" },
-          certificadoFile: { status: "Validado", fileName: "certificado_final_2024.pdf" },
-          partidaFile: { 
-            status: "Observado", 
-            fileName: "defecto_partida.png", 
-            observations: "La imagen está borrosa en la zona de la firma del registrador. Por favor vuelva a escanear en alta resolución." 
-          },
-          fotoFile: { 
-            status: "Observado", 
-            fileName: "foto_casual.jpg", 
-            observations: "No cumple con el formato requerido. Se requiere foto tipo carné formal con fondo blanco liso y sin anteojos." 
-          }
-        }
-      };
-      setUploadedDniFile("dni_copia_legible.pdf");
-      setUploadedCertificadoFile("certificado_final_2024.pdf");
-      setUploadedPartidaFile("defecto_partida.png");
-      setUploadedFotoFile("foto_casual.jpg");
-      setPaymentVoucher("OP-104523");
-    } else { // all_approved (DIRECT ADMISSION ASSIGNED)
-      updated = {
-        ...applicant,
-        paymentStatus: "Validado",
-        paymentOperation: "OP-1200192",
-        admitted: true,
-        docs: {
-          dniFile: { status: "Validado", fileName: "dni_validado_reniec.pdf" },
-          certificadoFile: { status: "Validado", fileName: "certificado_secundaria_valido.pdf" },
-          partidaFile: { status: "Validado", fileName: "partida_oficial_municipal.pdf" },
-          fotoFile: { status: "Validado", fileName: "foto_estudio_oficial.jpg" }
-        }
-      };
-      setUploadedDniFile("dni_validado_reniec.pdf");
-      setUploadedCertificadoFile("certificado_secundaria_valido.pdf");
-      setUploadedPartidaFile("partida_oficial_municipal.pdf");
-      setUploadedFotoFile("foto_estudio_oficial.jpg");
-      setPaymentVoucher("OP-1200192");
+    if (paymentType === "number") {
+      if (!paymentVoucher.trim()) {
+        alert("Por favor, ingrese un número de operación bancario correcto.");
+        return;
+      }
+      updated.paymentOperation = paymentVoucher;
+      updated.paymentVoucherUrl = "";
+      updated.paymentVoucherFileName = "";
+    } else {
+      if (!stagedVoucherPreview) {
+        alert("Por favor, seleccione o cargue una imagen de su voucher de pago primero.");
+        return;
+      }
+      updated.paymentOperation = "VER VOUCHER ADJUNTO";
+      updated.paymentVoucherUrl = stagedVoucherPreview;
+      updated.paymentVoucherFileName = stagedVoucherFile;
     }
 
     onUpdateApplicant(updated);
+    alert(`Comprobante de pago S/. 120.00 enviado para validación institucional de derecho de admisión.`);
+    
+    // Clear staged files and previews
+    setStagedVoucherFile("");
+    setStagedVoucherPreview("");
   };
 
-  // Set single document state
-  const setSingleDocState = (key: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile", status: any, obsText = "") => {
-    const updated = {
-      ...applicant,
-      docs: {
-        ...currentDocs,
-        [key]: {
-          status,
-          fileName: currentDocs[key].fileName || `simulacion_${key}.pdf`,
-          observations: obsText
-        }
-      }
+  const handleSubmitMatriculaVoucher = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onUpdateEnrollment) return;
+    
+    let myEnrollment = enrollments.find(enr => enr.studentDni === applicant.dni);
+    if (!myEnrollment) {
+      myEnrollment = {
+        studentDni: applicant.dni,
+        programId: applicant.programId,
+        academicStatus: "ADMITIDO" as const,
+        docs: {
+          dniFile: { status: "No Enviado" as const },
+          certificadoFile: { status: "No Enviado" as const },
+          partidaFile: { status: "No Enviado" as const },
+          fotoFile: { status: "No Enviado" as const }
+        },
+        paymentStatus: "No Pagado" as const
+      };
+    }
+
+    let updated: Enrollment = {
+      ...myEnrollment,
+      paymentStatus: "Pendiente",
+      paymentObservations: "",
+      paymentType: matriculaPaymentType,
+      updatedAt: new Date().toISOString()
     };
-    onUpdateApplicant(updated);
+
+    if (matriculaPaymentType === "number") {
+      if (!matriculaVoucher.trim()) {
+        alert("Por favor, ingrese un número de operación de depósito válido.");
+        return;
+      }
+      updated.paymentOperation = matriculaVoucher;
+      updated.paymentVoucherUrl = "";
+      updated.paymentVoucherFileName = "";
+    } else {
+      if (!stagedMatriculaPreview) {
+        alert("Por favor, seleccione o cargue una imagen de su voucher primero.");
+        return;
+      }
+      updated.paymentOperation = "VER VOUCHER MATRÍCULA";
+      updated.paymentVoucherUrl = stagedMatriculaPreview;
+      updated.paymentVoucherFileName = stagedMatriculaFile;
+    }
+
+    onUpdateEnrollment(updated);
+    alert("¡Voucher de Pago de Matrícula (S/. 250.00) enviado con éxito a la Oficina de Caja (MAMC)!");
+    
+    // Clear staged states
+    setStagedMatriculaFile("");
+    setStagedMatriculaPreview("");
+    setMatriculaVoucher("");
+    setIsEditingMatricula(false);
   };
 
   const currentProgram = ACADEMIC_PROGRAMS.find((p) => p.id === applicant.programId) || ACADEMIC_PROGRAMS[0];
@@ -322,130 +374,6 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#9F062A]/3 rounded-full blur-[90px] pointer-events-none animate-pulse duration-[10s]" />
       <div className="absolute bottom-1/5 right-1/4 w-[450px] h-[450px] bg-amber-400/2 rounded-full blur-[110px] pointer-events-none animate-pulse duration-[15s]" />
 
-      {/* 2. PERSISTENT FLOATING DEMO ASSISTANT & SIMULATION CONSOLE */}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 items-end">
-        <AnimatePresence>
-          {showSimConsole && (
-            <motion.div 
-              initial={{ opacity: 0, y: 15, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 15, scale: 0.95 }}
-              className="bg-slate-900 border border-slate-800 text-slate-100 p-4 rounded-xl shadow-2xl max-w-sm w-80 text-left"
-            >
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-                <span className="text-[10px] uppercase font-black tracking-widest text-[#E3BD26] flex items-center gap-1">
-                  <Terminal className="w-3 h-3" /> Consola de Simulación
-                </span>
-                <button 
-                  onClick={() => setShowSimConsole(false)}
-                  className="text-xs text-slate-400 hover:text-white cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <span className="text-[9px] text-slate-400 font-extrabold block mb-2 uppercase tracking-wide">Preajustes Rápidos de Proceso:</span>
-              <div className="grid grid-cols-2 gap-1.5 mb-4">
-                <button 
-                  onClick={() => setSimPreset("new")}
-                  className="bg-slate-800 hover:bg-slate-700 text-[10px] font-bold py-1.5 px-2 rounded text-slate-200 text-left border border-slate-700/60 flex items-center gap-1"
-                >
-                  <Settings className="w-3 h-3 text-slate-400 shrink-0" /> 1. Todo Inicial
-                </button>
-                <button 
-                  onClick={() => setSimPreset("pending_docs")}
-                  className="bg-slate-800 hover:bg-slate-700 text-[10px] font-bold py-1.5 px-2 rounded text-slate-200 text-left border border-slate-700/60 flex items-center gap-1"
-                >
-                  <Clock className="w-3 h-3 text-amber-500 shrink-0" /> 2. Docs Pendientes
-                </button>
-                <button 
-                  onClick={() => setSimPreset("observed")}
-                  className="bg-slate-800 hover:bg-slate-700 text-[10px] font-bold py-1.5 px-2 rounded text-slate-200 text-left border border-slate-700/60 flex items-center gap-1"
-                >
-                  <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" /> 3. Docs Observados
-                </button>
-                <button 
-                  onClick={() => setSimPreset("all_approved")}
-                  className="bg-emerald-950/80 hover:bg-emerald-900 text-[10px] font-extrabold py-1.5 px-2 rounded text-emerald-400 text-left border border-emerald-800/80 flex items-center gap-1"
-                >
-                  <Award className="w-3 h-3 text-emerald-400 shrink-0" /> 4. ¡Aprobado / Vacante!
-                </button>
-              </div>
-
-              <span className="text-[9px] text-slate-400 font-extrabold block mb-1 uppercase tracking-wide">Estados Manuales de Simulación:</span>
-              <div className="space-y-2 text-[10px] font-bold">
-                {/* Pago Toggle */}
-                <div className="flex items-center justify-between bg-slate-800/40 p-1.5 rounded border border-slate-800">
-                  <span className="text-slate-300">Pago Admisión:</span>
-                  <div className="flex gap-1.5">
-                    <button 
-                      onClick={() => onUpdateApplicant({ ...applicant, paymentStatus: "Validado", paymentOperation: applicant.paymentOperation || "OP-VAL" })}
-                      className={`px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wide font-black ${applicant.paymentStatus === "Validado" ? "bg-emerald-600 text-white" : "bg-slate-700 text-slate-400"}`}
-                    >
-                      Aprobado
-                    </button>
-                    <button 
-                      onClick={() => onUpdateApplicant({ ...applicant, paymentStatus: "Pendiente", paymentOperation: applicant.paymentOperation || "OP-PEND" })}
-                      className={`px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wide font-black ${applicant.paymentStatus === "Pendiente" ? "bg-amber-600 text-white" : "bg-slate-700 text-slate-400"}`}
-                    >
-                      Pend.
-                    </button>
-                  </div>
-                </div>
-
-                {/* Docs Toggles */}
-                <div className="bg-slate-800/20 p-2 rounded border border-slate-800 space-y-2">
-                  <span className="text-slate-400 block text-[9px] uppercase tracking-wider mb-1">Aprobación de Requisitos Individuales:</span>
-                  {[
-                    { label: "1. Copia de DNI", key: "dniFile" as const },
-                    { label: "2. Certificado", key: "certificadoFile" as const },
-                    { label: "3. Partida Nac.", key: "partidaFile" as const },
-                    { label: "4. Foto Carné", key: "fotoFile" as const },
-                  ].map((d) => (
-                    <div key={d.key} className="flex items-center justify-between text-[9px]">
-                      <span className="text-slate-300 font-medium">{d.label}:</span>
-                      <div className="flex gap-1">
-                        <button 
-                          onClick={() => setSingleDocState(d.key, "Validado")}
-                          className={`px-1 rounded-xs font-bold text-[8px] uppercase ${currentDocs[d.key]?.status === "Validado" ? "bg-emerald-600 text-white" : "bg-slate-700 text-slate-400"}`}
-                        >
-                          Ok
-                        </button>
-                        <button 
-                          onClick={() => setSingleDocState(d.key, "Observado", "Documento enviado no corresponde al solicitado o tiene baja resolución de escaneo.")}
-                          className={`px-1 rounded-xs font-bold text-[8px] uppercase ${currentDocs[d.key]?.status === "Observado" ? "bg-red-600 text-white" : "bg-slate-700 text-slate-400"}`}
-                        >
-                          Obs
-                        </button>
-                        <button 
-                          onClick={() => setSingleDocState(d.key, "Pendiente")}
-                          className={`px-1 rounded-xs font-bold text-[8px] uppercase ${currentDocs[d.key]?.status === "Pendiente" ? "bg-amber-600 text-white" : "bg-slate-700 text-slate-400"}`}
-                        >
-                          Pend
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-3.5 pt-2 border-t border-slate-800 text-[10px] text-slate-400 leading-normal bg-slate-950/40 p-2 rounded border border-slate-800 flex items-start gap-1.5">
-                <Info className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                <span><strong>¿Cómo funciona?</strong> Cambie los estados arriba para simular la evaluación administrativa de secretaría. Pruebe <strong>Todo Aprobado</strong> para desbloquear la admisión directa.</span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <button 
-          onClick={() => setShowSimConsole(!showSimConsole)}
-          className="bg-slate-900 border border-slate-800 text-amber-400 hover:text-white font-extrabold uppercase text-[10px] py-2 px-4 rounded-full shadow-2xl tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-all cursor-pointer select-none"
-        >
-          <Terminal className="w-3.5 h-3.5 text-[#E3BD26] animate-pulse" />
-          <span>{showSimConsole ? "Cerrar Panel" : "Abrir Consola de Pruebas"}</span>
-        </button>
-      </div>
-
       {/* 3. SIDEBAR NAVIGATION */}
       <Sidebar
         institution={{
@@ -455,7 +383,7 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
         user={{
           name: `${applicant.name} ${applicant.lastName}`,
           role: currentProgram.name,
-          status: applicant.admitted ? "ADMITIDO" : "EN PROCESO",
+          status: isActuallyAdmitted ? "ADMITIDO" : (applicant.admitted === "NO ADMITIDO" ? "NO ADMITIDO" : "EN PROCESO"),
         }}
         sections={[
           {
@@ -479,6 +407,14 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                 route: "pagos",
                 active: activeTab === "pagos"
               },
+              ...(isActuallyAdmitted ? [
+                {
+                  label: "Pago de Matrícula",
+                  icon: <Landmark className="w-4.5 h-4.5" />,
+                  route: "matricula",
+                  active: activeTab === "matricula"
+                }
+              ] : []),
               {
                 label: "Resultados",
                 icon: <Award className="w-4 h-4" />,
@@ -502,22 +438,24 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
       <main className="flex-1 p-4 md:p-8 h-full overflow-y-auto z-10 w-full">
         
         {/* BANNER INDICATING EVALUATION MODALITIES */}
-        <AlertBox
-          className="mb-6"
-          title="Modalidad de Ingreso Directo SFA"
-          description="El ingreso NO requiere dar un examen de admisión presencial. Se otorga automáticamente al completar, adjuntar y validar sus 4 requisitos de admisión y pago de S/.120."
-          variant="brand"
-          actions={
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setActiveTab("documentos")}
-              className="font-bold shrink-0 text-[10px] tracking-wider border-slate-300 hover:border-brand-wine mt-2 md:mt-0"
-            >
-              Completar Expediente &rarr;
-            </Button>
-          }
-        />
+        {activeTab !== "resultados" && !isActuallyAdmitted && (approvedCount < 4 || applicant.paymentStatus !== "Validado") && (
+          <AlertBox
+            className="mb-6"
+            title="Modalidad de Admisión IESTP San Francisco de Asís"
+            description="Para obtener la vacante, el postulante deberá registrar su carpeta electrónica de 4 requisitos, completar su derecho de pago de S/.120 y rendir de forma presencial el examen de admisión ordinario programado."
+            variant="brand"
+            actions={
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveTab("documentos")}
+                className="font-bold shrink-0 text-[10px] tracking-wider border-slate-300 hover:border-brand-wine mt-2 md:mt-0"
+              >
+                Completar Expediente &rarr;
+              </Button>
+            }
+          />
+        )}
 
         {/* ACTIVE TABS SWITCH */}
         {activeTab === "dashboard" && (
@@ -631,11 +569,11 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
 
               <div className="p-4 bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col justify-between">
                 <div>
-                  <span className="font-extrabold text-[10px] text-slate-400 block uppercase">4. Ingreso Directo vacante</span>
-                  <span className={`font-black uppercase text-xs mt-1 block ${applicant.admitted ? "text-emerald-600 animate-pulse" : "text-slate-500"}`}>
-                    {applicant.admitted ? "★ ADMITIDO ★" : "PENDIENTE EVAL"}
+                  <span className="font-extrabold text-[10px] text-slate-400 block uppercase">4. Examen y Admisión</span>
+                  <span className={`font-black uppercase text-xs mt-1 block ${isActuallyAdmitted ? "text-emerald-600 animate-pulse" : (applicant.admitted === "NO ADMITIDO" ? "text-rose-600" : "text-slate-500")}`}>
+                    {isActuallyAdmitted ? "★ ADMITIDO ★" : (applicant.admitted === "NO ADMITIDO" ? "NO ADMITIDO" : "PENDIENTE EVAL")}
                   </span>
-                  <p className="text-slate-500 font-semibold mt-1 text-[11px] leading-relaxed">Concesión del folio de vacante oficial una vez calificados los requisitos.</p>
+                  <p className="text-slate-500 font-semibold mt-1 text-[11px] leading-relaxed">Asignación de aula de examen, rendición presencial y publicación de resultados oficiales.</p>
                 </div>
                 <div className="mt-4 pt-2.5 border-t">
                   <button 
@@ -661,8 +599,8 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                   Escanee de forma nítida en PDF su DNI, su Partida de Nacimiento, su Certificado secundario oficial, y suba su foto tamaño carné formal. Se validarán en un plazo estimado de 24 horas hábiles.
                 </div>
                 <div>
-                  <span className="text-[#9F062A] font-extrabold block text-sm mb-1.5">C. Descargue Ficha de Ingreso</span>
-                  Una vez que secretaría verifique que todo está completo y correcto, su estado pasará a "Admitido" y se emitirá su Constancia de Vacante Directa, la cual certifica su ingreso directo al tecnológico.
+                  <span className="text-[#9F062A] font-extrabold block text-sm mb-1.5">C. Examen y Admisión</span>
+                  Cuando sus requisitos físicos se validen, se le programará un aula de evaluación presencial. Tras rendir y aprobar el examen, se asignará su estado "Admitido" con su Constancia Oficial de Admisión.
                 </div>
               </div>
             </div>
@@ -726,27 +664,70 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                   </div>
 
                   {/* Image Upload results info if validado/pendiente */}
-                  {currentDocs.dniFile.status === "Validado" && (
-                    <div className="mt-4 p-3.5 bg-slate-50 border rounded-lg flex justify-between items-center animate-fade-in text-xs font-semibold text-slate-700 font-mono">
-                      <span>Archivo: {uploadedDniFile || `dni_captura.jpg`}</span>
-                      <button 
-                        onClick={() => triggerPreview("Copia de DNI - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), uploadedDniFile || "dni_captura.jpg", "image", { fileDataUrl: currentDocs.dniFile.fileDataUrl })}
-                        className="p-1 px-2.5 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer"
-                      >
-                        Ver Imagen
-                      </button>
+                  {(currentDocs.dniFile.status === "Validado" || currentDocs.dniFile.status === "Pendiente") && (
+                    <div className="mt-4 p-3.5 bg-slate-50 border rounded-lg space-y-2 animate-fade-in text-xs font-semibold text-slate-700 font-mono">
+                      <div className="flex justify-between items-center">
+                        <span className="truncate max-w-[130px] sm:max-w-xs">
+                          Archivo: {currentDocs.dniFile.fileName || `dni_captura.jpg`} 
+                          {currentDocs.dniFile.status === "Pendiente" && " (Revision Pendiente)"}
+                        </span>
+                        <div className="flex gap-1.5 shrink-0">
+                          <button 
+                            onClick={() => triggerPreview("Copia de DNI - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), currentDocs.dniFile.fileName || "dni_captura.jpg", "image", { fileDataUrl: currentDocs.dniFile.fileDataUrl })}
+                            className="p-1 px-2 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
+                          >
+                            Ver Imagen
+                          </button>
+                          {!stagedDniFile && (
+                            <button 
+                              type="button"
+                              onClick={() => document.getElementById("file-input-dni-replace")?.click()}
+                              className="p-1 px-2 bg-[#9F062A] hover:bg-[#800521] text-white text-[10px] font-sans font-bold uppercase rounded cursor-pointer transition-colors shrink-0"
+                            >
+                              Editar / Cambiar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <input 
+                        id="file-input-dni-replace"
+                        type="file" 
+                        accept="image/png, image/jpeg, image/jpg" 
+                        className="hidden" 
+                        onChange={(e) => handleFileChange(e, "dniFile")} 
+                      />
                     </div>
                   )}
 
-                  {currentDocs.dniFile.status === "Pendiente" && !stagedDniFile && (
-                    <div className="mt-4 p-3 bg-slate-50 border rounded-lg flex justify-between items-center animate-fade-in text-xs font-semibold text-slate-700 font-mono">
-                      <span>Archivo: {uploadedDniFile || `dni_captura.jpg`} (Revision Pendiente)</span>
-                      <button 
-                        onClick={() => triggerPreview("Copia de DNI (Revision) - " + applicant.name.toUpperCase(), uploadedDniFile || "dni_captura.jpg", "image", { fileDataUrl: currentDocs.dniFile.fileDataUrl })}
-                        className="p-1 px-2.5 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer"
-                      >
-                        Ver Imagen
-                      </button>
+                  {/* If they are editing/replacing the image */}
+                  {stagedDniFile && (
+                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2 animate-fade-in text-xs">
+                      <div className="flex justify-between items-center font-semibold text-slate-700 font-mono">
+                        <span className="text-amber-800 truncate max-w-[155px] sm:max-w-xs font-mono">Reemplazo: {stagedDniFile}</span>
+                        <button 
+                          onClick={() => triggerPreview("Previsualización de Reemplazo", stagedDniFile, "image", { fileDataUrl: stagedDniPreview })}
+                          className="p-1 px-2 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
+                        >
+                          Previsualizar
+                        </button>
+                      </div>
+                      <div className="flex justify-end gap-1.5 pt-1 border-t border-amber-200/50">
+                        <button 
+                          onClick={() => {
+                            setStagedDniFile("");
+                            setStagedDniPreview("");
+                          }}
+                          className="px-2 py-1 text-[9px] font-sans font-bold uppercase border bg-white hover:bg-slate-100 rounded cursor-pointer text-slate-600"
+                        >
+                          Cancelar
+                        </button>
+                        <button 
+                          onClick={() => handleSaveDocument("dniFile")}
+                          className="px-2.5 py-1 text-[9px] font-sans font-bold uppercase bg-[#9F062A] hover:bg-[#800521] text-white rounded cursor-pointer"
+                        >
+                          Guardar Reemplazo
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -757,10 +738,11 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                   )}
 
                   {/* Interactive Upload Box area matching standard design */}
-                  {currentDocs.dniFile.status !== "Validado" && (
+                  {currentDocs.dniFile.status !== "Validado" && currentDocs.dniFile.status !== "Pendiente" && (
                     <div className="mt-4 space-y-3">
-                      <label className="border-2 border-dashed border-slate-200 hover:border-[#9F062A]/40 rounded-lg p-5 bg-slate-50/50 hover:bg-slate-50/80 transition-all flex flex-col justify-center items-center text-center cursor-pointer block">
+                      <label htmlFor="file-input-dni" className="border-2 border-dashed border-slate-200 hover:border-[#9F062A]/40 rounded-lg p-5 bg-slate-50/50 hover:bg-slate-50/80 transition-all flex flex-col justify-center items-center text-center cursor-pointer block">
                         <input 
+                          id="file-input-dni"
                           type="file" 
                           accept="image/png, image/jpeg, image/jpg" 
                           className="hidden" 
@@ -826,27 +808,70 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                   </div>
 
                   {/* Image Upload results info if validado/pendiente */}
-                  {currentDocs.certificadoFile.status === "Validado" && (
-                    <div className="mt-4 p-3.5 bg-slate-50 border rounded-lg flex justify-between items-center animate-fade-in text-xs font-semibold text-slate-700 font-mono">
-                      <span>Archivo: {uploadedCertificadoFile || `certificado_captura.jpg`}</span>
-                      <button 
-                        onClick={() => triggerPreview("Certificado de Secundaria - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), uploadedCertificadoFile || "certificado_captura.jpg", "image", { fileDataUrl: currentDocs.certificadoFile.fileDataUrl })}
-                        className="p-1 px-2.5 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer"
-                      >
-                        Ver Imagen
-                      </button>
+                  {(currentDocs.certificadoFile.status === "Validado" || currentDocs.certificadoFile.status === "Pendiente") && (
+                    <div className="mt-4 p-3.5 bg-slate-50 border rounded-lg space-y-2 animate-fade-in text-xs font-semibold text-slate-700 font-mono">
+                      <div className="flex justify-between items-center">
+                        <span className="truncate max-w-[130px] sm:max-w-xs">
+                          Archivo: {currentDocs.certificadoFile.fileName || `certificado_captura.jpg`} 
+                          {currentDocs.certificadoFile.status === "Pendiente" && " (Revision Pendiente)"}
+                        </span>
+                        <div className="flex gap-1.5 shrink-0">
+                          <button 
+                            onClick={() => triggerPreview("Certificado de Secundaria - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), currentDocs.certificadoFile.fileName || "certificado_captura.jpg", "image", { fileDataUrl: currentDocs.certificadoFile.fileDataUrl })}
+                            className="p-1 px-2 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
+                          >
+                            Ver Imagen
+                          </button>
+                          {!stagedCertFile && (
+                            <button 
+                              type="button"
+                              onClick={() => document.getElementById("file-input-cert-replace")?.click()}
+                              className="p-1 px-2 bg-[#9F062A] hover:bg-[#800521] text-white text-[10px] font-sans font-bold uppercase rounded cursor-pointer transition-colors shrink-0"
+                            >
+                              Editar / Cambiar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <input 
+                        id="file-input-cert-replace"
+                        type="file" 
+                        accept="image/png, image/jpeg, image/jpg" 
+                        className="hidden" 
+                        onChange={(e) => handleFileChange(e, "certificadoFile")} 
+                      />
                     </div>
                   )}
 
-                  {currentDocs.certificadoFile.status === "Pendiente" && !stagedCertFile && (
-                    <div className="mt-4 p-3 bg-slate-50 border rounded-lg flex justify-between items-center animate-fade-in text-xs font-semibold text-slate-700 font-mono">
-                      <span>Archivo: {uploadedCertificadoFile || `certificado_captura.jpg`} (Revision Pendiente)</span>
-                      <button 
-                        onClick={() => triggerPreview("Certificado de Secundaria (Revision) - " + applicant.name.toUpperCase(), uploadedCertificadoFile || "certificado_captura.jpg", "image", { fileDataUrl: currentDocs.certificadoFile.fileDataUrl })}
-                        className="p-1 px-2.5 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer"
-                      >
-                        Ver Imagen
-                      </button>
+                  {/* If they are editing/replacing the image */}
+                  {stagedCertFile && (
+                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2 animate-fade-in text-xs">
+                      <div className="flex justify-between items-center font-semibold text-slate-700 font-mono">
+                        <span className="text-amber-800 truncate max-w-[155px] sm:max-w-xs font-mono">Reemplazo: {stagedCertFile}</span>
+                        <button 
+                          onClick={() => triggerPreview("Previsualización de Reemplazo", stagedCertFile, "image", { fileDataUrl: stagedCertPreview })}
+                          className="p-1 px-2 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
+                        >
+                          Previsualizar
+                        </button>
+                      </div>
+                      <div className="flex justify-end gap-1.5 pt-1 border-t border-amber-200/50">
+                        <button 
+                          onClick={() => {
+                            setStagedCertFile("");
+                            setStagedCertPreview("");
+                          }}
+                          className="px-2 py-1 text-[9px] font-sans font-bold uppercase border bg-white hover:bg-slate-100 rounded cursor-pointer text-slate-600"
+                        >
+                          Cancelar
+                        </button>
+                        <button 
+                          onClick={() => handleSaveDocument("certificadoFile")}
+                          className="px-2.5 py-1 text-[9px] font-sans font-bold uppercase bg-[#9F062A] hover:bg-[#800521] text-white rounded cursor-pointer"
+                        >
+                          Guardar Reemplazo
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -857,10 +882,11 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                   )}
 
                   {/* Interactive Upload Box area matching standard design */}
-                  {currentDocs.certificadoFile.status !== "Validado" && (
+                  {currentDocs.certificadoFile.status !== "Validado" && currentDocs.certificadoFile.status !== "Pendiente" && (
                     <div className="mt-4 space-y-3">
-                      <label className="border-2 border-dashed border-slate-200 hover:border-[#9F062A]/40 rounded-lg p-5 bg-slate-50/50 hover:bg-slate-50/80 transition-all flex flex-col justify-center items-center text-center cursor-pointer block">
+                      <label htmlFor="file-input-cert" className="border-2 border-dashed border-slate-200 hover:border-[#9F062A]/40 rounded-lg p-5 bg-slate-50/50 hover:bg-slate-50/80 transition-all flex flex-col justify-center items-center text-center cursor-pointer block">
                         <input 
+                          id="file-input-cert"
                           type="file" 
                           accept="image/png, image/jpeg, image/jpg" 
                           className="hidden" 
@@ -926,27 +952,70 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                   </div>
 
                   {/* Image Upload results info if validado/pendiente */}
-                  {currentDocs.partidaFile.status === "Validado" && (
-                    <div className="mt-4 p-3.5 bg-slate-50 border rounded-lg flex justify-between items-center animate-fade-in text-xs font-semibold text-slate-700 font-mono">
-                      <span>Archivo: {uploadedPartidaFile || `partida_captura.jpg`}</span>
-                      <button 
-                        onClick={() => triggerPreview("Partida de Nacimiento - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), uploadedPartidaFile || "partida_captura.jpg", "image", { fileDataUrl: currentDocs.partidaFile.fileDataUrl })}
-                        className="p-1 px-2.5 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer"
-                      >
-                        Ver Imagen
-                      </button>
+                  {(currentDocs.partidaFile.status === "Validado" || currentDocs.partidaFile.status === "Pendiente") && (
+                    <div className="mt-4 p-3.5 bg-slate-50 border rounded-lg space-y-2 animate-fade-in text-xs font-semibold text-slate-700 font-mono">
+                      <div className="flex justify-between items-center">
+                        <span className="truncate max-w-[130px] sm:max-w-xs">
+                          Archivo: {currentDocs.partidaFile.fileName || `partida_captura.jpg`} 
+                          {currentDocs.partidaFile.status === "Pendiente" && " (Revision Pendiente)"}
+                        </span>
+                        <div className="flex gap-1.5 shrink-0">
+                          <button 
+                            onClick={() => triggerPreview("Partida de Nacimiento - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), currentDocs.partidaFile.fileName || "partida_captura.jpg", "image", { fileDataUrl: currentDocs.partidaFile.fileDataUrl })}
+                            className="p-1 px-2 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
+                          >
+                            Ver Imagen
+                          </button>
+                          {!stagedPartidaFile && (
+                            <button 
+                              type="button"
+                              onClick={() => document.getElementById("file-input-partida-replace")?.click()}
+                              className="p-1 px-2 bg-[#9F062A] hover:bg-[#800521] text-white text-[10px] font-sans font-bold uppercase rounded cursor-pointer transition-colors shrink-0"
+                            >
+                              Editar / Cambiar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <input 
+                        id="file-input-partida-replace"
+                        type="file" 
+                        accept="image/png, image/jpeg, image/jpg" 
+                        className="hidden" 
+                        onChange={(e) => handleFileChange(e, "partidaFile")} 
+                      />
                     </div>
                   )}
 
-                  {currentDocs.partidaFile.status === "Pendiente" && !stagedPartidaFile && (
-                    <div className="mt-4 p-3 bg-slate-50 border rounded-lg flex justify-between items-center animate-fade-in text-xs font-semibold text-slate-700 font-mono">
-                      <span>Archivo: {uploadedPartidaFile || `partida_captura.jpg`} (Revision Pendiente)</span>
-                      <button 
-                        onClick={() => triggerPreview("Partida de Nacimiento (Revision) - " + applicant.name.toUpperCase(), uploadedPartidaFile || "partida_captura.jpg", "image", { fileDataUrl: currentDocs.partidaFile.fileDataUrl })}
-                        className="p-1 px-2.5 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer"
-                      >
-                        Ver Imagen
-                      </button>
+                  {/* If they are editing/replacing the image */}
+                  {stagedPartidaFile && (
+                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2 animate-fade-in text-xs">
+                      <div className="flex justify-between items-center font-semibold text-slate-700 font-mono">
+                        <span className="text-amber-800 truncate max-w-[155px] sm:max-w-xs font-mono">Reemplazo: {stagedPartidaFile}</span>
+                        <button 
+                          onClick={() => triggerPreview("Previsualización de Reemplazo", stagedPartidaFile, "image", { fileDataUrl: stagedPartidaPreview })}
+                          className="p-1 px-2 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
+                        >
+                          Previsualizar
+                        </button>
+                      </div>
+                      <div className="flex justify-end gap-1.5 pt-1 border-t border-amber-200/50">
+                        <button 
+                          onClick={() => {
+                            setStagedPartidaFile("");
+                            setStagedPartidaPreview("");
+                          }}
+                          className="px-2 py-1 text-[9px] font-sans font-bold uppercase border bg-white hover:bg-slate-100 rounded cursor-pointer text-slate-600"
+                        >
+                          Cancelar
+                        </button>
+                        <button 
+                          onClick={() => handleSaveDocument("partidaFile")}
+                          className="px-2.5 py-1 text-[9px] font-sans font-bold uppercase bg-[#9F062A] hover:bg-[#800521] text-white rounded cursor-pointer"
+                        >
+                          Guardar Reemplazo
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -957,10 +1026,11 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                   )}
 
                   {/* Interactive Upload Box area matching standard design */}
-                  {currentDocs.partidaFile.status !== "Validado" && (
+                  {currentDocs.partidaFile.status !== "Validado" && currentDocs.partidaFile.status !== "Pendiente" && (
                     <div className="mt-4 space-y-3">
-                      <label className="border-2 border-dashed border-slate-200 hover:border-[#9F062A]/40 rounded-lg p-5 bg-slate-50 hover:bg-slate-50/80 transition-all flex flex-col justify-center items-center text-center cursor-pointer block">
+                      <label htmlFor="file-input-partida" className="border-2 border-dashed border-slate-200 hover:border-[#9F062A]/40 rounded-lg p-5 bg-slate-50 hover:bg-slate-50/80 transition-all flex flex-col justify-center items-center text-center cursor-pointer block">
                         <input 
+                          id="file-input-partida"
                           type="file" 
                           accept="image/png, image/jpeg, image/jpg" 
                           className="hidden" 
@@ -1026,27 +1096,70 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                   </div>
 
                   {/* Image Upload results info if validado/pendiente */}
-                  {currentDocs.fotoFile.status === "Validado" && (
-                    <div className="mt-4 p-3.5 bg-slate-50 border rounded-lg flex justify-between items-center animate-fade-in text-xs font-semibold text-slate-700 font-mono">
-                      <span>Archivo: {uploadedFotoFile || `foto_estudio.jpg`}</span>
-                      <button 
-                        onClick={() => triggerPreview("Fotografia Personal - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), uploadedFotoFile || "foto_estudio.jpg", "image", { fileDataUrl: currentDocs.fotoFile.fileDataUrl })}
-                        className="p-1 px-2.5 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer"
-                      >
-                        Ver Imagen
-                      </button>
+                  {(currentDocs.fotoFile.status === "Validado" || currentDocs.fotoFile.status === "Pendiente") && (
+                    <div className="mt-4 p-3.5 bg-slate-50 border rounded-lg space-y-2 animate-fade-in text-xs font-semibold text-slate-700 font-mono">
+                      <div className="flex justify-between items-center">
+                        <span className="truncate max-w-[130px] sm:max-w-xs font-mono">
+                          Archivo: {currentDocs.fotoFile.fileName || `foto_estudio.jpg`} 
+                          {currentDocs.fotoFile.status === "Pendiente" && " (Revision Pendiente)"}
+                        </span>
+                        <div className="flex gap-1.5 shrink-0">
+                          <button 
+                            onClick={() => triggerPreview("Fotografia Personal - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), currentDocs.fotoFile.fileName || "foto_estudio.jpg", "image", { fileDataUrl: currentDocs.fotoFile.fileDataUrl })}
+                            className="p-1 px-2.5 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
+                          >
+                            Ver Imagen
+                          </button>
+                          {!stagedFotoFile && (
+                            <button 
+                              type="button"
+                              onClick={() => document.getElementById("file-input-foto-replace")?.click()}
+                              className="p-1 px-2.5 bg-[#9F062A] hover:bg-[#800521] text-white text-[10px] font-sans font-bold uppercase rounded cursor-pointer transition-colors shrink-0"
+                            >
+                              Editar / Cambiar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <input 
+                        id="file-input-foto-replace"
+                        type="file" 
+                        accept="image/png, image/jpeg, image/jpg" 
+                        className="hidden" 
+                        onChange={(e) => handleFileChange(e, "fotoFile")} 
+                      />
                     </div>
                   )}
 
-                  {currentDocs.fotoFile.status === "Pendiente" && !stagedFotoFile && (
-                    <div className="mt-4 p-3 bg-slate-50 border rounded-lg flex justify-between items-center animate-fade-in text-xs font-semibold text-slate-700 font-mono">
-                      <span>Archivo: {uploadedFotoFile || `foto_estudio.jpg`} (Revision Pendiente)</span>
-                      <button 
-                        onClick={() => triggerPreview("Fotografia Personal (Revision) - " + applicant.name.toUpperCase(), uploadedFotoFile || "foto_estudio.jpg", "image", { fileDataUrl: currentDocs.fotoFile.fileDataUrl })}
-                        className="p-1 px-2.5 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer"
-                      >
-                        Ver Imagen
-                      </button>
+                  {/* If they are editing/replacing the image */}
+                  {stagedFotoFile && (
+                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2 animate-fade-in text-xs">
+                      <div className="flex justify-between items-center font-semibold text-slate-700 font-mono">
+                        <span className="text-amber-800 truncate max-w-[155px] sm:max-w-xs font-mono">Reemplazo: {stagedFotoFile}</span>
+                        <button 
+                          onClick={() => triggerPreview("Previsualización de Reemplazo", stagedFotoFile, "image", { fileDataUrl: stagedFotoPreview })}
+                          className="p-1 px-2.5 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
+                        >
+                          Previsualizar
+                        </button>
+                      </div>
+                      <div className="flex justify-end gap-1.5 pt-1 border-t border-amber-200/50">
+                        <button 
+                          onClick={() => {
+                            setStagedFotoFile("");
+                            setStagedFotoPreview("");
+                          }}
+                          className="px-2 py-1 text-[9px] font-sans font-bold uppercase border bg-white hover:bg-slate-100 rounded cursor-pointer text-slate-600"
+                        >
+                          Cancelar
+                        </button>
+                        <button 
+                          onClick={() => handleSaveDocument("fotoFile")}
+                          className="px-2.5 py-1 text-[9px] font-sans font-bold uppercase bg-[#9F062A] hover:bg-[#800521] text-white rounded cursor-pointer"
+                        >
+                          Guardar Reemplazo
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -1059,10 +1172,11 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                     </div>
                   )}
 
-                  {currentDocs.fotoFile.status !== "Validado" && (
+                  {currentDocs.fotoFile.status !== "Validado" && currentDocs.fotoFile.status !== "Pendiente" && (
                     <div className="mt-4 space-y-3">
-                      <label className="border-2 border-dashed border-slate-200 hover:border-[#9F062A]/40 rounded-lg p-5 bg-slate-50/50 hover:bg-slate-50/80 transition-all flex flex-col justify-center items-center text-center cursor-pointer block">
+                      <label htmlFor="file-input-foto" className="border-2 border-dashed border-slate-200 hover:border-[#9F062A]/40 rounded-lg p-5 bg-slate-50/50 hover:bg-slate-50/80 transition-all flex flex-col justify-center items-center text-center cursor-pointer block">
                         <input 
+                          id="file-input-foto"
                           type="file" 
                           accept="image/png, image/jpeg, image/jpg" 
                           className="hidden" 
@@ -1245,24 +1359,40 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                   {applicant.paymentStatus === "Validado" ? (
                     <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-slate-750 text-xs text-left font-semibold">
                       <p className="text-emerald-800 font-bold uppercase text-[10px] tracking-wide mb-1 leading-none">Pago Validado con Exito</p>
-                      Su pago de derecho de admision por S/. 120.00 ha sido aprobado de manera oficial. ¡Puede pasar a la siguiente etapa de admision!
+                      Su pago de derecho de admisión por S/. 120.00 ha sido aprobado de manera oficial. ¡Puede pasar a la siguiente etapa de admisión!
                     </div>
                   ) : applicant.paymentStatus === "Pendiente" ? (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-slate-750 text-xs text-left font-semibold space-y-2">
-                      <p className="text-amber-800 font-bold uppercase text-[10px] tracking-wide mb-1 leading-none">Validacion de Pago en Curso</p>
-                      <p>Su numero de operacion ingresado: <span className="font-mono font-bold text-slate-900">{applicant.paymentOperation || "No registrado"}</span></p>
-                      <p className="text-[11px] text-slate-600">La oficina de Tesoreria esta verificando su comprobante. Por favor, espere a que su estado sea validado para registrarse al examen de admision.</p>
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-slate-700 text-xs text-left font-semibold space-y-3">
+                      <p className="text-amber-800 font-bold uppercase text-[10px] tracking-wide mb-1 leading-none">Validación de Pago en Curso</p>
+                      {applicant.paymentType === "voucher" || applicant.paymentVoucherUrl ? (
+                        <div className="space-y-2">
+                          <p>Comprobante adjuntado: <span className="font-mono font-black text-slate-900">{applicant.paymentVoucherFileName || "voucher_comprobante.jpg"}</span></p>
+                          {applicant.paymentVoucherUrl && (
+                            <div className="p-2 bg-white rounded border border-slate-200 inline-block">
+                              <span className="text-[8px] text-slate-400 font-black block mb-1">Tu Voucher Enviado:</span>
+                              <img 
+                                src={applicant.paymentVoucherUrl} 
+                                alt="Voucher depositado" 
+                                className="max-h-24 object-contain rounded border border-slate-100" 
+                              />
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <p>Su número de operación ingresado: <span className="font-mono font-bold text-slate-900">{applicant.paymentOperation || "No registrado"}</span></p>
+                      )}
+                      <p className="text-[11px] text-slate-600 font-medium leading-normal">La de oficina de Tesorería está verificando su comprobante. Por favor, espere a que su estado sea validado para registrarse al examen de admisión.</p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-4 font-bold text-xs text-slate-700">
                       {applicant.paymentStatus === "Observado" && (
                         <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-slate-750 text-xs text-left font-semibold">
-                          <p className="text-red-750 font-extrabold uppercase text-[10px] tracking-wide mb-1 leading-none">Operacion Observada por Administracion</p>
+                          <p className="text-red-750 font-extrabold uppercase text-[10px] tracking-wide mb-1 leading-none">Operación Observada por Administración</p>
                           <span className="text-slate-600 block mt-1 leading-relaxed bg-white border border-red-100 p-2.5 rounded text-[11px]">
-                            Observacion enviada: "{applicant.paymentObservations || "Su comprobante de deposito no coincide con nuestros registros."}"
+                            Observación enviada: "{applicant.paymentObservations || "Su comprobante de depósito no coincide con nuestros registros."}"
                           </span>
                           <span className="text-[11px] block text-red-800 font-bold mt-2">
-                            Por favor complete nuevamente el comprobante o codigo de operacion real para que sea evaluado de nuevo.
+                            Por favor complete nuevamente el comprobante o código de operación real para que sea evaluado de nuevo.
                           </span>
                         </div>
                       )}
@@ -1270,31 +1400,121 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                       {/* Submission form area of Screenshot 4 */}
                       <form onSubmit={handleSubmitPaymentVoucher} className="space-y-4">
                         <h4 className="text-[10px] font-black text-[#9F062A] uppercase tracking-wider block mb-1">
-                          Registrar Operacion de Pago
+                          Registrar Declaración de Pago
                         </h4>
 
-                        {/* Numeric code entry physical field */}
-                        <div className="flex flex-col sm:flex-row items-end gap-3 pt-2">
-                          <div className="space-y-1 flex-1 w-full text-left">
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">Codigo de N° de Operacion del Deposito</label>
-                            <input 
-                              type="text"
-                              required
-                              placeholder="Ej: BN-994102-S1"
-                              value={paymentVoucher}
-                              onChange={(e) => setPaymentVoucher(e.target.value)}
-                              className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-300 rounded text-xs sm:text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-[#9F062A]"
-                            />
-                          </div>
-
-                          <button 
-                            type="submit"
-                            className="bg-[#9F062A] hover:bg-[#800521] text-white px-6 py-2.5 rounded font-extrabold uppercase text-[10px] tracking-widest shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 w-full sm:w-auto h-[40px] mb-0.5"
+                        {/* Interactive Toggle tabs */}
+                        <div className="grid grid-cols-2 bg-slate-100 p-1 rounded-lg gap-1 border border-slate-200">
+                          <button
+                            type="button"
+                            onClick={() => setPaymentType("number")}
+                            className={`py-1.5 px-3 rounded-md text-[10px] uppercase font-black tracking-wider transition-all cursor-pointer text-center ${
+                              paymentType === "number"
+                                ? "bg-white text-[#9F062A] shadow-xs border border-slate-200"
+                                : "text-slate-500 hover:text-slate-800"
+                            }`}
                           >
-                            <CheckCircle2 className="w-4 h-4 text-amber-300" />
-                            <span>Enviar Operacion</span>
+                            N° de Operación
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPaymentType("voucher")}
+                            className={`py-1.5 px-3 rounded-md text-[10px] uppercase font-black tracking-wider transition-all cursor-pointer text-center ${
+                              paymentType === "voucher"
+                                ? "bg-white text-[#9F062A] shadow-xs border border-slate-200"
+                                : "text-slate-500 hover:text-slate-800"
+                            }`}
+                          >
+                            Subir Foto de Voucher
                           </button>
                         </div>
+
+                        {paymentType === "number" ? (
+                          /* Numeric code entry physical field */
+                          <div className="flex flex-col sm:flex-row items-end gap-3 pt-2">
+                            <div className="space-y-1 flex-1 w-full text-left">
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wide">Código de N° de Operación del Depósito</label>
+                              <input 
+                                type="text"
+                                required
+                                placeholder="Ej: BN-994102-S1"
+                                value={paymentVoucher}
+                                onChange={(e) => setPaymentVoucher(e.target.value)}
+                                className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-300 rounded text-xs sm:text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-[#9F062A]"
+                              />
+                            </div>
+
+                            <button 
+                              type="submit"
+                              className="bg-[#9F062A] hover:bg-[#800521] text-white px-6 py-2.5 rounded font-extrabold uppercase text-[10px] tracking-widest shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 w-full sm:w-auto h-[40px] mb-0.5"
+                            >
+                              <CheckCircle2 className="w-4 h-4 text-amber-300" />
+                              <span>Enviar Operación</span>
+                            </button>
+                          </div>
+                        ) : (
+                          /* Voucher upload interface */
+                          <div className="space-y-4 pt-2">
+                            <div className="border-2 border-dashed border-slate-300 rounded-lg p-5 bg-slate-50/50 hover:bg-slate-50 hover:border-[#9F062A]/40 transition-all text-center relative cursor-pointer">
+                              <input
+                                id="payment-voucher-file"
+                                type="file"
+                                accept="image/jpeg,image/png,image/jpg"
+                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  setStagedVoucherFile(file.name);
+                                  compressAndResizeImage(file, (compressedDataUrl) => {
+                                    setStagedVoucherPreview(compressedDataUrl);
+                                  });
+                                }}
+                              />
+                              <div className="flex flex-col items-center justify-center gap-2">
+                                <Upload className="w-5 h-5 text-slate-400" />
+                                <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">SELECCIONAR IMAGEN JPG O PNG</span>
+                                <span className="text-[9px] text-slate-405 font-bold max-w-xs leading-normal block">
+                                  {stagedVoucherFile ? `Seleccionado: ${stagedVoucherFile}` : "Haga clic o arrastre foto de su voucher de depósito aquí."}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Live preview ONLY if actually loaded and present */}
+                            {stagedVoucherPreview && (
+                              <div className="p-3 bg-slate-100 border border-slate-200 rounded-lg flex flex-col items-center animate-fade-in text-center">
+                                <span className="text-[9px] text-slate-500 font-black tracking-widest uppercase mb-2">Vista Previa de Voucher Seleccionado:</span>
+                                <img 
+                                  src={stagedVoucherPreview} 
+                                  alt="Preview voucher" 
+                                  className="max-h-36 object-contain rounded border border-slate-300 shadow-sm" 
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setStagedVoucherFile("");
+                                    setStagedVoucherPreview("");
+                                  }}
+                                  className="mt-1.5 text-[8px] font-black uppercase text-red-700 tracking-wider hover:underline"
+                                >
+                                  Eliminar para Cambiar
+                                </button>
+                              </div>
+                            )}
+
+                            <button 
+                              type="submit"
+                              disabled={!stagedVoucherPreview}
+                              className={`w-full py-2.5 px-6 rounded font-extrabold uppercase text-[10px] tracking-widest shadow-md transition-all text-center flex items-center justify-center gap-1.5 h-[40px] cursor-pointer ${
+                                stagedVoucherPreview
+                                  ? "bg-[#9F062A] hover:bg-[#800521] text-white shadow-sm"
+                                  : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
+                              }`}
+                            >
+                              <CheckCircle2 className="w-4 h-4 text-amber-300" />
+                              <span>Enviar Voucher de Pago</span>
+                            </button>
+                          </div>
+                        )}
                       </form>
                     </div>
                   )}
@@ -1311,31 +1531,31 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                     Métodos de Pago
                   </span>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-4 text-left">
                     {/* BCP BBVA detail */}
-                    <div className="p-3 bg-slate-50 border rounded flex items-start gap-2.5">
-                      <span className="text-[14px]">🏦</span>
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded flex items-center gap-2.5">
+                      <Landmark className="w-5 h-5 text-[#9F062A] shrink-0" />
                       <div>
                         <span className="text-[11px] font-extrabold text-slate-800 block leading-tight">Transferencia</span>
-                        <p className="text-[10px] text-slate-400 font-semibold block mt-0.5">BCP, BBVA, Interbank y Scotiabank</p>
+                        <p className="text-[10px] text-slate-400 font-semibold block mt-1 leading-none">BCP, BBVA, Interbank y Scotiabank</p>
                       </div>
                     </div>
 
                     {/* Agentes detail */}
-                    <div className="p-3 bg-slate-50 border rounded flex items-start gap-2.5">
-                      <span className="text-[14px]">🏪</span>
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded flex items-center gap-2.5">
+                      <Store className="w-5 h-5 text-[#9F062A] shrink-0" />
                       <div>
                         <span className="text-[11px] font-extrabold text-slate-800 block leading-tight">Ventanilla</span>
-                        <p className="text-[10px] text-slate-400 font-semibold block mt-0.5">Bancos y Agentes Autorizados</p>
+                        <p className="text-[10px] text-slate-400 font-semibold block mt-1 leading-none">Bancos y Agentes Autorizados</p>
                       </div>
                     </div>
 
                     {/* Yape Plin detail */}
-                    <div className="p-3 bg-slate-50 border rounded flex items-start gap-2.5">
-                      <span className="text-[14px]">📱</span>
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded flex items-center gap-2.5">
+                      <Smartphone className="w-5 h-5 text-[#9F062A] shrink-0" />
                       <div>
                         <span className="text-[11px] font-extrabold text-slate-800 block leading-tight">App Móvil</span>
-                        <p className="text-[10px] text-slate-400 font-semibold block mt-0.5">Yape y Plin mediante código QR</p>
+                        <p className="text-[10px] text-slate-400 font-semibold block mt-1 leading-none">Yape y Plin mediante código QR</p>
                       </div>
                     </div>
                   </div>
@@ -1408,7 +1628,7 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
 
                     {/* Row 2 dynamic matching image 4 */}
                     <tr className="hover:bg-slate-50">
-                      <td className="p-3 text-slate-500">15/03/2026</td>
+                      <td className="p-3 text-slate-500">{paymentDate}</td>
                       <td className="p-3 font-mono font-bold text-slate-800">
                         {applicant.paymentStatus === "No Pagado" ? "Sin registrar" : (applicant.paymentOperation || "No registrado")}
                       </td>
@@ -1435,7 +1655,7 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                             onClick={() => triggerPreview("Recibo de Examen de Admision", applicant.paymentOperation || "PRE-620323", "receipt", { 
                               amount: "S/. 120.00", 
                               concept: "Derecho de Examen Ordinario 2026", 
-                              date: "15/03/2026", 
+                              date: paymentDate, 
                               transactionId: applicant.paymentOperation,
                               dni: applicant.dni,
                               studentName: applicant.name,
@@ -1462,12 +1682,12 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
           </PageTransition>
         )}
 
-        {/* TAB 4: RESULTADOS (REPLICATING SCREENSHOT 3 PERFECTLY - NO EXAM) */}
+        {/* TAB 4: RESULTADOS (REPLICATING SCREENSHOT 3 PERFECTLY - WITH ORDINARY EXAM FLOW) */}
         {activeTab === "resultados" && (
           <PageTransition id="resultados" className="space-y-6 text-left">
             
             {/* Conditional view depending of the candidate document approvals */}
-            {applicant.admitted ? (
+            {isActuallyAdmitted ? (
               // CANDIDATE ADMITTED VIEW (REPLICATES SCREENSHOT 3 HIGHLY ACCURATELY)
               <>
                 {/* 1. TOP GREEN NOTIFICATION BOX (MATCHES IMAGE 3 EXACTLY) */}
@@ -1477,10 +1697,10 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                   </span>
                   <div>
                     <span className="font-extrabold text-[12px] block text-emerald-950">
-                      Expediente de Admisión Completado
+                      ¡Felicidades! Admisión Oficial Confirmada
                     </span>
                     <p className="text-[11px] text-emerald-800 font-bold mt-1 max-w-4xl">
-                      Tu expediente ha sido revisado y aprobado satisfactoriamente por el comité académico. Cumples con todos los requisitos para proceder al ingreso definitivo y reserva de plaza lectiva como ingresante oficial.
+                      Has alcanzado una vacante oficial tras culminar con éxito el proceso de evaluación presencial ordinaria. Tu condición académica actual es de **Admitido**. Proceda a verificar su información de ingreso y descargar su constancia correspondiente.
                     </p>
                   </div>
                 </div>
@@ -1496,31 +1716,49 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                       {/* Subtitle element */}
                       <div className="flex justify-between items-center border-b pb-3 mb-6">
                         <span className="text-[10px] font-black tracking-widest text-[#9F062A] uppercase block">
-                          INFORMACIÓN DE INGRESO CONTINUO SFA
+                          INFORMACIÓN DE INGRESO OFICIAL SFA
                         </span>
 
-                        <span className="bg-red-100 text-[#9F062A] text-[9px] font-black uppercase tracking-widest py-0.5 px-3 rounded-full">
+                        <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase tracking-widest py-0.5 px-3 rounded-full">
                           CONFIRMADO
                         </span>
                       </div>
 
-                      {/* Display grid for Place & Time */}
+                      {/* Display grid for Place, Date, Hour & Modality */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-bold leading-relaxed text-left border-b pb-6 mb-6">
-                        <div className="p-4 bg-slate-50 border rounded-lg flex gap-3 items-center">
-                          <span className="h-8 w-8 rounded-full bg-[#9F062A]/5 text-[#9F062A] flex items-center justify-center text-sm">📍</span>
+                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
+                          <span className="h-8 w-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm">🗓</span>
                           <div>
-                            <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Lugar Asignado</span>
-                            <span className="text-slate-800 text-[11px] font-extrabold block mt-1">Campus Principal - Pabellón A</span>
-                            <span className="text-[9px] text-slate-500 font-bold block mt-0.5 uppercase">Ubicación de Oficinas Administrativas</span>
+                            <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Fecha de Matrícula</span>
+                            <span className="text-slate-800 text-[11px] font-extrabold block mt-1 md:whitespace-nowrap">Lunes 16 al Viernes 20 de Marzo, 2026</span>
+                            <span className="text-[9px] text-emerald-650 font-bold block mt-0.5 uppercase">Plazo Regular del Periodo</span>
                           </div>
                         </div>
 
-                        <div className="p-4 bg-slate-50 border rounded-lg flex gap-3 items-center">
-                          <span className="h-8 w-8 rounded-full bg-[#9F062A]/5 text-[#9F062A] flex items-center justify-center text-sm">🗓</span>
+                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
+                          <span className="h-8 w-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm">⏰</span>
                           <div>
-                            <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Modalidad Ordinaria</span>
-                            <span className="text-slate-800 text-[11px] font-extrabold block mt-1">Ingreso Directo por Requisitos</span>
-                            <span className="text-[9px] text-slate-500 font-bold block mt-0.5 uppercase">Plaza de Estudios Asegurada</span>
+                            <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Hora de Atención</span>
+                            <span className="text-slate-800 text-[11px] font-extrabold block mt-1">08:30 AM - 01:30 PM</span>
+                            <span className="text-[9px] text-indigo-650 font-bold block mt-0.5 uppercase">Lunes a Viernes</span>
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
+                          <span className="h-8 w-8 rounded-full bg-[#9F062A]/5 text-[#9F062A] flex items-center justify-center text-sm">📍</span>
+                          <div>
+                            <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Ubicación Física</span>
+                            <span className="text-slate-800 text-[11px] font-extrabold block mt-1">Oficina de Admisión - Pabellón A</span>
+                            <span className="text-[9px] text-slate-500 font-bold block mt-0.5 uppercase">Oficinas Administrativas</span>
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
+                          <span className="h-8 w-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-sm">🎖</span>
+                          <div>
+                            <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Modalidad</span>
+                            <span className="text-slate-800 text-[11px] font-extrabold block mt-1">Examen Ordinario Aprobado</span>
+                            <span className="text-[9px] text-amber-650 font-bold block mt-0.5 uppercase">Vacante Ganada por Rendimiento</span>
                           </div>
                         </div>
                       </div>
@@ -1528,12 +1766,12 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                       {/* Large primary branding action button matching layout requirements list in Image 3 */}
                       <button 
                         onClick={() => {
-                          alert(`Simulando la generación y descarga segura del documento oficial 'Constancia de Ingreso Directo - Código de Registro SFA-2026-${applicant.dni}.pdf'. Contiene firmas digitales de la Dirección y Secretaría.`);
+                          setIsConstanciaModalOpen(true);
                         }}
                         className="w-full bg-[#9F062A] hover:bg-[#800521] text-white py-4 rounded-xl font-extrabold text-xs uppercase tracking-widest shadow-lg flex items-center justify-center gap-1.5 transition-all scroll-smooth cursor-pointer leading-none"
                       >
                         <Download className="w-4 h-4 text-amber-350" />
-                        <span>Descargar Constancia de Ingreso Directo</span>
+                        <span>Descargar Constancia Oficial de Admisión</span>
                       </button>
 
                       <span className="text-[10px] text-slate-400 font-bold block mt-2.5">
@@ -1546,7 +1784,7 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                     <div className="p-4 bg-sky-50 border border-sky-100 rounded-lg flex gap-3 text-sky-905 text-left text-xs leading-relaxed">
                       <span className="text-sky-600 text-[16px] font-bold select-none h-5 w-5 shrink-0 bg-sky-100/50 rounded-full flex items-center justify-center mt-0.5">ℹ</span>
                       <p className="text-[#2F6187] font-semibold text-[11px]">
-                        <strong>Recordatorio de Admisión:</strong> Recuerde traer su DNI físico vigente y la constancia de ingreso e inscripción impresa. El acceso de ventanillas administrativas cerrará puntualmente en las fechas asignadas de Matrícula.
+                        <strong>Recordatorio de Admisión:</strong> Recuerde traer su DNI físico vigente y la constancia de ingreso e inscripción de matrícula impresa. El acceso de ventanillas administrativas cerrará puntualmente en las fechas asignadas de Matrícula.
                       </p>
                     </div>
 
@@ -1566,28 +1804,30 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                         <div className="relative">
                           <span className="absolute -left-[20.5px] top-0 h-3 w-3 rounded-full bg-emerald-600 border border-white shrink-0" />
                           <span className="text-[11px] font-black text-slate-900 block leading-tight">Registro de Postulante</span>
-                          <span className="text-[9px] text-[#9F062A] font-bold uppercase leading-none mt-1 inline-block">Completado el 12/03/2026</span>
+                          <span className="text-[9px] text-[#9F062A] font-bold uppercase leading-none mt-1 inline-block">Completado el {registrationDate}</span>
                         </div>
 
                         {/* Point 2 */}
                         <div className="relative">
                           <span className="absolute -left-[20.5px] top-0 h-3 w-3 rounded-full bg-emerald-600 border border-white shrink-0" />
                           <span className="text-[11px] font-black text-slate-900 block leading-tight">Pago de Derechos (S/ 120)</span>
-                          <span className="text-[9px] text-[#9F062A] font-bold uppercase leading-none mt-1 inline-block">Validado el 14/03/2026</span>
+                          <span className="text-[9px] text-[#9F062A] font-bold uppercase leading-none mt-1 inline-block">Validado el {paymentDate}</span>
                         </div>
 
                         {/* Point 3 */}
                         <div className="relative">
                           <span className="absolute -left-[20.5px] top-0 h-3 w-3 rounded-full bg-emerald-600 border border-white shrink-0" />
                           <span className="text-[11px] font-black text-slate-900 block leading-tight">Validación de Expediente</span>
-                          <span className="text-[9px] text-[#9F062A] font-bold uppercase leading-none mt-1 inline-block">Aprobado Hoy por Comité</span>
+                          <span className="text-[9px] text-[#9F062A] font-bold uppercase leading-none mt-1 inline-block">
+                            {applicant.folderStatus === "Approved" || applicant.folderStatus === "Enrolled" ? `Aprobado el ${folderApprovalDate} por Comité` : "Pendiente de Validación"}
+                          </span>
                         </div>
 
                         {/* Point 4 */}
                         <div className="relative">
                           <span className="absolute -left-[20.5px] top-0 h-3 w-3 rounded-full bg-emerald-600 animate-pulse border border-white shrink-0" />
-                          <span className="text-[11px] font-black text-slate-900 block leading-tight">Vacante Asignada / Ingreso Directo</span>
-                          <span className="text-[9px] text-emerald-600 font-black uppercase leading-none mt-1 inline-block">Confirmado</span>
+                          <span className="text-[11px] font-black text-slate-900 block leading-tight">Vacante Adjudicada / Examen Completo</span>
+                          <span className="text-[9px] text-emerald-600 font-black uppercase leading-none mt-1 inline-block">Confirmado como Admitido</span>
                         </div>
                       </div>
                     </div>
@@ -1613,8 +1853,187 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
 
                 </div>
               </>
+            ) : applicant.admitted === "NO ADMITIDO" ? (
+              // NO ADMITIDO SCREEN
+              <div className="max-w-xl mx-auto p-8 bg-white border border-slate-200 rounded-xl text-center shadow-md my-12 space-y-5 animate-fade-in text-left">
+                <span className="inline-flex p-3 bg-rose-50 rounded-full border border-rose-200 text-rose-600 my-2">
+                  <XCircle className="w-10 h-10" />
+                </span>
+                
+                <h3 className="text-lg font-black text-rose-700 uppercase">EVALUACIÓN DE ADMISIÓN: NO ADMITIDO</h3>
+                
+                <p className="text-xs text-slate-500 font-bold leading-relaxed max-w-sm mx-auto text-center">
+                  Estimado(a) postulante, su proceso de admisión para este ciclo ha concluido con la condición de <strong>NO ADMITIDO</strong>.
+                </p>
+
+                <div className="p-4 bg-slate-50 border rounded-lg text-xs text-slate-600 font-semibold leading-relaxed">
+                  <p>Agradecemos sinceramente su participación en el proceso de admisión del IESTP San Francisco de Asís. Lo invitamos cordialmente a seguir preparándose para presentarse en nuestras futuras convocatorias académicas.</p>
+                </div>
+              </div>
+            ) : (approvedCount === 4 && applicant.paymentStatus === "Validado") ? (
+              // CANDIDATE APPROVED BUT NOT ADMITTED (APTO PARA EVALUACIÓN - WAITING/DUE EXAM)
+              <>
+                {/* 1. TOP INDIGO NOTIFICATION BOX */}
+                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex gap-3 text-indigo-900 shadow-sm animate-fade-in items-start">
+                  <span className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold shrink-0 mt-0.5">
+                    ✓
+                  </span>
+                  <div>
+                    <span className="font-extrabold text-[12px] block text-indigo-950">
+                      Expediente de Admisión Validado - Apto para Rendir el Examen
+                    </span>
+                    <p className="text-[11px] text-indigo-800 font-bold mt-1 max-w-4xl">
+                      Tu expediente administrativo de documentos y el pago de tasa se encuentran estrictamente calificados como **VÁLIDOS**. Te encuentras formalmente APTO(A) para rendir el examen general de admisión presencial obligatorio.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 2. MAIN SPLIT INFO PANEL (EXAM PROGRAM CARD) */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                  
+                  {/* Left Column (Exam details layout) */}
+                  <div className="lg:col-span-2 space-y-4">
+                    
+                    <div className="bg-white p-6 rounded-xl border border-slate-205 shadow-sm text-center relative overflow-hidden">
+                      
+                      {/* Subtitle element */}
+                      <div className="flex justify-between items-center border-b pb-3 mb-6">
+                        <span className="text-[10px] font-black tracking-widest text-[#9F062A] uppercase block">
+                          INFORMACIÓN DEL EXAMEN DE ADMISIÓN
+                        </span>
+
+                        <span className="bg-amber-100 text-amber-800 text-[9px] font-black uppercase tracking-widest py-0.5 px-3 rounded-full">
+                          AULA ASIGNADA
+                        </span>
+                      </div>
+
+                      {/* Display grid for Place, Date, Hour & Modality */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-bold leading-relaxed text-left border-b pb-6 mb-6">
+                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
+                          <span className="h-8 w-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-sm">🗓</span>
+                          <div>
+                            <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Fecha del Examen</span>
+                            <span className="text-slate-800 text-[11px] font-extrabold block mt-1">Domingo, 15 de Marzo de 2026</span>
+                            <span className="text-[9px] text-amber-650 font-bold block mt-0.5 uppercase">Evaluación General Presencial</span>
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
+                          <span className="h-8 w-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm">⏰</span>
+                          <div>
+                            <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Hora del Examen</span>
+                            <span className="text-slate-800 text-[11px] font-extrabold block mt-1">08:30 AM (Ingreso al Campus)</span>
+                            <span className="text-[9px] text-emerald-650 font-bold block mt-0.5 uppercase">Tolerancia Máxima 15 Minutos</span>
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
+                          <span className="h-8 w-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm">📍</span>
+                          <div>
+                            <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Ubicación / Aula Física</span>
+                            <span className="text-slate-800 text-[11px] font-extrabold block mt-1">
+                              {applicant.examClassroom ? `Aula ${applicant.examClassroom}` : "No Asignado de forma definitiva"}
+                            </span>
+                            <span className="text-[9px] text-indigo-650 font-bold block mt-0.5 uppercase">
+                              {applicant.examClassroom ? "Pabellón Académico Designado" : "Pendiente de Asignación por Secretaría"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
+                          <span className="h-8 w-8 rounded-full bg-[#9F062A]/5 text-[#9F062A] flex items-center justify-center text-sm">📝</span>
+                          <div>
+                            <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Modalidad</span>
+                            <span className="text-slate-800 text-[11px] font-extrabold block mt-1">Examen de Admisión Ordinario</span>
+                            <span className="text-[9px] text-slate-500 font-bold block mt-0.5 uppercase">Admisión General Obligatoria</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Info Notice card explaining they cannot download certificate yet */}
+                      <div className="p-4 bg-[#FAF7EE] border border-[#D5A023]/25 rounded-lg text-xs leading-relaxed text-slate-700 font-bold flex gap-2.5 text-left items-start">
+                        <span className="text-[#D5A023] text-sm shrink-0 mt-0.5">⚠️</span>
+                        <div className="text-[11px] text-slate-750 font-semibold">
+                          <strong>Constancia de Admisión bloqueada temporalmente:</strong> No se cuenta con una vacante adjudicada previamente. Una vez que asista y rinda satisfactoriamente la evaluación presencial general en su aula reservada, secretaría registrará sus notas calificadas para habilitar el egreso definitivo de su Constancia Digital oficial.
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* RECOMMENDATIONS BOX */}
+                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex gap-3 text-left">
+                      <span className="text-blue-600 text-[16px] font-bold select-none h-5 w-5 shrink-0 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">ℹ</span>
+                      <p className="text-blue-800 font-semibold text-[11px] leading-relaxed">
+                        <strong>Requerimientos obligatorios para examen:</strong> Es mandatorio portar su DNI físico vigente, su lápiz 2B de carbón, un borrador limpio y el comprobante físico del pago impreso para poder acceder a las instalaciones del campus.
+                      </p>
+                    </div>
+
+                  </div>
+
+                  {/* Right Column (TIMELINE OF STATS IN REQ COMPLETED STAGE) */}
+                  <div className="space-y-6">
+                    
+                    <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-sm text-left">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block border-b pb-2 mb-4">
+                        Timeline del Proceso
+                      </span>
+
+                      {/* Timeline points matches bullets perfectly */}
+                      <div className="space-y-5 text-slate-600 relative pl-4 border-l border-slate-100">
+                        {/* Point 1 */}
+                        <div className="relative">
+                          <span className="absolute -left-[20.5px] top-0 h-3 w-3 rounded-full bg-emerald-600 border border-white shrink-0" />
+                          <span className="text-[11px] font-black text-slate-900 block leading-tight">Registro de Postulante</span>
+                          <span className="text-[9px] text-[#9F062A] font-bold uppercase leading-none mt-1 inline-block">Completado el {registrationDate}</span>
+                        </div>
+
+                        {/* Point 2 */}
+                        <div className="relative">
+                          <span className="absolute -left-[20.5px] top-0 h-3 w-3 rounded-full bg-emerald-600 border border-white shrink-0" />
+                          <span className="text-[11px] font-black text-slate-900 block leading-tight">Pago de Derechos (S/ 120)</span>
+                          <span className="text-[9px] text-[#9F062A] font-bold uppercase leading-none mt-1 inline-block">Validado el {paymentDate}</span>
+                        </div>
+
+                        {/* Point 3 */}
+                        <div className="relative">
+                          <span className="absolute -left-[20.5px] top-0 h-3 w-3 rounded-full bg-emerald-600 border border-white shrink-0" />
+                          <span className="text-[11px] font-black text-slate-900 block leading-tight">Validación de Expediente</span>
+                          <span className="text-[9px] text-[#9F062A] font-bold uppercase leading-none mt-1 inline-block">
+                            {applicant.folderStatus === "Approved" || applicant.folderStatus === "Enrolled" ? `Aprobado el ${folderApprovalDate} por Comité` : "Pendiente de Validación"}
+                          </span>
+                        </div>
+
+                        {/* Point 4 */}
+                        <div className="relative">
+                          <span className="absolute -left-[20.5px] top-0 h-3 w-3 rounded-full bg-amber-500 animate-pulse border border-white shrink-0" />
+                          <span className="text-[11px] font-black text-slate-900 block leading-tight">Rendir Examen de Admisión</span>
+                          <span className="text-[9px] text-amber-600 font-extrabold uppercase leading-none mt-1 inline-block">Aula Asignada / Programado</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* EXPLORE THE CAMPUS GRAPHIC BAR CARD */}
+                    <div className="rounded-xl border border-slate-202 bg-white shadow-sm overflow-hidden text-left relative flex flex-col justify-between group transition-shadow hover:shadow">
+                      <div className="bg-slate-900/10 min-h-36 relative flex items-center justify-center overflow-hidden">
+                        <img 
+                          src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=600&q=80" 
+                          alt="Campus San Francisco"
+                          className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105 duration-500 opacity-80"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent p-3 pt-12 text-left">
+                          <span className="text-white font-black text-xs block leading-tight">Explora el Campus</span>
+                          <span className="text-slate-300 text-[9px] font-semibold mt-0.5 block leading-tight">Conoce nuestras instalaciones de primer nivel antes del inicio de clases.</span>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+              </>
             ) : (
-              // NON-APPROVED EXPEDIENTE SCREEN
+              // NON-APPROVED EXPEDIENTE SCREEN (STILL WAITING TO BE FULLY APPROVED)
               <div className="max-w-xl mx-auto p-8 bg-white border border-slate-200 rounded-xl text-center shadow-md my-12 space-y-5">
                 <span className="inline-flex p-3 bg-amber-50 rounded-full border border-amber-200 text-amber-600 my-2 animate-bounce">
                   <Clock className="w-10 h-10" />
@@ -1633,8 +2052,8 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
                 </div>
 
                 <div className="pt-4 border-t text-left">
-                  <p className="text-[10px] text-slate-400 font-medium leading-normal bg-[#FFFDF4] border border-[#CFA020]/20 p-3 rounded">
-                    💡 <strong>Omitir Paso Temporalmente:</strong> Puedes abrir el widget flotante <strong>"Consola de Pruebas"</strong> de abajo a la derecha, presionar <strong>"Auto-Aprobar Todo"</strong> y verás de forma instantánea como se genera tu constancia de ingreso directo.
+                  <p className="text-[10px] text-slate-500 font-medium leading-normal bg-slate-50 border border-slate-205 p-3 rounded">
+                    💡 <strong>Siguiente Paso:</strong> Una vez validados todos sus documentos y el pago por secretaría académica, se habilitará la asignación de su aula para que rinda el examen presencial correspondiente para adjudicarse su vacante oficial.
                   </p>
                 </div>
               </div>
@@ -1643,119 +2062,1037 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
           </PageTransition>
         )}
 
+        {/* TAB: PAGO DE MATRÍCULA (INGRESANTES) */}
+        {activeTab === "matricula" && (
+          <PageTransition id="matricula" className="max-w-6xl mx-auto space-y-6 text-left animate-fade-in">
+            {(() => {
+              let myEnrollment = enrollments.find(enr => enr.studentDni === applicant.dni);
+              if (!myEnrollment) {
+                myEnrollment = {
+                  studentDni: applicant.dni,
+                  programId: applicant.programId,
+                  academicStatus: "ADMITIDO" as const,
+                  docs: {
+                    dniFile: { status: "No Enviado" as const },
+                    certificadoFile: { status: "No Enviado" as const },
+                    partidaFile: { status: "No Enviado" as const },
+                    fotoFile: { status: "No Enviado" as const }
+                  },
+                  paymentStatus: "No Pagado" as const
+                };
+              }
+              const isPaid = myEnrollment.paymentStatus === "Validado";
+              const isEnrolled = myEnrollment.academicStatus === "MATRICULADO";
+              const isPending = myEnrollment.paymentStatus === "Pendiente";
+              const isObserved = myEnrollment.paymentStatus === "Observado";
+              
+              const cycleCourses = REAL_MPA_COURSES.filter(
+                c => c.careerId === applicant.programId && c.referenceCycle === 1
+              );
+
+              return (
+                <div className="space-y-6">
+                  {/* Header */}
+                  <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-black text-slate-900 font-display flex items-center gap-2">
+                        <Landmark className="w-6 h-6 text-[#9F062A]" /> 
+                        Proceso de Matrícula Regular - Primer Ciclo
+                      </h2>
+                      <p className="text-xs text-slate-500 font-bold mt-1">
+                        Bienvenido ingresante, aquí podrá registrar su voucher de pago de matrícula de S/. 250.00 para la Oficina de Caja (MAMC) y visualizar su malla curricular activa.
+                      </p>
+                    </div>
+                    <div>
+                      {isPaid ? (
+                        isEnrolled ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            <CheckCircle2 className="w-4 h-4" /> Matriculado Oficial
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-sky-150 text-sky-850 border border-sky-300 animate-pulse">
+                            <Clock className="w-4 h-4 text-sky-700" /> Pago Aprobado • Esperando Cursos
+                          </span>
+                        )
+                      ) : isPending ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
+                          <Clock className="w-4 h-4" /> En Validación por Caja
+                        </span>
+                      ) : isObserved ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300">
+                          <AlertTriangle className="w-4 h-4" /> Pago Observado
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-300">
+                          <Clock className="w-4 h-4" /> Pago Pendiente
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Grid layout */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Left Column: Form or Approved Status */}
+                    <div className="lg:col-span-7 space-y-6">
+                      {isPaid ? (
+                        isEnrolled ? (
+                          <Card className="border-emerald-300 shadow-lg overflow-hidden bg-white">
+                            <div className="bg-emerald-600 text-white p-6 text-center">
+                              <CheckCircle2 className="w-12 h-12 mx-auto mb-2 text-amber-300 animate-bounce" />
+                              <h3 className="text-lg font-black uppercase tracking-wider">¡Matrícula Validada e Inscrita Exitosamente!</h3>
+                              <p className="text-xs text-emerald-100 font-medium mt-1">
+                                Felicidades, la Secretaría General ha completado su matrícula oficial. Ya es estudiante oficial del primer ciclo.
+                              </p>
+                            </div>
+                            <CardContent className="p-6 space-y-4">
+                              <div className="p-4 bg-slate-50 border rounded-lg space-y-2 text-xs">
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500 font-bold">Estudiante:</span>
+                                  <span className="font-extrabold text-slate-800">{applicant.name} {applicant.lastName}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500 font-bold">Documento (DNI):</span>
+                                  <span className="font-mono font-extrabold text-slate-800">{applicant.dni}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500 font-bold">Carrera Profesional:</span>
+                                  <span className="font-extrabold text-[#9F062A] uppercase">{currentProgram.name}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500 font-bold">Ciclo de Estudios:</span>
+                                  <span className="font-extrabold text-slate-800">I (Primer Ciclo)</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500 font-bold">Turno Académico Oficial:</span>
+                                  <span className="font-extrabold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 text-[11px] font-mono">{myEnrollment?.shift || "Mañana"}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500 font-bold">Sección / Grupo Académico:</span>
+                                  <span className="font-extrabold text-slate-800">
+                                    {(() => {
+                                      if (!myEnrollment?.groupId) return "Asignado";
+                                      let groups = [];
+                                      try {
+                                        const saved = localStorage.getItem("mpa_db_groups");
+                                        if (saved) groups = JSON.parse(saved);
+                                      } catch (e) {}
+                                      const g = groups.find((grp: any) => grp.id === myEnrollment.groupId);
+                                      return g ? g.name : myEnrollment.groupId;
+                                    })()}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between border-t pt-2">
+                                  <span className="text-slate-500 font-bold">Costo de Matrícula:</span>
+                                  <span className="font-extrabold text-slate-800">S/. 250.00 (VALIDADO)</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500 font-bold">Operación de Depósito:</span>
+                                  <span className="font-mono font-extrabold text-emerald-700">{myEnrollment?.paymentOperation}</span>
+                                </div>
+                              </div>
+
+                              <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg text-xs text-emerald-800 flex gap-2">
+                                <Info className="w-5 h-5 flex-shrink-0 text-emerald-600" />
+                                <div>
+                                  <strong className="block">Asignación Horaria y Sección Activa:</strong>
+                                  Su aula, sección, horario de clases y su Módulo de Alumno con su intranet oficial han sido planificados y sincronizados por el Módulo de Planificación Académica (MPA). Sus clases iniciarán formalmente según el calendario académico institucional.
+                                </div>
+                              </div>
+                            </CardContent>
+                            <CardFooter className="bg-slate-50 p-4 border-t flex justify-between">
+                              <span className="text-[10px] text-slate-400 font-bold">SISTEMA INTEGRADO SFA • SECRETARÍA GENERAL</span>
+                              <Button 
+                                variant="outline"
+                                onClick={() => {
+                                  alert("Descargando Ficha Oficial de Matrícula Semestral...");
+                                }}
+                                className="text-xs uppercase font-black tracking-wider border-emerald-300 hover:bg-emerald-50 text-emerald-800"
+                              >
+                                <Download className="w-3.5 h-3.5 mr-1" /> Ficha de Matrícula
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                        ) : (
+                          <Card className="border-sky-300 shadow-lg overflow-hidden bg-white">
+                            <div className="bg-sky-600 text-white p-6 text-center">
+                              <Clock className="w-12 h-12 mx-auto mb-2 text-sky-100 animate-pulse" />
+                              <h3 className="text-lg font-black uppercase tracking-wider">¡Pago de Matrícula Validado!</h3>
+                              <p className="text-xs text-sky-100 font-medium mt-1">
+                                Su pago ha sido aprobado de manera exitosa por la Oficina de Caja (MAMC). El derecho de matrícula de S/. 250.00 está registrado.
+                              </p>
+                            </div>
+                            <CardContent className="p-6 space-y-4">
+                              <div className="p-4 bg-slate-50 border rounded-lg space-y-2.5 text-xs text-slate-700">
+                                <div className="flex justify-between border-b pb-1.5">
+                                  <span className="text-slate-500 font-bold">DNI del Alumno:</span>
+                                  <span className="font-mono font-extrabold text-slate-800">{applicant.dni}</span>
+                                </div>
+                                <div className="flex justify-between border-b pb-1.5">
+                                  <span className="text-slate-500 font-bold">Carrera Profesional:</span>
+                                  <span className="font-extrabold text-[#9F062A] uppercase">{currentProgram.name}</span>
+                                </div>
+                                <div className="flex justify-between border-b pb-1.5">
+                                  <span className="text-slate-500 font-bold">Estado de Pago:</span>
+                                  <span className="px-2 py-0.5 text-[9px] font-black rounded uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">APROBADO POR CAJA ✓</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-slate-500 font-bold">Matrícula y Cursos:</span>
+                                  <span className="px-2 py-0.5 text-[9px] font-black rounded uppercase tracking-wider bg-amber-100 text-amber-850 border border-amber-200 animate-pulse">PENDIENTE DE ASIGNACIÓN ⏳</span>
+                                </div>
+                              </div>
+
+                              <div className="bg-sky-50 border border-sky-200 p-4 rounded-lg text-xs text-sky-950 space-y-2">
+                                <div className="flex gap-2 font-bold text-sky-900">
+                                  <Info className="w-4.5 h-4.5 flex-shrink-0 text-sky-600" />
+                                  <span>Debe esperar su matrícula</span>
+                                </div>
+                                <p className="leading-relaxed font-medium">
+                                  Su pago está conforme. Actualmente, debe esperar a que la <strong className="text-slate-900">Secretaría General</strong> proceda con su matrícula oficial en un ciclo/sección y le asigne sus cursos y horarios del Ciclo I.
+                                </p>
+                                <p className="leading-relaxed text-[11px] text-slate-500 font-medium">
+                                  Una vez que sea matriculado formalmente por el administrador, se activará su Módulo de Alumno/Intranet y podrá ver sus asignaturas oficiales, sección, turno y horarios aquí mismo.
+                                </p>
+                              </div>
+
+                              {/* Simple interactive timeline */}
+                              <div className="pt-2 border-t">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3 text-center">Estado de su Matrícula</span>
+                                <div className="relative pl-6 space-y-4 border-l-2 border-slate-200 ml-4">
+                                  <div className="relative">
+                                    <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-emerald-600 flex items-center justify-center border-2 border-white shadow-xs">
+                                      <Check className="w-2.5 h-2.5 text-white" />
+                                    </div>
+                                    <p className="text-[11px] font-black text-slate-800">1. Envío de Comprobante</p>
+                                    <p className="text-[10px] text-slate-500 font-medium">Usted registró exitosamente su voucher de S/. 250.00.</p>
+                                  </div>
+                                  <div className="relative">
+                                    <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-emerald-600 flex items-center justify-center border-2 border-white shadow-xs">
+                                      <Check className="w-2.5 h-2.5 text-white" />
+                                    </div>
+                                    <p className="text-[11px] font-black text-slate-800">2. Aprobación en Recaudación (Caja)</p>
+                                    <p className="text-[10px] text-slate-500 font-medium">La Oficina de Caja validó y aprobó su operación bancaria: <strong className="font-mono text-emerald-700">{myEnrollment?.paymentOperation}</strong>.</p>
+                                  </div>
+                                  <div className="relative">
+                                    <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center border-2 border-white shadow-xs animate-pulse">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                                    </div>
+                                    <p className="text-[11px] font-black text-slate-800 animate-pulse">3. Asignación de Sección y Cursos (Secretaría General)</p>
+                                    <p className="text-[10px] text-slate-500 font-semibold text-amber-800">La Secretaría está asignando su sección, aula, turno y carga de asignaturas.</p>
+                                  </div>
+                                  <div className="relative opacity-60">
+                                    <div className="absolute -left-[31px] top-0.5 w-4 h-4 rounded-full bg-slate-300 flex items-center justify-center border-2 border-white shadow-xs">
+                                      <Lock className="w-2 text-slate-500" />
+                                    </div>
+                                    <p className="text-[11px] font-black text-slate-600">4. Activación Total de Intranet de Alumno</p>
+                                    <p className="text-[10px] text-slate-500 font-medium">Acceso libre al portal del estudiante con horarios detallados, notas y docentes.</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                            <CardFooter className="bg-slate-50 p-4 border-t flex justify-between">
+                              <span className="text-[10px] text-slate-400 font-bold">ESPERANDO ASIGNACIÓN ACADÉMICA</span>
+                              <Button 
+                                variant="outline"
+                                disabled
+                                className="text-xs uppercase font-black tracking-wider border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
+                              >
+                                <Download className="w-3.5 h-3.5 mr-1" /> Ficha de Matrícula (Bloqueado)
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                        )
+                      ) : (
+                        <Card className="shadow-md bg-white">
+                          <CardHeader className="border-b">
+                            <CardTitle className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                              <CreditCard className="w-5 h-5 text-[#9F062A]" /> Registrar Pago de Matrícula
+                            </CardTitle>
+                            <CardDescription className="text-xs">
+                              Complete el pago por depósito bancario y registre su comprobante para habilitar su matrícula del primer ciclo.
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="p-6">
+                            {isPending && !isEditingMatricula && (
+                              <div className="bg-amber-50 border border-amber-300 rounded-lg p-5 text-center mb-6 space-y-4 animate-fade-in">
+                                <Clock className="w-10 h-10 text-amber-500 mx-auto animate-pulse" />
+                                <h4 className="text-sm font-black text-amber-900 uppercase tracking-wider">Pago de Matrícula en Proceso de Validación</h4>
+                                
+                                <div className="p-4 bg-white border border-slate-200 rounded-lg max-w-md mx-auto text-left space-y-3 shadow-xs">
+                                  <span className="text-[9px] font-black tracking-wider text-slate-400 block uppercase font-mono border-b pb-1">Comprobante Enviado por Alumno:</span>
+                                  {myEnrollment?.paymentType === "number" ? (
+                                    <div className="text-xs space-y-1.5">
+                                      <p className="text-slate-600 font-bold"><strong>Método registrado:</strong> Número de Operación Bancaria</p>
+                                      <p className="text-slate-850 font-extrabold"><strong>N° de Operación:</strong> <span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-800 text-[13px] border border-slate-200">{myEnrollment?.paymentOperation}</span></p>
+                                    </div>
+                                  ) : (
+                                    <div className="text-xs space-y-2">
+                                      <p className="text-slate-600 font-bold"><strong>Método registrado:</strong> Foto de Voucher de Depósito</p>
+                                      {myEnrollment?.paymentVoucherFileName && (
+                                        <p className="text-slate-750"><strong>Archivo:</strong> <span className="font-mono text-slate-600 font-bold break-all bg-slate-50 px-1 rounded">{myEnrollment.paymentVoucherFileName}</span></p>
+                                      )}
+                                      {myEnrollment?.paymentVoucherUrl && (
+                                        <div className="mt-2 border rounded p-1 bg-slate-50 flex flex-col items-center">
+                                          <span className="text-[8px] text-slate-404 font-black block mb-1 uppercase tracking-widest">Vista de su Voucher:</span>
+                                          <img 
+                                            src={myEnrollment.paymentVoucherUrl} 
+                                            alt="Voucher de matrícula enviado" 
+                                            className="max-h-48 object-contain rounded border shadow-sm animate-fade-in" 
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <p className="text-xs text-slate-500 font-medium px-4 leading-relaxed">
+                                  La Oficina de Caja (MAMC) está validando el depósito. Esto puede tardar unos minutos. Podrá ver su estado aquí mismo en tiempo real.
+                                </p>
+
+                                <div className="pt-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStartEditMatricula(myEnrollment)}
+                                    className="px-4 py-2 border border-amber-300 bg-white hover:bg-amber-100/50 rounded-lg text-xs font-black uppercase text-amber-900 tracking-wider transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                  >
+                                    <RefreshCw className="w-3.5 h-3.5 animate-spin-slow" /> Editar o Cambiar Comprobante
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {isObserved && (
+                              <div className="bg-rose-50 border border-rose-300 rounded-lg p-5 mb-6 space-y-3">
+                                <div className="flex items-center gap-2 text-rose-800 font-black uppercase text-xs tracking-wider">
+                                  <AlertTriangle className="w-5 h-5 text-rose-600" /> ¡Comprobante Observado por Caja!
+                                </div>
+                                <p className="text-xs text-rose-700 font-bold">
+                                  Motivo de observación: <span className="underline">{myEnrollment?.paymentObservations || "Código de operación no encontrado o ilegible."}</span>
+                                </p>
+                                
+                                <div className="p-4 bg-white border border-rose-100 rounded-lg max-w-md text-left space-y-3 shadow-xs">
+                                  <span className="text-[9px] font-black tracking-wider text-rose-400 block uppercase font-mono border-b pb-1">Comprobante que fue Observado:</span>
+                                  {myEnrollment?.paymentType === "number" ? (
+                                    <div className="text-xs space-y-1.5">
+                                      <p className="text-slate-600 font-bold"><strong>Método:</strong> Número de Operación Bancaria</p>
+                                      <p className="text-slate-850 font-extrabold"><strong>N° de Operación:</strong> <span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-800 text-[13px] border border-slate-250">{myEnrollment?.paymentOperation}</span></p>
+                                    </div>
+                                  ) : (
+                                    <div className="text-xs space-y-2">
+                                      <p className="text-slate-600 font-bold"><strong>Método:</strong> Foto de Voucher de Depósito</p>
+                                      {myEnrollment?.paymentVoucherFileName && (
+                                        <p className="text-slate-750"><strong>Archivo:</strong> <span className="font-mono text-slate-600 font-bold break-all bg-slate-50 px-1 rounded">{myEnrollment.paymentVoucherFileName}</span></p>
+                                      )}
+                                      {myEnrollment?.paymentVoucherUrl && (
+                                        <div className="mt-2 border rounded p-1 bg-slate-50 flex flex-col items-center">
+                                          <img 
+                                            src={myEnrollment.paymentVoucherUrl} 
+                                            alt="Voucher observado" 
+                                            className="max-h-48 object-contain rounded border shadow-sm grayscale opacity-75" 
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <p className="text-[11px] text-slate-600">
+                                  Por favor, revise y vuelva a cargar el voucher correcto o ingrese un número de operación válido a continuación.
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Payment instructions */}
+                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 space-y-3 text-xs">
+                              <h4 className="font-black text-slate-800 uppercase tracking-wider border-b pb-1.5 flex items-center gap-1.5 text-[11px]">
+                                <Landmark className="w-4 h-4 text-[#9F062A]" /> Cuentas de Recaudación Oficial SFA
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="p-2.5 bg-white border rounded">
+                                  <span className="font-extrabold text-slate-700 block text-[11px]">BANCO DE LA NACIÓN</span>
+                                  <span className="font-mono text-slate-500 block text-[10px]">Cta. Corriente: 00-015-123456</span>
+                                  <span className="font-mono text-slate-500 block text-[10px]">CCI: 018-015-000015123456-12</span>
+                                </div>
+                                <div className="p-2.5 bg-white border rounded">
+                                  <span className="font-extrabold text-slate-700 block text-[11px]">BCP (PAGO DE SERVICIOS)</span>
+                                  <span className="font-mono text-slate-500 block text-[10px]">Cta: 191-2345678-0-91</span>
+                                  <span className="font-mono text-slate-500 block text-[10px]">Empresa: SFA ADMISIONES</span>
+                                </div>
+                              </div>
+                              <div className="pt-2 border-t flex justify-between items-center text-[11px]">
+                                <span className="font-bold text-slate-500">Monto Único Matrícula:</span>
+                                <span className="font-black text-[#9F062A] text-xs">S/. 250.00</span>
+                              </div>
+                            </div>
+
+                            {/* Form */}
+                            {((!isPending && !isObserved) || isObserved || isEditingMatricula) && (
+                              <form onSubmit={handleSubmitMatriculaVoucher} className="space-y-4">
+                                <div className="space-y-2">
+                                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Método de Validación de Depósito:</label>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => setMatriculaPaymentType("voucher")}
+                                      className={`py-2 px-3 border rounded font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                                        matriculaPaymentType === "voucher"
+                                          ? "bg-[#9F062A]/5 border-[#9F062A] text-[#9F062A] font-extrabold shadow-xs"
+                                          : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                                      }`}
+                                    >
+                                      <Printer className="w-3.5 h-3.5" /> Subir Foto de Voucher
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setMatriculaPaymentType("number")}
+                                      className={`py-2 px-3 border rounded font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                                        matriculaPaymentType === "number"
+                                          ? "bg-[#9F062A]/5 border-[#9F062A] text-[#9F062A] font-extrabold shadow-xs"
+                                          : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                                      }`}
+                                    >
+                                      <Smartphone className="w-3.5 h-3.5" /> Número de Operación
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {matriculaPaymentType === "number" ? (
+                                  <div className="space-y-2 animate-fade-in">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Número de Operación Bancaria:</label>
+                                    <input
+                                      type="text"
+                                      placeholder="Ej: DEP-8492048"
+                                      value={matriculaVoucher}
+                                      onChange={(e) => setMatriculaVoucher(e.target.value)}
+                                      className="w-full px-3 py-2 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-[#9F062A] font-mono font-bold text-sm"
+                                    />
+                                    <span className="text-[9px] text-slate-400 block font-medium leading-none">Ingrese exactamente el número de operación impreso en su comprobante o transferencia.</span>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-4 animate-fade-in">
+                                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-5 bg-slate-50/50 hover:bg-slate-50 hover:border-[#9F062A]/40 transition-all text-center relative cursor-pointer">
+                                      <input
+                                        id="matricula-voucher-file"
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/jpg"
+                                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (!file) return;
+                                          setStagedMatriculaFile(file.name);
+                                          compressAndResizeImage(file, (compressedDataUrl) => {
+                                            setStagedMatriculaPreview(compressedDataUrl);
+                                          });
+                                        }}
+                                      />
+                                      <div className="flex flex-col items-center justify-center gap-2">
+                                        <Upload className="w-5 h-5 text-slate-400" />
+                                        <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">SELECCIONAR IMAGEN JPG O PNG</span>
+                                        <span className="text-[9px] text-slate-400 font-bold max-w-xs leading-normal block">
+                                          {stagedMatriculaFile ? `Seleccionado: ${stagedMatriculaFile}` : "Haga clic o arrastre foto de su voucher de depósito aquí."}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {stagedMatriculaPreview && (
+                                      <div className="p-3 bg-slate-100 border border-slate-200 rounded-lg flex flex-col items-center animate-fade-in text-center">
+                                        <span className="text-[9px] text-slate-500 font-black tracking-widest uppercase mb-2">Vista Previa de Voucher Seleccionado:</span>
+                                        <img 
+                                          src={stagedMatriculaPreview} 
+                                          alt="Preview matricula voucher" 
+                                          className="max-h-36 object-contain rounded border border-slate-300 shadow-sm" 
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setStagedMatriculaFile("");
+                                            setStagedMatriculaPreview("");
+                                          }}
+                                          className="mt-1.5 text-[8px] font-black uppercase text-red-700 tracking-wider hover:underline animate-pulse"
+                                        >
+                                          Eliminar para Cambiar
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+                                  {isEditingMatricula && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setIsEditingMatricula(false)}
+                                      className="flex-1 py-2.5 px-6 rounded font-extrabold uppercase text-[10px] tracking-widest bg-slate-150 hover:bg-slate-200 text-slate-700 transition-all text-center border border-slate-200 h-[40px] cursor-pointer"
+                                    >
+                                      Cancelar Edición
+                                    </button>
+                                  )}
+                                  <button 
+                                    type="submit"
+                                    disabled={matriculaPaymentType === "number" ? !matriculaVoucher.trim() : !stagedMatriculaPreview}
+                                    className={`flex-grow py-2.5 px-6 rounded font-extrabold uppercase text-[10px] tracking-widest shadow-md transition-all text-center flex items-center justify-center gap-1.5 h-[40px] cursor-pointer ${
+                                      (matriculaPaymentType === "number" ? matriculaVoucher.trim() : stagedMatriculaPreview)
+                                        ? "bg-[#9F062A] hover:bg-[#800521] text-white shadow-sm"
+                                        : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
+                                    }`}
+                                  >
+                                    <CheckCircle2 className="w-4 h-4 text-amber-300" />
+                                    <span>{isEditingMatricula ? "Actualizar Comprobante" : "Enviar Comprobante de Matrícula"}</span>
+                                  </button>
+                                </div>
+                              </form>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+
+                    {/* Right Column: Curriculum (La Malla Activa de MPA) */}
+                    <div className="lg:col-span-5 space-y-6">
+                      <Card className="shadow-md bg-white border-[#9F062A]/10">
+                        <CardHeader className="bg-slate-50 border-b">
+                          <span className="text-[9px] text-[#9F062A] font-extrabold tracking-widest uppercase">Malla de MPA Sincronizada</span>
+                          <CardTitle className="text-sm font-black text-slate-800 uppercase tracking-wider mt-1">
+                            Plan Curricular Ciclo I
+                          </CardTitle>
+                          <CardDescription className="text-xs">
+                            Cursos oficiales de la carrera activa en la planificación de IESTP SFA.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-4 space-y-3">
+                          <div className="p-3 bg-indigo-50 border border-indigo-150 rounded-lg text-xs text-indigo-900 flex gap-2">
+                            <Info className="w-4.5 h-4.5 flex-shrink-0 text-indigo-600" />
+                            <div>
+                              Se ha cargado la estructura de asignaturas de <strong>{currentProgram.name}</strong> directamente desde el Módulo de Planificación Académica.
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            {cycleCourses.map((crs) => (
+                              <div key={crs.id} className="p-3 bg-white border border-slate-200 hover:border-[#9F062A]/30 rounded-lg flex items-center justify-between gap-2 transition-all shadow-2xs">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-mono text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-bold">
+                                      {crs.code}
+                                    </span>
+                                    <span className="text-[10px] bg-indigo-50 text-indigo-700 font-extrabold px-1.5 py-0.5 rounded uppercase">
+                                      {crs.type === "Especialidad" ? "Especialidad" : "Común"}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs font-black text-slate-800 block uppercase leading-snug">
+                                    {crs.name}
+                                  </span>
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  <span className="text-[10px] text-slate-404 font-extrabold uppercase block">CRÉDITOS</span>
+                                  <span className="text-xs font-black text-slate-700">{crs.credits}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="pt-3 border-t flex justify-between items-center text-xs px-2">
+                            <span className="font-bold text-slate-500">Total Unidades Didácticas:</span>
+                            <span className="font-black text-slate-800">{cycleCourses.length} cursos</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs px-2">
+                            <span className="font-bold text-slate-500">Créditos Totales Ciclo I:</span>
+                            <span className="font-black text-[#9F062A]">{cycleCourses.reduce((acc, curr) => acc + curr.credits, 0)} Cr.</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </PageTransition>
+        )}
+
         {/* TAB 5: SOPORTE DE ADMISIÓN */}
         {activeTab === "soporte" && (
-          <PageTransition id="soporte" className="max-w-2xl mx-auto bg-white p-6 rounded-xl border border-slate-200 shadow-md space-y-6 text-left animate-fade-in">
-            <h2 className="text-lg font-black text-slate-900 border-b pb-2 mb-4 font-display flex items-center gap-2">
-              <Compass className="w-5 h-5 text-[#9F062A]" /> Centro de Soporte Técnico y Atención
-            </h2>
-            <p className="text-xs text-slate-500 font-bold">¿Tiene dudas o inconvenientes con su inscripción, pago o validación de requisitos? Envíe su consulta para recibir asistencia directa de la Secretaría Académica.</p>
+          <PageTransition id="soporte" className="max-w-6xl mx-auto space-y-6 text-left animate-fade-in">
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-md">
+              <h2 className="text-lg font-black text-slate-900 border-b pb-2 mb-4 font-display flex items-center gap-2">
+                <Compass className="w-5 h-5 text-[#9F062A]" /> Centro de Soporte Técnico y Atención
+              </h2>
+              <p className="text-xs text-slate-500 font-bold mb-6">¿Tiene dudas o inconvenientes con su inscripción, pago o validación de requisitos? Envíe su consulta para recibir asistencia directa de la Secretaría Académica.</p>
 
-            {/* Chat bubble record matching user requests */}
-            <div className="space-y-3 pt-2">
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Historial de Conversación</span>
-              <div className="border border-slate-200 rounded-lg p-4 bg-slate-50 min-h-[160px] max-h-[300px] overflow-y-auto space-y-3 custom-scrollbar flex flex-col">
-                {(!applicant.supportMessages || applicant.supportMessages.length === 0) ? (
-                  <div className="text-center py-10 text-xs text-slate-400 font-semibold leading-relaxed my-auto">
-                    No se han registrado mensajes previos. Use el formulario de abajo para enviar su consulta técnica a la institución.
-                  </div>
-                ) : (
-                  applicant.supportMessages.map((msg: any) => (
-                    <div key={msg.id} className={`flex flex-col mb-1.5 ${msg.sender === "postulante" ? "items-end" : "items-start"}`}>
-                      <div className={`p-3 rounded-lg max-w-md text-xs font-semibold leading-normal shadow-xs ${
-                        msg.sender === "postulante" 
-                          ? "bg-[#9F062A] text-white rounded-br-none" 
-                          : "bg-white border border-slate-350 text-slate-800 rounded-bl-none"
-                      }`}>
-                        {msg.category && (
-                          <span className={`block text-[8px] font-black uppercase tracking-wider mb-1 ${
-                            msg.sender === "postulante" ? "text-red-200" : "text-[#9F062A]"
-                          }`}>
-                            Categoría: {msg.category}
-                          </span>
-                        )}
-                        <p className="whitespace-pre-line">{msg.text}</p>
+              {/* Grid 2 Columns for Form (Left) & Chat History (Right) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                {/* LEFT COL: Send Support Message Form */}
+                <div className="lg:col-span-5 space-y-4 border-b lg:border-b-0 lg:border-r pb-6 lg:pb-0 lg:pr-6 border-slate-100">
+                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Nueva Consulta</span>
+                  
+                  <form 
+                    onSubmit={(e) => { 
+                      e.preventDefault(); 
+                      if (!supportMessage.trim()) return;
+                      const newMsg = {
+                        id: "msg_" + Date.now(),
+                        sender: "postulante" as any,
+                        category: supportCategory,
+                        text: supportMessage.trim(),
+                        date: new Date().toLocaleDateString("es-PE")
+                      };
+                      const updated = {
+                        ...applicant,
+                        supportMessages: [...(applicant.supportMessages || []), newMsg]
+                      };
+                      onUpdateApplicant(updated);
+                      setSupportMessage("");
+                    }} 
+                    className="space-y-4 text-xs font-bold text-slate-700"
+                  >
+                    <div className="grid grid-cols-1 gap-3.5">
+                      <div>
+                        <label className="block uppercase text-slate-400 text-[10px] mb-1">Nombre Completo</label>
+                        <input type="text" disabled value={`${applicant.name} ${applicant.lastName}`} className="w-full bg-slate-100 px-3 py-2 border rounded text-slate-500 font-bold" />
                       </div>
-                      <span className="text-[8px] text-slate-400 font-bold block mt-1 tracking-wide uppercase">
-                        {msg.sender === "postulante" ? `Usted - ${msg.date}` : `Mesa de Partes - ${msg.date}`}
-                      </span>
+                      <div>
+                        <label className="block uppercase text-slate-400 text-[10px] mb-1">Teléfono Móvil de Contacto</label>
+                        <input type="text" value={applicant.phone} disabled className="w-full bg-slate-100 px-3 py-2 border rounded text-slate-500 font-bold" />
+                      </div>
                     </div>
-                  ))
-                )}
+
+                    <div>
+                      <label className="block uppercase text-slate-400 text-[10px] mb-1">Categoría del Reclamo Técnico</label>
+                      <select 
+                        value={supportCategory}
+                        onChange={(e) => setSupportCategory(e.target.value)}
+                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded font-semibold text-xs focus:outline-hidden"
+                      >
+                        <option>Dificultad con el formato o visualización del PDF</option>
+                        <option>El voucher físico no se registra en la base de datos bancaria</option>
+                        <option>Observación en mi Partida de Nacimiento sin justificación médica</option>
+                        <option>Otro trámite regular</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block uppercase text-slate-400 text-[10px] mb-1">Detalle del Mensaje o Dificultad</label>
+                      <textarea 
+                        required
+                        rows={5} 
+                        value={supportMessage}
+                        onChange={(e) => setSupportMessage(e.target.value)}
+                        placeholder="Describa de manera detallada las dificultades técnicas de su trámite de admisión para recibir asistencia..." 
+                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded font-semibold text-xs focus:outline-hidden"
+                      ></textarea>
+                    </div>
+
+                    <div className="pt-2 flex justify-end">
+                      <button 
+                        type="submit"
+                        className="w-full bg-[#9F062A] hover:bg-[#800521] text-white py-2.5 px-6 rounded font-extrabold uppercase text-[10px] tracking-widest shadow-md transition-all cursor-pointer text-center"
+                      >
+                        Enviar Mensaje a Secretaría
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* RIGHT COL: Conversational Chat History */}
+                <div className="lg:col-span-7 flex flex-col h-full space-y-3">
+                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Historial de Conversación (Mesa de Partes)</span>
+                  
+                  <div className="border border-slate-200 rounded-lg p-4 bg-slate-50 h-[380px] overflow-y-auto space-y-3 custom-scrollbar flex flex-col">
+                    {(!applicant.supportMessages || applicant.supportMessages.length === 0) ? (
+                      <div className="text-center py-16 text-xs text-slate-400 font-semibold leading-relaxed my-auto flex flex-col items-center justify-center gap-2">
+                        <HelpIcon className="w-8 h-8 text-slate-300" />
+                        <span>No se han registrado mensajes previos. Use el formulario de la izquierda para enviar su consulta técnica a la institución.</span>
+                      </div>
+                    ) : (
+                      applicant.supportMessages.map((msg: any) => (
+                        <div key={msg.id} className={`flex flex-col mb-1.5 ${msg.sender === "postulante" ? "items-end" : "items-start"}`}>
+                          <div className={`p-3 rounded-lg max-w-sm sm:max-w-md text-xs font-semibold leading-normal shadow-xs text-left ${
+                            msg.sender === "postulante" 
+                              ? "bg-[#9F062A] text-white rounded-br-none" 
+                              : "bg-white border border-slate-300 text-slate-800 rounded-bl-none"
+                          }`}>
+                            {msg.category && (
+                              <span className={`block text-[8px] font-black uppercase tracking-wider mb-1 ${
+                                msg.sender === "postulante" ? "text-red-200" : "text-[#9F062A]"
+                              }`}>
+                                Categoría: {msg.category}
+                              </span>
+                            )}
+                            <p className="whitespace-pre-line">{msg.text}</p>
+                          </div>
+                          <span className="text-[8px] text-slate-400 font-black block mt-1 tracking-wide uppercase">
+                            {msg.sender === "postulante" ? `Usted - ${msg.date}` : `Mesa de Partes - ${msg.date}`}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
               </div>
             </div>
-
-            {/* Form for sending support messages */}
-            <form 
-              onSubmit={(e) => { 
-                e.preventDefault(); 
-                if (!supportMessage.trim()) return;
-                const newMsg = {
-                  id: "msg_" + Date.now(),
-                  sender: "postulante" as any,
-                  category: supportCategory,
-                  text: supportMessage.trim(),
-                  date: new Date().toLocaleDateString("es-PE")
-                };
-                const updated = {
-                  ...applicant,
-                  supportMessages: [...(applicant.supportMessages || []), newMsg]
-                };
-                onUpdateApplicant(updated);
-                setSupportMessage("");
-              }} 
-              className="space-y-4 text-xs font-bold text-slate-700 pt-4 border-t"
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block uppercase text-slate-500 mb-1">Nombre Completo</label>
-                  <input type="text" disabled value={`${applicant.name} ${applicant.lastName}`} className="w-full bg-slate-100 px-3 py-2 border rounded text-slate-500 font-bold" />
-                </div>
-                <div>
-                  <label className="block uppercase text-slate-550 mb-1">Teléfono Móvil de Contacto</label>
-                  <input type="text" value={applicant.phone} disabled className="w-full bg-slate-100 px-3 py-2 border rounded text-slate-500 font-bold" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block uppercase text-slate-550 mb-1">Categoría del Reclamo Técnico</label>
-                <select 
-                  value={supportCategory}
-                  onChange={(e) => setSupportCategory(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded font-semibold focus:outline-hidden"
-                >
-                  <option>Dificultad con el formato o visualización del PDF</option>
-                  <option>El voucher físico no se registra en la base de datos bancaria</option>
-                  <option>Observación en mi Partida de Nacimiento sin justificación médica</option>
-                  <option>Otro trámite regular</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block uppercase text-slate-500 mb-1">Detalle del Mensaje o Dificultad</label>
-                <textarea 
-                  required
-                  rows={4} 
-                  value={supportMessage}
-                  onChange={(e) => setSupportMessage(e.target.value)}
-                  placeholder="Describa de manera detallada las dificultades técnicas de su trámite de admisión para poder asistirle..." 
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded font-semibold focus:outline-hidden"
-                ></textarea>
-              </div>
-
-              <div className="pt-4 border-t flex justify-end">
-                <button 
-                  type="submit"
-                  className="bg-[#9F062A] hover:bg-[#800521] text-white py-2.5 px-6 rounded font-extrabold uppercase text-[10px] tracking-widest shadow-md transition-all cursor-pointer text-center"
-                >
-                  Enviar Mensaje a Secretaría
-                </button>
-              </div>
-            </form>
           </PageTransition>
         )}
 
       </main>
+
+      {/* CONSTANCIA DE INGRESO DIRECTO MODEL MODAL COHORT */}
+      {isConstanciaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full border border-slate-250 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-scale-up">
+            
+            {/* Modal Header Bar */}
+            <div className="bg-slate-50 px-6 py-4 border-b border-slate-150 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[#9F062A]">
+                <Award className="w-5 h-5 shrink-0" />
+                <span className="font-extrabold text-xs uppercase tracking-widest text-slate-800">
+                  Constancia Digital de Admisión - Código {applicant.dni}
+                </span>
+              </div>
+              <button 
+                onClick={() => setIsConstanciaModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1.5 hover:bg-slate-100 rounded-full"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Print Area Wrapper */}
+            <div className="flex-1 p-6 overflow-y-auto bg-slate-100/50 custom-scrollbar id-print-container">
+              
+              {/* Document Certificate Frame */}
+              <div 
+                id="constancia-print-card" 
+                className="bg-stone-50 border-[6px] border-double border-[#9F062A] p-8 max-w-xl mx-auto shadow-sm relative overflow-hidden rounded-md text-slate-900 font-sans print:m-0 print:border-0 print:bg-white print:p-0"
+              >
+                
+                {/* Gold Crest Decal Header */}
+                <div className="border-b-[3px] border-amber-500 pb-3 mb-6 text-center">
+                  <div className="text-amber-600 text-center flex justify-center gap-1.5 font-bold uppercase tracking-widest text-[9px] mb-1.5">
+                    <span>★★★★ MINISTERIO DE EDUCACIÓN EN EL PERÚ ★★★★</span>
+                  </div>
+                  <h1 className="text-[13px] font-black text-slate-900 uppercase tracking-wider mb-0.5 leading-none">
+                    INSTITUTO DE EDUCACIÓN SUPERIOR TECNOLÓGICO PÚBLICO
+                  </h1>
+                  <h2 className="text-[15px] font-black text-[#9F062A] uppercase tracking-widest leading-normal">
+                    "SAN FRANCISCO DE ASÍS"
+                  </h2>
+                  <span className="text-[8px] font-bold text-slate-400 block tracking-wider uppercase mt-1">
+                    R.M. N° 0233-80-ED • CHINCHA • ICA - PERÚ
+                  </span>
+                </div>
+
+                {/* Subtile Watermark */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
+                  <span className="text-[130px] font-black text-[#9F062A] border-8 border-current rounded-full p-4 tracking-tighter leading-none select-none">
+                    SFA
+                  </span>
+                </div>
+
+                {/* Document Main Heading */}
+                <div className="text-center my-6">
+                  <span className="inline-block bg-[#9F062A]/5 text-[#9F062A] border border-[#9F062A]/25 rounded-md px-4 py-1.5 font-black text-[13px] tracking-widest uppercase">
+                    CONSTANCIA OFICIAL DE ADMISIÓN
+                  </span>
+                  <span className="text-[10px] font-mono font-bold block mt-3 text-slate-500">
+                    REGISTRO N° C.O.A - 2026-{applicant.dni}
+                  </span>
+                </div>
+
+                {/* Body details */}
+                <div className="space-y-4 text-[11px] leading-relaxed text-slate-800 text-left font-sans font-medium">
+                  <p>
+                    La Comisión de Admisión General de Directivos del Instituto de Educación Superior Tecnológico Público 
+                    <strong> "San Francisco de Asís" </strong>, mediante las facultades otorgadas por el Ministerio de Educación, hace constar oficialmente que:
+                  </p>
+
+                  {/* Recipient Card Block */}
+                  <div className="bg-white border text-left border-dashed border-slate-350 rounded-lg p-4 my-2.5 space-y-1.5 shadow-3xs">
+                    <div className="grid grid-cols-3 gap-2">
+                      <span className="text-slate-400 uppercase font-bold text-[8.5px]">Postulante:</span>
+                      <span className="col-span-2 text-slate-900 font-extrabold uppercase text-[11px]">
+                        {applicant.lastName}, {applicant.name}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <span className="text-slate-400 uppercase font-bold text-[8.5px]">DOCUMENTO DNI:</span>
+                      <span className="col-span-2 font-mono font-bold text-[#9F062A] text-[11px]">
+                        {applicant.dni}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <span className="text-slate-400 uppercase font-bold text-[8.5px]">ESPECIALIDAD:</span>
+                      <span className="col-span-2 text-slate-900 font-extrabold uppercase text-[11px]">
+                        {applicant.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <span className="text-slate-400 uppercase font-bold text-[8.5px]">MODALIDAD:</span>
+                      <span className="col-span-2 text-slate-900 font-black text-[10px] uppercase tracking-wide">
+                        Ingreso Ordinario por Examen de Admisión
+                      </span>
+                    </div>
+                  </div>
+
+                  <p>
+                    Ha alcanzado una vacante de estudios definitiva por cumplir con la entrega de todos sus requisitos indispensables y la tasa de postulación exonerada/validada. Encontrándose con la condición oficial de 
+                    <span className="text-emerald-700 font-black"> ADMITIDO(A) </span> e inscrito(a) en el período académico de ingreso general 2026-I.
+                  </p>
+
+                  <p>
+                    Se expide la presente constancia para los fines de trámite oficial e ingreso físico para la Matrícula Presencial de Ingresante.
+                  </p>
+                </div>
+
+                {/* Seal decoratives */}
+                <div className="grid grid-cols-12 gap-2 mt-8 pt-4 items-end justify-between border-t border-slate-200">
+                  {/* Left QR details code */}
+                  <div className="col-span-4 text-left font-sans">
+                    <div className="w-16 h-16 bg-white border border-slate-200 p-1 rounded-sm shadow-3xs flex items-center justify-center">
+                      {/* Generar un mock de QR Code visualmente precioso */}
+                      <div className="grid grid-cols-5 gap-[2px] w-full h-full bg-slate-100 p-0.5">
+                        {Array.from({ length: 25 }).map((_, i) => (
+                          <div 
+                            key={i} 
+                            className={`w-full h-full rounded-[1px] ${
+                              (i % 2 === 0 && i !== 12) || i === 0 || i === 4 || i === 20 || i === 24 ? "bg-slate-900" : "bg-white"
+                            }`} 
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <span className="text-[7.5px] font-mono font-bold block text-slate-400 mt-1 uppercase">
+                      Verificación SFA-SEC
+                    </span>
+                  </div>
+
+                  {/* Stamp 1 */}
+                  <div className="col-span-4 text-center pb-1">
+                    <div className="inline-block relative">
+                      {/* Fake Signature */}
+                      <span className="font-serif italic text-blue-800 opacity-90 text-[11.5px] -rotate-6 transform block select-none -mb-1">
+                        Lic. Rosa Ramos P.
+                      </span>
+                      <div className="border-t border-slate-400 text-[7px] font-black tracking-wide text-slate-500 uppercase pt-1">
+                        JEFATURA DE ADMISIÓN
+                      </div>
+                      <div className="absolute inset-0 border-2 border-blue-500/20 text-blue-500/20 text-[6px] font-sans rounded-full -rotate-12 translate-x-2 -translate-y-2 p-0.5 pointer-events-none select-none uppercase">
+                        IESTP "SFA" CHINCHA
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stamp 2 */}
+                  <div className="col-span-4 text-center pb-1">
+                    <div className="inline-block relative">
+                      {/* Fake Signature 2 */}
+                      <span className="font-serif italic text-blue-800 opacity-90 text-[11.5px] -rotate-3 transform block select-none -mb-1">
+                        Dr. Ricardo Mendoza V.
+                      </span>
+                      <div className="border-t border-slate-400 text-[7px] font-black tracking-wide text-slate-500 uppercase pt-1">
+                        DIRECCIÓN GENERAL
+                      </div>
+                      {/* Round blue seal stamp */}
+                      <div className="absolute inset-x-0 -top-5 mx-auto border border-blue-700/60 text-blue-700/60 font-black text-[5px] rounded-full flex flex-col justify-center items-center w-8 h-8 rotate-12 bg-white/20 select-none pointer-events-none">
+                        <span className="scale-[0.8] leading-none uppercase">SFA</span>
+                        <span className="scale-[0.6] leading-none uppercase">CHINCHA</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-center text-[7px] text-slate-400 font-bold uppercase tracking-widest mt-6">
+                  CON CARÁCTER DE DECLARACIÓN JURADA INSTITUCIONAL • VALIDEZ FISICA E INFORMÁTICA
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* Modal Bottom toolbar buttons */}
+            <div className="bg-slate-50 px-6 py-4 border-t border-slate-150 flex flex-wrap gap-2.5 items-center justify-between text-xs font-bold text-slate-700">
+              <span className="text-[10px] text-[#2F6187] font-semibold flex items-center gap-1">
+                <span>💡</span>
+                <span>Sugerencia: Imprima el documento para presentarlo en ventanilla.</span>
+              </span>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsConstanciaModalOpen(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-slate-650 hover:bg-slate-100 font-semibold cursor-pointer text-xs"
+                >
+                  Cerrar
+                </button>
+                
+                {/* Print button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const printContents = document.getElementById("constancia-print-card")?.innerHTML;
+                    if (!printContents) return;
+                    
+                    // Create simple helper to open a popup and trigger print or do a clean print
+                    const printWindow = window.open("", "_blank");
+                    if (printWindow) {
+                      printWindow.document.write(`
+                        <html>
+                          <head>
+                            <title>Constancia Oficial de Admisión - SFA 2026</title>
+                            <style>
+                              body { font-family: system-ui, -apple-system, sans-serif; background-color: white; padding: 40px; display: flex; justify-content: center; }
+                              #constancia { border: 6px double #9F062A; padding: 40px; max-width: 600px; background-color: #fafaf9; position: relative; }
+                              ul, li { list-style: none; }
+                              .grid { display: grid; }
+                              .grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+                              .col-span-4 { grid-column: span 4 / span 4; }
+                              .text-center { text-align: center; }
+                              .text-left { text-align: left; }
+                              .border-b { border-bottom: 2px solid #f59e0b; }
+                              .border-t { border-top: 1px solid #cbd5e1; }
+                              .bg-white { background-color: white; }
+                              .border { border: 1px solid #cbd5e1; }
+                              .rounded-lg { border-radius: 8px; }
+                              .p-4 { padding: 16px; }
+                              .font-black { font-weight: 900; }
+                              .font-bold { font-weight: 700; }
+                              .text-xs { font-size: 11px; }
+                              .uppercase { text-transform: uppercase; }
+                              .text-[13px] { font-size: 13px; }
+                              .text-[15px] { font-size: 15px; color: #9F062A; }
+                              .text-[#9F062A] { color: #9F062A; }
+                              .text-slate-900 { color: #0f172a; }
+                              .text-slate-400 { color: #94a3b8; }
+                              .text-slate-500 { color: #64748b; }
+                              .mt-1 { margin-top: 4px; }
+                              .mb-1 { margin-bottom: 4px; }
+                              .leading-none { line-height: 1; }
+                              .leading-normal { leading: 1.5; }
+                              .inline-block { display: inline-block; }
+                              .bg-\\[\\#9F062A\\]\\/5 { background-color: rgba(159, 6, 42, 0.05); }
+                              .font-mono { font-family: monospace; }
+                              .mt-3 { margin-top: 12px; }
+                              .space-y-4 > * + * { margin-top: 16px; }
+                              .text-emerald-700 { color: #047857; }
+                              .flex { display: flex; }
+                              .justify-center { justify-content: center; }
+                              .items-end { align-items: flex-end; }
+                              .justify-between { justify-content: space-between; }
+                              .w-16 { width: 64px; }
+                              .h-16 { height: 64px; }
+                              .p-1 { padding: 4px; }
+                              .rounded-sm { border-radius: 2px; }
+                              .shadow-3xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+                              .grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+                              .gap-\\[2px\\] { gap: 2px; }
+                              .bg-slate-100 { background-color: #f1f5f9; }
+                              .bg-slate-900 { background-color: #0f172a; }
+                              .w-full { width: 100%; }
+                              .h-full { height: 100%; }
+                              .relative { position: relative; }
+                              .italic { font-style: italic; }
+                              .text-blue-800 { color: #1e40af; }
+                              .text-\\[11\\.5px\\] { font-size: 11.5px; }
+                              .pt-1 { padding-top: 4px; }
+                              .tracking-wide { tracking: 0.025em; }
+                              .absolute { position: absolute; }
+                              .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+                              .opacity-\\[0\\.03\\] { opacity: 0.03; }
+                              .text-\\[130px\\] { font-size: 130px; }
+                              .border-8 { border-width: 8px; }
+                              .col-span-2 { grid-column: span 2 / span 2; }
+                              .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+                              .gap-2 { gap: 8px; }
+                              .bg-stone-50 { background-color: #fafaf9; }
+                            </style>
+                          </head>
+                          <body>
+                            <div id="constancia">${printContents}</div>
+                            <script>
+                              window.onload = function() {
+                                window.print();
+                                setTimeout(function() { window.close(); }, 500);
+                              }
+                            </script>
+                          </body>
+                        </html>
+                      `);
+                      printWindow.document.close();
+                    } else {
+                      // Fallback
+                      window.print();
+                    }
+                  }}
+                  className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 font-semibold cursor-pointer text-xs flex items-center gap-1"
+                >
+                  <Printer className="w-4 h-4 text-slate-300" />
+                  <span>Imprimir</span>
+                </button>
+
+                {/* Simulated Download button with feedback */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const btn = document.getElementById("download-constancia-btn");
+                    if (btn) btn.innerText = "Firmando digitalmente...";
+                    
+                    setTimeout(() => {
+                      if (btn) btn.innerText = "Descargando...";
+                      
+                      setTimeout(() => {
+                        if (btn) btn.innerText = "¡Descargado con éxito!";
+                        
+                        // Perform client-side data url download of a mock text file styled nicely or triggering standard prompt
+                        const textContent = `
+========================================
+MINISTERIO DE EDUCACIÓN EN EL PERÚ
+IESTP "SAN FRANCISCO DE ASÍS" - CHINCHA
+R.M. N° 0233-80-ED • ICA - PERÚ
+========================================
+
+CONSTANCIA OFICIAL DE ADMISIÓN DIGITAL
+N° C.O.A - 2026-${applicant.dni}
+
+POSTULANTE: ${applicant.lastName}, ${applicant.name}
+DOCUMENTO DNI: ${applicant.dni}
+CARRERA PROFESIONAL: ${applicant.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad"}
+MODALIDAD DE INGRESO: Ingreso Ordinario por Examen de Admisión
+ESTADO DE MATRÍCULA: APTO / ADMITIDO
+
+--------------------------------------------------
+Este documento acredita haber obtenido una vacante
+de estudios en el IESTP "San Francisco de Asís"
+por el canal de Admisión Ordinaria Directa.
+Documento Oficial firmado digitilmente.
+Proceso 2026-I • Chincha Alta, Perú.
+========================================
+                        `;
+                        const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
+                        const link = document.createElement("a");
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `Constancia_Admision_SFA_${applicant.dni}.txt`;
+                        link.click();
+                        
+                        setTimeout(() => {
+                          if (btn) btn.innerText = "Descargar Constancia Oficial";
+                          setIsConstanciaModalOpen(false);
+                          alert(`¡Constancia de Admisión guardada como 'Constancia_Admision_SFA_${applicant.dni}.txt'!`);
+                        }, 1000);
+                        
+                      }, 1200);
+                    }, 1200);
+                  }}
+                  id="download-constancia-btn"
+                  className="px-4 py-2 bg-[#9F062A] text-white rounded-lg hover:bg-[#800521] font-semibold cursor-pointer text-xs flex items-center gap-1"
+                >
+                  <Download className="w-4 h-4 text-red-200" />
+                  <span>Descargar Constancia Oficial</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* Render High Fidelity Image of Document Preview Component */}
       <ImagePreviewModal
@@ -1766,8 +3103,8 @@ export default function PostulanteDashboard({ applicant, onUpdateApplicant, onLo
         fileType={previewFileType}
         metadata={previewMetadata}
       />
+
     </div>
   );
 }
-
 

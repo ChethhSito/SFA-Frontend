@@ -3,7 +3,7 @@ import {
   Users, BookOpen, Clock, FileText, CheckCircle, 
   Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronRight, BarChart3, Settings, AlertCircle, RefreshCw, FileSpreadsheet, Megaphone
 } from "lucide-react";
-import { Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, StudentPersonalData } from "@/types";
+import { Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, StudentPersonalData } from "../types";
 
 // Reusable Custom Design System Components
 import Button from "./ui-custom/Button";

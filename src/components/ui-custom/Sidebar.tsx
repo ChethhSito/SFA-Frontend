@@ -1,13 +1,21 @@
 import React, { useState, ReactNode } from "react";
-import { GraduationCap, Menu, X, LogOut } from "lucide-react";
+import { GraduationCap, Menu, X, LogOut, ChevronDown, ChevronRight } from "lucide-react";
 import Badge from "./Badge";
 import { motion, AnimatePresence } from "motion/react";
+
+export interface SidebarSubItem {
+  label: string;
+  icon?: ReactNode;
+  route: string;
+  active?: boolean;
+}
 
 export interface SidebarItem {
   label: string;
   icon: ReactNode;
   route: string;
   active?: boolean;
+  subItems?: SidebarSubItem[];
 }
 
 export interface SidebarSection {
@@ -46,6 +54,7 @@ export default function Sidebar({
   className = ""
 }: SidebarProps) {
   const [isOpenMobile, setIsOpenMobile] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
 
   // Helper to extract initials
   const getInitials = (name: string) => {
@@ -156,25 +165,93 @@ export default function Sidebar({
             {/* Menu Items */}
             <div className="space-y-1">
               {section.items.map((item, itemIdx) => {
-                const isActive = item.active;
+                const hasSubItems = !!item.subItems && item.subItems.length > 0;
+                const isSubActive = hasSubItems && item.subItems!.some(s => s.active);
+                const isExpanded = expandedItems[item.route] !== undefined 
+                  ? expandedItems[item.route] 
+                  : (isSubActive || item.active);
+                
+                const isItemActive = item.active || (hasSubItems && isSubActive);
+
                 return (
-                  <button
-                    key={itemIdx}
-                    onClick={() => {
-                      if (onItemClick) onItemClick(item.route);
-                      setIsOpenMobile(false);
-                    }}
-                    className={`w-full text-left py-2.5 px-3 rounded-xl transition-all duration-150 flex items-center gap-3 cursor-pointer text-xs font-semibold ${
-                      isActive
-                        ? "bg-[#8B0026] text-white font-bold shadow-md shadow-red-950/5 border border-red-900/10"
-                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
-                    }`}
-                  >
-                    <span className={`w-4 h-4 shrink-0 flex items-center justify-center transition-colors ${isActive ? "text-amber-400" : "text-slate-400"}`}>
-                      {item.icon}
-                    </span>
-                    <span className="truncate tracking-wide">{item.label}</span>
-                  </button>
+                  <div key={itemIdx} className="space-y-0.5">
+                    <button
+                      onClick={() => {
+                        if (hasSubItems) {
+                          setExpandedItems(prev => ({
+                            ...prev,
+                            [item.route]: !isExpanded
+                          }));
+                        } else {
+                          if (onItemClick) onItemClick(item.route);
+                          setIsOpenMobile(false);
+                        }
+                      }}
+                      className={`w-full text-left py-2.5 px-3 rounded-xl transition-all duration-150 flex items-center justify-between cursor-pointer text-xs font-semibold ${
+                        item.active
+                          ? "bg-[#8B0026] text-white font-bold shadow-md shadow-red-950/5 border border-red-900/10"
+                          : isSubActive
+                            ? "bg-slate-100 text-[#8B0026] font-bold border border-slate-200"
+                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className={`w-4 h-4 shrink-0 flex items-center justify-center transition-colors ${item.active ? "text-amber-400" : isSubActive ? "text-[#8B0026]" : "text-slate-400"}`}>
+                          {item.icon}
+                        </span>
+                        <span className="truncate tracking-wide">{item.label}</span>
+                      </div>
+                      {hasSubItems && (
+                        <span className="shrink-0 text-slate-400 ml-1">
+                          {isExpanded ? (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          ) : (
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          )}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Smooth disclosure for subItems */}
+                    {hasSubItems && (
+                      <AnimatePresence initial={false}>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.15, ease: "easeInOut" }}
+                            className="overflow-hidden pl-5 pr-1 space-y-1 mt-1 border-l border-slate-100 ml-4 py-0.5"
+                          >
+                            {item.subItems!.map((sub, subIdx) => {
+                              const isThisSubActive = sub.active;
+                              return (
+                                <button
+                                  key={subIdx}
+                                  onClick={() => {
+                                    if (onItemClick) onItemClick(sub.route);
+                                    setIsOpenMobile(false);
+                                  }}
+                                  className={`w-full text-left py-2 px-3 rounded-lg transition-all duration-150 flex items-center gap-2.5 cursor-pointer text-[11px] font-semibold ${
+                                    isThisSubActive
+                                      ? "bg-[#8B0026]/10 text-[#8B0026] font-extrabold border-l-2 border-[#8B0026]"
+                                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                                  }`}
+                                >
+                                  {sub.icon && (
+                                    <span className={`w-3.5 h-3.5 shrink-0 flex items-center justify-center transition-colors ${isThisSubActive ? "text-[#8B0026]" : "text-slate-400"}`}>
+                                      {sub.icon}
+                                    </span>
+                                  )}
+                                  <span className="truncate tracking-wide leading-none">{sub.label}</span>
+                                </button>
+                              );
+                            })}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    )}
+                  </div>
                 );
               })}
             </div>
