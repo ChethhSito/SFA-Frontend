@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Role } from "@/types";
 import { motion } from "motion/react";
+import { INITIAL_APPLICANTS, INITIAL_STUDENTS_DATA } from "@/lib/mockData";
 
 // Fallbacks / Stubs for simulated Firebase features in standby mode
 const isFirebaseEnabled = false;
@@ -34,8 +35,8 @@ export default function LoginPortal() {
 
 
   // Read current DB states to map newly pre-registered students or applicants
-  const [localApplicants, setLocalApplicants] = useState<any[]>([]);
-  const [localStudents, setLocalStudents] = useState<any>({});
+  const [localApplicants, setLocalApplicants] = useState<any[]>(INITIAL_APPLICANTS);
+  const [localStudents, setLocalStudents] = useState<any>(INITIAL_STUDENTS_DATA);
 
   useEffect(() => {
     // Load local storage fallback
@@ -43,9 +44,14 @@ export default function LoginPortal() {
       const savedApps = localStorage.getItem("sfa_applicants");
       const savedStudents = localStorage.getItem("sfa_students");
       if (savedApps) setLocalApplicants(JSON.parse(savedApps));
+      else setLocalApplicants(INITIAL_APPLICANTS);
+      
       if (savedStudents) setLocalStudents(JSON.parse(savedStudents));
+      else setLocalStudents(INITIAL_STUDENTS_DATA);
     } catch (e) {
       console.error("Error reading local DB states for role matching", e);
+      setLocalApplicants(INITIAL_APPLICANTS);
+      setLocalStudents(INITIAL_STUDENTS_DATA);
     }
 
     // Load Live Firestore applicants if enabled
@@ -159,11 +165,16 @@ export default function LoginPortal() {
 
     // 6. DB-verified login for applicant (Postulante)
     if (detectedRole === "postulante") {
-      const matchedApp = localApplicants.find(a => 
+      let matchedApp = localApplicants.find(a => 
         a.dni?.toLowerCase() === uTrim || 
         a.applicantCode?.toLowerCase() === uTrim || 
         a.email?.toLowerCase() === uTrim
       );
+
+      // Fallback for generic "postulante" keyword or default applicant code
+      if (!matchedApp && (uTrim === "postulante" || detectedIdentifier === "202610001" || uTrim.startsWith("7"))) {
+        matchedApp = localApplicants.find(a => a.applicantCode === detectedIdentifier || a.dni === detectedIdentifier) || localApplicants[0] || INITIAL_APPLICANTS[0];
+      }
 
       if (!matchedApp) {
         setIsSubmitting(false);
@@ -171,11 +182,11 @@ export default function LoginPortal() {
         return;
       }
 
-      // Check against stored password or standard default "clave123"
+      // Check against stored password, default "clave123", or standard "123"
       const expectedPassword = matchedApp.password || "clave123";
-      if (pTrim !== expectedPassword) {
+      if (pTrim !== expectedPassword && pTrim !== "clave123" && pTrim !== "123") {
         setIsSubmitting(false);
-        setErrorMessage("Contraseña de postulante incorrecta. Intente con 'clave123'.");
+        setErrorMessage("Contraseña de postulante incorrecta. Intente con 'clave123' o '123'.");
         return;
       }
 
