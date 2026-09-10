@@ -169,6 +169,8 @@ export default function PortalHome({
         applicantCode: generatedApplicantCode,
         password: tempPass,
         name: `${nameInput} ${lastNameInput}`.trim(),
+        dni: dniInput,
+        programName: progName,
         url: `${window.location.origin}/ingresar`
       }).then((sent) => {
         if (sent) {

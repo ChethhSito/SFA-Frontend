@@ -180,6 +180,8 @@ export async function sendTransactionalWelcomeEmail(payload: {
   password?: string;
   url?: string;
   name?: string;
+  dni?: string;
+  programName?: string;
 }): Promise<boolean> {
   const result = await fetchJson<{ success: boolean; messageId?: string }>("/mail/send-welcome", {
     method: "POST",
