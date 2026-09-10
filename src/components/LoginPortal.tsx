@@ -7,6 +7,7 @@ import { motion } from "motion/react";
 import { isFirebaseEnabled } from "../firebase/config";
 import { loginWithEmailAndPassword } from "../firebase/auth";
 import { listCollectionGeneric } from "../firebase/firestore";
+import { fetchApplicants } from "../services/api";
 
 interface LoginPortalProps {
   onBack: () => void;
@@ -34,14 +35,31 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
       console.error("Error reading local DB states for role matching", e);
     }
 
+    // Load REST API applicants from NestJS backend
+    fetchApplicants()
+      .then((apiApps) => {
+        if (apiApps && apiApps.length > 0) {
+          setLocalApplicants((prev) => {
+            const merged = [...prev];
+            apiApps.forEach((a) => {
+              if (!merged.some((m) => m.dni === a.dni || m.applicantCode === a.applicantCode)) {
+                merged.push(a);
+              }
+            });
+            return merged;
+          });
+        }
+      })
+      .catch((err) => console.error("Error fetching REST API applicants in login:", err));
+
     // Load Live Firestore applicants if enabled
     if (isFirebaseEnabled) {
       listCollectionGeneric<any>("applicants")
         .then((fireApps) => {
           if (fireApps && fireApps.length > 0) {
             setLocalApplicants((prev) => {
-              const merged = [...fireApps];
-              prev.forEach((p) => {
+              const merged = [...prev];
+              fireApps.forEach((p) => {
                 if (!merged.some((m) => m.dni === p.dni)) {
                   merged.push(p);
                 }
@@ -99,12 +117,30 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     let detectedRole: Role | null = null;
     let detectedIdentifier = "";
 
-    // Check if matching applicant has already been matriculated!
-    const matchedApp = localApplicants.find(a => 
+    // Dynamic lookup of applicants with live API fallback
+    let activeApps = [...localApplicants];
+    let matchedApp = activeApps.find(a => 
       a.dni?.toLowerCase() === uTrim || 
       a.applicantCode?.toLowerCase() === uTrim || 
       a.email?.toLowerCase() === uTrim
     );
+
+    if (!matchedApp) {
+      try {
+        const apiApps = await fetchApplicants();
+        if (apiApps && apiApps.length > 0) {
+          activeApps = apiApps;
+          setLocalApplicants(apiApps);
+          matchedApp = apiApps.find(a => 
+            a.dni?.toLowerCase() === uTrim || 
+            a.applicantCode?.toLowerCase() === uTrim || 
+            a.email?.toLowerCase() === uTrim
+          );
+        }
+      } catch (e) {
+        console.error("Live applicant fetch error in login submit:", e);
+      }
+    }
 
     let isMatriculado = false;
     if (matchedApp) {
@@ -222,19 +258,19 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
       const matchedSt: any = studentList.find((st: any) => st.dni === uTrim || st.email?.toLowerCase() === uTrim) || studentList[0];
       detectedIdentifier = matchedSt.dni;
     }
-    // 4. Check Postulante (dynamic lookup in localApplicants)
-    else if (uTrim === "postulante" || localApplicants.some(a => a.dni?.toLowerCase() === uTrim || a.applicantCode?.toLowerCase() === uTrim || a.email?.toLowerCase() === uTrim)) {
-      if (localApplicants.length === 0) {
+    // 4. Check Postulante (dynamic lookup in activeApps)
+    else if (uTrim === "postulante" || matchedApp || activeApps.some(a => a.dni?.toLowerCase() === uTrim || a.applicantCode?.toLowerCase() === uTrim || a.email?.toLowerCase() === uTrim)) {
+      if (activeApps.length === 0 && !matchedApp) {
         setIsSubmitting(false);
         setErrorMessage("No existen postulantes registrados en el sistema actualmente. Regístrese como postulante primero.");
         return;
       }
-      const matchedApp = localApplicants.find(a => a.dni?.toLowerCase() === uTrim || a.applicantCode?.toLowerCase() === uTrim || a.email?.toLowerCase() === uTrim);
+      const app = matchedApp || activeApps.find(a => a.dni?.toLowerCase() === uTrim || a.applicantCode?.toLowerCase() === uTrim || a.email?.toLowerCase() === uTrim);
       detectedRole = "postulante";
-      detectedIdentifier = matchedApp ? (matchedApp.id || matchedApp.uid || matchedApp.applicantCode || matchedApp.dni) : (localApplicants[0].id || localApplicants[0].uid || localApplicants[0].dni);
+      detectedIdentifier = app ? (app.id || app.uid || app.applicantCode || app.dni) : (activeApps[0]?.id || activeApps[0]?.uid || activeApps[0]?.dni || uTrim);
     }
-    // 5. Check if it's an 8-digit DNI
-    else if (/^\d{8}$/.test(uTrim)) {
+    // 5. Check if it's an 8-digit DNI or code
+    else if (/^\d{8,12}$/.test(uTrim)) {
       // First check in students if they are matriculado
       if (isDniMatriculado(uTrim)) {
         const studentList = Object.values(localStudents);
@@ -247,13 +283,13 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
       
       if (!detectedRole) {
         // Then check in applicants
-        const matchedApp = localApplicants.find((app: any) => app.dni === uTrim);
-        if (matchedApp) {
+        const app = matchedApp || activeApps.find((a: any) => a.dni === uTrim || a.applicantCode === uTrim);
+        if (app) {
           detectedRole = "postulante";
-          detectedIdentifier = matchedApp.id || matchedApp.uid || matchedApp.applicantCode || matchedApp.dni;
+          detectedIdentifier = app.id || app.uid || app.applicantCode || app.dni;
         } else {
           setIsSubmitting(false);
-          setErrorMessage("El DNI ingresado no se encuentra registrado en el sistema.");
+          setErrorMessage("El Código/DNI ingresado no se encuentra registrado en el sistema de admisión.");
           return;
         }
       }

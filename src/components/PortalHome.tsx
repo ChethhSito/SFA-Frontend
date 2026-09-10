@@ -175,6 +175,32 @@ export default function PortalHome({
         `¡Pre-inscripción registrada con éxito! Código Oficial: ${generatedApplicantCode}. Sus credenciales de acceso a la Intranet han sido enviadas a su correo electrónico (${emailInput}). Por favor, revise su bandeja de entrada o carpeta de spam.`
       );
 
+      // Save to localStorage so LoginPortal knows about it immediately
+      try {
+        const newApplicantObj = {
+          id: created?.id || `APP-${Date.now()}`,
+          applicantCode: generatedApplicantCode,
+          dni: dniInput,
+          name: nameInput,
+          lastName: lastNameInput,
+          email: emailInput,
+          phone: phoneInput,
+          programId: selectedProgramId,
+          programName: progName,
+          password: tempPass,
+          status: "PRE_INSCRITO",
+          registrationDate: new Date().toISOString().split("T")[0]
+        };
+        const savedApps = localStorage.getItem("sfa_applicants");
+        const existingList: any[] = savedApps ? JSON.parse(savedApps) : [];
+        if (!existingList.some((a) => a.dni === dniInput)) {
+          existingList.push(newApplicantObj);
+          localStorage.setItem("sfa_applicants", JSON.stringify(existingList));
+        }
+      } catch (e) {
+        console.error("Error updating local applicants storage:", e);
+      }
+
       // Clean form inputs
       setDniInput("");
       setNameInput("");
