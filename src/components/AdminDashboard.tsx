@@ -2583,14 +2583,14 @@ export default function AdminDashboard({
             />
 
             {/* General Admission Status Banner */}
-            {admissionPeriods.find(p => p.isActive) ? (
+            {admissionPeriods.find(p => p.status === "APERTURADO" || p.isActive) ? (
               <div className="bg-emerald-50 border border-emerald-250 p-5 rounded-lg flex items-start gap-4 shadow-3xs animate-fade-in">
                 <div className="p-2 bg-emerald-100 text-emerald-800 rounded-full shrink-0 animate-fade-in/70">
                   <CheckCircle className="w-5 h-5 text-emerald-700 font-bold" />
                 </div>
                 <div className="space-y-0.5 text-left">
                   <h4 className="text-xs font-black text-emerald-900 uppercase tracking-wide">
-                    PROCESO DE ADMISIÓN ACTIVO: {admissionPeriods.find(p => p.isActive)?.name}
+                    PROCESO DE ADMISIÓN ACTIVO: {(admissionPeriods.find(p => p.status === "APERTURADO" || p.isActive))?.name}
                   </h4>
                   <p className="text-[11px] text-slate-600 font-semibold leading-relaxed">
                     El formulario de pre-inscripción en línea está habilitado para recibir postulantes en el portal público con el cronograma configurado.
