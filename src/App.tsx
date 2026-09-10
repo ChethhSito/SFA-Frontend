@@ -202,6 +202,24 @@ export default function App() {
     }
     setApplicants(initialApps);
 
+    // Sync live applicants from NestJS REST API (MongoDB database)
+    fetchApplicants().then((apiApps) => {
+      if (apiApps && apiApps.length > 0) {
+        setApplicants((prev) => {
+          const merged = [...prev];
+          apiApps.forEach((a) => {
+            const index = merged.findIndex((m) => m.dni === a.dni || m.applicantCode === a.applicantCode);
+            if (index >= 0) {
+              merged[index] = { ...merged[index], ...a };
+            } else {
+              merged.push(a);
+            }
+          });
+          return merged;
+        });
+      }
+    }).catch((err) => console.error("Error fetching REST API applicants:", err));
+
     let initialEnrolls = INITIAL_ENROLLMENTS;
     if (savedEnrolls) {
       try {
