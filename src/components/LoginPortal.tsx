@@ -308,27 +308,27 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
 
     // 6. DB-verified login for applicant (Postulante)
     if (detectedRole === "postulante") {
-      const matchedApp = localApplicants.find(a => 
+      const app = matchedApp || activeApps.find(a => 
         a.dni?.toLowerCase() === uTrim || 
         a.applicantCode?.toLowerCase() === uTrim || 
         a.email?.toLowerCase() === uTrim
       );
 
-      if (!matchedApp) {
+      if (!app) {
         setIsSubmitting(false);
         setErrorMessage("No se encontró el registro de admisión de este postulante.");
         return;
       }
 
       // Check against stored password or standard default "clave123"
-      const expectedPassword = matchedApp.password || "clave123";
+      const expectedPassword = app.password || "clave123";
       if (pTrim !== expectedPassword) {
         setIsSubmitting(false);
         setErrorMessage("Contraseña de postulante incorrecta. Intente con 'clave123'.");
         return;
       }
 
-      const uid = matchedApp.id || matchedApp.uid || matchedApp.applicantCode || matchedApp.dni || "202610001";
+      const uid = app.dni || app.applicantCode || app.id || app.uid || "202610001";
       localStorage.setItem("sfa_session_postulante", uid);
       setIsSubmitting(false);
       onLoginSuccess("postulante", uid);

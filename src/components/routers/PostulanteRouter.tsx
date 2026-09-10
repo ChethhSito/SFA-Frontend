@@ -6,6 +6,7 @@ import Button from "../ui/Button";
 import { auth, isFirebaseEnabled, db } from "../../firebase/config";
 import { getDocumentGeneric, saveDocumentGeneric } from "../../firebase/firestore";
 import { doc, onSnapshot } from "firebase/firestore";
+import { fetchApplicantByDni } from "../../services/api";
 
 interface PostulanteRouterProps {
   applicants: Applicant[];
@@ -25,23 +26,31 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
     const s = localStorage.getItem("sfa_session_postulante");
     setSession(s);
 
-    let unsubscribe: (() => void) | undefined = undefined;
-
-    if (isFirebaseEnabled && s && db) {
+    if (s) {
       setLoading(true);
-      // Listen to specific applicant document based on session key from Firestore in real-time
+      fetchApplicantByDni(s).then((apiApp) => {
+        if (apiApp) {
+          setLiveApplicant(apiApp);
+        }
+        setLoading(false);
+      }).catch((err) => {
+        console.error("Error fetching REST API applicant in PostulanteRouter:", err);
+        setLoading(false);
+      });
+    } else {
+      setLoading(false);
+    }
+
+    let unsubscribe: (() => void) | undefined = undefined;
+    if (isFirebaseEnabled && s && db) {
       const docRef = doc(db, "applicants", s);
       unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
           setLiveApplicant({ id: docSnap.id, ...docSnap.data() } as unknown as Applicant);
         }
-        setLoading(false);
       }, (err) => {
         console.error("Error watching live applicant profile:", err);
-        setLoading(false);
       });
-    } else {
-      setLoading(false);
     }
 
     return () => {
