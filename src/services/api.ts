@@ -32,25 +32,45 @@ async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T 
    ========================================================================== */
 
 export async function fetchApplicants(): Promise<Applicant[] | null> {
-  return fetchJson<Applicant[]>("/applicants");
+  const list = await fetchJson<any[]>("/applicants");
+  if (!list) return null;
+  return list.map((item) => ({
+    ...item,
+    id: item.id || item._id
+  })) as Applicant[];
 }
 
 export async function fetchApplicantByDni(dni: string): Promise<Applicant | null> {
-  return fetchJson<Applicant>(`/applicants/${dni}`);
+  const item = await fetchJson<any>(`/applicants/${dni}`);
+  if (!item) return null;
+  return {
+    ...item,
+    id: item.id || item._id
+  } as Applicant;
 }
 
 export async function createApplicant(applicant: Partial<Applicant>): Promise<Applicant | null> {
-  return fetchJson<Applicant>("/applicants", {
+  const item = await fetchJson<any>("/applicants", {
     method: "POST",
     body: JSON.stringify(applicant)
   });
+  if (!item) return null;
+  return {
+    ...item,
+    id: item.id || item._id
+  } as Applicant;
 }
 
 export async function updateApplicant(dni: string, data: Partial<Applicant>): Promise<Applicant | null> {
-  return fetchJson<Applicant>(`/applicants/${dni}`, {
+  const item = await fetchJson<any>(`/applicants/${dni}`, {
     method: "PATCH",
     body: JSON.stringify(data)
   });
+  if (!item) return null;
+  return {
+    ...item,
+    id: item.id || item._id
+  } as Applicant;
 }
 
 export async function deleteApplicant(dni: string): Promise<boolean> {
@@ -65,7 +85,12 @@ export async function deleteApplicant(dni: string): Promise<boolean> {
    ========================================================================== */
 
 export async function fetchEnrollments(): Promise<Enrollment[] | null> {
-  return fetchJson<Enrollment[]>("/enrollments");
+  const list = await fetchJson<any[]>("/enrollments");
+  if (!list) return null;
+  return list.map((item) => ({
+    ...item,
+    id: item.id || item._id
+  })) as Enrollment[];
 }
 
 export async function createEnrollment(enrollment: Partial<Enrollment>): Promise<Enrollment | null> {
@@ -87,21 +112,36 @@ export async function updateEnrollment(studentDni: string, data: Partial<Enrollm
    ========================================================================== */
 
 export async function fetchAdmissionPeriods(): Promise<AdmissionPeriod[] | null> {
-  return fetchJson<AdmissionPeriod[]>("/admission-periods");
+  const list = await fetchJson<any[]>("/admission-periods");
+  if (!list) return null;
+  return list.map((item) => ({
+    ...item,
+    id: item.id || item._id
+  })) as AdmissionPeriod[];
 }
 
 export async function createAdmissionPeriod(period: Partial<AdmissionPeriod>): Promise<AdmissionPeriod | null> {
-  return fetchJson<AdmissionPeriod>("/admission-periods", {
+  const item = await fetchJson<any>("/admission-periods", {
     method: "POST",
     body: JSON.stringify(period)
   });
+  if (!item) return null;
+  return {
+    ...item,
+    id: item.id || item._id
+  } as AdmissionPeriod;
 }
 
 export async function updateAdmissionPeriod(id: string, data: Partial<AdmissionPeriod>): Promise<AdmissionPeriod | null> {
-  return fetchJson<AdmissionPeriod>(`/admission-periods/${id}`, {
+  const item = await fetchJson<any>(`/admission-periods/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data)
   });
+  if (!item) return null;
+  return {
+    ...item,
+    id: item.id || item._id
+  } as AdmissionPeriod;
 }
 
 /* ==========================================================================
@@ -109,7 +149,12 @@ export async function updateAdmissionPeriod(id: string, data: Partial<AdmissionP
    ========================================================================== */
 
 export async function fetchCourses(): Promise<Course[] | null> {
-  return fetchJson<Course[]>("/courses");
+  const list = await fetchJson<any[]>("/courses");
+  if (!list) return null;
+  return list.map((item) => ({
+    ...item,
+    id: item.id || item._id
+  })) as Course[];
 }
 
 export async function createCourse(course: Partial<Course>): Promise<Course | null> {
@@ -131,7 +176,12 @@ export async function updateCourse(code: string, data: Partial<Course>): Promise
    ========================================================================== */
 
 export async function fetchTeachers(): Promise<Teacher[] | null> {
-  return fetchJson<Teacher[]>("/teachers");
+  const list = await fetchJson<any[]>("/teachers");
+  if (!list) return null;
+  return list.map((item) => ({
+    ...item,
+    id: item.id || item._id
+  })) as Teacher[];
 }
 
 export async function createTeacher(teacher: Partial<Teacher>): Promise<Teacher | null> {

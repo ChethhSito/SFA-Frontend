@@ -6,7 +6,7 @@ import Button from "../ui/Button";
 import { auth, isFirebaseEnabled, db } from "../../firebase/config";
 import { getDocumentGeneric, saveDocumentGeneric } from "../../firebase/firestore";
 import { doc, onSnapshot } from "firebase/firestore";
-import { fetchApplicantByDni } from "../../services/api";
+import { fetchApplicantByDni, updateApplicant } from "../../services/api";
 
 interface PostulanteRouterProps {
   applicants: Applicant[];
@@ -65,13 +65,27 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
   let applicantToRender = liveApplicant;
   if (!liveApplicant) {
     // Use local list as safe fallback
-    applicantToRender = applicants.find((a) => a.id === currentDni || a.uid === currentDni || a.applicantCode === currentDni || a.dni === currentDni) || null;
+    applicantToRender = applicants.find((a) => 
+      a.id === currentDni || 
+      a.uid === currentDni || 
+      a.applicantCode === currentDni || 
+      a.dni === currentDni ||
+      (a as any)._id === currentDni
+    ) || null;
   }
 
   const handleUpdateLiveApplicant = async (updated: Applicant) => {
     // Update locally immediately
     onUpdateApplicant(updated);
     setLiveApplicant(updated);
+
+    // Persist to NestJS Backend (MongoDB)
+    try {
+      await updateApplicant(updated.dni, updated);
+      console.log("Updated applicant in Backend REST API successfully!");
+    } catch (apiErr) {
+      console.error("Error saving updated applicant to REST API:", apiErr);
+    }
     
     // Update in Firebase Firestore if enabled
     if (isFirebaseEnabled && session) {

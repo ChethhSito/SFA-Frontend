@@ -105,11 +105,14 @@ export default function AdminDashboard({
           {admissionPeriods.length === 0 ? (
             <option value="">(Sin Períodos)</option>
           ) : (
-            admissionPeriods.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} {p.status === "APERTURADO" ? "(ACTIVO)" : ""}
-              </option>
-            ))
+            <>
+              <option value="all">TODOS LOS PERIODOS ({applicants.length})</option>
+              {admissionPeriods.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} {p.status === "APERTURADO" ? "(ACTIVO)" : ""}
+                </option>
+              ))}
+            </>
           )}
         </select>
       </div>
@@ -126,16 +129,22 @@ export default function AdminDashboard({
       const saved = localStorage.getItem("mpa_db_periods");
       if (saved) {
         let loaded = JSON.parse(saved);
-        if (Array.isArray(loaded)) {
+        if (Array.isArray(loaded) && loaded.length > 0) {
           loaded = loaded.map((p: any) => ({
             ...p,
             name: p.name?.replace(/^Semestre\s+/i, "Periodo ") || p.name
           }));
+          setMpaPeriods(loaded);
+          return;
         }
-        setMpaPeriods(loaded);
-      } else {
-        setMpaPeriods([]);
       }
+      // Provide default fallback periods from MPA so the admin can always create admission periods
+      const defaultMpaPeriods = [
+        { id: "per_2026_1", name: "Periodo Académico 2026-I", startDate: "2026-04-06", endDate: "2026-07-24", isActive: true, status: "Activo" },
+        { id: "per_2026_2", name: "Periodo Académico 2026-II", startDate: "2026-08-17", endDate: "2026-12-18", isActive: false, status: "Pendiente" }
+      ];
+      localStorage.setItem("mpa_db_periods", JSON.stringify(defaultMpaPeriods));
+      setMpaPeriods(defaultMpaPeriods);
     } catch (e) {
       console.error(e);
       setMpaPeriods([]);
@@ -1140,6 +1149,7 @@ export default function AdminDashboard({
                   onChange={(e) => setSelectedPeriodId(e.target.value)}
                   className="bg-slate-950 text-white border border-slate-800 rounded-md px-3 py-1.5 text-xs font-black focus:outline-none focus:ring-1 focus:ring-amber-500 w-full md:w-auto cursor-pointer"
                 >
+                  <option value="all">TODOS LOS PERIODOS ({applicants.length})</option>
                   {admissionPeriods.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} {p.status === "APERTURADO" ? "(ACTIVO)" : ""}

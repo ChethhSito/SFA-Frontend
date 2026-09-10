@@ -199,6 +199,7 @@ export default function App() {
               merged.push(a);
             }
           });
+          localStorage.setItem("sfa_applicants", JSON.stringify(merged));
           return merged;
         });
       }
@@ -281,7 +282,7 @@ export default function App() {
 
     loadBackendData();
 
-    // Live real-time sync from Firestore
+    // Live real-time sync from Firestore (only merge if documents exist)
     let unsubscribeApplicants: (() => void) | undefined = undefined;
     if (isFirebaseEnabled && db) {
       try {
@@ -291,8 +292,21 @@ export default function App() {
           snapshot.forEach((doc) => {
             fireApps.push({ id: doc.id, ...doc.data() });
           });
-          setApplicants(fireApps);
-          localStorage.setItem("sfa_applicants", JSON.stringify(fireApps));
+          if (fireApps.length > 0) {
+            setApplicants((prev) => {
+              const merged = [...prev];
+              fireApps.forEach((fa) => {
+                const idx = merged.findIndex((m) => m.dni === fa.dni || m.applicantCode === fa.applicantCode);
+                if (idx >= 0) {
+                  merged[idx] = { ...merged[idx], ...fa };
+                } else {
+                  merged.push(fa);
+                }
+              });
+              localStorage.setItem("sfa_applicants", JSON.stringify(merged));
+              return merged;
+            });
+          }
         }, (error) => {
           console.error("onSnapshot error for applicants:", error);
         });

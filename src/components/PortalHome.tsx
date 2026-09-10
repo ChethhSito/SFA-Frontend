@@ -147,21 +147,20 @@ export default function PortalHome({
       const activeProg = careersDetail.find(c => c.id === programSelection);
       const progName = activeProg ? activeProg.name : "Programa Seleccionado";
 
-      // 3. Parallelize backend POST & email dispatch for maximum performance (~200ms response!)
-      const [created] = await Promise.all([
-        createApplicant(newApplicantPayload),
-        sendTransactionalWelcomeEmail({
-          email: emailInput,
-          applicantCode: `${new Date().getFullYear()}1${String(Math.floor(1000 + Math.random() * 9000))}`,
-          password: tempPass,
-          name: `${nameInput} ${lastNameInput}`.trim(),
-          dni: dniInput,
-          programName: progName,
-          url: `${window.location.origin}/ingresar`
-        }).catch((err) => console.warn("Email dispatch notice:", err))
-      ]);
+      // 3. First create applicant in backend to get the real applicantCode
+      const created = await createApplicant(newApplicantPayload);
+      const generatedApplicantCode = created?.applicantCode || dniInput;
 
-      const generatedApplicantCode = created?.applicantCode || `${new Date().getFullYear()}1${String(Math.floor(1000 + Math.random() * 9000))}`;
+      // 4. Now send the email with the REAL applicantCode from the backend
+      sendTransactionalWelcomeEmail({
+        email: emailInput,
+        applicantCode: generatedApplicantCode,
+        password: tempPass,
+        name: `${nameInput} ${lastNameInput}`.trim(),
+        dni: dniInput,
+        programName: progName,
+        url: `${window.location.origin}/ingresar`
+      }).catch((err) => console.warn("Email dispatch notice:", err));
 
       setSuccessModalData({
         name: nameInput,
