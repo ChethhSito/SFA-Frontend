@@ -243,37 +243,37 @@ export default function App() {
     // Async sync with NestJS SFA-Backend REST API on mount
     async function loadBackendData() {
       const backendApplicants = await fetchApplicants();
-      if (backendApplicants && Array.isArray(backendApplicants)) {
+      if (backendApplicants && Array.isArray(backendApplicants) && backendApplicants.length > 0) {
         setApplicants(backendApplicants);
         localStorage.setItem("sfa_applicants", JSON.stringify(backendApplicants));
       }
 
       const backendEnrollments = await fetchEnrollments();
-      if (backendEnrollments && Array.isArray(backendEnrollments)) {
+      if (backendEnrollments && Array.isArray(backendEnrollments) && backendEnrollments.length > 0) {
         setEnrollments(backendEnrollments);
         localStorage.setItem("sfa_enrollments", JSON.stringify(backendEnrollments));
       }
 
       const backendPeriods = await fetchAdmissionPeriods();
-      if (backendPeriods && Array.isArray(backendPeriods)) {
+      if (backendPeriods && Array.isArray(backendPeriods) && backendPeriods.length > 0) {
         setAdmissionPeriods(backendPeriods);
         localStorage.setItem("sfa_admission_periods", JSON.stringify(backendPeriods));
       }
 
       const backendCourses = await fetchCourses();
-      if (backendCourses && Array.isArray(backendCourses)) {
+      if (backendCourses && Array.isArray(backendCourses) && backendCourses.length > 0) {
         setCourses(backendCourses);
         localStorage.setItem("sfa_courses", JSON.stringify(backendCourses));
       }
 
       const backendTeachers = await fetchTeachers();
-      if (backendTeachers && Array.isArray(backendTeachers)) {
+      if (backendTeachers && Array.isArray(backendTeachers) && backendTeachers.length > 0) {
         setTeachers(backendTeachers);
         localStorage.setItem("sfa_teachers", JSON.stringify(backendTeachers));
       }
 
       const backendGraduations = await fetchGraduations();
-      if (backendGraduations && Array.isArray(backendGraduations)) {
+      if (backendGraduations && Array.isArray(backendGraduations) && backendGraduations.length > 0) {
         setGraduations(backendGraduations);
         localStorage.setItem("sfa_graduations", JSON.stringify(backendGraduations));
       }

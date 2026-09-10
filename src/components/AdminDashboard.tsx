@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Applicant, Enrollment, StudentPersonalData, Program, Classroom, Teacher, Graduation, AdmissionPeriod, Course, CourseAssignment, AttendanceRecord, MpaPeriod } from "../types";
 import { ACADEMIC_PROGRAMS } from "../mockData";
+import { createAdmissionPeriod, updateAdmissionPeriod } from "../services/api";
 
 // Reusable Custom Design System Components
 import Button from "./ui/Button";
@@ -723,6 +724,8 @@ export default function AdminDashboard({
     };
 
     onUpdateAdmissionPeriods([...admissionPeriods, newPeriod]);
+    createAdmissionPeriod(newPeriod).catch(err => console.error("Error creating period in MongoDB REST API:", err));
+
     setSelectedAcademicPeriodId("");
     setNewPeriodResultsPublicationDate("");
     setNewPeriodPreEnrollmentStartDate("");
@@ -750,6 +753,9 @@ export default function AdminDashboard({
     });
 
     onUpdateAdmissionPeriods(updated);
+    updated.forEach(p => {
+      updateAdmissionPeriod(p.id, p).catch(err => console.error("Error updating period in MongoDB REST API:", err));
+    });
   };
 
   const handleDeletePeriod = (id: string) => {
