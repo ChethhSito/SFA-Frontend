@@ -36,16 +36,7 @@ export default function PortalHome({
   const [activeDropdown, setActiveDropdown] = useState<"nosotros" | "programas" | "admision" | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Registered applicant details for holding and showcasing copyable temporary access in simulated email mock
-  const [registeredApplicant, setRegisteredApplicant] = useState<{
-    dni: string;
-    applicantCode: string;
-    name: string;
-    lastName: string;
-    email: string;
-    programName: string;
-    temporaryPassword?: string;
-  } | null>(null);
+
 
   // Hero Carousel Slide state
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -150,21 +141,8 @@ export default function PortalHome({
 
       const generatedApplicantCode = created.applicantCode || dniInput;
 
-      const activeProg = careersDetail.find(c => c.id === programSelection);
-      const progName = activeProg ? activeProg.name : "Programa Seleccionado";
-
-      setRegisteredApplicant({
-        applicantCode: generatedApplicantCode,
-        dni: dniInput,
-        name: nameInput,
-        lastName: lastNameInput,
-        email: emailInput,
-        programName: progName,
-        temporaryPassword: tempPass
-      });
-
       setSubmitSuccessMsg(
-        `¡Pre-inscripción registrada con éxito! Código Oficial: ${generatedApplicantCode}. Sus credenciales de acceso a la Intranet han sido enviadas a su correo institucional (${emailInput}).`
+        `¡Pre-inscripción registrada con éxito! Código Oficial: ${generatedApplicantCode}. Sus credenciales de acceso a la Intranet han sido enviadas a su correo electrónico (${emailInput}). Por favor, revise su bandeja de entrada o carpeta de spam.`
       );
 
       // 4. Dispatch Welcome Email via NestJS MailService → Brevo SMTP
@@ -1536,103 +1514,7 @@ export default function PortalHome({
         </div>
       </footer>
 
-      {/* OFFICIAL INSTITUTIONAL PRE-ENROLLMENT CONFIRMATION MODAL */}
-      {registeredApplicant && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xl max-w-lg w-full text-xs font-semibold">
-            {/* Modal Header */}
-            <div className="bg-[#9F062A] text-white p-4 sm:p-5 flex justify-between items-center border-b border-rose-950">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                  <Check className="w-5 h-5 text-amber-300 stroke-[3]" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold tracking-wide text-white text-sm uppercase">
-                    ¡Pre-Inscripción Confirmada!
-                  </h3>
-                  <p className="text-[10px] text-rose-200 font-medium">
-                    IESTP San Francisco de Asís • Proceso de Admisión 2026
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setRegisteredApplicant(null)} 
-                className="text-white/70 hover:text-white p-1.5 hover:bg-white/10 rounded-lg transition-all cursor-pointer"
-                aria-label="Cerrar modal"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
 
-            {/* Modal Body */}
-            <div className="p-6 space-y-4 bg-slate-50">
-              <div className="bg-white p-4 rounded-xl border border-slate-200 text-slate-700 leading-relaxed space-y-2">
-                <p className="font-extrabold text-slate-900 text-sm">
-                  Estimado(a) {registeredApplicant.name} {registeredApplicant.lastName},
-                </p>
-                <p className="text-slate-600">
-                  Se ha registrado exitosamente su pre-inscripción para la carrera técnica de <strong className="text-slate-900">{registeredApplicant.programName}</strong>.
-                </p>
-                <p className="text-[11px] text-emerald-700 font-bold flex items-center gap-1.5 pt-1">
-                  <Mail className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  Se han enviado sus credenciales a su correo: <span className="underline">{registeredApplicant.email}</span>
-                </p>
-              </div>
-
-              {/* Credentials Box */}
-              <div className="bg-rose-50/60 border border-rose-200/80 p-4 rounded-xl space-y-3 text-slate-900 max-w-sm mx-auto shadow-2xs">
-                <div className="text-[10px] font-black uppercase text-[#9F062A] tracking-wider text-center border-b border-rose-200/60 pb-1.5">
-                  Credenciales de Acceso a Intranet
-                </div>
-
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-500 font-extrabold uppercase">Código de Postulante:</span>
-                  <span className="font-mono font-black text-[#9F062A] tracking-widest text-sm bg-white border border-rose-200 px-2 py-0.5 rounded select-all shadow-2xs">
-                    {registeredApplicant.applicantCode}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-500 font-extrabold uppercase">Usuario (DNI):</span>
-                  <span className="font-mono font-black text-slate-800 tracking-wider text-xs bg-white border border-rose-200 px-2 py-0.5 rounded select-all shadow-2xs">
-                    {registeredApplicant.dni}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-500 font-extrabold uppercase">Contraseña Temporal:</span>
-                  <span className="font-mono font-black text-[#9F062A] tracking-widest text-sm bg-white border border-rose-200 px-2 py-0.5 rounded shadow-2xs">
-                    {registeredApplicant.temporaryPassword || "clave123"}
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-[10px] text-slate-400 text-center italic">
-                Utilice estas credenciales en la Intranet para subir sus requisitos y rendir su examen de admisión.
-              </p>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="bg-white p-4 border-t border-slate-200 flex flex-col sm:flex-row justify-end gap-2.5">
-              <button 
-                onClick={() => setRegisteredApplicant(null)}
-                className="px-4 py-2 border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-50 uppercase text-[10px] transition-colors cursor-pointer text-center"
-              >
-                Cerrar
-              </button>
-              <button 
-                onClick={() => {
-                  setRegisteredApplicant(null);
-                  onEnterIntranet();
-                }}
-                className="px-5 py-2 bg-[#9F062A] hover:bg-[#800521] text-white rounded-xl font-black uppercase text-[10px] tracking-wide inline-flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#9F062A]/20 transition-transform active:scale-95"
-              >
-                <LogIn className="w-3.5 h-3.5 text-[#E3BD26]" /> Ingresar a la Intranet
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
