@@ -7,10 +7,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { AdmissionPeriod } from "../types";
-import { isFirebaseEnabled } from "../firebase/config";
-import { registerWithEmailAndPassword } from "../firebase/auth";
-import { saveDocumentGeneric, listCollectionGeneric } from "../firebase/firestore";
-import { sendWelcomeEmailBrevo } from "../firebase/emailService";
+import { createApplicant, fetchApplicantByDni, sendTransactionalWelcomeEmail } from "../services/api";
 
 interface PortalHomeProps {
   onEnterIntranet: () => void;
@@ -103,7 +100,7 @@ export default function PortalHome({
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
   };
 
-  // Handle live admission registration directly into localStorage sfa_applicants
+  // Handle live admission registration via NestJS REST API → MongoDB
   const handlePreEnrollmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitSuccessMsg("");
@@ -114,129 +111,19 @@ export default function PortalHome({
     }
 
     try {
-      const existingApplicantsRaw = localStorage.getItem("sfa_applicants");
-      let applicantsList: any[] = [];
-      if (existingApplicantsRaw) {
-        applicantsList = JSON.parse(existingApplicantsRaw);
-      }
-
-      let fireApplicants: any[] = [];
-      if (isFirebaseEnabled) {
-        try {
-          fireApplicants = await listCollectionGeneric("applicants");
-        } catch (err) {
-          console.error("Error reading from Firestore:", err);
-        }
-      }
-
-      // Check DNI repeats across both local and firebase rosters
-      const isRepeatedLocal = applicantsList.some((app: any) => app.dni === dniInput);
-      const isRepeatedFire = fireApplicants.some((app: any) => app.dni === dniInput);
-      if (isRepeatedLocal || isRepeatedFire) {
-        setSubmitSuccessMsg(`El DNI ${dniInput} ya se encuentra registrado. Utilice su Código de Postulante o DNI como usuario y su clave en la Intranet.`);
+      // 1. Check if DNI already exists in the backend
+      const existing = await fetchApplicantByDni(dniInput);
+      if (existing) {
+        setSubmitSuccessMsg(
+          `El DNI ${dniInput} ya se encuentra registrado. Utilice su Código de Postulante o DNI como usuario y su clave en la Intranet.`
+        );
         return;
       }
 
-      // Calculate dynamic unique applicantCode
-      const getPeriodPrefix = (periodName: string) => {
-        const yearMatch = periodName.match(/\d{4}/);
-        const year = yearMatch ? yearMatch[0] : "2026";
-        const num = periodName.includes("II") ? "2" : "1";
-        return `${year}${num}`;
-      };
-
-      const periodName = activePeriod?.name || "2026-I";
-      const prefix = getPeriodPrefix(periodName);
-
-      // Merge applicant registries to compute non-reusable sequentially unique code
-      const combinedRoster = [...applicantsList];
-      fireApplicants.forEach((fa) => {
-        if (!combinedRoster.some((cr) => cr.dni === fa.dni)) {
-          combinedRoster.push(fa);
-        }
-      });
-
-      const samePrefixApps = combinedRoster.filter((app: any) => 
-        app.applicantCode && app.applicantCode.startsWith(prefix)
-      );
-
-      let nextSerial = 1;
-      if (samePrefixApps.length > 0) {
-        const serials = samePrefixApps.map((app: any) => {
-          const serialStr = app.applicantCode.slice(5);
-          const parsed = parseInt(serialStr, 10);
-          return isNaN(parsed) ? 0 : parsed;
-        });
-        nextSerial = Math.max(...serials) + 1;
-      }
-
-      const serialStr = String(nextSerial).padStart(4, '0');
-      const generatedApplicantCode = `${prefix}${serialStr}`;
       const tempPass = "clave123";
 
-      // 2. Register applicant directly in Firestore (No Firebase Authentication)
-      let fireUid = generatedApplicantCode;
-      if (isFirebaseEnabled) {
-        try {
-          const isEmailRepeatedFire = fireApplicants.some((app: any) => app.email?.toLowerCase() === emailInput.toLowerCase());
-          if (isEmailRepeatedFire) {
-            alert("El correo electrónico ya se encuentra registrado.");
-            return;
-          }
-
-          // 1. Create user mapping record in Firestore "users"
-          const newUserRecord = {
-            id: fireUid,
-            uid: fireUid,
-            dni: dniInput,
-            email: emailInput,
-            password: tempPass,
-            role: "postulante",
-            applicantCode: generatedApplicantCode
-          };
-          await saveDocumentGeneric("users", fireUid, newUserRecord);
-
-          // 2. Create detail applicant record in Firestore "applicants"
-          const newApplicantRecord = {
-            id: fireUid,
-            uid: fireUid,
-            applicantCode: generatedApplicantCode,
-            dni: dniInput,
-            name: nameInput,
-            lastName: lastNameInput,
-            email: emailInput,
-            password: tempPass,
-            phone: phoneInput,
-            programId: programSelection,
-            paymentStatus: "No Pagado",
-            paymentOperation: "",
-            examStatus: "No Programado",
-            admitted: false,
-            periodId: activePeriod?.id || "1",
-            folderStatus: "Pending",
-            registeredAt: new Date().toISOString().split("T")[0],
-            docs: {
-              dniFile: { status: "No Enviado", fileName: "" },
-              certificadoFile: { status: "No Enviado", fileName: "" },
-              partidaFile: { status: "No Enviado", fileName: "" },
-              fotoFile: { status: "No Enviado", fileName: "" }
-            }
-          };
-          await saveDocumentGeneric("applicants", fireUid, newApplicantRecord);
-          console.log("Firestore-only applicant registration completed for UID:", fireUid);
-
-          // Brevo email service is disabled for now as per updated specifications. We show credentials modal immediately in UI.
-          console.info("Brevo email dispatcher is bypassed during development mode.");
-        } catch (firebaseErr: any) {
-          console.error("Firebase registration failure:", firebaseErr);
-          alert(`Error al registrar cuenta de admisión en Firestore: ${firebaseErr.message || firebaseErr}`);
-          return;
-        }
-      }
-
-      // Record offline/local fallback object
-      const newApplicant = {
-        applicantCode: generatedApplicantCode,
+      // 2. Build the new applicant payload
+      const newApplicantPayload = {
         dni: dniInput,
         name: nameInput,
         lastName: lastNameInput,
@@ -253,8 +140,15 @@ export default function PortalHome({
         registeredAt: new Date().toISOString().split("T")[0]
       };
 
-      applicantsList.push(newApplicant);
-      localStorage.setItem("sfa_applicants", JSON.stringify(applicantsList));
+      // 3. POST to NestJS → MongoDB (backend auto-generates applicantCode)
+      const created = await createApplicant(newApplicantPayload);
+
+      if (!created) {
+        alert("Error al conectar con el servidor. Intente nuevamente.");
+        return;
+      }
+
+      const generatedApplicantCode = created.applicantCode || dniInput;
 
       const activeProg = careersDetail.find(c => c.id === programSelection);
       const progName = activeProg ? activeProg.name : "Programa Seleccionado";
@@ -273,25 +167,22 @@ export default function PortalHome({
         `¡Pre-inscripción registrada con éxito! Código Oficial: ${generatedApplicantCode}. Sus credenciales de acceso a la Intranet han sido enviadas a su correo institucional (${emailInput}).`
       );
 
-      // Dispatch Welcome Email via Brevo API / SFA-Backend NestJS Service
-      sendWelcomeEmailBrevo(
-        emailInput,
-        `${nameInput} ${lastNameInput}`.trim(),
-        {
-          email: emailInput,
-          password: tempPass,
-          applicantCode: generatedApplicantCode,
-          url: `${window.location.origin}/ingresar`
-        }
-      ).then((sent) => {
+      // 4. Dispatch Welcome Email via NestJS MailService → Brevo SMTP
+      sendTransactionalWelcomeEmail({
+        email: emailInput,
+        applicantCode: generatedApplicantCode,
+        password: tempPass,
+        name: `${nameInput} ${lastNameInput}`.trim(),
+        url: `${window.location.origin}/ingresar`
+      }).then((sent) => {
         if (sent) {
-          console.info("✅ Welcome email dispatched successfully via Brevo/SFA-Backend.");
+          console.info("✅ Welcome email dispatched via NestJS SFA-Backend.");
         } else {
-          console.warn("⚠️ Welcome email dispatch skipped or pending.");
+          console.warn("⚠️ Welcome email pending – check backend MailService.");
         }
       });
 
-      // Clean inputs
+      // 5. Clean form inputs
       setDniInput("");
       setNameInput("");
       setLastNameInput("");

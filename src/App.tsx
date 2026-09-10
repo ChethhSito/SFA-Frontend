@@ -18,6 +18,14 @@ import { isFirebaseEnabled, db } from "./firebase/config";
 import { listCollectionGeneric, saveDocumentGeneric } from "./firebase/firestore";
 import { collection, onSnapshot } from "firebase/firestore";
 import { AlertCircle } from "lucide-react";
+import {
+  fetchApplicants,
+  fetchEnrollments,
+  fetchAdmissionPeriods,
+  fetchCourses,
+  fetchTeachers,
+  fetchGraduations
+} from "./services/api";
 
 const alertQueue: string[] = [];
 let globalAlertHandler: ((message: string) => void) | null = null;
@@ -229,6 +237,47 @@ export default function App() {
     if (savedGrad) setGraduations(JSON.parse(savedGrad));
     if (savedCourses) setCourses(JSON.parse(savedCourses));
     if (savedTeachers) setTeachers(JSON.parse(savedTeachers));
+
+    // Async sync with NestJS SFA-Backend REST API on mount
+    async function loadBackendData() {
+      const backendApplicants = await fetchApplicants();
+      if (backendApplicants && Array.isArray(backendApplicants)) {
+        setApplicants(backendApplicants);
+        localStorage.setItem("sfa_applicants", JSON.stringify(backendApplicants));
+      }
+
+      const backendEnrollments = await fetchEnrollments();
+      if (backendEnrollments && Array.isArray(backendEnrollments)) {
+        setEnrollments(backendEnrollments);
+        localStorage.setItem("sfa_enrollments", JSON.stringify(backendEnrollments));
+      }
+
+      const backendPeriods = await fetchAdmissionPeriods();
+      if (backendPeriods && Array.isArray(backendPeriods)) {
+        setAdmissionPeriods(backendPeriods);
+        localStorage.setItem("sfa_admission_periods", JSON.stringify(backendPeriods));
+      }
+
+      const backendCourses = await fetchCourses();
+      if (backendCourses && Array.isArray(backendCourses)) {
+        setCourses(backendCourses);
+        localStorage.setItem("sfa_courses", JSON.stringify(backendCourses));
+      }
+
+      const backendTeachers = await fetchTeachers();
+      if (backendTeachers && Array.isArray(backendTeachers)) {
+        setTeachers(backendTeachers);
+        localStorage.setItem("sfa_teachers", JSON.stringify(backendTeachers));
+      }
+
+      const backendGraduations = await fetchGraduations();
+      if (backendGraduations && Array.isArray(backendGraduations)) {
+        setGraduations(backendGraduations);
+        localStorage.setItem("sfa_graduations", JSON.stringify(backendGraduations));
+      }
+    }
+
+    loadBackendData();
 
     // Live real-time sync from Firestore
     let unsubscribeApplicants: (() => void) | undefined = undefined;
