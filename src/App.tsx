@@ -100,53 +100,50 @@ export default function App() {
   const [cycleStatuses, setCycleStatuses] = useState(INITIAL_CYCLE_STATUSES);
   const [graduations, setGraduations] = useState(INITIAL_GRADUATIONS);
 
+  // Default fallback admission periods
+  const DEFAULT_ADMISSION_PERIODS: AdmissionPeriod[] = [
+    {
+      id: "1",
+      academicPeriodId: "p1",
+      name: "Periodo Académico 2026-I",
+      status: "APERTURADO",
+      isActive: true,
+      preEnrollmentStartDate: "2026-02-01",
+      preEnrollmentEndDate: "2026-12-31",
+      admissionDate: "2026-03-22",
+      enrollmentStartDate: "2026-03-24",
+      enrollmentEndDate: "2026-03-29",
+      classesStartDate: "2026-04-06"
+    },
+    {
+      id: "2",
+      academicPeriodId: "p2",
+      name: "Periodo Académico 2026-II",
+      status: "PENDIENTE",
+      isActive: false,
+      preEnrollmentStartDate: "2026-07-01",
+      preEnrollmentEndDate: "2026-08-14",
+      admissionDate: "2026-08-16",
+      enrollmentStartDate: "2026-08-18",
+      enrollmentEndDate: "2026-08-23",
+      classesStartDate: "2026-09-01"
+    }
+  ];
+
   // Admission periods state
   const [admissionPeriods, setAdmissionPeriods] = useState<AdmissionPeriod[]>(() => {
-    // Read MPA Academic Periods first to enforce absolute dependency
-    const mpaSaved = localStorage.getItem("mpa_db_periods");
-    let validMpaIds: string[] = [];
-    if (mpaSaved) {
-      try {
-        const parsedMpa = JSON.parse(mpaSaved);
-        if (Array.isArray(parsedMpa)) {
-          validMpaIds = parsedMpa.map((p: any) => p.id);
-        }
-      } catch (e) {
-        console.error("Error reading mpa_db_periods:", e);
-      }
-    }
-
-    if (validMpaIds.length === 0) {
-      return []; // Return empty if there are no Academic Periods in MPA
-    }
-
     const saved = localStorage.getItem("sfa_admission_periods");
     try {
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Migrar periodos guardados antiguos si no tienen fechas o tienen formato viejo / duplicado
-        const migrated = parsed.map((p: any) => {
-          const isSecondPeriod = p.name && p.name.includes("-II");
-          const hasDefaultFirstPeriodDate = p.preEnrollmentStartDate === "2026-02-01" && isSecondPeriod;
-          return {
-            ...p,
-            status: p.status || (p.isActive ? "APERTURADO" : "PENDIENTE"),
-            academicPeriodId: p.academicPeriodId || (p.id === "1" ? "p1" : p.id === "2" ? "p2" : undefined),
-            preEnrollmentStartDate: hasDefaultFirstPeriodDate ? "2026-07-01" : (p.preEnrollmentStartDate || (isSecondPeriod ? "2026-07-01" : "2026-02-01")),
-            preEnrollmentEndDate: hasDefaultFirstPeriodDate ? "2026-08-14" : (p.preEnrollmentEndDate || (isSecondPeriod ? "2026-08-14" : "2026-03-20")),
-            admissionDate: hasDefaultFirstPeriodDate ? "2026-08-16" : (p.admissionDate || (isSecondPeriod ? "2026-08-16" : "2026-03-22")),
-            enrollmentStartDate: hasDefaultFirstPeriodDate ? "2026-08-18" : (p.enrollmentStartDate || (isSecondPeriod ? "2026-08-18" : "2026-03-24")),
-            enrollmentEndDate: hasDefaultFirstPeriodDate ? "2026-08-23" : (p.enrollmentEndDate || p.enrollmentDate || (isSecondPeriod ? "2026-08-23" : "2026-03-29")),
-            classesStartDate: hasDefaultFirstPeriodDate ? "2026-09-01" : (p.classesStartDate || (isSecondPeriod ? "2026-09-01" : "2026-04-06"))
-          };
-        });
-        // Strict filter: only keep admission periods linked to existing academic period IDs
-        return migrated.filter((p: any) => p.academicPeriodId && validMpaIds.includes(p.academicPeriodId));
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
       }
     } catch (e) {
-      console.error(e);
+      console.error("Error reading sfa_admission_periods:", e);
     }
-    return []; // No mock periods
+    return DEFAULT_ADMISSION_PERIODS;
   });
 
   useEffect(() => {
@@ -157,27 +154,14 @@ export default function App() {
     }
   }, [admissionPeriods]);
 
-  // Reactive verification: Automatically purge admission periods if their linked academic periods are deleted or empty in the MPA
+  // Sync admission periods with NestJS REST API (MongoDB)
   useEffect(() => {
-    try {
-      const mpaSaved = localStorage.getItem("mpa_db_periods");
-      let validMpaIds: string[] = [];
-      if (mpaSaved) {
-        const parsedMpa = JSON.parse(mpaSaved);
-        if (Array.isArray(parsedMpa)) {
-          validMpaIds = parsedMpa.map((p: any) => p.id);
-        }
+    fetchAdmissionPeriods().then((apiPeriods) => {
+      if (apiPeriods && apiPeriods.length > 0) {
+        setAdmissionPeriods(apiPeriods);
       }
-      const filtered = admissionPeriods.filter(
-        (p) => p.academicPeriodId && validMpaIds.includes(p.academicPeriodId)
-      );
-      if (filtered.length !== admissionPeriods.length) {
-        setAdmissionPeriods(filtered);
-      }
-    } catch (e) {
-      console.error("Error syncing MAMC admission periods with MPA academic periods:", e);
-    }
-  });
+    }).catch(err => console.error("Error fetching REST API admission periods:", err));
+  }, []);
 
   // Synchronize state with localStorage and fetch live applicants from Firestore
   useEffect(() => {
