@@ -20,12 +20,11 @@ export default function PortalHome({
 }: PortalHomeProps) {
   // Dynamic active/matching period check using current date validation
   const todayStr = new Date().toISOString().split("T")[0];
-  const activePeriod = admissionPeriods.find(p => p.status === "APERTURADO" && todayStr <= (p.preEnrollmentEndDate || "")) || 
-                       admissionPeriods.find(p => todayStr <= (p.preEnrollmentEndDate || "")) || 
-                       admissionPeriods.find(p => p.status === "APERTURADO") || 
+  const activePeriod = admissionPeriods.find(p => p.status === "APERTURADO" || p.isActive) || 
+                       admissionPeriods.find(p => p.status !== "CERRADO" && p.status !== "PENDIENTE") || 
                        admissionPeriods[0];
 
-  const displayPeriod = activePeriod || admissionPeriods.find(p => p.status !== "PENDIENTE") || admissionPeriods[0];
+  const displayPeriod = activePeriod || admissionPeriods[0];
 
   // Navigation State
   const [currentTab, setCurrentTab] = useState<
