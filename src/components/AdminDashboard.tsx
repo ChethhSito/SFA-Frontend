@@ -1148,7 +1148,7 @@ export default function AdminDashboard({
 
             {/* 2. Key Dynamic Stats for selected period */}
             {(() => {
-              const activeApplicants = applicants.filter(app => app.periodId === selectedPeriodId);
+              const activeApplicants = applicants.filter(app => !selectedPeriodId || selectedPeriodId === "all" || app.periodId === selectedPeriodId || (!app.periodId || app.periodId === "1" || app.periodId === admissionPeriods[0]?.id));
               const totalInPeriod = activeApplicants.length;
               const pendingF = activeApplicants.filter(a => a.folderStatus === "Pending").length;
               const observedF = activeApplicants.filter(a => a.folderStatus === "Observed").length;
@@ -1236,7 +1236,7 @@ export default function AdminDashboard({
 
             {/* 4. Applicants List Grid */}
             {(() => {
-              const activeApplicants = applicants.filter(app => app.periodId === selectedPeriodId);
+              const activeApplicants = applicants.filter(app => !selectedPeriodId || selectedPeriodId === "all" || app.periodId === selectedPeriodId || (!app.periodId || app.periodId === "1" || app.periodId === admissionPeriods[0]?.id));
               const filteredApplicants = activeApplicants.filter((app) => {
                 const fullName = `${app.name} ${app.lastName}`.toLowerCase();
                 const matchesQuery = 

@@ -139,7 +139,7 @@ export default function PortalHome({
         paymentOperation: "",
         examStatus: "No Programado" as const,
         admitted: false,
-        periodId: activePeriod?.id || "1",
+        periodId: displayPeriod?.id || activePeriod?.id || admissionPeriods[0]?.id || "1",
         folderStatus: "Pending" as const,
         password: tempPass,
         registeredAt: new Date().toISOString().split("T")[0]
