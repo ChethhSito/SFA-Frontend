@@ -36,6 +36,14 @@ export default function PortalHome({
   const [activeDropdown, setActiveDropdown] = useState<"nosotros" | "programas" | "admision" | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Success modal confirmation state (without sensitive credentials box)
+  const [successModalData, setSuccessModalData] = useState<{
+    name: string;
+    lastName: string;
+    email: string;
+    programName: string;
+  } | null>(null);
+
 
 
   // Hero Carousel Slide state
@@ -140,6 +148,16 @@ export default function PortalHome({
       }
 
       const generatedApplicantCode = created.applicantCode || dniInput;
+
+      const activeProg = careersDetail.find(c => c.id === programSelection);
+      const progName = activeProg ? activeProg.name : "Programa Seleccionado";
+
+      setSuccessModalData({
+        name: nameInput,
+        lastName: lastNameInput,
+        email: emailInput,
+        programName: progName
+      });
 
       setSubmitSuccessMsg(
         `¡Pre-inscripción registrada con éxito! Código Oficial: ${generatedApplicantCode}. Sus credenciales de acceso a la Intranet han sido enviadas a su correo electrónico (${emailInput}). Por favor, revise su bandeja de entrada o carpeta de spam.`
@@ -259,15 +277,11 @@ export default function PortalHome({
           
           {/* Logo Brand area */}
           <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => { setCurrentTab("inicio"); setMobileMenuOpen(false); }}>
-            <svg className="w-11 h-11 sm:w-12 sm:h-12 drop-shadow-md shrink-0" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M50 5 L85 22 C85 58 68 85 50 95 C32 85 15 58 15 22 Z" fill="#9F062A" stroke="#CFA020" strokeWidth="3.5" />
-              <path d="M50 10 L78 25 C78 54 64 78 50 87 C36 78 22 54 22 25 Z" fill="#800521" />
-              <polygon points="50,22 53,30 61,30 55,35 57,43 50,38 43,43 45,35 39,30 47,30" fill="#E3BD26" />
-              <rect x="47" y="32" width="6" height="28" rx="1" fill="#EAEAE4" />
-              <rect x="36" y="42" width="28" height="6" rx="1" fill="#EAEAE4" />
-              <path d="M32 68 C37 65 45 65 50 68 C55 65 63 65 68 68 L68 76 C63 73 55 73 50 76 C45 73 37 73 32 76 Z" fill="#EAEAE4" stroke="#CFA020" strokeWidth="1" />
-              <line x1="50" y1="68" x2="50" y2="76" stroke="#CFA020" strokeWidth="1" />
-            </svg>
+            <img 
+              src="/SFA-Logo.jpeg" 
+              alt="Logo IESTP San Francisco de Asís" 
+              className="w-11 h-11 sm:w-12 sm:h-12 object-contain rounded-full border-2 border-[#CFA020] shadow-md shrink-0 bg-white p-0.5" 
+            />
             <div>
               <h1 className="text-xs sm:text-base font-black text-slate-900 tracking-tight leading-none uppercase">
                 IESTP <span className="text-[#9F062A]">SAN FRANCISCO</span>
@@ -1514,7 +1528,84 @@ export default function PortalHome({
         </div>
       </footer>
 
+      {/* INSTITUTIONAL PRE-ENROLLMENT CONFIRMATION MODAL (WITHOUT CREDENTIALS BOX) */}
+      {successModalData && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xl max-w-md w-full text-xs font-semibold">
+            {/* Modal Header */}
+            <div className="bg-[#9F062A] text-white p-5 flex justify-between items-center border-b border-rose-950">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                  <Check className="w-5 h-5 text-amber-300 stroke-[3]" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold tracking-wide text-white text-sm uppercase">
+                    ¡Pre-Inscripción Confirmada!
+                  </h3>
+                  <p className="text-[10px] text-rose-200 font-medium">
+                    IESTP San Francisco de Asís • Admisión 2026
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSuccessModalData(null)} 
+                className="text-white/70 hover:text-white p-1.5 hover:bg-white/10 rounded-lg transition-all cursor-pointer"
+                aria-label="Cerrar modal"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
+            {/* Modal Body */}
+            <div className="p-6 space-y-4 bg-slate-50 text-center">
+              <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 border border-emerald-200">
+                <Mail className="w-6 h-6" />
+              </div>
+
+              <h4 className="font-extrabold text-slate-900 text-base">
+                ¡Registro procesado exitosamente!
+              </h4>
+
+              <p className="text-slate-600 leading-relaxed text-xs">
+                Se ha completado su registro para la carrera de <strong className="text-slate-900">{successModalData.programName}</strong> a nombre de <strong className="text-slate-900">{successModalData.name} {successModalData.lastName}</strong>.
+              </p>
+
+              <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl text-emerald-900 text-xs font-bold space-y-1">
+                <p className="flex items-center justify-center gap-1.5 text-emerald-800">
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  Credenciales enviadas a su correo
+                </p>
+                <p className="text-[11px] font-normal text-emerald-700">
+                  Hemos enviado sus accesos a: <strong className="font-bold underline">{successModalData.email}</strong>
+                </p>
+              </div>
+
+              <p className="text-[10px] text-slate-400 italic">
+                Por favor revise su bandeja de entrada o carpeta de spam para obtener su usuario y contraseña de la Intranet.
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-white p-4 border-t border-slate-200 flex flex-col sm:flex-row justify-end gap-2.5">
+              <button 
+                onClick={() => setSuccessModalData(null)}
+                className="px-4 py-2 border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-50 uppercase text-[10px] transition-colors cursor-pointer text-center"
+              >
+                Cerrar
+              </button>
+              <button 
+                onClick={() => {
+                  setSuccessModalData(null);
+                  onEnterIntranet();
+                }}
+                className="px-5 py-2 bg-[#9F062A] hover:bg-[#800521] text-white rounded-xl font-black uppercase text-[10px] tracking-wide inline-flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#9F062A]/20 transition-transform active:scale-95"
+              >
+                <LogIn className="w-3.5 h-3.5 text-[#E3BD26]" /> Ingresar a la Intranet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
