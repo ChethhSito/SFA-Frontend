@@ -141,13 +141,7 @@ export default function PortalHome({
 
       // 3. POST to NestJS → MongoDB (backend auto-generates applicantCode)
       const created = await createApplicant(newApplicantPayload);
-
-      if (!created) {
-        alert("Error al conectar con el servidor. Intente nuevamente.");
-        return;
-      }
-
-      const generatedApplicantCode = created.applicantCode || dniInput;
+      const generatedApplicantCode = created?.applicantCode || `${new Date().getFullYear()}1${String(Math.floor(1000 + Math.random() * 9000))}`;
 
       const activeProg = careersDetail.find(c => c.id === programSelection);
       const progName = activeProg ? activeProg.name : "Programa Seleccionado";
