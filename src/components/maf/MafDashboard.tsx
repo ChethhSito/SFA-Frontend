@@ -33,6 +33,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import PageTransition from "../ui/PageTransition";
+import { fetchApplicants, fetchEnrollments } from "../../services/api";
 
 export interface MafConcept {
   id: string;
@@ -249,6 +250,137 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
       setAuditLogs(defaultLogs);
       localStorage.setItem("maf_audit_logs", JSON.stringify(defaultLogs));
     }
+
+    // 5. Automatic Sync of MAMC & MGE Payments (Derecho de Examen ADM01 y Matrícula MAT01)
+    const syncMamcPayments = async () => {
+      try {
+        let apps: any[] = [];
+        let enrolls: any[] = [];
+
+        const savedApps = localStorage.getItem("sfa_applicants");
+        if (savedApps) apps = JSON.parse(savedApps);
+
+        const savedEnrolls = localStorage.getItem("sfa_enrollments");
+        if (savedEnrolls) enrolls = JSON.parse(savedEnrolls);
+
+        const apiApps = await fetchApplicants();
+        if (apiApps && Array.isArray(apiApps) && apiApps.length > 0) {
+          apiApps.forEach((a) => {
+            if (!apps.some((x) => x.dni === a.dni)) apps.push(a);
+          });
+        }
+
+        const apiEnrolls = await fetchEnrollments();
+        if (apiEnrolls && Array.isArray(apiEnrolls) && apiEnrolls.length > 0) {
+          apiEnrolls.forEach((e) => {
+            if (!enrolls.some((x) => (x.id && x.id === (e as any).id) || x.studentDni === e.studentDni)) enrolls.push(e);
+          });
+        }
+
+        setObligations((prevObls) => {
+          const updatedObls = [...prevObls];
+          let changed = false;
+
+          // Sync Admission Payments (ADM01)
+          apps.forEach((app) => {
+            const dni = app.dni;
+            if (!dni) return;
+            const fullName = `${app.name || ''} ${app.lastName || ''}`.trim() || `Postulante DNI ${dni}`;
+            const existingAdm = updatedObls.find((o) => o.studentDni === dni && o.conceptCode === "ADM01");
+
+            let status: MafObligation["status"] = "Pendiente";
+            if (app.paymentStatus === "Pagado" || app.paymentStatus === "VERIFICADO" || app.paymentStatus === "Validado" || app.status === "REGISTRADO") {
+              status = "Validado";
+            } else if (app.paymentStatus === "POR_VERIFICAR" || app.paymentStatus === "En Proceso") {
+              status = "En Proceso";
+            }
+
+            if (!existingAdm) {
+              updatedObls.push({
+                id: `OBL-ADM-${dni}`,
+                studentDni: dni,
+                studentName: fullName,
+                conceptCode: "ADM01",
+                conceptName: "Derecho de Examen de Admisión Ordinario",
+                amount: 120,
+                discount: 0,
+                finalAmount: 120,
+                period: app.admissionPeriod || "2026-I",
+                status,
+                dateCreated: app.createdAt || new Date().toISOString().split("T")[0],
+                voucherRegistered: status === "Validado" || status === "En Proceso" || !!app.voucherCode || !!app.paymentVoucher,
+                voucherDetails: {
+                  operationNumber: app.voucherCode || app.paymentVoucher || `VOUCH-${dni}`,
+                  bankName: "Banco de la Nación",
+                  paymentDate: app.paymentDate || new Date().toISOString().split("T")[0],
+                  amountPaid: 120,
+                  observations: app.notes || "Pago registrado en portal de admisión MAMC"
+                }
+              });
+              changed = true;
+            } else if (existingAdm.status !== status && status === "Validado") {
+              existingAdm.status = status;
+              existingAdm.voucherRegistered = true;
+              changed = true;
+            }
+          });
+
+          // Sync Enrollment Payments (MAT01)
+          enrolls.forEach((enr) => {
+            const dni = enr.studentDni;
+            if (!dni) return;
+            const fullName = enr.studentName || `Estudiante DNI ${dni}`;
+            const existingMat = updatedObls.find((o) => o.studentDni === dni && o.conceptCode === "MAT01");
+
+            let status: MafObligation["status"] = "Pendiente";
+            if (enr.paymentStatus === "Validado" || enr.paymentStatus === "PAGADO" || enr.academicStatus === "MATRICULADO") {
+              status = "Validado";
+            } else if (enr.paymentStatus === "POR_VERIFICAR" || enr.paymentStatus === "En Proceso") {
+              status = "En Proceso";
+            }
+
+            if (!existingMat) {
+              updatedObls.push({
+                id: `OBL-MAT-${dni}`,
+                studentDni: dni,
+                studentName: fullName,
+                conceptCode: "MAT01",
+                conceptName: "Matrícula Semestral Regular",
+                amount: 250,
+                discount: 0,
+                finalAmount: 250,
+                period: enr.period || "2026-I",
+                status,
+                dateCreated: enr.enrollmentDate || new Date().toISOString().split("T")[0],
+                voucherRegistered: status === "Validado" || status === "En Proceso" || !!enr.paymentOperation,
+                voucherDetails: {
+                  operationNumber: enr.paymentOperation || `VOUCH-MAT-${dni}`,
+                  bankName: "Banco de la Nación",
+                  paymentDate: enr.enrollmentDate || new Date().toISOString().split("T")[0],
+                  amountPaid: 250,
+                  observations: "Matrícula procesada en portal MAMC/MGE"
+                }
+              });
+              changed = true;
+            } else if (existingMat.status !== status && status === "Validado") {
+              existingMat.status = status;
+              existingMat.voucherRegistered = true;
+              changed = true;
+            }
+          });
+
+          if (changed) {
+            localStorage.setItem("maf_obligations", JSON.stringify(updatedObls));
+          }
+
+          return updatedObls;
+        });
+      } catch (err) {
+        console.error("Error syncing MAMC payments into MAF:", err);
+      }
+    };
+
+    syncMamcPayments();
   }, []);
 
   // Save on updates helper
