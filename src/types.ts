@@ -3,7 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type Role = "portal" | "postulante" | "alumno" | "docente" | "administrador" | "mpa" | "mge" | "maf";
+export type Role = "portal" | "postulante" | "alumno" | "docente" | "administrador" | "mpa" | "mge" | "maf" | "superadmin";
+
+export interface SystemUser {
+  id: string;
+  dni: string;
+  email: string;
+  displayName: string;
+  lastName?: string;
+  phone?: string;
+  role: Role;
+  assignedModule: string;
+  status: "Activo" | "Inactivo" | "Bloqueado";
+  password?: string;
+  createdAt?: string;
+  lastLogin?: string;
+}
 
 export type ProgramId = 
   | "sistemas" 

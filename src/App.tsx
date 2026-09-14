@@ -8,6 +8,7 @@ import { Role, AdmissionPeriod } from "./types";
 import PortalHome from "./components/PortalHome";
 import LoginPortal from "./components/LoginPortal";
 import AdminRouter from "./components/routers/AdminRouter";
+import SuperAdminRouter from "./components/routers/SuperAdminRouter";
 import MpaRouter from "./components/routers/MpaRouter";
 import MgeRouter from "./components/routers/MgeRouter";
 import MafRouter from "./components/routers/MafRouter";
@@ -568,6 +569,14 @@ export default function App() {
           onUpdateAssignments={(updated) => saveDatabaseState("sfa_assignments", updated, setAssignments)}
           onUpdateAttendance={(updated) => saveDatabaseState("sfa_attendance", updated, setAttendance)}
           onLogout={handleLogout}
+        />
+      )}
+
+      {/* 5.5 SuperAdmin System Administration panel */}
+      {currentUser.role === "superadmin" && (
+        <SuperAdminRouter 
+          onLogout={handleLogout}
+          onSwitchRole={handleLoginSuccess}
         />
       )}
 

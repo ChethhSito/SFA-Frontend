@@ -1,4 +1,4 @@
-import { Applicant, Enrollment, AdmissionPeriod, Course, Teacher, Graduation } from "../types";
+import { Applicant, Enrollment, AdmissionPeriod, Course, Teacher, Graduation, SystemUser } from "../types";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:3001";
 
@@ -243,4 +243,48 @@ export async function sendTransactionalWelcomeEmail(payload: {
     return true;
   }
   return false;
+}
+
+/* ==========================================================================
+   8. SYSTEM USERS & ROLES (SuperAdmin & Gestión de Usuarios)
+   ========================================================================== */
+
+export async function fetchUsers(): Promise<SystemUser[] | null> {
+  const list = await fetchJson<any[]>("/users");
+  if (!list) return null;
+  return list.map((item) => ({
+    ...item,
+    id: item.id || item._id
+  })) as SystemUser[];
+}
+
+export async function createUser(user: Partial<SystemUser>): Promise<SystemUser | null> {
+  const item = await fetchJson<any>("/users", {
+    method: "POST",
+    body: JSON.stringify(user)
+  });
+  if (!item) return null;
+  return {
+    ...item,
+    id: item.id || item._id
+  } as SystemUser;
+}
+
+export async function updateUser(id: string, data: Partial<SystemUser>): Promise<SystemUser | null> {
+  const item = await fetchJson<any>(`/users/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data)
+  });
+  if (!item) return null;
+  return {
+    ...item,
+    id: item.id || item._id
+  } as SystemUser;
+}
+
+export async function deleteUser(id: string): Promise<boolean> {
+  const result = await fetchJson<{ success: boolean }>(`/users/${id}`, {
+    method: "DELETE"
+  });
+  return !!result;
 }

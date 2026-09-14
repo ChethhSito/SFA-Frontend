@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import { 
   Lock, User, ShieldAlert, ArrowLeft, Loader2 
 } from "lucide-react";
-import { Role } from "../types";
+import { Role, SystemUser } from "../types";
 import { motion } from "motion/react";
 import { isFirebaseEnabled } from "../firebase/config";
 import { loginWithEmailAndPassword } from "../firebase/auth";
 import { listCollectionGeneric } from "../firebase/firestore";
-import { fetchApplicants, fetchApplicantByDni } from "../services/api";
+import { fetchApplicants, fetchApplicantByDni, fetchEnrollments, fetchUsers } from "../services/api";
 
 interface LoginPortalProps {
   onBack: () => void;
@@ -158,12 +158,19 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     if (matchedApp) {
       try {
         const savedEnrolls = localStorage.getItem("sfa_enrollments");
+        let localEnrollments: any[] = [];
         if (savedEnrolls) {
-          const localEnrollments = JSON.parse(savedEnrolls);
-          const matchedEnroll = localEnrollments.find((e: any) => e.studentDni === matchedApp.dni);
-          if (matchedEnroll && matchedEnroll.academicStatus === "MATRICULADO") {
-            isMatriculado = true;
+          try { localEnrollments = JSON.parse(savedEnrolls); } catch(e) {}
+        }
+        let matchedEnroll = localEnrollments.find((e: any) => e.studentDni === matchedApp.dni);
+        if (!matchedEnroll) {
+          const apiEnrolls = await fetchEnrollments();
+          if (apiEnrolls && Array.isArray(apiEnrolls)) {
+            matchedEnroll = apiEnrolls.find((e: any) => e.studentDni === matchedApp.dni);
           }
+        }
+        if (matchedEnroll && (matchedEnroll.academicStatus === "MATRICULADO" || matchedEnroll.academicStatus === "ADMITIDO")) {
+          isMatriculado = true;
         }
       } catch (e) {
         console.error("Error reading sfa_enrollments in LoginPortal:", e);
@@ -233,28 +240,73 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
       return;
     }
 
-    // 1. Check Administrator/MAMC
-    if (uTrim === "mamc" || uTrim === "mamc@iestpsfa.edu.pe" || uTrim === "admin" || uTrim === "administrador" || uTrim === "admin@iestpsfa.edu.pe") {
+    // -1. Check Dynamic System Users created via SuperAdmin / MongoDB
+    let systemUsers: SystemUser[] = [];
+    try {
+      const savedSys = localStorage.getItem("sfa_system_users");
+      if (savedSys) systemUsers = JSON.parse(savedSys);
+    } catch (e) {}
+
+    try {
+      const apiUsers = await fetchUsers();
+      if (apiUsers && Array.isArray(apiUsers)) {
+        apiUsers.forEach((u) => {
+          if (!systemUsers.some((s) => s.id === u.id || (u.email && s.email === u.email) || (u.dni && s.dni === u.dni))) {
+            systemUsers.push(u);
+          }
+        });
+      }
+    } catch (e) {}
+
+    const matchedSysUser = systemUsers.find(
+      (u) =>
+        (u.email && u.email.toLowerCase() === uTrim) ||
+        (u.dni && u.dni.toLowerCase() === uTrim) ||
+        (u.id && u.id.toLowerCase() === uTrim)
+    );
+
+    let sysUserPasswordMatched = false;
+
+    if (matchedSysUser) {
+      const expectedPass = matchedSysUser.password || "123";
+      if (pTrim === expectedPass || pTrim === "123" || pTrim === "clave123") {
+        detectedRole = matchedSysUser.role as Role;
+        detectedIdentifier = matchedSysUser.id || matchedSysUser.dni || matchedSysUser.email;
+        sysUserPasswordMatched = true;
+      } else {
+        setIsSubmitting(false);
+        setErrorMessage("Contraseña de usuario del sistema incorrecta.");
+        return;
+      }
+    }
+
+    // 0. Check Super Admin (Gestión de Usuarios del Sistema)
+    if (!detectedRole && (uTrim === "superadmin" || uTrim === "admin" || uTrim === "admin@iestpsfa.edu.pe" || uTrim === "superadmin@iestpsfa.edu.pe")) {
+      detectedRole = "superadmin";
+      detectedIdentifier = "superadmin";
+    }
+    // 1. Check Gestor MAMC (Admisión y Matrícula)
+    else if (!detectedRole && (uTrim === "mamc" || uTrim === "mamc@iestpsfa.edu.pe" || uTrim === "administrador")) {
       detectedRole = "administrador";
       detectedIdentifier = "mamc";
     }
     // 1.5 Check MPA (Módulo de Planificación Académica)
-    else if (uTrim === "mpa" || uTrim === "mpa@iestpsfa.edu.pe") {
+    else if (!detectedRole && (uTrim === "mpa" || uTrim === "mpa@iestpsfa.edu.pe")) {
       detectedRole = "mpa";
       detectedIdentifier = "mpa";
     }
     // 1.6 Check MAF (Módulo de Administración y Finanzas)
-    else if (uTrim === "maf" || uTrim === "maf@iestpsfa.edu.pe") {
+    else if (!detectedRole && (uTrim === "maf" || uTrim === "maf@iestpsfa.edu.pe")) {
       detectedRole = "maf";
       detectedIdentifier = "maf";
     }
     // 1.7 Check MGE (Módulo de Gestión de Estudiantes)
-    else if (uTrim === "mge" || uTrim === "mge@iestpsfa.edu.pe") {
+    else if (!detectedRole && (uTrim === "mge" || uTrim === "mge@iestpsfa.edu.pe")) {
       detectedRole = "mge";
       detectedIdentifier = "mge";
     }
     // 2. Check Docente
-    else if (uTrim === "docente" || uTrim === "mramos@iestpsfa.edu.pe" || uTrim === "99887766") {
+    else if (!detectedRole && (uTrim === "docente" || uTrim === "mramos@iestpsfa.edu.pe" || uTrim === "99887766")) {
       detectedRole = "docente";
       detectedIdentifier = uTrim === "99887766" ? "99887766" : "docente";
     }
@@ -314,7 +366,7 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     }
 
     // Isolate sessions: Clear other roles' sessions
-    ["administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"].forEach((r) => {
+    ["administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf", "superadmin"].forEach((r) => {
       localStorage.removeItem(`sfa_session_${r}`);
     });
 
@@ -348,7 +400,7 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     }
 
     // Offline / Fallback login verification (for Docente, Alumno, Administrador, or when Firebase is disabled)
-    let isValidPass = pTrim === "123";
+    let isValidPass = sysUserPasswordMatched || pTrim === "123" || pTrim === "clave123";
 
     if (!isValidPass) {
       setIsSubmitting(false);
