@@ -41,12 +41,12 @@ export default function PortalHome({
 
   const activeRoleLabel = activeSessionRole === "administrador" ? "Gestor MAMC" :
     activeSessionRole === "superadmin" ? "SuperAdmin" :
-    activeSessionRole === "postulante" ? "Postulante" :
-    activeSessionRole === "alumno" ? "Alumno" :
-    activeSessionRole === "docente" ? "Docente" :
-    activeSessionRole === "mpa" ? "Planificación (MPA)" :
-    activeSessionRole === "mge" ? "Gestión Estudiantes (MGE)" :
-    activeSessionRole === "maf" ? "Finanzas (MAF)" : null;
+      activeSessionRole === "postulante" ? "Postulante" :
+        activeSessionRole === "alumno" ? "Alumno" :
+          activeSessionRole === "docente" ? "Docente" :
+            activeSessionRole === "mpa" ? "Planificación (MPA)" :
+              activeSessionRole === "mge" ? "Gestión Estudiantes (MGE)" :
+                activeSessionRole === "maf" ? "Finanzas (MAF)" : null;
 
   // Navigation State
   const [currentTab, setCurrentTab] = useState<
@@ -539,9 +539,6 @@ export default function PortalHome({
                     <span className="block text-[11px] font-black tracking-tight text-slate-900 uppercase">
                       {activeRoleLabel}
                     </span>
-                    <span className="block text-[8.5px] text-emerald-700 font-extrabold uppercase tracking-wider flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-emerald-500 inline-block" /> Sesión Activa
-                    </span>
                   </div>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#9F062A] group-hover:rotate-180 transition-all ml-0.5" />
                 </button>
@@ -664,7 +661,7 @@ export default function PortalHome({
                         </div>
                         <div className="text-left leading-tight">
                           <span className="text-xs font-black text-slate-900 block uppercase">{activeRoleLabel}</span>
-                          <span className="text-[9px] text-emerald-700 font-extrabold uppercase block">Sesión Activa</span>
+                          <span className="text-[9px] text-emerald-700 font-extrabold uppercase block"></span>
                         </div>
                       </div>
                     </div>
@@ -875,13 +872,12 @@ export default function PortalHome({
                           setCurrentTab("programas");
                           window.scrollTo({ top: 0, behavior: "smooth" });
                         }}
-                        className={`group bg-white rounded-3xl border transition-all duration-500 overflow-hidden cursor-pointer ${
-                          hoveredCareerId === "electronica"
-                            ? "border-[#9F062A] shadow-2xl scale-[1.015] z-10 bg-gradient-to-r from-rose-50/30 via-white to-white"
-                            : hoveredCareerId === "contabilidad"
+                        className={`group bg-white rounded-3xl border transition-all duration-500 overflow-hidden cursor-pointer ${hoveredCareerId === "electronica"
+                          ? "border-[#9F062A] shadow-2xl scale-[1.015] z-10 bg-gradient-to-r from-rose-50/30 via-white to-white"
+                          : hoveredCareerId === "contabilidad"
                             ? "border-slate-200/80 shadow-sm opacity-85 scale-[0.985]"
                             : "border-slate-200/90 shadow-md hover:shadow-xl"
-                        }`}
+                          }`}
                       >
                         <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[280px]">
                           {/* Columna Imagen (Izquierda) - Cuadrada / Rectangular Flush */}
@@ -964,13 +960,12 @@ export default function PortalHome({
                           setCurrentTab("programas");
                           window.scrollTo({ top: 0, behavior: "smooth" });
                         }}
-                        className={`group bg-white rounded-3xl border transition-all duration-500 overflow-hidden cursor-pointer ${
-                          hoveredCareerId === "contabilidad"
-                            ? "border-[#9F062A] shadow-2xl scale-[1.015] z-10 bg-gradient-to-r from-white via-white to-rose-50/30"
-                            : hoveredCareerId === "electronica"
+                        className={`group bg-white rounded-3xl border transition-all duration-500 overflow-hidden cursor-pointer ${hoveredCareerId === "contabilidad"
+                          ? "border-[#9F062A] shadow-2xl scale-[1.015] z-10 bg-gradient-to-r from-white via-white to-rose-50/30"
+                          : hoveredCareerId === "electronica"
                             ? "border-slate-200/80 shadow-sm opacity-85 scale-[0.985]"
                             : "border-slate-200/90 shadow-md hover:shadow-xl"
-                        }`}
+                          }`}
                       >
                         <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[280px]">
                           {/* Columna Información (Izquierda) */}
