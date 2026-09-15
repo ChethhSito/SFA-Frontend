@@ -251,10 +251,10 @@ export default function PortalHome({
     <div id="home-view" className="flex flex-col min-h-screen bg-white font-sans text-slate-900 selection:bg-[#9F062A] selection:text-white">
       
       {/* 1. TOPBAR DELGADO INSTITUCIONAL DE CONTACTO */}
-      <div className="bg-[#800521] text-white py-2 px-4 text-xs font-semibold border-b border-red-950">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
+      <div className="bg-[#800521] text-white py-1.5 px-4 sm:px-6 lg:px-10 text-xs font-semibold border-b border-red-950">
+        <div className="w-full max-w-[1700px] mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
           
-          <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 sm:gap-6 text-[11px]">
+          <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 sm:gap-6 text-[10.5px]">
             <span className="flex items-center gap-1.5 font-bold tracking-wide">
               <Building2 className="w-3.5 h-3.5 text-amber-300" />
               IESTP SAN FRANCISCO DE ASÍS
@@ -273,7 +273,7 @@ export default function PortalHome({
             </span>
           </div>
 
-          <div className="flex items-center gap-4 text-[11px]">
+          <div className="flex items-center gap-4 text-[10.5px]">
             <span className="text-amber-300 font-extrabold uppercase tracking-wider hidden sm:inline">
               RESOLUCIÓN MINEDU: R.M. 124-2021
             </span>
@@ -290,74 +290,74 @@ export default function PortalHome({
         </div>
       </div>
 
-      {/* 2. NAVEGACIÓN LIMPIA, ESPACIOSA Y PROFESIONAL CON LOGO ORIGINAL */}
+      {/* 2. NAVEGACIÓN LIMPIA, FINA Y ELEGANTE CON LOGO INSTITUCIONAL */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-3.5 flex justify-between items-center gap-6 relative">
+        <div className="w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-10 py-2 flex justify-between items-center gap-4 relative">
           
-          {/* Logo Institucional Original sin Modificaciones */}
+          {/* Logo Institucional Fino y Pegado a la Izquierda */}
           <div 
-            className="flex items-center gap-3.5 cursor-pointer select-none shrink-0" 
+            className="flex items-center gap-2 cursor-pointer select-none shrink-0" 
             onClick={() => { setCurrentTab("inicio"); setMobileMenuOpen(false); }}
           >
             <img 
               src="/SFA-Logo.jpeg" 
               alt="Logo Oficial IESTP San Francisco de Asís" 
-              className="w-12 h-12 sm:w-14 sm:h-14 object-contain rounded-full border-2 border-[#CFA020] shadow-xs shrink-0 bg-white p-0.5" 
+              className="w-8 h-8 sm:w-8.5 sm:h-8.5 object-contain rounded-full border border-[#CFA020] shadow-xs shrink-0 bg-white p-0.5" 
             />
             <div>
-              <h1 className="text-sm sm:text-lg font-black tracking-tight leading-none uppercase">
+              <h1 className="text-[11px] sm:text-xs font-black tracking-tight leading-tight uppercase text-slate-800">
                 IESTP <span className="text-[#9F062A]">SAN FRANCISCO</span>
                 <span className="text-[#CFA020] ml-1">DE ASÍS</span>
               </h1>
-              <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-[#9F062A] font-black block mt-1">
+              <span className="text-[7.5px] sm:text-[8px] uppercase tracking-widest text-[#9F062A] font-bold block leading-none mt-0.5">
                 LUZ Y VERDAD • VILLA MARÍA DEL TRIUNFO
               </span>
             </div>
           </div>
 
-          {/* Menú de Navegación Principal Holgado con Dropdown Flotante */}
-          <nav className="hidden lg:flex items-center gap-4 xl:gap-6 text-[13px] font-bold text-slate-700">
+          {/* Menú de Navegación Principal Fino, Holgado y Elegante */}
+          <nav className="hidden lg:flex items-center gap-4 xl:gap-7 text-[11px] font-bold text-slate-700">
             
             <button 
               onClick={() => { setCurrentTab("inicio"); setActiveDropdown(null); }} 
-              className={`py-2 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "inicio" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+              className={`py-1 px-1 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "inicio" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
             >
               <span>INICIO</span>
               {currentTab === "inicio" && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
+                <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
               )}
             </button>
 
             {/* Nosotros Dropdown */}
             <div 
-              className="relative py-2"
+              className="relative py-1"
               onMouseEnter={() => setActiveDropdown("nosotros")}
               onMouseLeave={() => setActiveDropdown(null)}
             >
               <button 
                 onClick={() => setCurrentTab("nosotros")}
-                className={`py-2 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "nosotros" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+                className={`py-1 px-1 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "nosotros" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
               >
                 <span>NOSOTROS</span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                <ChevronDown className="w-3 h-3 text-slate-400" />
                 {currentTab === "nosotros" && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
+                  <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
                 )}
               </button>
 
               {activeDropdown === "nosotros" && (
-                <div className="absolute top-full left-0 w-60 bg-white border border-slate-200 shadow-xl rounded-xl p-2.5 z-50 animate-fade-in mt-1">
+                <div className="absolute top-full left-0 w-56 bg-white border border-slate-200 shadow-xl rounded-lg p-2 z-50 animate-fade-in mt-1">
                   <button
                     onClick={() => { setCurrentTab("nosotros"); setActiveDropdown(null); }}
-                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold uppercase flex items-center gap-2"
+                    className="w-full text-left p-2 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase flex items-center gap-2"
                   >
-                    <Award className="w-4 h-4 text-[#9F062A]" /> Misión, Visión y Valores
+                    <Award className="w-3.5 h-3.5 text-[#9F062A]" /> Misión, Visión y Valores
                   </button>
                   <button
                     onClick={() => { setCurrentTab("nosotros"); setActiveDropdown(null); }}
-                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold uppercase mt-1 flex items-center gap-2"
+                    className="w-full text-left p-2 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase mt-0.5 flex items-center gap-2"
                   >
-                    <Users className="w-4 h-4 text-[#9F062A]" /> Plana Directiva y Autoridades
+                    <Users className="w-3.5 h-3.5 text-[#9F062A]" /> Plana Directiva y Autoridades
                   </button>
                 </div>
               )}
@@ -365,37 +365,37 @@ export default function PortalHome({
 
             {/* Programas Dropdown */}
             <div 
-              className="relative py-2"
+              className="relative py-1"
               onMouseEnter={() => setActiveDropdown("programas")}
               onMouseLeave={() => setActiveDropdown(null)}
             >
               <button 
                 onClick={() => setCurrentTab("programas")}
-                className={`py-2 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "programas" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+                className={`py-1 px-1 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "programas" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
               >
                 <span>PROGRAMAS</span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                <ChevronDown className="w-3 h-3 text-slate-400" />
                 {currentTab === "programas" && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
+                  <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
                 )}
               </button>
 
               {activeDropdown === "programas" && (
-                <div className="absolute top-full left-0 w-80 bg-white border border-slate-200 shadow-xl rounded-xl p-3 z-50 animate-fade-in space-y-1 mt-1">
-                  <span className="text-[10px] uppercase font-black text-[#9F062A] tracking-wider block px-2 mb-1">Especialidades Licenciadas:</span>
+                <div className="absolute top-full left-0 w-72 bg-white border border-slate-200 shadow-xl rounded-lg p-2.5 z-50 animate-fade-in space-y-1 mt-1">
+                  <span className="text-[9px] uppercase font-black text-[#9F062A] tracking-wider block px-2 mb-1">Especialidades Licenciadas:</span>
                   <button
                     onClick={() => { setSelectedProgramId("electronica"); setCurrentTab("programas"); setActiveDropdown(null); }}
-                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col"
+                    className="w-full text-left p-2 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col"
                   >
-                    <span className="flex items-center gap-2"><Zap className="w-4 h-4 text-[#9F062A]" /> Electricidad Industrial</span>
-                    <span className="text-[10px] text-slate-500 normal-case font-normal mt-0.5">Control de PLCs, Motores y Subestaciones</span>
+                    <span className="flex items-center gap-2"><Zap className="w-3.5 h-3.5 text-[#9F062A]" /> Electricidad Industrial</span>
+                    <span className="text-[9px] text-slate-500 normal-case font-normal mt-0.5">Control de PLCs, Motores y Subestaciones</span>
                   </button>
                   <button
                     onClick={() => { setSelectedProgramId("contabilidad"); setCurrentTab("programas"); setActiveDropdown(null); }}
-                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col mt-1"
+                    className="w-full text-left p-2 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col mt-0.5"
                   >
-                    <span className="flex items-center gap-2"><Landmark className="w-4 h-4 text-[#9F062A]" /> Contabilidad Financiera</span>
-                    <span className="text-[10px] text-slate-500 normal-case font-normal mt-0.5">Tributación Empresarial, NIIF y ERP</span>
+                    <span className="flex items-center gap-2"><Landmark className="w-3.5 h-3.5 text-[#9F062A]" /> Contabilidad Financiera</span>
+                    <span className="text-[9px] text-slate-500 normal-case font-normal mt-0.5">Tributación Empresarial, NIIF y ERP</span>
                   </button>
                 </div>
               )}
@@ -403,34 +403,34 @@ export default function PortalHome({
 
             {/* Admisión Dropdown */}
             <div 
-              className="relative py-2"
+              className="relative py-1"
               onMouseEnter={() => setActiveDropdown("admision")}
               onMouseLeave={() => setActiveDropdown(null)}
             >
               <button 
                 onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
-                className={`py-2 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "admision" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+                className={`py-1 px-1 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "admision" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
               >
                 <span>ADMISIÓN</span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+                <ChevronDown className="w-3 h-3 text-slate-400" />
                 {currentTab === "admision" && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
+                  <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
                 )}
               </button>
 
               {activeDropdown === "admision" && (
-                <div className="absolute top-full left-0 w-64 bg-white border border-slate-200 shadow-xl rounded-xl p-2.5 z-50 animate-fade-in mt-1">
+                <div className="absolute top-full left-0 w-60 bg-white border border-slate-200 shadow-xl rounded-lg p-2 z-50 animate-fade-in mt-1">
                   <button
                     onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); setActiveDropdown(null); }}
-                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold uppercase flex items-center gap-2"
+                    className="w-full text-left p-2 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase flex items-center gap-2"
                   >
-                    <CheckSquare className="w-4 h-4 text-[#9F062A]" /> Pre-Inscripción Virtual 2026-I
+                    <CheckSquare className="w-3.5 h-3.5 text-[#9F062A]" /> Pre-Inscripción Virtual 2026-I
                   </button>
                   <button
                     onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); setActiveDropdown(null); }}
-                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold uppercase mt-1 flex items-center gap-2"
+                    className="w-full text-left p-2 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase mt-0.5 flex items-center gap-2"
                   >
-                    <Landmark className="w-4 h-4 text-[#9F062A]" /> Tasas y Requisitos del Examen
+                    <Landmark className="w-3.5 h-3.5 text-[#9F062A]" /> Tasas y Requisitos del Examen
                   </button>
                 </div>
               )}
@@ -438,33 +438,33 @@ export default function PortalHome({
 
             <button 
               onClick={() => { setCurrentTab("transparencia"); setActiveDropdown(null); }} 
-              className={`py-2 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "transparencia" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+              className={`py-1 px-1 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "transparencia" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
             >
               <span>TRANSPARENCIA</span>
               {currentTab === "transparencia" && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
+                <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
               )}
             </button>
 
             <button 
               onClick={() => { setCurrentTab("contactanos"); setActiveDropdown(null); }} 
-              className={`py-2 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "contactanos" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+              className={`py-1 px-1 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "contactanos" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
             >
               <span>CONTÁCTANOS</span>
               {currentTab === "contactanos" && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
+                <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
               )}
             </button>
 
           </nav>
 
-          {/* Botón Destacado de Intranet Académica en Granate */}
+          {/* Botón Compacto y Fino de Intranet Académica */}
           <div className="hidden lg:flex items-center gap-3 shrink-0">
             <button 
               onClick={onEnterIntranet}
-              className="flex items-center gap-2 bg-[#9F062A] hover:bg-[#800521] text-white px-5 py-2.5 rounded-lg font-bold tracking-wide transition-all shadow-md text-xs cursor-pointer active:scale-95"
+              className="flex items-center gap-1.5 bg-[#9F062A] hover:bg-[#800521] text-white px-3 py-1.5 rounded-md font-bold tracking-wide transition-all shadow-xs text-[10.5px] cursor-pointer active:scale-95"
             >
-              <GraduationCap className="w-4 h-4 text-amber-300" />
+              <GraduationCap className="w-3.5 h-3.5 text-amber-300" />
               <span>Intranet Académica</span>
             </button>
           </div>
