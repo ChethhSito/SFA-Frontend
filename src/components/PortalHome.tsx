@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { 
   Phone, Mail, MapPin, Facebook, Youtube, ChevronLeft, ChevronRight, 
-  BookOpen, Award, ShieldAlert, GraduationCap, Compass, Briefcase, 
-  HelpCircle, LogIn, Landmark, Check, Send, FileText, FileCheck, HelpCircle as HelpIcon,
-  ChevronDown, Globe, Users, Award as MedalIcon, Calendar, CheckSquare, Menu, X, Loader2
+  BookOpen, Award, GraduationCap, Compass, Briefcase, 
+  HelpCircle, LogIn, Landmark, Check, Send, FileText, FileCheck,
+  ChevronDown, Globe, Users, Calendar, CheckSquare, Menu, X, Loader2,
+  CheckCircle2, ArrowRight, ShieldCheck, Zap, Building2, HeartHandshake,
+  Instagram
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { AdmissionPeriod } from "../types";
@@ -19,7 +21,6 @@ export default function PortalHome({
   admissionPeriods = []
 }: PortalHomeProps) {
   // Dynamic active/matching period check using current date validation
-  const todayStr = new Date().toISOString().split("T")[0];
   const activePeriod = admissionPeriods.find(p => p.status === "APERTURADO" || p.isActive) || 
                        admissionPeriods.find(p => p.status !== "CERRADO" && p.status !== "PENDIENTE") || 
                        admissionPeriods[0];
@@ -35,7 +36,7 @@ export default function PortalHome({
   const [activeDropdown, setActiveDropdown] = useState<"nosotros" | "programas" | "admision" | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Success modal confirmation state (without sensitive credentials box)
+  // Success modal confirmation state
   const [successModalData, setSuccessModalData] = useState<{
     name: string;
     lastName: string;
@@ -45,11 +46,6 @@ export default function PortalHome({
 
   // Loading modal state during pre-enrollment submission
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
-
-
-
-  // Hero Carousel Slide state
-  const [currentSlide, setCurrentSlide] = useState(0);
 
   // Pre-inscripción / Admission form state
   const [dniInput, setDniInput] = useState("");
@@ -72,53 +68,23 @@ export default function PortalHome({
   // FAQ interactive state
   const [expandedFaqId, setExpandedFaqId] = useState<number | null>(null);
 
-  const slides = [
-    {
-      title: "IESTP SAN FRANCISCO DE ASÍS",
-      subtitle: "Educación Tecnológica Pública de Primer Nivel en Villa María del Triunfo",
-      image: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=1200&auto=format&fit=crop",
-      tagline: "¡Admisión Ordinaria 2026 Abierta!"
-    },
-    {
-      title: "CARRERAS MODULARES LICENCIADAS",
-      subtitle: "Titulación Oficial a Nombre de la Nación con laboratorios de computación y talleres prácticos modernos",
-      image: "https://images.unsplash.com/photo-1581092921461-eab62e97a780?q=80&w=1200&auto=format&fit=crop",
-      tagline: "Licenciamiento Minedu Garantizado"
-    },
-    {
-      title: "EMPLEABILIDAD Y CONVENIOS",
-      subtitle: "Convenios consolidados en Lima Sur para inserción laboral acelerada de nuestros estudiantes de ciclos avanzados",
-      image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=1200&auto=format&fit=crop",
-      tagline: "Prácticas Profesionales Estructuradas"
-    }
-  ];
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-  };
-
   // Handle live admission registration via NestJS REST API → MongoDB
   const handlePreEnrollmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitSuccessMsg("");
 
     if (!/^\d{8}$/.test(dniInput)) {
-      alert("El DNI debe contener exactamente 8 caracteres numéricos.");
+      alert("El DNI debe contener exactamente 8 dígitos numéricos.");
       return;
     }
 
     setIsSubmittingForm(true);
 
     try {
-      // 1. Check if DNI already exists in the backend
       const existing = await fetchApplicantByDni(dniInput);
       if (existing) {
         setSubmitSuccessMsg(
-          `El DNI ${dniInput} ya se encuentra registrado. Utilice su Código de Postulante o DNI como usuario y su clave en la Intranet.`
+          `El DNI ${dniInput} ya se encuentra registrado. Utilice su DNI o Código de Postulante como usuario para acceder a la Intranet.`
         );
         setIsSubmittingForm(false);
         return;
@@ -126,7 +92,6 @@ export default function PortalHome({
 
       const tempPass = "clave123";
 
-      // 2. Build the new applicant payload
       const newApplicantPayload = {
         dni: dniInput,
         name: nameInput,
@@ -147,11 +112,9 @@ export default function PortalHome({
       const activeProg = careersDetail.find(c => c.id === programSelection);
       const progName = activeProg ? activeProg.name : "Programa Seleccionado";
 
-      // 3. First create applicant in backend to get the real applicantCode
       const created = await createApplicant(newApplicantPayload);
       const generatedApplicantCode = created?.applicantCode || dniInput;
 
-      // 4. Now send the email with the REAL applicantCode from the backend
       sendTransactionalWelcomeEmail({
         email: emailInput,
         applicantCode: generatedApplicantCode,
@@ -160,7 +123,7 @@ export default function PortalHome({
         dni: dniInput,
         programName: progName,
         url: `${window.location.origin}/ingresar`
-      }).catch((err) => console.warn("Email dispatch notice:", err));
+      }).catch((err) => console.warn("Notice: Email dispatch queued:", err));
 
       setSuccessModalData({
         name: nameInput,
@@ -170,10 +133,9 @@ export default function PortalHome({
       });
 
       setSubmitSuccessMsg(
-        `¡Pre-inscripción registrada con éxito! Código Oficial: ${generatedApplicantCode}. Sus credenciales de acceso a la Intranet han sido enviadas a su correo electrónico (${emailInput}). Por favor, revise su bandeja de entrada o carpeta de spam.`
+        `¡Pre-inscripción registrada con éxito! Código Oficial de Postulante: ${generatedApplicantCode}. Sus credenciales de acceso a la Intranet han sido generadas.`
       );
 
-      // Save to localStorage so LoginPortal knows about it immediately
       try {
         const newApplicantObj = {
           id: created?.id || `APP-${Date.now()}`,
@@ -183,7 +145,7 @@ export default function PortalHome({
           lastName: lastNameInput,
           email: emailInput,
           phone: phoneInput,
-          programId: selectedProgramId,
+          programId: programSelection,
           programName: progName,
           password: tempPass,
           status: "PRE_INSCRITO",
@@ -199,7 +161,6 @@ export default function PortalHome({
         console.error("Error updating local applicants storage:", e);
       }
 
-      // Clean form inputs
       setDniInput("");
       setNameInput("");
       setLastNameInput("");
@@ -207,7 +168,7 @@ export default function PortalHome({
       setPhoneInput("");
     } catch (err) {
       console.error(err);
-      alert("Error al procesar registro.");
+      alert("Error al procesar el registro de pre-inscripción.");
     } finally {
       setIsSubmittingForm(false);
     }
@@ -215,7 +176,7 @@ export default function PortalHome({
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setContactSuccessMsg("¡Gracias! Su mensaje ha sido enviado a Mesa de Partes Virtuales de Secretaría Académica. Le responderemos en breve.");
+    setContactSuccessMsg("¡Gracias! Su mensaje ha sido enviado a la Secretaría Académica. Le responderemos a la brevedad.");
     setContactName("");
     setContactEmail("");
     setContactMessage("");
@@ -225,107 +186,146 @@ export default function PortalHome({
     {
       id: "electronica",
       name: "Electricidad Industrial",
-      hours: "3080 Horas Lectivas",
+      hours: "3080 Horas Lectivas (3 Años)",
       title: "Profesional Técnico en Electricidad Industrial",
-      profile: "Diagnostica, instala, programa y realiza el mantenimiento preventivo y correctivo de sistemas eléctricos de media y baja tensión, maquinaria de potencia, equipos de climatización, control por PLCs de motores y tableros de automatización industrial.",
+      profile: "Diagnostica, instala, programa y realiza el mantenimiento preventivo y correctivo de sistemas eléctricos de media y baja tensión, maquinaria de potencia, automatización industrial mediante PLCs, motores eléctricos y tableros de control.",
       careerPath: [
-        { cycle: "I Ciclo", desc: "Electricidad de Corriente Continua, Taller de Ajuste" },
-        { cycle: "II Ciclo", desc: "Dibujo Técnico Eléctrico, Luminotecnia" },
-        { cycle: "III Ciclo", desc: "Electrónica Analógica Aplicada" },
+        { cycle: "I Ciclo", desc: "Electricidad de Corriente Continua, Taller de Ajuste Mecánico" },
+        { cycle: "II Ciclo", desc: "Dibujo Técnico Eléctrico, Luminotecnia e Instalaciones de Potencia" },
+        { cycle: "III Ciclo", desc: "Electrónica Analógica e Instrumentación Industrial" },
         { cycle: "IV Ciclo", desc: "Sistemas Digitales, Bobinado de Máquinas Rotativas, PLC Básico" },
         { cycle: "V Ciclo", desc: "Automatización Industrial con PLCs Avanzados, Neumática e Hidráulica" },
-        { cycle: "VI Ciclo", desc: "Mantenimiento de Subestaciones, Instrumentación del Taller" }
+        { cycle: "VI Ciclo", desc: "Mantenimiento de Subestaciones, Instrumentación Industrial en Taller" }
       ],
-      icon: <Award className="w-5 h-5 text-amber-500" />,
-      salaryEst: "S/. 1,900 - S/. 4,000",
-      image: "https://images.unsplash.com/photo-1581092921461-eab62e97a780?q=80&w=600&auto=format&fit=crop"
+      icon: <Zap className="w-5 h-5 text-[#9F062A]" />,
+      salaryEst: "S/. 1,900 - S/. 4,200",
+      image: "https://images.unsplash.com/photo-1581092921461-eab62e97a780?q=80&w=800&auto=format&fit=crop"
     },
     {
       id: "contabilidad",
-      name: "Contabilidad",
-      hours: "3040 Horas Lectivas",
+      name: "Contabilidad Financiera",
+      hours: "3040 Horas Lectivas (3 Años)",
       title: "Profesional Técnico en Contabilidad",
-      profile: "Domina el control de auditorías financieras de acuerdo a las Normas Internacionales de Información Financiera (NIIF), tributación de PyMEs, planeamiento fiscal, costos de producción e informática contable con ERPs modernos.",
+      profile: "Domina el control tributario y financiero de acuerdo a las Normas Internacionales de Información Financiera (NIIF), auditoría tributaria en PyMEs, costos de producción y sistematización contable con software ERP moderno.",
       careerPath: [
-        { cycle: "I Ciclo", desc: "Contabilidad General I, Matemática Financiera" },
-        { cycle: "II Ciclo", desc: "Plan Contable General Empresarial, Tributación Básica" },
+        { cycle: "I Ciclo", desc: "Contabilidad General I, Matemática Financiera Aplicada" },
+        { cycle: "II Ciclo", desc: "Plan Contable General Empresarial, Tributación I" },
         { cycle: "III Ciclo", desc: "Contabilidad de Costos Industriales, Costeo por Procesos" },
-        { cycle: "IV Ciclo", desc: "Software Contable de Aplicación, Legislación Laboral y Tributaria" },
-        { cycle: "V Ciclo", desc: "Auditoría Financiera Integral, Contabilidad Gubernamental del Estado" },
-        { cycle: "VI Ciclo", desc: "Planeamiento Financiero Avanzado, Formulación de Estados de Control" }
+        { cycle: "IV Ciclo", desc: "Software Contable ERP de Aplicación, Legislación Laboral" },
+        { cycle: "V Ciclo", desc: "Auditoría Financiera Integral, Contabilidad Gubernamental" },
+        { cycle: "VI Ciclo", desc: "Planeamiento Financiero Avanzado y Formulación de Estados de Control" }
       ],
       icon: <Landmark className="w-5 h-5 text-[#9F062A]" />,
-      salaryEst: "S/. 1,600 - S/. 3,500",
-      image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=600&auto=format&fit=crop"
+      salaryEst: "S/. 1,700 - S/. 3,800",
+      image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=800&auto=format&fit=crop"
     }
   ];
 
-  const activeProgramData = careersDetail.find((c) => c.id === selectedProgramId) || careersDetail[0];
+  const faqsList = [
+    {
+      id: 1,
+      question: "¿La enseñanza en el IESTP San Francisco de Asís es gratuita?",
+      answer: "Sí. Al ser un Instituto de Educación Superior Tecnológico Público, la enseñanza regular no tiene costos de pensión mensual (S/. 0.00 de pensión). Solo se abonan las tasas ordinarias institucionales por derecho de examen de admisión y matrícula semestral."
+    },
+    {
+      id: 2,
+      question: "¿Qué título obtendré al finalizar mis 3 años de estudio?",
+      answer: "Obtendrás el Título Oficial a Nombre de la Nación como Profesional Técnico expedido directamente por el Ministerio de Educación (MINEDU), con pleno valor oficial para ejercer a nivel nacional e internacional."
+    },
+    {
+      id: 3,
+      question: "¿Cuáles son los requisitos para la Pre-Inscripción al Examen 2026-I?",
+      answer: "Los requisitos básicos son: Copia simple de DNI vigente, Certificado de estudios de 5to de Secundaria (original o digital emitido por el Minedu) y comprobante del derecho de examen de admisión."
+    },
+    {
+      id: 4,
+      question: "¿Cuáles son los turnos de estudio disponibles?",
+      answer: "Ofrecemos turnos en horario Diurno (Mañana/Tarde) y Nocturno, permitiendo a nuestros estudiantes trabajar y realizar sus prácticas profesionales mientras estudian."
+    }
+  ];
 
   return (
-    <div id="home-view" className="flex flex-col min-h-screen bg-slate-50 font-sans text-slate-800">
+    <div id="home-view" className="flex flex-col min-h-screen bg-white font-sans text-slate-900 selection:bg-[#9F062A] selection:text-white">
       
-      {/* 1. TOP SOCIAL & CONTACT PANEL */}
-      <div className="bg-[#9F062A] text-white py-2 px-4 text-xs font-semibold tracking-wide border-b border-rose-950">
+      {/* 1. TOPBAR DELGADO CON INFORMACIÓN DE CONTACTO E INSTITUCIONAL */}
+      <div className="bg-[#800521] text-white py-1.5 px-4 text-xs font-semibold border-b border-red-950">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
+          
           <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 sm:gap-6 text-[11px]">
-            <span className="font-extrabold tracking-widest text-[#E3BD26] uppercase">IESTP SAN FRANCISCO DE ASÍS</span>
-            <span className="flex items-center gap-1.5 hover:text-rose-150 transition-colors">
-              <Phone className="w-3.5 h-3.5 text-[#E3BD26]" /> Central: 01 500 6177
+            <span className="flex items-center gap-1.5 font-bold tracking-wide">
+              <MapPin className="w-3.5 h-3.5 text-amber-300" />
+              IESTP SAN FRANCISCO DE ASÍS
             </span>
-            <span className="flex items-center gap-1.5 hover:text-rose-150 transition-colors">
-              <Mail className="w-3.5 h-3.5 text-[#E3BD26]" /> admision@iestpsfa.edu.pe
+            <span className="flex items-center gap-1.5 text-slate-100 hover:text-amber-300 transition-colors">
+              <Phone className="w-3.5 h-3.5 text-amber-300" />
+              Central: 01 500 6177
             </span>
-            <span className="hidden lg:flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-[#E3BD26]" /> VMT - Pachacútec Cdra. 50
+            <span className="flex items-center gap-1.5 text-slate-100 hover:text-amber-300 transition-colors">
+              <Mail className="w-3.5 h-3.5 text-amber-300" />
+              admision@iestpsfa.edu.pe
+            </span>
+            <span className="hidden lg:flex items-center gap-1.5 text-slate-200">
+              <Building2 className="w-3.5 h-3.5 text-amber-300" />
+              VMT - Pachacútec Cdra. 50
             </span>
           </div>
-          <div className="flex items-center gap-3.5 text-[11px]">
-            <span className="text-amber-300 font-extrabold uppercase tracking-wider">RESOLUCIÓN MINEDU R.M. 124-2021</span>
-            <div className="flex items-center gap-3">
-              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="hover:text-amber-400" aria-label="Facebook">
-                <Facebook className="w-3.5 h-3.5" />
+
+          <div className="flex items-center gap-4 text-[11px]">
+            <span className="text-amber-300 font-extrabold uppercase tracking-wider hidden sm:inline">
+              RESOLUCIÓN MINEDU: R.M. 124-2021
+            </span>
+            <div className="flex items-center gap-2.5">
+              <a href="https://instagram.com" target="_blank" rel="noreferrer" className="hover:text-amber-300 transition-colors" aria-label="Instagram">
+                <Instagram className="w-3.5 h-3.5" />
               </a>
-              <a href="https://youtube.com" target="_blank" rel="noreferrer" className="hover:text-amber-400" aria-label="Youtube">
-                <Youtube className="w-3.5 h-3.5" />
+              <a href="https://facebook.com" target="_blank" rel="noreferrer" className="hover:text-amber-300 transition-colors" aria-label="Facebook">
+                <Facebook className="w-3.5 h-3.5" />
               </a>
             </div>
           </div>
+
         </div>
       </div>
 
-      {/* 2. NAVIGATION BAR WITH ACTIVE STATES & SUBSECTIONS */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-md">
+      {/* 2. NAVEGACIÓN BLANCA, LIMPIA Y PROFESIONAL CON LOGO ORIGINAL */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center relative">
           
-          {/* Logo Brand area */}
-          <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => { setCurrentTab("inicio"); setMobileMenuOpen(false); }}>
+          {/* Logo Institucional Original sin Modificaciones */}
+          <div 
+            className="flex items-center gap-3.5 cursor-pointer select-none" 
+            onClick={() => { setCurrentTab("inicio"); setMobileMenuOpen(false); }}
+          >
             <img 
               src="/SFA-Logo.jpeg" 
-              alt="Logo IESTP San Francisco de Asís" 
-              className="w-11 h-11 sm:w-12 sm:h-12 object-contain rounded-full border-2 border-[#CFA020] shadow-md shrink-0 bg-white p-0.5" 
+              alt="Logo Oficial IESTP San Francisco de Asís" 
+              className="w-12 h-12 sm:w-14 sm:h-14 object-contain rounded-full border-2 border-[#CFA020] shadow-sm shrink-0 bg-white p-0.5" 
             />
             <div>
-              <h1 className="text-xs sm:text-base font-black text-slate-900 tracking-tight leading-none uppercase">
+              <h1 className="text-sm sm:text-lg font-black tracking-tight leading-none uppercase">
                 IESTP <span className="text-[#9F062A]">SAN FRANCISCO</span>
-                <span className="text-[#CFA020] block sm:inline sm:ml-1">DE ASÍS</span>
+                <span className="text-[#CFA020] ml-1">DE ASÍS</span>
               </h1>
-              <span className="text-[8px] sm:text-[9px] uppercase tracking-widest text-[#9F062A] font-black block mt-1">Luz y Verdad • Villa María del Triunfo</span>
+              <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-[#9F062A] font-black block mt-1">
+                LUZ Y VERDAD • VILLA MARÍA DEL TRIUNFO
+              </span>
             </div>
           </div>
 
-          {/* DESKTOP NAVIGATION SYSTEM (with dropdown subsections) */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 text-[12px] xl:text-[13px] font-extrabold text-slate-600">
+          {/* Menú de Navegación Principal con Indicador Rojo */}
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 text-[12px] xl:text-[13px] font-bold text-slate-700">
             
-            {/* Inicio Link */}
             <button 
               onClick={() => { setCurrentTab("inicio"); setActiveDropdown(null); }} 
-              className={`px-3 py-2 rounded-md transition-all uppercase tracking-wide cursor-pointer ${currentTab === "inicio" ? "text-[#9F062A] bg-rose-50/50 font-black" : "hover:text-[#9F062A] hover:bg-slate-50"}`}
+              className={`px-3.5 py-2 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "inicio" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
             >
-              Inicio
+              <span>INICIO</span>
+              {currentTab === "inicio" && (
+                <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#9F062A] rounded-full" />
+              )}
             </button>
 
-            {/* Nosotros Dropdown Item */}
+            {/* Nosotros */}
             <div 
               className="relative group py-2"
               onMouseEnter={() => setActiveDropdown("nosotros")}
@@ -333,29 +333,32 @@ export default function PortalHome({
             >
               <button 
                 onClick={() => setCurrentTab("nosotros")}
-                className={`px-3 py-2 rounded-md transition-all uppercase tracking-wide inline-flex items-center gap-1.5 cursor-pointer ${currentTab === "nosotros" ? "text-[#9F062A] bg-rose-50/50 font-black" : "hover:text-[#9F062A] hover:bg-slate-50"}`}
+                className={`px-3.5 py-2 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "nosotros" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
               >
-                <span>Nosotros</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 mt-0.5 group-hover:rotate-180`} />
+                <span>NOSOTROS</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500 group-hover:rotate-180 transition-transform" />
+                {currentTab === "nosotros" && (
+                  <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#9F062A] rounded-full" />
+                )}
               </button>
 
-              <div className="absolute top-full left-0 hidden group-hover:block w-52 bg-white rounded-md border border-slate-200 shadow-xl p-2 z-50 animate-fade-in">
+              <div className="absolute top-full left-0 hidden group-hover:block w-56 bg-white border border-slate-200 shadow-xl rounded-lg p-2 z-50 animate-fade-in">
                 <button
-                  onClick={() => { setCurrentTab("nosotros"); }}
-                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-extrabold text-slate-700 uppercase"
+                  onClick={() => setCurrentTab("nosotros")}
+                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase"
                 >
                   Misión, Visión y Valores
                 </button>
                 <button
-                  onClick={() => { setCurrentTab("nosotros"); }}
-                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-extrabold text-slate-700 uppercase mt-0.5"
+                  onClick={() => setCurrentTab("nosotros")}
+                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase mt-1"
                 >
-                  Autoridades y Dirección
+                  Plana Directiva y Autoridades
                 </button>
               </div>
             </div>
 
-            {/* Programas Dropdown Item */}
+            {/* Programas */}
             <div 
               className="relative group py-2"
               onMouseEnter={() => setActiveDropdown("programas")}
@@ -363,34 +366,35 @@ export default function PortalHome({
             >
               <button 
                 onClick={() => setCurrentTab("programas")}
-                className={`px-3 py-2 rounded-md transition-all uppercase tracking-wide inline-flex items-center gap-1.5 cursor-pointer ${currentTab === "programas" ? "text-[#9F062A] bg-rose-50/50 font-black" : "hover:text-[#9F062A] hover:bg-slate-50"}`}
+                className={`px-3.5 py-2 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "programas" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
               >
-                <span>Programas</span>
-                <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200 mt-0.5 group-hover:rotate-180" />
+                <span>PROGRAMAS</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500 group-hover:rotate-180 transition-transform" />
+                {currentTab === "programas" && (
+                  <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#9F062A] rounded-full" />
+                )}
               </button>
 
-              <div className="absolute top-full left-0 hidden group-hover:block w-72 bg-white rounded-md border border-slate-200 shadow-xl p-3 z-50 animate-fade-in space-y-2">
-                <div>
-                  <span className="text-[9px] uppercase font-black text-[#9F062A] tracking-wider block mb-1">Especialidades Profesionales:</span>
-                  <button
-                    onClick={() => { setSelectedProgramId("electronica"); setCurrentTab("programas"); }}
-                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-extrabold text-slate-800 uppercase flex flex-col"
-                  >
-                    <span>Electricidad Industrial</span>
-                    <span className="text-[9px] text-slate-400 font-normal normal-case block mt-0.5">Control de PLCs, Motores y Sistemas de Media Tensión</span>
-                  </button>
-                  <button
-                    onClick={() => { setSelectedProgramId("contabilidad"); setCurrentTab("programas"); }}
-                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-extrabold text-slate-800 uppercase flex flex-col mt-1"
-                  >
-                    <span>Contabilidad Financiera</span>
-                    <span className="text-[9px] text-slate-400 font-normal normal-case block mt-0.5">Tributación Empresarial, Auditoría y Normas NIIF</span>
-                  </button>
-                </div>
+              <div className="absolute top-full left-0 hidden group-hover:block w-72 bg-white border border-slate-200 shadow-xl rounded-lg p-3 z-50 animate-fade-in space-y-1">
+                <span className="text-[10px] uppercase font-black text-[#9F062A] tracking-wider block px-2 mb-1">Especialidades Técnicas:</span>
+                <button
+                  onClick={() => { setSelectedProgramId("electronica"); setCurrentTab("programas"); }}
+                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col"
+                >
+                  <span>Electricidad Industrial</span>
+                  <span className="text-[10px] text-slate-500 normal-case font-normal">Control de PLCs, Motores y Subestaciones</span>
+                </button>
+                <button
+                  onClick={() => { setSelectedProgramId("contabilidad"); setCurrentTab("programas"); }}
+                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col mt-1"
+                >
+                  <span>Contabilidad Financiera</span>
+                  <span className="text-[10px] text-slate-500 normal-case font-normal">Tributación Empresarial, NIIF y Software ERP</span>
+                </button>
               </div>
             </div>
 
-            {/* Admisión Dropdown Item */}
+            {/* Admisión */}
             <div 
               className="relative group py-2"
               onMouseEnter={() => setActiveDropdown("admision")}
@@ -398,61 +402,69 @@ export default function PortalHome({
             >
               <button 
                 onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
-                className={`px-3 py-2 rounded-md transition-all uppercase tracking-wide inline-flex items-center gap-1.5 cursor-pointer ${currentTab === "admision" ? "text-[#9F062A] bg-rose-50/50 font-black" : "hover:text-[#9F062A] hover:bg-slate-50"}`}
+                className={`px-3.5 py-2 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "admision" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
               >
-                <span>Admisión</span>
-                <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200 mt-0.5 group-hover:rotate-180" />
+                <span>ADMISIÓN</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500 group-hover:rotate-180 transition-transform" />
+                {currentTab === "admision" && (
+                  <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#9F062A] rounded-full" />
+                )}
               </button>
 
-              <div className="absolute top-full left-0 hidden group-hover:block w-64 bg-white rounded-md border border-slate-200 shadow-xl p-2.5 z-50 animate-fade-in">
+              <div className="absolute top-full left-0 hidden group-hover:block w-64 bg-white border border-slate-200 shadow-xl rounded-lg p-2 z-50 animate-fade-in">
                 <button
                   onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
-                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-extrabold text-slate-700 uppercase"
+                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase"
                 >
-                  Pre-Inscripción 2026-I
+                  Pre-Inscripción Virtual 2026-I
                 </button>
                 <button
                   onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
-                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-extrabold text-slate-700 uppercase mt-0.5"
+                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase mt-1"
                 >
-                  Tasas y Costos Educativos
+                  Tasas y Requisitos del Examen
                 </button>
               </div>
             </div>
 
-            {/* Transparencia Item */}
             <button 
               onClick={() => { setCurrentTab("transparencia"); setActiveDropdown(null); }} 
-              className={`px-3 py-2 rounded-md transition-all uppercase tracking-wide cursor-pointer ${currentTab === "transparencia" ? "text-[#9F062A] bg-rose-50/50 font-black" : "hover:text-[#9F062A] hover:bg-slate-50"}`}
+              className={`px-3.5 py-2 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "transparencia" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
             >
-              Transparencia
+              <span>TRANSPARENCIA</span>
+              {currentTab === "transparencia" && (
+                <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#9F062A] rounded-full" />
+              )}
             </button>
 
-            {/* Contáctanos Item */}
             <button 
               onClick={() => { setCurrentTab("contactanos"); setActiveDropdown(null); }} 
-              className={`px-3 py-2 rounded-md transition-all uppercase tracking-wide cursor-pointer ${currentTab === "contactanos" ? "text-[#9F062A] bg-rose-50/50 font-black" : "hover:text-[#9F062A] hover:bg-slate-50"}`}
+              className={`px-3.5 py-2 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "contactanos" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
             >
-              Contáctanos
+              <span>CONTÁCTANOS</span>
+              {currentTab === "contactanos" && (
+                <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#9F062A] rounded-full" />
+              )}
             </button>
 
           </nav>
 
-          {/* Intranet Call to Action Button */}
+          {/* Botón Destacado de Intranet Académica en Granate */}
           <div className="hidden lg:flex items-center gap-3">
             <button 
               onClick={onEnterIntranet}
-              className="flex items-center gap-2 bg-[#9F062A] hover:bg-[#800521] text-white px-4 py-2 rounded-md font-bold tracking-wide transition-all shadow-md text-xs border border-[#9F062A] cursor-pointer"
+              className="flex items-center gap-2 bg-[#9F062A] hover:bg-[#800521] text-white px-5 py-2.5 rounded-lg font-bold tracking-wide transition-all shadow-md text-xs cursor-pointer active:scale-95"
             >
-              <LogIn className="w-3.5 h-3.5 text-[#E3BD26]" /> Intranet Académica
+              <GraduationCap className="w-4 h-4 text-amber-300" />
+              <span>Intranet Académica</span>
             </button>
           </div>
 
-          {/* MOBILE TOGGLE ICON */}
+          {/* Mobile Menu Button */}
           <div className="flex items-center lg:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-slate-600 hover:text-[#9F062A] focus:outline-hidden cursor-pointer"
+              className="p-2 text-slate-700 hover:text-[#9F062A] focus:outline-none cursor-pointer"
               aria-label="Toggle Menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -461,95 +473,54 @@ export default function PortalHome({
 
         </div>
 
-        {/* MOBILE RESPONSIVE ACCORDION SYSTEM (Slides-down when open) */}
+        {/* Mobile Navigation Dropdown */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-slate-100 bg-slate-50 animate-fade-in w-full text-xs font-bold text-slate-700 select-none pb-4">
-            <div className="px-4 py-2 space-y-2">
-              
-              {/* Menu items */}
+          <div className="lg:hidden border-t border-slate-200 bg-white animate-fade-in w-full text-xs font-bold text-slate-800 select-none pb-6 px-4">
+            <div className="py-3 space-y-1">
               <button
                 onClick={() => { setCurrentTab("inicio"); setMobileMenuOpen(false); }}
-                className="w-full text-left px-3 py-2.5 rounded-md hover:bg-rose-50 hover:text-[#9F062A] block transition-all uppercase"
+                className="w-full text-left px-4 py-3 rounded-md hover:bg-rose-50 text-[#9F062A] block uppercase font-extrabold"
               >
-                Inicio
+                INICIO
               </button>
-
-              {/* Nosotros Mobile Group */}
-              <div className="border-b border-slate-200/50 pb-1">
-                <span className="px-3 py-1.5 text-[10px] text-slate-400 uppercase font-black block mt-2">Institucional</span>
-                <button
-                  onClick={() => { setCurrentTab("nosotros"); setMobileMenuOpen(false); }}
-                  className="w-full text-left px-5 py-2 hover:bg-rose-50 hover:text-[#9F062A] block transition-all uppercase text-slate-700 font-semibold"
-                >
-                  Misión, Visión y Valores
-                </button>
-                <button
-                  onClick={() => { setCurrentTab("nosotros"); setMobileMenuOpen(false); }}
-                  className="w-full text-left px-5 py-2 hover:bg-rose-50 hover:text-[#9F062A] block transition-all uppercase text-slate-700 font-semibold"
-                >
-                  Plana Directiva y Autoridades
-                </button>
-              </div>
-
-              {/* Programas Mobile Group */}
-              <div className="border-b border-slate-200/50 pb-1">
-                <span className="px-3 py-1.5 text-[10px] text-slate-400 uppercase font-black block mt-2">Nuestras Carreras</span>
-                <button
-                  onClick={() => { setSelectedProgramId("electronica"); setCurrentTab("programas"); setMobileMenuOpen(false); }}
-                  className="w-full text-left px-5 py-2 hover:bg-rose-50 hover:text-[#9F062A] block transition-all uppercase text-slate-700 font-semibold"
-                >
-                  • Electricidad Industrial
-                </button>
-                <button
-                  onClick={() => { setSelectedProgramId("contabilidad"); setCurrentTab("programas"); setMobileMenuOpen(false); }}
-                  className="w-full text-left px-5 py-2 hover:bg-rose-50 hover:text-[#9F062A] block transition-all uppercase text-slate-700 font-semibold"
-                >
-                  • Contabilidad Financiera
-                </button>
-              </div>
-
-              {/* Admisión Mobile Group */}
-              <div className="border-b border-slate-200/50 pb-1">
-                <span className="px-3 py-1.5 text-[10px] text-slate-400 uppercase font-black block mt-2">Admisión 2026</span>
-                <button
-                  onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); setMobileMenuOpen(false); }}
-                  className="w-full text-left px-5 py-2 hover:bg-rose-50 hover:text-[#9F062A] block transition-all uppercase text-slate-700 font-semibold"
-                >
-                  Pre-Inscripción Directa
-                </button>
-                <button
-                  onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); setMobileMenuOpen(false); }}
-                  className="w-full text-left px-5 py-2 hover:bg-rose-50 hover:text-[#9F062A] block transition-all uppercase text-slate-700 font-semibold"
-                >
-                  Tasas & Costos Ordinarios
-                </button>
-              </div>
-
-              {/* Independent Pages */}
+              <button
+                onClick={() => { setCurrentTab("nosotros"); setMobileMenuOpen(false); }}
+                className="w-full text-left px-4 py-3 rounded-md hover:bg-rose-50 text-slate-800 block uppercase"
+              >
+                NOSOTROS
+              </button>
+              <button
+                onClick={() => { setCurrentTab("programas"); setMobileMenuOpen(false); }}
+                className="w-full text-left px-4 py-3 rounded-md hover:bg-rose-50 text-slate-800 block uppercase"
+              >
+                PROGRAMAS
+              </button>
+              <button
+                onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); setMobileMenuOpen(false); }}
+                className="w-full text-left px-4 py-3 rounded-md hover:bg-rose-50 text-slate-800 block uppercase"
+              >
+                ADMISIÓN
+              </button>
               <button
                 onClick={() => { setCurrentTab("transparencia"); setMobileMenuOpen(false); }}
-                className="w-full text-left px-3 py-2.5 rounded-md hover:bg-rose-50 hover:text-[#9F062A] block transition-all uppercase"
+                className="w-full text-left px-4 py-3 rounded-md hover:bg-rose-50 text-slate-800 block uppercase"
               >
-                Transparencia de Ley
+                TRANSPARENCIA
               </button>
-
               <button
                 onClick={() => { setCurrentTab("contactanos"); setMobileMenuOpen(false); }}
-                className="w-full text-left px-3 py-2.5 rounded-md hover:bg-rose-50 hover:text-[#9F062A] block transition-all uppercase"
+                className="w-full text-left px-4 py-3 rounded-md hover:bg-rose-50 text-slate-800 block uppercase"
               >
-                Mesa de Partes / Ubicación
+                CONTÁCTANOS
               </button>
-
-              {/* Mobile CTA */}
-              <div className="pt-4 border-t border-slate-200 flex flex-col gap-2 px-3">
+              <div className="pt-3 border-t border-slate-200">
                 <button 
                   onClick={() => { onEnterIntranet(); setMobileMenuOpen(false); }}
-                  className="w-full py-2.5 bg-[#9F062A] text-white rounded font-bold uppercase tracking-wider text-center text-xs flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3 bg-[#9F062A] text-white rounded-lg font-bold uppercase tracking-wider text-center text-xs flex items-center justify-center gap-2 shadow-md"
                 >
-                  <LogIn className="w-4 h-4 text-[#E3BD26]" /> Intranet Académica
+                  <GraduationCap className="w-4 h-4 text-amber-300" /> Intranet Académica
                 </button>
               </div>
-
             </div>
           </div>
         )}
@@ -561,396 +532,404 @@ export default function PortalHome({
         {/* ================= INICIO VIEW ================= */}
         {currentTab === "inicio" && (
           <div className="space-y-0">
-            {/* Carousel Slider with Motion */}
-            <section className="relative h-[490px] bg-slate-950 overflow-hidden">
-              <AnimatePresence mode="wait">
-                <motion.div 
-                  key={currentSlide}
-                  initial={{ opacity: 0, scale: 1.02 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.6, ease: "easeInOut" }}
-                  className="absolute inset-0"
-                >
-                  <img 
-                    src={slides[currentSlide].image} 
-                    alt={slides[currentSlide].title} 
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover opacity-35 saturate-110" 
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/60 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-950 to-transparent" />
-                </motion.div>
-              </AnimatePresence>
+            
+            {/* 3. HERO PRINCIPAL INSTITUCIONAL Y REALISTA */}
+            <section className="relative min-h-[500px] lg:min-h-[560px] bg-slate-950 flex items-center overflow-hidden">
+              
+              {/* Fotografía Realista de Estudiantes del Instituto */}
+              <div className="absolute inset-0 z-0">
+                <img 
+                  src="/hero_campus_sfa.jpg" 
+                  alt="Estudiantes del IESTP San Francisco de Asís caminando en el campus" 
+                  className="w-full h-full object-cover object-center scale-100" 
+                />
+                {/* Degradado Granate Institucional desde la Izquierda */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#450212] via-[#66031A]/95 via-45% to-transparent z-10" />
+              </div>
 
-              {/* Slider overlay text with stagger loading */}
-              <div className="absolute inset-0 max-w-7xl mx-auto px-6 sm:px-12 flex flex-col justify-center items-start text-white">
-                <motion.span 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="bg-[#CFA020] text-slate-950 font-black px-3 py-1 rounded-sm text-[10px] tracking-widest uppercase mb-4 shadow-md"
-                >
-                  {slides[currentSlide].tagline}
-                </motion.span>
-                <motion.h2 
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="text-3xl sm:text-5xl font-black max-w-3xl leading-tight tracking-tight text-white drop-shadow-lg uppercase"
-                >
-                  {slides[currentSlide].title}
-                </motion.h2>
-                <motion.p 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="mt-3 text-xs sm:text-sm text-slate-200 max-w-xl font-semibold leading-relaxed"
-                >
-                  {slides[currentSlide].subtitle}
-                </motion.p>
+              {/* Contenido del Hero Integrado en el Lado Izquierdo */}
+              <div className="max-w-7xl mx-auto w-full px-6 sm:px-10 py-12 relative z-20 grid grid-cols-1 lg:grid-cols-12 items-center">
                 
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="mt-8 flex flex-wrap gap-3.5"
-                >
-                  <button 
-                    onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
-                    className="bg-[#9F062A] hover:bg-[#800521] text-white px-5 py-3 rounded-md font-black tracking-widest text-[11px] uppercase shadow-lg transition-all hover:scale-[1.03] active:scale-[0.98] inline-flex items-center gap-2 cursor-pointer"
-                  >
-                    EXAMEN ADMISIÓN ORDINARIO &rarr;
-                  </button>
-                  <button 
-                    onClick={() => setCurrentTab("programas")}
-                    className="bg-transparent hover:bg-white/10 text-white font-bold px-5 py-3 rounded-md text-[11px] tracking-widest uppercase border border-white/50 transition-colors cursor-pointer"
-                  >
-                    Ver Planes Tecnológicos
-                  </button>
-                </motion.div>
+                <div className="lg:col-span-7 space-y-5 text-white">
+                  
+                  {/* Etiqueta de Admisión con Línea Dorada */}
+                  <div className="inline-flex items-center gap-2 bg-black/40 border-l-4 border-[#CFA020] px-3.5 py-1.5 rounded-r-md text-xs font-bold uppercase tracking-wider text-white">
+                    <span>ADMISION ORDINARIA 2026 ABIERTA</span>
+                  </div>
+
+                  {/* Título Grande: Blanco + Dorado para "DE ASÍS" */}
+                  <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight uppercase">
+                    IESTP SAN FRANCISCO<br />
+                    <span className="text-[#CFA020]">DE ASÍS</span>
+                  </h2>
+
+                  {/* Subtítulo en Blanco Negrita */}
+                  <h3 className="text-base sm:text-xl font-bold text-white leading-snug">
+                    Formación técnica de calidad para un mejor futuro.
+                  </h3>
+
+                  {/* Texto Institucional */}
+                  <p className="text-xs sm:text-sm text-slate-200 font-normal leading-relaxed max-w-xl">
+                    En el IESTP San Francisco de Asís te preparamos con valores, conocimientos y habilidades para que seas un profesional competitivo y comprometido con la sociedad.
+                  </p>
+
+                  {/* Botones Principal (Granate) y Secundario (Borde Blanco) */}
+                  <div className="flex flex-wrap items-center gap-4 pt-4">
+                    <button 
+                      onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
+                      className="bg-[#9F062A] hover:bg-[#800521] text-white font-bold px-6 py-3.5 rounded-md text-xs uppercase tracking-wider shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                    >
+                      <span>EXAMEN DE ADMISIÓN ORDINARIO</span>
+                      <ArrowRight className="w-4 h-4 text-white" />
+                    </button>
+                    <button 
+                      onClick={() => setCurrentTab("programas")}
+                      className="bg-transparent hover:bg-white/10 text-white font-bold px-6 py-3.5 rounded-md text-xs uppercase tracking-wider border border-white/60 transition-colors flex items-center gap-2 cursor-pointer"
+                    >
+                      <Calendar className="w-4 h-4 text-amber-300" />
+                      <span>VER PLANES TECNOLÓGICOS</span>
+                    </button>
+                  </div>
+
+                </div>
+
+                {/* Detalle Visual Discreto en la Esquina Inferior Derecha */}
+                <div className="hidden lg:block lg:col-span-5 relative h-full">
+                  <div className="absolute bottom-4 right-0 text-right select-none">
+                    <p className="font-serif italic text-white/95 text-xl sm:text-2xl drop-shadow-md tracking-wide">
+                      “Tu esfuerzo también es parte de nuestra historia”
+                    </p>
+                    <div className="w-36 h-0.5 bg-[#CFA020] ml-auto mt-1 rounded-full shadow-sm" />
+                  </div>
+                </div>
+
               </div>
 
-              {/* Slider Controls */}
-              <button 
-                onClick={prevSlide}
-                className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-900/50 hover:bg-slate-900 text-white flex items-center justify-center transition-all cursor-pointer z-10"
-                aria-label="Previous Slide"
-              >
-                <ChevronLeft className="w-5 h-5 hover:text-[#CFA020]" />
-              </button>
-              <button 
-                onClick={nextSlide}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-slate-900/50 hover:bg-slate-900 text-white flex items-center justify-center transition-all cursor-pointer z-10"
-                aria-label="Next Slide"
-              >
-                <ChevronRight className="w-5 h-5 hover:text-[#CFA020]" />
-              </button>
+              {/* Transición Orgánica Inferior Blanca */}
+              <div className="absolute bottom-0 left-0 right-0 h-6 bg-white rounded-t-[50%] z-20 translate-y-3" />
             </section>
 
-
-
-            {/* Bento Grid highlighting the main features */}
-            <section className="py-16 px-4 max-w-7xl mx-auto space-y-16">
-              <div className="text-center max-w-3xl mx-auto">
-                <span className="text-[#9F062A] font-extrabold text-[11px] uppercase tracking-widest block font-mono">EDUCACIÓN INTEGRAL SERIA</span>
-                <h3 className="text-2xl sm:text-3xl font-black mt-2 text-slate-900 uppercase">¿Por qué estudiar en el IESTP San Francisco de Asís?</h3>
-                <p className="text-slate-500 mt-2 text-xs sm:text-sm font-semibold max-w-2xl mx-auto leading-relaxed">
-                  Ofrecemos planes curriculares orientados a metas reales en el mercado tecnológico de hoy, en el único Instituto Tecnológico con financiamiento público del distrito.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <motion.div 
-                  whileHover={{ y: -4 }}
-                  className="bg-white p-6 rounded-lg shadow-sm border border-slate-200/60 flex gap-4"
-                >
-                  <div className="w-10 h-10 bg-[#9F062A]/10 text-[#9F062A] rounded-md flex items-center justify-center shrink-0">
-                    <MedalIcon className="w-5 h-5" />
+            {/* 4. FRANJA DE BENEFICIOS INSTITUCIONALES (DIRECTAMENTE DEBAJO DEL HERO) */}
+            <section className="bg-white border-b border-slate-200/80 py-8 px-4 relative z-30 shadow-xs">
+              <div className="max-w-7xl mx-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200">
+                  
+                  {/* Beneficio 1 */}
+                  <div className="flex items-start gap-4 p-4 sm:px-6">
+                    <div className="w-12 h-12 bg-rose-50 rounded-lg flex items-center justify-center shrink-0 border border-rose-100">
+                      <GraduationCap className="w-6 h-6 text-[#9F062A]" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">PROGRAMAS TÉCNICOS</h4>
+                      <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">Formación alineada al mercado laboral</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-black text-slate-900 uppercase">Licenciamiento R.M. 124-2021</h4>
-                    <p className="text-xs text-slate-500 leading-relaxed font-semibold mt-1.5">Aprobado plenamente por el MINEDU, garantizando que el diploma oficial tenga validez a nivel nacional en convenios gubernamentales.</p>
-                  </div>
-                </motion.div>
 
-                <motion.div 
-                  whileHover={{ y: -4 }}
-                  className="bg-white p-6 rounded-lg shadow-sm border border-slate-200/60 flex gap-4"
-                >
-                  <div className="w-10 h-10 bg-amber-50 text-amber-700 rounded-md flex items-center justify-center shrink-0">
-                    <Users className="w-5 h-5" />
+                  {/* Beneficio 2 */}
+                  <div className="flex items-start gap-4 p-4 sm:px-6">
+                    <div className="w-12 h-12 bg-rose-50 rounded-lg flex items-center justify-center shrink-0 border border-rose-100">
+                      <Users className="w-6 h-6 text-[#9F062A]" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">DOCENTES CALIFICADOS</h4>
+                      <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">Profesionales con experiencia real</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-black text-slate-900 uppercase">Inserción Laboral Eficaz</h4>
-                    <p className="text-xs text-slate-500 leading-relaxed font-semibold mt-1.5">Nuestra secretaría académica procesa convenios corporativos activos para inserción inmediata en el sector industrial de Lima Sur.</p>
-                  </div>
-                </motion.div>
 
-                <motion.div 
-                  whileHover={{ y: -4 }}
-                  className="bg-white p-6 rounded-lg shadow-sm border border-slate-200/60 flex gap-4"
-                >
-                  <div className="w-10 h-10 bg-blue-50 text-blue-700 rounded-md flex items-center justify-center shrink-0">
-                    <Globe className="w-5 h-5" />
+                  {/* Beneficio 3 */}
+                  <div className="flex items-start gap-4 p-4 sm:px-6">
+                    <div className="w-12 h-12 bg-rose-50 rounded-lg flex items-center justify-center shrink-0 border border-rose-100">
+                      <Building2 className="w-6 h-6 text-[#9F062A]" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">INFRAESTRUCTURA MODERNA</h4>
+                      <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">Ambientes seguros y equipados</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-black text-slate-900 uppercase">Costo Educativo Público</h4>
-                    <p className="text-xs text-slate-500 leading-relaxed font-semibold mt-1.5">Al ser un instituto tecnológico público oficial, el costo mensual de pensiones es S/. 0.00, promoviendo el acceso democrático.</p>
-                  </div>
-                </motion.div>
-              </div>
 
-              {/* Quantitative values section - UPDATED to 02 Careers */}
-              <div className="bg-slate-950 rounded-xl p-8 text-white grid grid-cols-2 md:grid-cols-4 gap-6 text-center border-b-4 border-[#CFA020]">
-                <div>
-                  <span className="text-3xl font-black text-[#CFA020] block font-mono">100%</span>
-                  <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-1">Licenciado por Minedu</p>
-                </div>
-                <div>
-                  <span className="text-3xl font-black text-[#E3BD26] block font-mono">02</span>
-                  <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-1">Especialidades Activas</p>
-                </div>
-                <div>
-                  <span className="text-3xl font-black text-[#CFA020] block font-mono">30+</span>
-                  <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-1">Años de Logros Locales</p>
-                </div>
-                <div>
-                  <span className="text-3xl font-black text-[#E3BD26] block font-mono">S/. 120</span>
-                  <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-1">Costo Examen Ordinario</p>
+                  {/* Beneficio 4 */}
+                  <div className="flex items-start gap-4 p-4 sm:px-6">
+                    <div className="w-12 h-12 bg-rose-50 rounded-lg flex items-center justify-center shrink-0 border border-rose-100">
+                      <ShieldCheck className="w-6 h-6 text-[#9F062A]" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">COMPROMISO SOCIAL</h4>
+                      <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1">Educación que transforma vidas</p>
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </section>
 
-            {/* ================= PROGRAMAS Y PREGUNTAS FRECUENTES SECTION ================= */}
-            <section className="bg-slate-100/75 border-t border-slate-200 py-16 px-4">
+            {/* 5. SECCIÓN DE PRE-INSCRIPCIÓN VIRTUAL Y DESTACADOS */}
+            <section className="py-16 px-4 bg-slate-50">
               <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
                 
-                {/* Left Side: Programas de Estudio */}
-                <div className="lg:col-span-7 space-y-6">
-                  <div className="border-l-4 border-[#9F062A] pl-3">
-                    <span className="text-[#9F502A] text-[10px] font-black tracking-widest uppercase font-mono">IESTP SAN FRANCISCO DE ASÍS</span>
-                    <h3 className="text-xl sm:text-2xl font-black uppercase text-slate-950 tracking-tight">Programas de Estudio</h3>
+                {/* Lado Izquierdo: Información y Carreras */}
+                <div className="lg:col-span-7 space-y-8">
+                  <div className="border-l-4 border-[#9F062A] pl-4">
+                    <span className="text-[#9F062A] font-black text-xs uppercase tracking-widest block">OFERTA EDUCATIVA PÚBLICA LICENCIADA</span>
+                    <h3 className="text-2xl sm:text-3xl font-black text-slate-900 uppercase tracking-tight mt-1">
+                      Programas de Estudio Profesionales
+                    </h3>
                   </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pb-2">
+
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                    Ofrecemos módulos formativos estructurados durante 3 años lectivos con titulación oficial expedida directamente por el Ministerio de Educación (MINEDU), asegurando arancel mensual S/. 0.00.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {careersDetail.map((career) => (
-                      <motion.div 
+                      <div 
                         key={career.id}
-                        whileHover={{ y: -6 }}
-                        className="bg-white rounded-lg border border-slate-250 overflow-hidden shadow-xs flex flex-col justify-between"
+                        className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow"
                       >
-                        <div className="relative h-40 bg-slate-100">
+                        <div className="relative h-44 bg-slate-100">
                           <img 
                             src={career.image} 
                             alt={career.name} 
-                            referrerPolicy="no-referrer"
                             className="w-full h-full object-cover" 
                           />
-                          <div className="absolute top-2 right-2 bg-slate-900/80 text-[#CFA020] text-[9px] font-mono uppercase px-2 py-0.5 rounded font-black">
-                            {career.hours}
-                          </div>
+                          <span className="absolute top-3 right-3 bg-slate-900/90 text-[#CFA020] text-[10px] font-mono px-2.5 py-1 rounded font-bold uppercase">
+                            3 AÑOS - TITULACIÓN OFICIAL
+                          </span>
                         </div>
-                        
-                        <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <span className="p-1 rounded bg-slate-100 text-[#9F062A]">
-                                {career.icon}
-                              </span>
-                              <h4 className="text-sm font-black text-slate-950 uppercase tracking-tight truncate leading-none">
-                                {career.name}
-                              </h4>
-                            </div>
-                            <p className="text-[11px] text-slate-600 leading-relaxed font-semibold line-clamp-3">
-                              {career.profile}
-                            </p>
-                          </div>
 
-                          <div className="pt-2">
-                            <button
-                              onClick={() => {
-                                setSelectedProgramId(career.id);
-                                setCurrentTab("programas");
-                              }}
-                              className="w-full bg-slate-900 hover:bg-[#9F062A] text-white hover:text-white font-extrabold text-[10px] tracking-widest uppercase py-2.5 rounded-sm transition-all text-center cursor-pointer select-none"
-                            >
-                              Más Información &rarr;
-                            </button>
-                          </div>
+                        <div className="p-5 space-y-3">
+                          <h4 className="text-base font-black text-slate-900 uppercase">{career.name}</h4>
+                          <p className="text-xs text-slate-600 font-normal leading-relaxed line-clamp-3">
+                            {career.profile}
+                          </p>
                         </div>
-                      </motion.div>
+
+                        <div className="p-5 pt-0">
+                          <button
+                            onClick={() => { setSelectedProgramId(career.id); setProgramSelection(career.id); setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
+                            className="w-full py-2.5 bg-rose-50 hover:bg-[#9F062A] text-[#9F062A] hover:text-white font-extrabold rounded-lg text-xs uppercase tracking-wider border border-rose-200 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                          >
+                            <span>Pre-inscribirme</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Right Side: Preguntas Frecuentes Accordion with Framer Motion */}
-                <div className="lg:col-span-5 space-y-6">
-                  <div className="border-l-4 border-[#CFA020] pl-3">
-                    <span className="text-[#9F062A] text-[10px] font-black tracking-widest uppercase font-mono">DUDAS Y ORIENTACIÓN AL POSTULANTE</span>
-                    <h3 className="text-xl sm:text-2xl font-black uppercase text-slate-950 tracking-tight">Preguntas Frecuentes</h3>
-                  </div>
+                {/* Lado Derecho: Tarjeta de Pre-Inscripción Directa */}
+                <div className="lg:col-span-5">
+                  <div className="bg-white border-2 border-rose-100 p-6 sm:p-8 rounded-2xl shadow-lg relative">
+                    <div className="border-b border-slate-200 pb-4 mb-4">
+                      <span className="text-[10px] font-black uppercase text-[#9F062A] tracking-widest block">ADMISIÓN ORDINARIA 2026-I</span>
+                      <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mt-1">Pre-Inscripción Virtual</h3>
+                      <p className="text-xs text-slate-500 font-medium mt-1">Obtén tu código oficial de postulante en tiempo real.</p>
+                    </div>
 
-                  <div className="space-y-3">
-                    {[
-                      {
-                        id: 1,
-                        question: "¿Qué títulos oficiales otorga el instituto?",
-                        answer: "Otorgamos Título Profesional Técnico a Nombre de la Nación en las especialidades de Contabilidad y Electricidad Industrial, respaldado por el Ministerio de Educación (MINEDU) mediante la R.M. N° 124-2021-MINEDU para todo el territorio de la República."
-                      },
-                      {
-                        id: 2,
-                        question: "¿Cuál es la duración formal de la carrera?",
-                        answer: "Cada carrera profesional técnica tiene una duración de 3 años de estudio teórico-práctico, organizados en 6 Ciclos Académicos Semestrales consecutivos regulados legalmente."
-                      },
-                      {
-                        id: 3,
-                        question: "¿El instituto cobra mensualidades o pensión?",
-                        answer: "No. Al ser un Instituto de Educación Superior Tecnológico Público oficial del MINEDU, el costo mensual por pensión de enseñanza es de S/. 0.00. El alumno únicamente solventa las tasas semestrales de matrícula de S/. 250."
-                      },
-                      {
-                        id: 4,
-                        question: "¿Qué requisitos se necesitan para postular?",
-                        answer: "Se requiere presentar copia legible de DNI, el Certificado Oficial de Estudios de Secundaria aprobada, Partida de Nacimiento física de archivo civil, y una fotografía digital tamaño carné formal."
-                      },
-                      {
-                        id: 5,
-                        question: "¿Dónde se rinde el Examen de Admisión?",
-                        answer: "El Examen General de Admisión Ordinaria se rinde a través de nuestra Intranet Académica con control programado. Los pre-inscritos pueden ingresar con su DNI para completar el test interactivo simulado."
-                      }
-                    ].map((faq) => {
-                      const isOpen = expandedFaqId === faq.id;
-                      return (
-                        <div 
-                          key={faq.id} 
-                          className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-2xs transition-all hover:border-slate-350"
-                        >
-                          <button
-                            onClick={() => setExpandedFaqId(isOpen ? null : faq.id)}
-                            className="w-full text-left p-4 flex justify-between items-center gap-3 select-none cursor-pointer"
-                          >
-                            <span className="text-xs font-bold text-slate-900 uppercase tracking-tight">
-                              {faq.question}
-                            </span>
-                            <ChevronDown 
-                              className={`w-4 h-4 text-[#9F062A] shrink-0 transition-transform duration-300 ${
-                                isOpen ? "rotate-180" : ""
-                              }`} 
-                            />
-                          </button>
-
-                          <AnimatePresence initial={false}>
-                            {isOpen && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.25, ease: "easeInOut" }}
-                              >
-                                <div className="p-4 pt-0 border-t border-slate-100 text-[11px] font-medium leading-relaxed text-slate-650">
-                                  {faq.answer}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+                    {submitSuccessMsg ? (
+                      <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-5 rounded-xl text-xs space-y-3">
+                        <div className="flex items-start gap-2.5">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                          <p className="font-semibold leading-relaxed">{submitSuccessMsg}</p>
                         </div>
-                      );
-                    })}
+                        <button
+                          onClick={() => setSubmitSuccessMsg("")}
+                          className="w-full py-2.5 bg-emerald-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider"
+                        >
+                          Realizar Otra Inscripción
+                        </button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handlePreEnrollmentSubmit} className="space-y-3.5">
+                        <div>
+                          <label className="text-[11px] font-bold uppercase text-slate-700 block mb-1">DNI del Postulante *</label>
+                          <input 
+                            type="text"
+                            maxLength={8}
+                            required
+                            placeholder="Ingrese 8 dígitos de su DNI"
+                            value={dniInput}
+                            onChange={(e) => setDniInput(e.target.value.replace(/\D/g, ""))}
+                            className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[11px] font-bold uppercase text-slate-700 block mb-1">Nombres *</label>
+                            <input 
+                              type="text"
+                              required
+                              placeholder="Sus Nombres"
+                              value={nameInput}
+                              onChange={(e) => setNameInput(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-bold uppercase text-slate-700 block mb-1">Apellidos *</label>
+                            <input 
+                              type="text"
+                              required
+                              placeholder="Sus Apellidos"
+                              value={lastNameInput}
+                              onChange={(e) => setLastNameInput(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[11px] font-bold uppercase text-slate-700 block mb-1">Correo Electrónico *</label>
+                            <input 
+                              type="email"
+                              required
+                              placeholder="correo@ejemplo.com"
+                              value={emailInput}
+                              onChange={(e) => setEmailInput(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] font-bold uppercase text-slate-700 block mb-1">Celular *</label>
+                            <input 
+                              type="tel"
+                              required
+                              placeholder="987654321"
+                              value={phoneInput}
+                              onChange={(e) => setPhoneInput(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-bold uppercase text-slate-700 block mb-1">Programa al que Postula *</label>
+                          <select 
+                            value={programSelection}
+                            onChange={(e) => setProgramSelection(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-3.5 py-2.5 text-xs text-slate-900 outline-none transition-all cursor-pointer font-medium"
+                          >
+                            <option value="electronica">Electricidad Industrial (3 Años)</option>
+                            <option value="contabilidad">Contabilidad Financiera (3 Años)</option>
+                          </select>
+                        </div>
+
+                        <button 
+                          type="submit"
+                          disabled={isSubmittingForm}
+                          className="w-full mt-2 py-3 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-lg text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        >
+                          {isSubmittingForm ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin text-amber-300" />
+                              <span>Registrando...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4 text-amber-300" />
+                              <span>Completar Pre-Inscripción</span>
+                            </>
+                          )}
+                        </button>
+                      </form>
+                    )}
                   </div>
                 </div>
 
               </div>
             </section>
+
+            {/* 6. PASO A PASO ADMISIÓN */}
+            <section className="py-16 px-4 bg-white border-t border-slate-200">
+              <div className="max-w-7xl mx-auto space-y-10">
+                <div className="text-center max-w-3xl mx-auto">
+                  <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block">PROCESO ORDINARIO DE ADMISIÓN 2026</span>
+                  <h3 className="text-2xl sm:text-3xl font-black mt-1 text-slate-900 uppercase">Pasos para la Inscripción</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  {[
+                    { step: "01", title: "Pre-Inscripción", desc: "Registra tus datos personales en el formulario virtual para obtener tu código." },
+                    { step: "02", title: "Pago de Tasa", desc: "Abona S/. 120 por derecho de examen de admisión en el Banco de la Nación." },
+                    { step: "03", title: "Examen de Admisión", desc: "Rinde la evaluación de aptitud y conocimientos en nuestro campus." },
+                    { step: "04", title: "Matrícula e Inicio", desc: "Con tu vacante adjudicada, realiza tu matrícula institucional." }
+                  ].map((st, idx) => (
+                    <div key={idx} className="bg-slate-50 border border-slate-200 p-6 rounded-xl relative">
+                      <span className="w-8 h-8 rounded-full bg-[#9F062A] text-white font-black text-xs flex items-center justify-center mb-3">
+                        {st.step}
+                      </span>
+                      <h4 className="text-sm font-black text-slate-900 uppercase mb-1">{st.title}</h4>
+                      <p className="text-xs text-slate-600 font-medium leading-relaxed">{st.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* FREQUENTLY ASKED QUESTIONS */}
+            <section className="bg-slate-50 border-t border-slate-200 py-16 px-4">
+              <div className="max-w-4xl mx-auto space-y-8">
+                <div className="text-center">
+                  <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block">RESOLVEMOS TUS DUDAS</span>
+                  <h3 className="text-2xl sm:text-3xl font-black mt-1 text-slate-900 uppercase">Preguntas Frecuentes</h3>
+                </div>
+
+                <div className="space-y-3">
+                  {faqsList.map((faq) => (
+                    <div 
+                      key={faq.id}
+                      className="bg-white border border-slate-200 rounded-lg overflow-hidden transition-all"
+                    >
+                      <button
+                        onClick={() => setExpandedFaqId(expandedFaqId === faq.id ? null : faq.id)}
+                        className="w-full text-left p-4.5 text-xs font-extrabold text-slate-900 uppercase flex items-center justify-between gap-4 cursor-pointer"
+                      >
+                        <span>{faq.question}</span>
+                        <ChevronDown className={`w-4 h-4 text-[#9F062A] transition-transform ${expandedFaqId === faq.id ? "rotate-180" : ""}`} />
+                      </button>
+                      {expandedFaqId === faq.id && (
+                        <div className="px-4.5 pb-4 text-xs text-slate-600 leading-relaxed border-t border-slate-100 pt-3 font-medium">
+                          {faq.answer}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
           </div>
         )}
 
         {/* ================= NOSOTROS VIEW ================= */}
         {currentTab === "nosotros" && (
-          <div className="py-12 max-w-7xl mx-auto px-4 sm:px-8 space-y-12">
-            <div className="bg-slate-900 text-white rounded-lg p-8 shadow-md relative overflow-hidden border-l-4 border-[#9F062A]">
-              <div className="max-w-xl space-y-2 relative z-10">
-                <span className="text-[#CFA020] text-xs font-black tracking-widest font-mono uppercase">QUIENES SOMOS</span>
-                <h2 className="text-2xl sm:text-3xl font-black uppercase text-white tracking-tight">IESTP San Francisco de Asís</h2>
-                <p className="text-slate-300 text-xs sm:text-sm font-medium leading-relaxed">
-                  Líderes de la formación técnica formal en el cono sur de Lima, comprometidos con los valores éticos-pastorales de nuestra comunidad educativa y los requerimientos industriales modernos.
-                </p>
-              </div>
-              <div className="absolute right-0 bottom-0 top-0 w-1/3 bg-[#9F062A]/5 pointer-events-none hidden md:block" />
+          <div className="max-w-7xl mx-auto py-16 px-4 space-y-12">
+            <div className="text-center max-w-3xl mx-auto">
+              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block">INSTITUCIONAL</span>
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Misión, Visión y Autoridades</h2>
             </div>
 
-            {/* Mission Vision Value grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs space-y-2">
-                <h3 className="text-sm font-black text-[#9F062A] tracking-widest uppercase border-b pb-2 flex items-center gap-1.5">
-                  <MedalIcon className="w-4 h-4 shrink-0" /> Nuestra Misión
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed font-semibold">
-                  Brindar una formación profesional técnica integral basada en competencias avanzadas y valores humanistas y cristianos, promoviendo la investigación aplicada, el emprendimiento y el servicio solidario con la comunidad, respondiendo a la demanda ocupacional y facilitando la inserción de egresados al aparato productivo.
+              <div className="bg-white border border-slate-200 p-8 rounded-xl space-y-4 shadow-xs">
+                <div className="w-12 h-12 bg-rose-50 text-[#9F062A] rounded-lg flex items-center justify-center border border-rose-100">
+                  <Award className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-black text-slate-900 uppercase">Nuestra Misión</h3>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                  Somos un Instituto de Educación Superior Tecnológico Público que forma profesionales técnicos competitivos, con pensamiento crítico, valores éticos e innovación tecnológica, capaces de responder a las exigencias del mercado laboral y contribuir al desarrollo socioeconómico del Perú.
                 </p>
               </div>
 
-              <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs space-y-2">
-                <h3 className="text-sm font-black text-[#9F062A] tracking-widest uppercase border-b pb-2 flex items-center gap-1.5">
-                  <Compass className="w-4 h-4 shrink-0" /> Nuestra Visión
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed font-semibold">
-                  Al consolidarnos hacia el 2028, seremos un instituto superior tecnológico público líder y acreditado en Lima Metropolitana, referente nacional por su excelencia innovadora, docentes de alta especialización y una infraestructura física integral de alto nivel, formando egresados competentes que actúan con ética ambiental y vocación de paz.
+              <div className="bg-white border border-slate-200 p-8 rounded-xl space-y-4 shadow-xs">
+                <div className="w-12 h-12 bg-rose-50 text-[#9F062A] rounded-lg flex items-center justify-center border border-rose-100">
+                  <Compass className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-black text-slate-900 uppercase">Nuestra Visión</h3>
+                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                  Ser un Instituto de Educación Superior Tecnológico Público referente en Lima Metropolitana, acreditado y reconocido por su excelencia académica, calidad educativa, infraestructura moderna y alto nivel de empleabilidad de sus egresados.
                 </p>
-              </div>
-            </div>
-
-            {/* Plana Directiva and Organigrama representation */}
-            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs space-y-6">
-              <div className="border-b pb-3">
-                <h3 className="text-sm font-black text-slate-950 uppercase tracking-widest">Plana Directiva y Autoridades del Campus IESTP</h3>
-                <p className="text-[11px] text-[#CFA020] font-bold">Dirección General y Consejo de Vigilancia Académica</p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-semibold">
-                <div className="p-4 bg-slate-50 border rounded-md">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Director General</span>
-                  <h4 className="font-black text-slate-900 mt-1">Mag. Roberto Salcedo Villamil</h4>
-                  <p className="text-slate-500 font-medium text-[11px] mt-0.5">Gestión Administrativa y Representación de la Entidad</p>
-                </div>
-                <div className="p-4 bg-slate-50 border rounded-md">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Jefa de Secretaría Académica</span>
-                  <h4 className="font-black text-slate-900 mt-1">Lic. Gladys Melgarejo Torres</h4>
-                  <p className="text-slate-500 font-medium text-[11px] mt-0.5">Control de Archivos Escolares, Emisión de Diplomas</p>
-                </div>
-                <div className="p-4 bg-slate-50 border rounded-md">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Coordinador de Egresos</span>
-                  <h4 className="font-black text-slate-900 mt-1">Ing. Walter Cárdenas Rojas</h4>
-                  <p className="text-slate-500 font-medium text-[11px] mt-0.5">Convenios y Prácticas Pre-Profesionales de Estudiantes</p>
-                </div>
-                <div className="p-4 bg-slate-50 border rounded-md">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Jefe de Área de Sistemas</span>
-                  <h4 className="font-black text-slate-900 mt-1">Ing. Miguel Ángel Ramos</h4>
-                  <p className="text-slate-500 font-medium text-[11px] mt-0.5">Supervisión de Plataformas y Currícula Tecnológica</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Core Values Section */}
-            <div className="bg-slate-50 p-6 rounded-lg border border-slate-200 space-y-4">
-              <span className="text-xs uppercase font-extrabold text-[#9F062A] tracking-wider block text-center">NUESTROS VALORES CORPORATIVOS</span>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div className="p-3 bg-white border border-slate-200 rounded shadow-2xs">
-                  <h4 className="font-black text-[#9F062A] text-xs uppercase">1. Luz y Verdad</h4>
-                  <p className="text-[11px] text-slate-500 font-medium mt-1">Proceder ético y honesto.</p>
-                </div>
-                <div className="p-3 bg-white border border-slate-200 rounded shadow-2xs">
-                  <h4 className="font-black text-[#9F062A] text-xs uppercase">2. Disciplina</h4>
-                  <p className="text-[11px] text-slate-500 font-medium mt-1">Cumplimiento formal de metas.</p>
-                </div>
-                <div className="p-3 bg-white border border-slate-200 rounded shadow-2xs">
-                  <h4 className="font-black text-[#9F062A] text-xs uppercase">3. Innovación</h4>
-                  <p className="text-[11px] text-slate-500 font-medium mt-1">Adaptación tecnológica ágil.</p>
-                </div>
-                <div className="p-3 bg-white border border-slate-200 rounded shadow-2xs">
-                  <h4 className="font-black text-[#9F062A] text-xs uppercase">4. Vocación</h4>
-                  <p className="text-[11px] text-slate-500 font-medium mt-1">Servicio comprometido.</p>
-                </div>
               </div>
             </div>
           </div>
@@ -958,442 +937,178 @@ export default function PortalHome({
 
         {/* ================= PROGRAMAS VIEW ================= */}
         {currentTab === "programas" && (
-          <div className="py-12 max-w-7xl mx-auto px-4 sm:px-8 space-y-8">
-            <div className="border-b border-slate-200 pb-4 text-center">
-              <span className="text-[#9F062A] text-xs font-black tracking-widest uppercase">CATÁLOGO ACADÉMICO COLEGIO SUPERIOR</span>
-              <h2 className="text-2xl sm:text-3xl font-black uppercase text-slate-950 mt-1">Planes de Estudio Autorizados</h2>
-              <p className="text-slate-500 text-xs sm:text-sm font-semibold mt-1">Seleccione un programa de estudio abajo para revisar su itinerario formativo, horas totales y perfil laboral proyectado.</p>
+          <div className="max-w-7xl mx-auto py-16 px-4 space-y-12">
+            <div className="text-center max-w-3xl mx-auto">
+              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block">OFERTA EDUCATIVA</span>
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Programas de Estudio Licenciados</h2>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left Selector List */}
-              <div className="lg:col-span-4 bg-white p-4 rounded-lg border border-slate-200 shadow-2xs">
-                <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest p-2 block border-b mb-2">Especialidades Profesionales</span>
-                
-                <div className="space-y-1">
-                  {careersDetail.map((career) => (
-                    <button
-                      key={career.id}
-                      onClick={() => setSelectedProgramId(career.id)}
-                      className={`w-full text-left p-3 rounded-md text-xs font-bold transition-all flex items-center gap-3 cursor-pointer select-none ${
-                        selectedProgramId === career.id
-                          ? "bg-[#9F062A] text-white shadow"
-                          : "text-slate-750 hover:bg-slate-100"
-                      }`}
-                    >
-                      <div className={`p-1 rounded-sm shrink-0 ${selectedProgramId === career.id ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"}`}>
-                        {career.icon}
-                      </div>
-                      <span className="truncate">{career.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Right Detail Card */}
-              <div className="lg:col-span-8 bg-white p-6 rounded-lg border border-slate-200 shadow-xs space-y-6">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-4">
-                  <div>
-                    <span className="bg-[#FFFDF4] text-[#CFA020] border border-[#CFA020]/30 text-[10px] font-black uppercase px-2 py-0.5 rounded-sm">
-                      {activeProgramData.hours} • Plan Curricular Oficial
-                    </span>
-                    <h3 className="text-lg font-black text-slate-900 uppercase mt-2">{activeProgramData.name}</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {careersDetail.map((career) => (
+                <div key={career.id} className="bg-white border border-slate-200 p-8 rounded-xl space-y-6 shadow-xs">
+                  <div className="flex items-center gap-4">
+                    <img src={career.image} alt={career.name} className="w-20 h-20 rounded-xl object-cover border border-slate-200" />
+                    <div>
+                      <h3 className="text-xl font-black text-slate-900 uppercase">{career.name}</h3>
+                      <span className="text-xs text-[#9F062A] font-bold block mt-1">{career.hours}</span>
+                    </div>
                   </div>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">{career.profile}</p>
                   
-                  <div className="bg-slate-50 p-2 border rounded-md text-[11px] font-mono text-slate-600">
-                    Sueldo Estimado: <span className="font-bold text-[#9F062A]">{activeProgramData.salaryEst}</span>
-                  </div>
-                </div>
-
-                {/* Profile explanation */}
-                <div className="space-y-1.5 font-semibold text-xs leading-relaxed text-slate-700">
-                  <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Perfil del Egresado Técnico</span>
-                  <p>{activeProgramData.profile}</p>
-                </div>
-
-                {/* Syllabus breakdown */}
-                <div className="space-y-3 pt-2">
-                  <span className="text-[10px] text-slate-400 uppercase font-black tracking-widest block border-b pb-1">Unidades de Competencia Modular</span>
-                  
-                  <div className="space-y-2 text-xs font-semibold text-slate-700">
-                    {activeProgramData.careerPath.map((path, idx) => (
-                      <div key={idx} className="p-3 bg-slate-50 border rounded-md flex flex-col sm:flex-row gap-3">
-                        <span className="text-[#9F062A] uppercase font-black font-mono shrink-0 sm:w-20">{path.cycle}:</span>
-                        <p className="text-slate-600 text-[11px] font-medium leading-relaxed">{path.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-4 flex justify-end">
-                  <button 
-                    onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); }} 
-                    className="bg-[#9F062A] hover:bg-[#800521] text-white font-black text-xs uppercase tracking-widest px-4 py-2.5 rounded shadow-sm cursor-pointer"
+                  <button
+                    onClick={() => { setProgramSelection(career.id); setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
+                    className="w-full py-3 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-lg text-xs uppercase tracking-wider"
                   >
-                    Postular a esta Carrera Ahora &rarr;
+                    Postular a esta carrera
                   </button>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         )}
 
-        {/* ================= ADMISION Y MATRICULA VIEW ================= */}
+        {/* ================= ADMISIÓN VIEW ================= */}
         {currentTab === "admision" && (
-          <div className="py-12 max-w-7xl mx-auto px-4 sm:px-8 space-y-10">
-            <div className="border-b border-slate-200 pb-4 text-center">
-              <span className="text-[#9F062A] text-xs font-black tracking-widest uppercase">
-                {displayPeriod ? `PROCESO ADMISIÓN ORDINARIA ${displayPeriod.name}` : "PROCESO DE ADMISIÓN INSTITUCIONAL"}
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black uppercase text-slate-950 mt-1">Convocatoria y Expedientes Escolares</h2>
-              <p className="text-slate-500 text-xs sm:text-sm font-semibold mt-1">
-                {displayPeriod 
-                  ? `Examen General de Admisión programado para el periodo ${displayPeriod.name}. Revise requisitos institucionales y pre-inscríbase de forma simulada en línea.`
-                  : "Estado de las convocatorias para los exámenes de admisión ordinaria."}
-              </p>
+          <div className="max-w-4xl mx-auto py-16 px-4 space-y-8">
+            <div className="text-center">
+              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block">PROCESO DE ADMISIÓN 2026-I</span>
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Formulario Oficial de Pre-Inscripción</h2>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              {activePeriod && (
-                <div className="lg:col-span-12 bg-white rounded-lg border border-slate-200 shadow-3xs p-5 flex flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left">
-                  {/* Only Pre-inscripción shown on landing page */}
-                  <div className="flex flex-col sm:flex-row items-center gap-4">
-                    <div className="p-3 bg-rose-50 rounded-full border border-rose-100 text-[#9F062A]">
-                      <FileText className="w-6 h-6" />
+            <div className="bg-white border border-slate-200 p-8 rounded-xl shadow-xs">
+              {submitSuccessMsg ? (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-6 rounded-xl text-xs space-y-4">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
+                    <p className="font-semibold text-sm leading-relaxed">{submitSuccessMsg}</p>
+                  </div>
+                  <button
+                    onClick={() => setSubmitSuccessMsg("")}
+                    className="w-full py-3 bg-emerald-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider"
+                  >
+                    Registrar Otro Postulante
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handlePreEnrollmentSubmit} className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold uppercase text-slate-700 block mb-1">DNI del Postulante *</label>
+                    <input 
+                      type="text"
+                      maxLength={8}
+                      required
+                      placeholder="Ingrese 8 dígitos de su DNI"
+                      value={dniInput}
+                      onChange={(e) => setDniInput(e.target.value.replace(/\D/g, ""))}
+                      className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Nombres *</label>
+                      <input 
+                        type="text"
+                        required
+                        placeholder="Sus Nombres completos"
+                        value={nameInput}
+                        onChange={(e) => setNameInput(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none"
+                      />
                     </div>
-                    <div className="space-y-1">
-                      <span className="text-[#9F062A] text-[10px] font-black tracking-widest uppercase block">Pre-Inscripción Virtual</span>
-                      <div className="text-sm sm:text-base font-extrabold text-slate-950 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                        <span className="text-slate-500 font-medium text-xs sm:text-sm">Plazo de registro en línea:</span>
-                        <span className="text-[#9F062A] font-black tracking-tight">
-                          {activePeriod.preEnrollmentStartDate ? new Date(activePeriod.preEnrollmentStartDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long' }) : "-"} al {activePeriod.preEnrollmentEndDate ? new Date(activePeriod.preEnrollmentEndDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Registro de Ficha Simulada Obligatoria para Postulantes</p>
+                    <div>
+                      <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Apellidos *</label>
+                      <input 
+                        type="text"
+                        required
+                        placeholder="Sus Apellidos completos"
+                        value={lastNameInput}
+                        onChange={(e) => setLastNameInput(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none"
+                      />
                     </div>
                   </div>
-                </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Correo Electrónico *</label>
+                      <input 
+                        type="email"
+                        required
+                        placeholder="correo@ejemplo.com"
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Teléfono / Celular *</label>
+                      <input 
+                        type="tel"
+                        required
+                        placeholder="987654321"
+                        value={phoneInput}
+                        onChange={(e) => setPhoneInput(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Programa al que Postula *</label>
+                    <select 
+                      value={programSelection}
+                      onChange={(e) => setProgramSelection(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 outline-none cursor-pointer"
+                    >
+                      <option value="electronica">Electricidad Industrial (3 Años)</option>
+                      <option value="contabilidad">Contabilidad Financiera (3 Años)</option>
+                    </select>
+                  </div>
+
+                  <button 
+                    type="submit"
+                    disabled={isSubmittingForm}
+                    className="w-full mt-4 py-3.5 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-lg text-xs uppercase tracking-wider shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmittingForm ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin text-amber-300" />
+                        <span>Guardando Registro...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-5 h-5 text-amber-300" />
+                        <span>Completar Registro de Pre-Inscripción</span>
+                      </>
+                    )}
+                  </button>
+                </form>
               )}
-
-              {/* Left Column: Requirements & Info */}
-              <div className="lg:col-span-5 space-y-6">
-                
-                {/* Cost Info widget */}
-                <div className="bg-slate-900 text-white p-6 rounded-lg shadow-sm border-t-4 border-[#CFA020]">
-                  <span className="text-[#CFA020] text-[10px] font-mono tracking-widest uppercase font-black block">TASAS ADMINISTRATIVAS SOCIALES - 2026</span>
-                  
-                  <div className="mt-4 space-y-3 text-xs font-semibold">
-                    <div className="flex justify-between border-b border-slate-800 pb-2">
-                      <span>1. Derecho de Examen Ordinario</span>
-                      <span className="text-[#CFA020] font-black">S/. 120.00</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-800 pb-2">
-                      <span>2. Derecho de Matrícula (Semestral)</span>
-                      <span className="text-[#CFA020] font-black">S/. 250.00</span>
-                    </div>
-                    <div className="flex justify-between pb-1">
-                      <span>3. Pensiones o Mensualidades</span>
-                      <span className="text-emerald-400 font-extrabold font-mono">COSTO S/. 0.00 (PÚBLICO)</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Guide to Pre-Admission Simulation */}
-                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-2xs space-y-4">
-                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest border-b pb-2">Guía de Pre-Inscripción 2026</h3>
-                  
-                  <div className="space-y-4 text-xs font-semibold text-slate-705">
-                    <div className="flex gap-3">
-                      <div className="w-6 h-6 rounded-full bg-rose-50 text-[#9F062A] flex items-center justify-center font-mono font-black text-[11px] shrink-0 mt-0.5">
-                        01
-                      </div>
-                      <div>
-                        <span className="text-slate-900 block font-bold uppercase text-[10px] tracking-tight">Formulario de Registro</span>
-                        <p className="text-slate-500 font-medium text-[11px] leading-relaxed mt-0.5">
-                          Rellene su DNI, nombres completos, correo y teléfono de contacto para iniciar.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <div className="w-6 h-6 rounded-full bg-rose-50 text-[#9F062A] flex items-center justify-center font-mono font-black text-[11px] shrink-0 mt-0.5">
-                        02
-                      </div>
-                      <div>
-                        <span className="text-slate-900 block font-bold uppercase text-[10px] tracking-tight">Asignación de Credenciales</span>
-                        <p className="text-slate-500 font-medium text-[11px] leading-relaxed mt-0.5">
-                          El sistema del IESTP generará una credencial temporal automáticamente (Su DNI y clave temporal "123").
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <div className="w-6 h-6 rounded-full bg-rose-50 text-[#9F062A] flex items-center justify-center font-mono font-black text-[11px] shrink-0 mt-0.5">
-                        03
-                      </div>
-                      <div>
-                        <span className="text-slate-900 block font-bold uppercase text-[10px] tracking-tight">Acceso a la Intranet de Admisión</span>
-                        <p className="text-slate-500 font-medium text-[11px] leading-relaxed mt-0.5">
-                          Inicie sesión en el portal utilizando sus credenciales temporales generadas.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <div className="w-6 h-6 rounded-full bg-rose-50 text-[#9F062A] flex items-center justify-center font-mono font-black text-[11px] shrink-0 mt-0.5">
-                        04
-                      </div>
-                      <div>
-                        <span className="text-slate-900 block font-bold uppercase text-[10px] tracking-tight">Requisitos y Examen</span>
-                        <p className="text-slate-500 font-medium text-[11px] leading-relaxed mt-0.5">
-                          Dentro de su espacio privado podrá subir sus 4 documentos obligatorios de admisión y rendir el Examen virtual.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Pre-inscripcion Form */}
-              <div className="lg:col-span-7 bg-white p-6 border border-slate-200 rounded-lg shadow-sm space-y-4 relative">
-                {!activePeriod ? (
-                  <div className="py-8 px-4 text-center space-y-6 animate-fade-in-down">
-                    <div className="w-14 h-14 rounded-full bg-amber-50 text-[#CFA020] flex items-center justify-center mx-auto shadow-3xs border border-amber-100">
-                      <ShieldAlert className="w-7 h-7 text-[#9F062A]" />
-                    </div>
-
-                    {displayPeriod?.status === "EXAMEN" ? (
-                      <>
-                        <div className="space-y-1.5">
-                          <span className="text-[10px] font-black uppercase text-[#9F062A] tracking-wider block">PROCESO {displayPeriod.name}</span>
-                          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
-                            Evaluación de Admisión en Curso
-                          </h3>
-                          <p className="text-[11px] text-slate-500 font-semibold leading-normal max-w-sm mx-auto">
-                            El periodo de pre-inscripción y registro virtual ha culminado. El sistema se encuentra procesando las carpetas de postulantes.
-                          </p>
-                        </div>
-                        <div className="bg-[#9F062A]/5 border border-[#9F062A]/20 p-5 rounded-lg text-xs font-bold text-[#9F062A] leading-relaxed max-w-md mx-auto uppercase tracking-wide text-left space-y-2">
-                          <p className="font-extrabold text-[#9F062A] text-center text-[10px]">¡ATENCIÓN POSTULANTE REGISTRADO!</p>
-                          <p className="text-[11px] normal-case text-slate-800">
-                            El Examen General de Admisión Virtual está programado para el <strong>{displayPeriod.admissionDate ? new Date(displayPeriod.admissionDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}</strong>. Por favor, inicie sesión en la intranet con su DNI para validar sus archivos y resolver el simulacro de examen.
-                          </p>
-                        </div>
-                      </>
-                    ) : displayPeriod?.status === "MATRICULA" ? (
-                      <>
-                        <div className="space-y-1.5">
-                          <span className="text-[10px] font-black uppercase text-indigo-600 tracking-wider block">PROCESO {displayPeriod.name}</span>
-                          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
-                            Periodo de Matrícula Regular
-                          </h3>
-                          <p className="text-[11px] text-slate-500 font-semibold leading-normal max-w-sm mx-auto">
-                            El examen general de admisión ha finalizado. El registro escolar de ingresantes y validaciones de pago se encuentra habilitado.
-                          </p>
-                        </div>
-                        <div className="bg-indigo-50/80 border border-indigo-150 p-5 rounded-lg text-xs font-bold text-indigo-900 leading-relaxed max-w-md mx-auto uppercase tracking-wide text-left space-y-2">
-                          <p className="font-black text-indigo-850 text-center text-[10px] tracking-wider">RECEPCIÓN DE EXPEDIENTES ESCOLARES</p>
-                          <p className="text-[11px] normal-case text-slate-800">
-                            La recepción obligatoria de carpetas de matrícula virtual vence el <strong>{displayPeriod.enrollmentEndDate ? new Date(displayPeriod.enrollmentEndDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}</strong>. Acceda con sus credenciales de ingresante para subir sus documentos requeridos.
-                          </p>
-                        </div>
-                      </>
-                    ) : displayPeriod?.status === "CERRADO" ? (
-                      <>
-                        <div className="space-y-1.5">
-                          <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">PROCESO {displayPeriod.name}</span>
-                          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
-                            Proceso de Admisión Concluido
-                          </h3>
-                          <p className="text-[11px] text-slate-500 font-semibold leading-normal max-w-sm mx-auto">
-                            Las vacante institucionales para todos los programas han sido cubiertas al 100% para este ciclo escolar.
-                          </p>
-                        </div>
-                        <div className="bg-slate-50 border border-slate-200 p-5 rounded-lg text-xs font-black text-slate-700 leading-relaxed max-w-md mx-auto uppercase tracking-wide shadow-3xs text-center">
-                          Inicio de Clases: {displayPeriod.classesStartDate ? new Date(displayPeriod.classesStartDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="space-y-1.5">
-                          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">
-                            Inscripciones Cerradas
-                          </h3>
-                          <p className="text-[11px] text-slate-500 font-semibold leading-normal max-w-sm mx-auto">
-                            Actualmente no contamos con un proceso de postulación ordinaria activo en el sistema académico.
-                          </p>
-                        </div>
-                        <div className="bg-rose-50/70 border border-rose-100/80 p-5 rounded-lg text-xs font-black text-[#9F062A] leading-relaxed max-w-md mx-auto uppercase tracking-wide shadow-3xs">
-                          Pronto se reaperturarán los exámenes de admisión
-                        </div>
-                      </>
-                    )}
-
-                    <p className="text-[10px] text-slate-400 font-bold max-w-xs mx-auto">
-                      La oficina de secretaría académica e informes habilitará los próximos periodos de admisión o convocatorias según calendario oficial.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="border-b pb-2">
-                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Formulario de Pre-Inscripción {activePeriod.name}</h3>
-                      <p className="text-[11px] text-slate-500">Regístrese en línea. Esto generará una cuenta de postulante simulada en el almacenamiento del navegador.</p>
-                    </div>
-
-                    {submitSuccessMsg ? (
-                      <div className="p-4 bg-emerald-50 rounded-md border border-emerald-250 space-y-3 font-semibold text-xs text-slate-800 leading-relaxed">
-                        <div className="flex gap-2 items-center text-emerald-800">
-                          <CheckSquare className="w-5 h-5 text-emerald-600 shrink-0" />
-                          <span className="font-black text-sm text-slate-900">¡REGISTRO CON ÉXITO!</span>
-                        </div>
-                        <p>{submitSuccessMsg}</p>
-                        <div className="pt-3 flex gap-2">
-                          <button 
-                            onClick={onEnterIntranet} 
-                            className="bg-[#9F062A] hover:bg-[#800521] text-white font-black text-[11px] px-4 py-2 rounded uppercase tracking-wider"
-                          >
-                            Ingresar a la Intranet de Admisión &rarr;
-                          </button>
-                          <button 
-                            onClick={() => setSubmitSuccessMsg("")} 
-                            className="bg-slate-200 text-slate-705 font-bold text-[11px] px-3 py-2 rounded"
-                          >
-                            Registrar Otro
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <form onSubmit={handlePreEnrollmentSubmit} className="space-y-4 text-xs font-semibold text-slate-700">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-slate-700 mb-1 font-bold">DNI del Postulante *</label>
-                            <input 
-                              type="text" 
-                              required 
-                              pattern="\d{8}"
-                              maxLength={8}
-                              placeholder="Ej: 77777777" 
-                              value={dniInput} 
-                              onChange={(e) => setDniInput(e.target.value.replace(/\D/g, ""))} 
-                              className="w-full px-3 py-2 border rounded bg-slate-50 border-slate-300" 
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-slate-700 mb-1 font-bold">Carrera de Interés *</label>
-                            <select 
-                              value={programSelection} 
-                              onChange={(e) => setProgramSelection(e.target.value)} 
-                              className="w-full px-3 py-2 border rounded bg-slate-50 border-slate-300"
-                            >
-                              {careersDetail.map((c) => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-slate-700 mb-1 font-bold">Nombres Completos *</label>
-                            <input 
-                              type="text" 
-                              required 
-                              placeholder="Ej: Juan Andrés" 
-                              value={nameInput} 
-                              onChange={(e) => setNameInput(e.target.value)} 
-                              className="w-full px-3 py-2 border rounded bg-slate-50 border-slate-300" 
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-slate-700 mb-1 font-bold">Apellidos Completos *</label>
-                            <input 
-                              type="text" 
-                              required 
-                              placeholder="Ej: Pérez García" 
-                              value={lastNameInput} 
-                              onChange={(e) => setLastNameInput(e.target.value)} 
-                              className="w-full px-3 py-2 border rounded bg-slate-50 border-slate-300" 
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-slate-700 mb-1 font-bold">Correo Electrónico *</label>
-                            <input 
-                              type="email" 
-                              required 
-                              placeholder="juan@gmail.com" 
-                              value={emailInput} 
-                              onChange={(e) => setEmailInput(e.target.value)} 
-                              className="w-full px-3 py-2 border rounded bg-slate-50 border-slate-300" 
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-slate-700 mb-1 font-bold">Celular / Celulares Contacto *</label>
-                            <input 
-                              type="tel" 
-                              required 
-                              placeholder="Ej: 987654321" 
-                              value={phoneInput} 
-                              onChange={(e) => setPhoneInput(e.target.value.replace(/\D/g, ""))} 
-                              className="w-full px-3 py-2 border rounded bg-slate-50 border-slate-300" 
-                            />
-                          </div>
-                        </div>
-
-                        <button 
-                          type="submit" 
-                          className="w-full bg-[#9F062A] hover:bg-[#800521] text-white py-2.5 rounded font-black uppercase text-[10px] tracking-widest shadow cursor-pointer"
-                        >
-                          Pre-inscribirse
-                        </button>
-                      </form>
-                    )}
-                  </>
-                )}
-              </div>
             </div>
           </div>
         )}
 
         {/* ================= TRANSPARENCIA VIEW ================= */}
         {currentTab === "transparencia" && (
-          <div className="py-12 max-w-7xl mx-auto px-4 sm:px-8 space-y-10">
-            <div className="bg-slate-900 text-white rounded-lg p-8 shadow-md relative overflow-hidden border-b-4 border-[#CFA020]">
-              <div className="max-w-2xl space-y-2 relative z-10">
-                <span className="#CFA020 text-xs font-black tracking-widest font-mono uppercase text-[#CFA020]">REQUISITO DE LEY N° 30512</span>
-                <h2 className="text-2xl sm:text-3xl font-black uppercase text-white tracking-tight">Portal de Transparencia Tecnológica</h2>
-                <p className="text-slate-300 text-xs sm:text-sm font-medium leading-relaxed">
-                  Cumplimos estrictamente las directivas de publicación periódica de documentos de gestión, resoluciones directivas de vacantes, y reglamentos académicos oficiales actualizados del IESTP San Francisco de Asís.
-                </p>
-              </div>
+          <div className="max-w-7xl mx-auto py-16 px-4 space-y-12">
+            <div className="text-center max-w-3xl mx-auto">
+              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block">PORTAL DE TRANSPARENCIA</span>
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Documentos Oficiales Institucionales</h2>
             </div>
 
-            {/* Simulated Transparency PDF List Accordions / Rows */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-xs divide-y">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { title: "Resolución Ministerial N° 124-2021-MINEDU", type: "Licenciamiento Institucional", size: "2.4 MB", date: "15 de Mayo de 2021" },
-                { title: "Reglamento Académico del Estudiante SFA", type: "Normativa Interna", size: "1.8 MB", date: "10 de Enero de 2026" },
-                { title: "Plan Operativo Institucional Anual (POI 2026)", type: "Planificación", size: "4.1 MB", date: "05 de Diciembre de 2025" },
-                { title: "Tupa de Derechos Administrativos del IESTP", type: "Tasas y Trámites", size: "850 KB", date: "19 de Marzo de 2026" },
-                { title: "Presupuesto Anual de la Entidad e Ingresos por Derechos", type: "Finanzas Públicas", size: "3.2 MB", date: "30 de Enero de 2026" },
-                { title: "Estatuto Organigrama Oficial - SFA", type: "Estructura Organizativa", size: "1.1 MB", date: "24 de Noviembre de 2025" }
+                { title: "Resolución de Licenciamiento R.M. 124-2021", desc: "Resolución Ministerial oficial de licenciamiento emitido por MINEDU." },
+                { title: "Reglamento Académico Institucional 2026", desc: "Normas de evaluación, asistencia, convalidación y permanencia académica." },
+                { title: "Cuadro de Vacantes Admisión 2026-I", desc: "Distribución oficial de vacantes por programa de estudios." }
               ].map((doc, idx) => (
-                <div key={idx} className="p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-slate-50/80 transition-colors">
-                  <div className="space-y-1">
-                    <span className="text-[10px] bg-slate-100 text-slate-600 font-black uppercase tracking-wide px-2 py-0.5 rounded border border-slate-200">
-                      {doc.type}
-                    </span>
-                    <h3 className="font-bold text-slate-900 text-xs sm:text-sm uppercase">{doc.title}</h3>
-                    <p className="text-[10px] text-slate-450 font-semibold">Publicado: {doc.date} | Tamaño de Archivo: {doc.size}</p>
-                  </div>
-
-                  <button 
-                    onClick={() => alert(`Simulación de descarga del documento "${doc.title}". Archivo PDF seguro.`)}
-                    className="flex items-center gap-1.5 border border-[#9F062A]/30 hover:bg-[#9F062A] hover:text-white text-[#9F062A] rounded px-3 py-1.5 text-xs font-black transition-all cursor-pointer select-none shrink-0"
-                  >
-                    <FileCheck className="w-3.5 h-3.5" /> Descargar PDF
+                <div key={idx} className="bg-white border border-slate-200 p-6 rounded-xl space-y-3 shadow-xs">
+                  <FileText className="w-8 h-8 text-[#9F062A]" />
+                  <h3 className="text-base font-black text-slate-900 uppercase">{doc.title}</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed">{doc.desc}</p>
+                  <button className="text-xs text-[#9F062A] font-bold uppercase tracking-wider flex items-center gap-1 hover:underline">
+                    <span>Descargar PDF</span> &rarr;
                   </button>
                 </div>
               ))}
@@ -1403,254 +1118,147 @@ export default function PortalHome({
 
         {/* ================= CONTACTANOS VIEW ================= */}
         {currentTab === "contactanos" && (
-          <div className="py-12 max-w-7xl mx-auto px-4 sm:px-8 space-y-10">
-            <div className="border-b border-slate-200 pb-4 text-center">
-              <span className="text-[#9F062A] text-xs font-black tracking-widest uppercase">MESA EN LÍNEA Y LOCALIDAD</span>
-              <h2 className="text-2xl sm:text-3xl font-black uppercase text-slate-950 mt-1">Comuníquese con Secretaría</h2>
-              <p className="text-slate-500 text-xs sm:text-sm font-semibold mt-1">Escríbanos directamente o ubíquenos en nuestra sede central física en Villa María del Triunfo.</p>
+          <div className="max-w-4xl mx-auto py-16 px-4 space-y-8">
+            <div className="text-center">
+              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block">MESA DE PARTES VIRTUAL</span>
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Contáctanos</h2>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              
-              {/* Sede Contact Info */}
-              <div className="lg:col-span-5 space-y-6">
-                <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-2xs space-y-4 text-xs font-semibold text-slate-700">
-                  <h3 className="text-xs uppercase font-black text-[#9F062A] tracking-wider border-b pb-1">Sede de Operaciones Villa María del Triunfo</h3>
-                  
-                  <div className="space-y-3">
-                    <div className="flex gap-2.5">
-                      <MapPin className="w-5 h-5 text-[#9F062A] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-extrabold text-slate-900 block">Dirección Física:</span>
-                        <p className="text-slate-550 mt-0.5">Av. prolongación Pachacútec cuadra 50 - Distrito de Villa María del Triunfo (VMT), Lima, Perú.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2.5">
-                      <Phone className="w-5 h-5 text-[#9F062A] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-extrabold text-slate-900 block">Teléfonos Mesa:</span>
-                        <p className="text-slate-550 mt-0.5">01 500 6177 | Celular Soporte: 999-555-123</p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2.5">
-                      <Mail className="w-5 h-5 text-[#9F062A] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-extrabold text-slate-900 block">Correos Administrativos:</span>
-                        <p className="text-slate-550 mt-0.5">sec.academicaiestpsfa@gmail.com | admision@iestpsfa.edu.pe</p>
-                      </div>
-                    </div>
-                  </div>
+            <div className="bg-white border border-slate-200 p-8 rounded-xl space-y-6 shadow-xs">
+              {contactSuccessMsg ? (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-4 rounded-lg text-xs font-bold">
+                  {contactSuccessMsg}
                 </div>
-
-                {/* Google Map mock blueprint */}
-                <div className="bg-slate-100 p-8 rounded-lg border-2 border-dashed border-slate-300 text-center space-y-3 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-slate-950/5" />
-                  <MapPin className="w-10 h-10 text-[#CFA020] mx-auto animate-bounce relative z-10" />
-                  <h4 className="font-black text-xs text-slate-900 uppercase relative z-10">Mapa del Campus SFA</h4>
-                  <p className="text-[11px] text-slate-500 font-medium max-w-xs mx-auto relative z-10 leading-relaxed">
-                    Ubicado en la arteria principal Prolongación Pachacútec, contiguo al paradero de buses de Pachacútec Cdra 50.
-                  </p>
-                  <span className="font-mono text-[9px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded inline-block relative z-10">COORD: -12.16432, -76.93627</span>
-                </div>
-              </div>
-
-              {/* Message submit form */}
-              <div className="lg:col-span-7 bg-white p-6 border border-slate-200 rounded-lg shadow-sm space-y-4">
-                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest block border-b pb-1">Mesa de Partes Virtuales</span>
-                
-                {contactSuccessMsg ? (
-                  <div className="p-4 bg-emerald-50 rounded border border-emerald-200 text-xs font-semibold text-slate-800 leading-relaxed">
-                    <p className="text-emerald-800 font-extrabold text-sm mb-1 uppercase">✓ Formulario procesado</p>
-                    <p>{contactSuccessMsg}</p>
-                    <button 
-                      onClick={() => setContactSuccessMsg("")} 
-                      className="mt-3 bg-slate-250 text-slate-700 px-3 py-1.5 rounded text-[11px]"
-                    >
-                      Escribir otro mensaje
-                    </button>
+              ) : (
+                <form onSubmit={handleContactSubmit} className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Nombre Completo *</label>
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="Su Nombre"
+                      value={contactName}
+                      onChange={(e) => setContactName(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 text-xs text-slate-900 outline-none"
+                    />
                   </div>
-                ) : (
-                  <form onSubmit={handleContactSubmit} className="space-y-4 text-xs font-semibold text-slate-700">
-                    <div>
-                      <label className="block text-slate-700 mb-1">Nombre Completo *</label>
-                      <input 
-                        type="text" 
-                        required 
-                        placeholder="Ej: Daniel Castillo" 
-                        value={contactName} 
-                        onChange={(e) => setContactName(e.target.value)} 
-                        className="w-full px-3 py-2 border rounded bg-slate-50 border-slate-300" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-700 mb-1">Correo Inteligente *</label>
-                      <input 
-                        type="email" 
-                        required 
-                        placeholder="daniel@gmail.com" 
-                        value={contactEmail} 
-                        onChange={(e) => setContactEmail(e.target.value)} 
-                        className="w-full px-3 py-2 border rounded bg-slate-50 border-slate-300" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-slate-700 mb-1">Cuerpo del Mensaje o Consulta *</label>
-                      <textarea 
-                        required 
-                        rows={4}
-                        placeholder="Por favor, escriba aquí de forma detallada su consulta, trámite de convalidación o reclamos..." 
-                        value={contactMessage} 
-                        onChange={(e) => setContactMessage(e.target.value)} 
-                        className="w-full px-3 py-2 border rounded bg-slate-50 border-slate-300" 
-                      />
-                    </div>
-
-                    <button 
-                      type="submit" 
-                      className="w-full bg-[#9F062A] hover:bg-[#800521] text-white py-2.5 rounded font-black uppercase text-[10px] tracking-widest shadow inline-flex items-center justify-center gap-2"
-                    >
-                      <Send className="w-3.5 h-3.5 text-white" /> Enviar Mensaje Virtual
-                    </button>
-                  </form>
-                )}
-              </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Correo Electrónico *</label>
+                    <input 
+                      type="email" 
+                      required
+                      placeholder="correo@ejemplo.com"
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 text-xs text-slate-900 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Mensaje o Consulta *</label>
+                    <textarea 
+                      rows={4}
+                      required
+                      placeholder="Escriba aquí su mensaje..."
+                      value={contactMessage}
+                      onChange={(e) => setContactMessage(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 text-xs text-slate-900 outline-none"
+                    />
+                  </div>
+                  <button 
+                    type="submit"
+                    className="w-full py-3.5 bg-[#9F062A] text-white font-extrabold rounded-lg text-xs uppercase tracking-wider"
+                  >
+                    Enviar Mensaje
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         )}
 
       </main>
 
-      {/* 4. FOOTER BAR (Unchanged structure, refined colors) */}
-      <footer className="bg-slate-900 text-slate-400 text-xs sm:text-xs py-12 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-6 sm:px-12 grid grid-cols-1 md:grid-cols-3 gap-8 leading-relaxed">
-          <div>
-            <span className="text-white font-black text-sm block mb-4 uppercase tracking-wider">IESTP SAN FRANCISCO DE ASÍS</span>
-            <p className="font-semibold text-slate-400">
-              Institución oficial de educación superior pública licenciada. Comprometidos con el desarrollo técnico-industrial, la equidad ocupacional y la fe solidaria en Lima Sur.
+      {/* 4. FOOTER INSTITUCIONAL EN GRANATE OSCURO */}
+      <footer className="bg-[#4D0213] text-slate-200 border-t border-red-950 text-xs py-12 px-4">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
+          
+          <div className="space-y-3">
+            <h4 className="text-white font-black text-sm uppercase tracking-tight">IESTP San Francisco de Asís</h4>
+            <p className="text-slate-300 leading-relaxed font-medium">
+              Educación superior tecnológica pública de calidad en Villa María del Triunfo. Formación profesional modular con título a Nombre de la Nación.
             </p>
+            <span className="text-[10px] text-amber-300 font-mono font-extrabold block">
+              RESOLUCIÓN MINEDU: R.M. 124-2021
+            </span>
           </div>
+
           <div>
-            <span className="text-white font-black text-sm block mb-4 uppercase tracking-wider">Módulos de Sistema</span>
-            <ul className="space-y-2 font-bold text-slate-400">
-              <li><button onClick={onEnterIntranet} className="hover:text-amber-400 transition-colors text-left uppercase text-[10px]">Acceder a Intranet de Alumnos</button></li>
-              <li><button onClick={onEnterIntranet} className="hover:text-amber-400 transition-colors text-left uppercase text-[10px]">Módulo de Catedráticos / Docentes</button></li>
-              <li><button onClick={onEnterIntranet} className="hover:text-amber-400 transition-colors text-left uppercase text-[10px]">Servicios Administrativos (Mesa)</button></li>
-              <li><button onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); }} className="hover:text-amber-400 transition-colors text-left uppercase text-[10px]">Guía de Examen Admisión 2026</button></li>
+            <h5 className="text-white font-extrabold uppercase tracking-wider mb-3 text-[11px]">Carreras Licenciadas</h5>
+            <ul className="space-y-2 text-[11px] font-medium">
+              <li><button onClick={() => { setSelectedProgramId("electronica"); setCurrentTab("programas"); }} className="hover:text-amber-300 transition-colors text-slate-200">Electricidad Industrial</button></li>
+              <li><button onClick={() => { setSelectedProgramId("contabilidad"); setCurrentTab("programas"); }} className="hover:text-amber-300 transition-colors text-slate-200">Contabilidad Financiera</button></li>
             </ul>
           </div>
+
           <div>
-            <span className="text-white font-black text-sm block mb-4 uppercase tracking-wider">Soporte Integral</span>
-            <p className="font-semibold text-slate-400">Av. Prolongación Pachacútec Cdra. 50 – Villa María del Triunfo (VMT), Lima, Perú.</p>
-            <p className="mt-2 text-[#CFA020] font-mono">Central Telefónica: 01 500 6177</p>
+            <h5 className="text-white font-extrabold uppercase tracking-wider mb-3 text-[11px]">Enlaces de Interés</h5>
+            <ul className="space-y-2 text-[11px] font-medium">
+              <li><button onClick={() => setCurrentTab("admision")} className="hover:text-amber-300 transition-colors text-slate-200">Pre-Inscripción 2026-I</button></li>
+              <li><button onClick={() => setCurrentTab("transparencia")} className="hover:text-amber-300 transition-colors text-slate-200">Portal de Transparencia</button></li>
+              <li><button onClick={onEnterIntranet} className="hover:text-amber-300 transition-colors text-slate-200">Intranet Académica</button></li>
+            </ul>
           </div>
+
+          <div className="space-y-2 font-medium">
+            <h5 className="text-white font-extrabold uppercase tracking-wider mb-3 text-[11px]">Ubicación Institucional</h5>
+            <p className="flex items-center gap-1.5 text-slate-200"><MapPin className="w-4 h-4 text-amber-300 shrink-0" /> Av. Pachacútec Cdra. 50, Villa María del Triunfo</p>
+            <p className="flex items-center gap-1.5 text-slate-200"><Phone className="w-4 h-4 text-amber-300 shrink-0" /> (01) 500 6177</p>
+            <p className="flex items-center gap-1.5 text-slate-200"><Mail className="w-4 h-4 text-amber-300 shrink-0" /> admision@iestpsfa.edu.pe</p>
+          </div>
+
         </div>
-        <div className="max-w-7xl mx-auto px-6 sm:px-12 mt-8 pt-8 border-t border-slate-800 text-center text-slate-550 font-semibold text-[11px]">
-          <p>© 2026 IESTP San Francisco de Asís. Todos los derechos reservados bajo la regulación institucional del MINEDU.</p>
+
+        <div className="max-w-7xl mx-auto border-t border-rose-950/60 mt-10 pt-6 text-center text-[10px] text-slate-300 font-medium">
+          &copy; 2026 IESTP San Francisco de Asís. Todos los derechos reservados. Villa María del Triunfo, Lima - Perú.
         </div>
       </footer>
 
-      {/* INSTITUTIONAL PRE-ENROLLMENT CONFIRMATION MODAL (WITHOUT CREDENTIALS BOX) */}
+      {/* CONFIRMATION MODAL WITH APPLICANT DETAILS */}
       {successModalData && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xl max-w-md w-full text-xs font-semibold">
-            {/* Modal Header */}
-            <div className="bg-[#9F062A] text-white p-5 flex justify-between items-center border-b border-rose-950">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                  <Check className="w-5 h-5 text-amber-300 stroke-[3]" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold tracking-wide text-white text-sm uppercase">
-                    ¡Pre-Inscripción Confirmada!
-                  </h3>
-                  <p className="text-[10px] text-rose-200 font-medium">
-                    IESTP San Francisco de Asís • Admisión 2026
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setSuccessModalData(null)} 
-                className="text-white/70 hover:text-white p-1.5 hover:bg-white/10 rounded-lg transition-all cursor-pointer"
-                aria-label="Cerrar modal"
-              >
-                <X className="w-4 h-4" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 max-w-md w-full text-center space-y-5 shadow-2xl relative">
+            <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200">
+              <CheckCircle2 className="w-8 h-8" />
             </div>
-
-            {/* Modal Body */}
-            <div className="p-6 space-y-4 bg-slate-50 text-center">
-              <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 border border-emerald-200">
-                <Mail className="w-6 h-6" />
-              </div>
-
-              <h4 className="font-extrabold text-slate-900 text-base">
-                ¡Registro procesado exitosamente!
-              </h4>
-
-              <p className="text-slate-600 leading-relaxed text-xs">
-                Se ha completado su registro para la carrera de <strong className="text-slate-900">{successModalData.programName}</strong> a nombre de <strong className="text-slate-900">{successModalData.name} {successModalData.lastName}</strong>.
-              </p>
-
-              <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl text-emerald-900 text-xs font-bold space-y-1">
-                <p className="flex items-center justify-center gap-1.5 text-emerald-800">
-                  <Check className="w-4 h-4 text-emerald-600" />
-                  Credenciales enviadas a su correo
-                </p>
-                <p className="text-[11px] font-normal text-emerald-700">
-                  Hemos enviado sus accesos a: <strong className="font-bold underline">{successModalData.email}</strong>
-                </p>
-              </div>
-
-              <p className="text-[10px] text-slate-400 italic">
-                Por favor revise su bandeja de entrada o carpeta de spam para obtener su usuario y contraseña de la Intranet.
+            <div>
+              <span className="text-[10px] font-black uppercase text-[#9F062A] tracking-widest block font-mono">REGISTRO COMPLETADO</span>
+              <h3 className="text-xl font-black text-slate-900 uppercase mt-1">¡Pre-Inscripción Exitosa!</h3>
+              <p className="text-xs text-slate-600 mt-2 leading-relaxed font-medium">
+                Estimado(a) <strong className="text-slate-900">{successModalData.name} {successModalData.lastName}</strong>, tu pre-inscripción al programa de <strong className="text-[#9F062A]">{successModalData.programName}</strong> ha sido registrada en el sistema oficial del IESTP San Francisco de Asís.
               </p>
             </div>
 
-            {/* Modal Footer */}
-            <div className="bg-white p-4 border-t border-slate-200 flex flex-col sm:flex-row justify-end gap-2.5">
-              <button 
-                onClick={() => setSuccessModalData(null)}
-                className="px-4 py-2 border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-50 uppercase text-[10px] transition-colors cursor-pointer text-center"
-              >
-                Cerrar
-              </button>
-              <button 
-                onClick={() => {
-                  setSuccessModalData(null);
-                  onEnterIntranet();
-                }}
-                className="px-5 py-2 bg-[#9F062A] hover:bg-[#800521] text-white rounded-xl font-black uppercase text-[10px] tracking-wide inline-flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-[#9F062A]/20 transition-transform active:scale-95"
-              >
-                <LogIn className="w-3.5 h-3.5 text-[#E3BD26]" /> Ingresar a la Intranet
-              </button>
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left text-xs space-y-2">
+              <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                <span className="text-slate-500 uppercase font-bold text-[10px]">Correo Electrónico:</span>
+                <span className="text-slate-900 font-bold">{successModalData.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 uppercase font-bold text-[10px]">Acceso a Intranet:</span>
+                <span className="text-emerald-700 font-bold">Credenciales Enviadas al Correo</span>
+              </div>
             </div>
+
+            <button
+              onClick={() => setSuccessModalData(null)}
+              className="w-full py-3 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-lg text-xs uppercase tracking-widest shadow-md cursor-pointer"
+            >
+              Entendido
+            </button>
           </div>
         </div>
       )}
 
-      {/* INSTITUTIONAL PROCESSING / LOADING MODAL */}
-      {isSubmittingForm && (
-        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white border border-slate-200 rounded-2xl p-8 max-w-sm w-full text-center shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
-            <div className="w-14 h-14 rounded-full bg-[#9F062A]/10 text-[#9F062A] flex items-center justify-center mx-auto shadow-inner border border-[#9F062A]/20">
-              <Loader2 className="w-7 h-7 animate-spin text-[#9F062A]" />
-            </div>
-            <div className="space-y-1.5">
-              <h3 className="font-extrabold text-slate-900 text-base uppercase tracking-wide">
-                Procesando Pre-Inscripción...
-              </h3>
-              <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                Generando expediente en la base de datos de admisión y despachando accesos digitales a su correo.
-              </p>
-            </div>
-            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-[#9F062A] h-full animate-pulse w-3/4 rounded-full" />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
