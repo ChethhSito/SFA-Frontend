@@ -4,7 +4,7 @@
 
 // Use client-side env variables with elegant fallback to user credentials
 const BREVO_API_KEY = (import.meta.env.VITE_BREVO_API_KEY as string) || "";
-const BREVO_SENDER_EMAIL = (import.meta.env.VITE_BREVO_SENDER_EMAIL as string) || "202211309@urp.edu.pe";
+const BREVO_SENDER_EMAIL = (import.meta.env.VITE_BREVO_SENDER_EMAIL as string) || "raulquintanazinc@gmail.com";
 const BREVO_SENDER_NAME = (import.meta.env.VITE_BREVO_SENDER_NAME as string) || "IESTP San Francisco de Asís";
 const BREVO_TEMPLATE_ID = 5;
 
@@ -13,6 +13,8 @@ export interface BrevoParams {
   password?: string;
   applicantCode: string;
   url: string;
+  programName?: string;
+  dni?: string;
 }
 
 /**
@@ -37,8 +39,11 @@ export async function sendWelcomeEmailBrevo(
         email: recipientEmail,
         applicantCode: params.applicantCode,
         password: params.password || "clave123",
+        temporaryPassword: params.password || "clave123",
         url: params.url,
-        name: recipientName
+        name: recipientName,
+        programName: params.programName,
+        dni: params.dni
       })
     });
 
@@ -52,7 +57,7 @@ export async function sendWelcomeEmailBrevo(
 
   // 2. Direct Fallback to Brevo API v3
   const apiKey = (import.meta.env.VITE_BREVO_API_KEY as string) || "";
-  const senderEmail = (import.meta.env.VITE_BREVO_SENDER_EMAIL as string) || "202211309@urp.edu.pe";
+  const senderEmail = (import.meta.env.VITE_BREVO_SENDER_EMAIL as string) || "raulquintanazinc@gmail.com";
   const senderName = (import.meta.env.VITE_BREVO_SENDER_NAME as string) || "IESTP San Francisco de Asís";
 
   try {

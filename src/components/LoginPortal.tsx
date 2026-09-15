@@ -415,123 +415,71 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
   };  return (
     <div 
       id="login-portal" 
-      className="relative min-h-screen bg-slate-950 flex flex-col justify-center items-center overflow-hidden py-12 px-4 font-sans text-slate-800"
+      className="relative min-h-screen bg-slate-950 flex flex-col justify-center items-center overflow-hidden py-8 px-4 font-sans text-slate-800"
     >
       
-      {/* IMMERSIVE CAMPUS BACKGROUND PHOTO WITH BLUR AND GRADIENT OVERLAY */}
+      {/* REAL CAMPUS FAÇADE BACKGROUND WITH ELEGANT DARK OVERLAY */}
       <div className="absolute inset-0 z-0">
         <img 
-          src="https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=1920&auto=format&fit=crop"
-          alt="IESTP San Francisco de Asís Campus"
-          className="w-full h-full object-cover object-center filter blur-[1.5px] scale-[1.02]"
-          referrerPolicy="no-referrer"
+          src="/campus_facade_sfa.jpg"
+          alt="IESTP San Francisco de Asís Campus Principal"
+          className="w-full h-full object-cover object-center filter brightness-90"
         />
-        {/* Soft elegant brand tint: deep burgundy gradient with gold hue */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-slate-950/85 via-slate-900/65 to-[#9F062A]/25 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/75 to-[#800521]/60 z-10" />
       </div>
 
-      {/* Subtle tech background grid with low opacity on top of background */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:4rem_4rem] pointer-events-none z-10" />
+      {/* Subtle tech background grid with low opacity */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:3rem_3rem] pointer-events-none z-10" />
 
-      {/* Floating Red Orb */}
+      {/* Clean Login Card */}
       <motion.div
-        animate={{
-          x: [0, 80, -50, 0],
-          y: [0, -100, 70, 0],
-          scale: [1, 1.3, 0.85, 1],
-          rotate: [0, 90, 180, 360]
-        }}
-        transition={{
-          duration: 25,
-          repeat: Infinity,
-          ease: "linear",
-        }}
-        className="absolute w-[450px] h-[450px] bg-[#9F062A]/8 rounded-full blur-[90px] -top-24 -left-20 pointer-events-none z-10"
-      />
-
-      {/* Floating Gold/Yellow Orb */}
-      <motion.div
-        animate={{
-          x: [0, -90, 60, 0],
-          y: [0, 120, -80, 0],
-          scale: [1, 0.85, 1.25, 1],
-          rotate: [360, 270, 90, 0]
-        }}
-        transition={{
-          duration: 30,
-          repeat: Infinity,
-          ease: "linear",
-        }}
-        className="absolute w-[500px] h-[500px] bg-amber-400/6 rounded-full blur-[100px] -bottom-36 -right-20 pointer-events-none z-10"
-      />
-
-      {/* Floating Soft Blue Tech Orb */}
-      <motion.div
-        animate={{
-          x: [-40, 40, -40],
-          y: [40, -40, 40],
-          scale: [0.9, 1.1, 0.9],
-        }}
-        transition={{
-          duration: 15,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        className="absolute w-72 h-72 bg-rose-500/4 rounded-full blur-[70px] top-1/3 left-1/3 pointer-events-none z-10"
-      />
-
-      {/* Glassmorphic Login Container with Floating Tilt Animation */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.94, y: 35 }}
+        initial={{ opacity: 0, scale: 0.96, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ type: "spring", damping: 18, stiffness: 95 }}
-        className="w-full max-w-md bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden border border-slate-200/80 relative z-20 transition-shadow hover:shadow-[#9F062A]/5"
+        transition={{ type: "spring", damping: 22, stiffness: 110 }}
+        className="w-full max-w-sm sm:max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200/90 relative z-20"
       >
         
-        {/* Top Header Card Info */}
-        <div className="bg-[#9F062A] py-7 px-6 relative border-b-2 border-[#CFA020] overflow-hidden">
-          {/* Subtle animated light sweep */}
-          <motion.div 
-            animate={{ x: ["-100%", "200%"] }} 
-            transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 }}
-            className="absolute top-0 bottom-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 pointer-events-none"
-          />
+        {/* Card Header (Granate + Real Logo + Volver) */}
+        <div className="bg-[#9F062A] pt-5 pb-5 px-6 relative text-center">
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-[#CFA020] to-amber-400" />
 
+          {/* Volver Button */}
           <button 
             onClick={onBack}
-            className="absolute top-4 left-4 text-white/90 hover:text-white hover:bg-white/10 px-2.5 py-1 rounded transition-all flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider shrink-0 cursor-pointer"
+            className="absolute top-4 left-4 text-white/90 hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider shrink-0 cursor-pointer border border-white/10"
           >
-            <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" /> Volver
+            <ArrowLeft className="w-3.5 h-3.5 text-amber-300" />
+            <span>Volver</span>
           </button>
-          
-          <div className="mt-5 flex items-center justify-center gap-3">
-            <svg className="w-9 h-9 drop-shadow-sm shrink-0 bg-white p-1 rounded-sm" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M50 5 L85 22 C85 58 68 85 50 95 C32 85 15 58 15 22 Z" fill="#9F062A" />
-              <polygon points="50,22 53,30 61,30 55,35 57,43 50,38 43,43 45,35 39,30 47,30" fill="#E3BD26" />
-              <rect x="47" y="32" width="6" height="28" rx="1" fill="#EAEAE4" />
-              <rect x="36" y="42" width="28" height="6" rx="1" fill="#EAEAE4" />
-            </svg>
+
+          {/* Real Official SFA Logo Image */}
+          <div className="pt-2 flex flex-col items-center justify-center space-y-2">
+            <img 
+              src="/SFA-Logo.jpeg" 
+              alt="Logo IESTP San Francisco de Asís" 
+              className="w-14 h-14 object-contain rounded-full border-2 border-amber-400 bg-white p-0.5 shadow-md"
+            />
+            
             <div>
-              <h2 className="text-white font-black text-sm tracking-tight leading-none uppercase">IESTP San Francisco de Asís</h2>
-              <p className="text-[9px] text-amber-300 font-extrabold uppercase tracking-widest mt-1">Servicio de Intranet Académico</p>
+              <h2 className="text-white font-black text-base sm:text-lg tracking-tight uppercase leading-tight">
+                IESTP San Francisco de Asís
+              </h2>
+              <span className="text-[10px] text-amber-300 font-extrabold uppercase tracking-widest block font-mono mt-0.5">
+                INTRANET ACADÉMICA
+              </span>
             </div>
           </div>
         </div>
  
-        {/* Portal Body */}
-        <div className="p-6 sm:p-8 space-y-5">
-          <div className="text-center">
-            <h3 className="text-base sm:text-lg font-black font-sans text-slate-900 tracking-tight uppercase">Acceso Único</h3>
-            <p className="text-[11px] text-slate-500 font-semibold mt-1.5 leading-relaxed">
-              Ingrese su DNI o código institucional para acceder al espacio correspondiente.
-            </p>
-          </div>
-
+        {/* Card Form Body */}
+        <div className="p-6 sm:p-7 space-y-5 bg-white">
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
-              <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1.5">Código de Usuario / DNI *</label>
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                DNI / Código de Usuario
+              </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[#9F062A]">
                   <User className="w-4 h-4" />
                 </span>
                 <input
@@ -543,15 +491,17 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
                     setUsername(e.target.value);
                     setErrorMessage("");
                   }}
-                  className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-205 rounded-lg text-xs font-semibold text-slate-950 placeholder-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#9F062A] focus:border-[#9F062A] transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#9F062A] focus:border-[#9F062A] transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1.5">Contraseña institucional *</label>
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Contraseña
+              </label>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-[#9F062A]">
                   <Lock className="w-4 h-4" />
                 </span>
                 <input
@@ -563,7 +513,7 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
                     setPassword(e.target.value);
                     setErrorMessage("");
                   }}
-                  className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-205 rounded-lg text-slate-950 placeholder-slate-400 text-xs font-semibold focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-[#9F062A] focus:border-[#9F062A] transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#9F062A] focus:border-[#9F062A] transition-all"
                 />
               </div>
             </div>
@@ -572,9 +522,9 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
               <motion.div 
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-3 bg-red-50 rounded-lg border border-red-200 text-xs text-red-850 font-semibold flex items-start gap-2.5 leading-relaxed"
+                className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-xs text-rose-900 font-bold flex items-start gap-2.5 leading-relaxed"
               >
-                <ShieldAlert className="w-4 h-4 shrink-0 text-red-650 mt-0.5" />
+                <ShieldAlert className="w-4 h-4 shrink-0 text-[#9F062A] mt-0.5" />
                 <span>{errorMessage}</span>
               </motion.div>
             )}
@@ -582,20 +532,27 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
             <button 
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-3 bg-[#9F062A] hover:bg-[#800521] active:scale-[0.99] disabled:opacity-50 text-white rounded-lg font-black text-xs uppercase tracking-widest transition-all shadow-md focus:outline-hidden flex items-center justify-center gap-2 cursor-pointer mt-2"
+              className="w-full py-3 bg-[#9F062A] hover:bg-[#800521] active:scale-[0.99] disabled:opacity-50 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all shadow-md focus:outline-none flex items-center justify-center gap-2 cursor-pointer mt-2"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-white" /> Validando Acceso...
+                  <Loader2 className="w-4 h-4 animate-spin text-amber-300" />
+                  <span>VALIDANDO...</span>
                 </>
               ) : (
-                "Ingresar al Sistema \u2192"
+                <>
+                  <span>INGRESAR AL SISTEMA</span>
+                  <span className="text-amber-300 font-bold">→</span>
+                </>
               )}
             </button>
           </form>
 
+          {/* Minimal Clean Footer Stamp */}
           <div className="border-t border-slate-100 pt-3 text-center">
-            <span className="text-[9px] text-slate-450 font-mono tracking-wider uppercase block">Garantía del Servidor de Control • MINEDU</span>
+            <span className="text-[10px] text-slate-400 font-medium tracking-wide uppercase block">
+              Plataforma Oficial Institucional • MINEDU
+            </span>
           </div>
         </div>
       </motion.div>

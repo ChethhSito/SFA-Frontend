@@ -1,4 +1,5 @@
 import { Applicant, Enrollment, AdmissionPeriod, Course, Teacher, Graduation, SystemUser } from "../types";
+import { sendWelcomeEmailBrevo } from "../firebase/emailService";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:3001";
 
@@ -233,16 +234,15 @@ export async function sendTransactionalWelcomeEmail(payload: {
   dni?: string;
   programName?: string;
 }): Promise<boolean> {
-  const result = await fetchJson<{ success: boolean; messageId?: string }>("/mail/send-welcome", {
-    method: "POST",
-    body: JSON.stringify(payload)
+  if (!payload.email || !payload.email.trim()) return false;
+  return sendWelcomeEmailBrevo(payload.email.trim(), payload.name || "Postulante", {
+    email: payload.email.trim(),
+    applicantCode: payload.applicantCode,
+    password: payload.password || "clave123",
+    url: payload.url || `${window.location.origin}/ingresar`,
+    programName: payload.programName,
+    dni: payload.dni
   });
-
-  if (result && result.success) {
-    console.info("✅ Transactional welcome email dispatched via NestJS SFA-Backend!", result.messageId);
-    return true;
-  }
-  return false;
 }
 
 /* ==========================================================================
