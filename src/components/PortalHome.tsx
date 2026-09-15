@@ -5,7 +5,7 @@ import {
   HelpCircle, LogIn, Landmark, Check, Send, FileText, FileCheck,
   ChevronDown, Globe, Users, Calendar, CheckSquare, Menu, X, Loader2,
   CheckCircle2, ArrowRight, ShieldCheck, Zap, Building2, HeartHandshake,
-  Instagram, Clock, FileSpreadsheet, ShieldAlert
+  Instagram, Clock, FileSpreadsheet, ShieldAlert, UserCheck, Layers, Cpu
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { AdmissionPeriod } from "../types";
@@ -187,38 +187,38 @@ export default function PortalHome({
     {
       id: "electronica",
       name: "Electricidad Industrial",
-      hours: "3080 Horas Lectivas (3 Años)",
+      hours: "3080 Horas Lectivas (3 Años / 6 Ciclos)",
       title: "Profesional Técnico en Electricidad Industrial",
       profile: "Diagnostica, instala, programa y realiza el mantenimiento preventivo y correctivo de sistemas eléctricos de media y baja tensión, maquinaria de potencia, automatización industrial mediante PLCs, motores eléctricos y tableros de control.",
-      careerPath: [
-        { cycle: "I Ciclo", desc: "Electricidad de Corriente Continua, Taller de Ajuste Mecánico" },
-        { cycle: "II Ciclo", desc: "Dibujo Técnico Eléctrico, Luminotecnia e Instalaciones de Potencia" },
-        { cycle: "III Ciclo", desc: "Electrónica Analógica e Instrumentación Industrial" },
-        { cycle: "IV Ciclo", desc: "Sistemas Digitales, Bobinado de Máquinas Rotativas, PLC Básico" },
-        { cycle: "V Ciclo", desc: "Automatización Industrial con PLCs Avanzados, Neumática e Hidráulica" },
-        { cycle: "VI Ciclo", desc: "Mantenimiento de Subestaciones, Instrumentación Industrial en Taller" }
-      ],
-      icon: <Zap className="w-5 h-5 text-[#9F062A]" />,
       salaryEst: "S/. 1,900 - S/. 4,200",
-      image: "https://images.unsplash.com/photo-1581092921461-eab62e97a780?q=80&w=800&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1581092921461-eab62e97a780?q=80&w=800&auto=format&fit=crop",
+      icon: <Zap className="w-5 h-5 text-[#9F062A]" />,
+      careerPath: [
+        { cycle: "I Ciclo", courses: ["Electricidad de Corriente Continua", "Taller de Ajuste Mecánico", "Matemática Aplicada", "Seguridad e Higiene Industrial"] },
+        { cycle: "II Ciclo", courses: ["Dibujo Técnico Eléctrico", "Luminotecnia e Instalaciones", "Instalaciones de Potencia", "Física Técnica Aplicada"] },
+        { cycle: "III Ciclo", courses: ["Electrónica Analógica e Instrumentación", "Mediciones Eléctricas", "Circuitos Eléctricos de CA", "Máquinas Eléctricas I"] },
+        { cycle: "IV Ciclo", courses: ["Sistemas Digitales", "Bobinado de Máquinas Rotativas", "Control de Motores Eléctricos", "Programación Básica de PLCs"] },
+        { cycle: "V Ciclo", courses: ["Automatización Industrial con PLCs Avanzados", "Neumática e Hidráulica Industrial", "Redes Industriales y SCADA", "Subestaciones Eléctricas"] },
+        { cycle: "VI Ciclo", courses: ["Mantenimiento Electromecánico de Plantas", "Instrumentación y Control del Taller", "Gestión y Proyecto de Titulación Profesional", "Ética Profesional"] }
+      ]
     },
     {
       id: "contabilidad",
       name: "Contabilidad Financiera",
-      hours: "3040 Horas Lectivas (3 Años)",
+      hours: "3040 Horas Lectivas (3 Años / 6 Ciclos)",
       title: "Profesional Técnico en Contabilidad",
       profile: "Domina el control tributario y financiero de acuerdo a las Normas Internacionales de Información Financiera (NIIF), auditoría tributaria en PyMEs, costos de producción y sistematización contable con software ERP moderno.",
-      careerPath: [
-        { cycle: "I Ciclo", desc: "Contabilidad General I, Matemática Financiera Aplicada" },
-        { cycle: "II Ciclo", desc: "Plan Contable General Empresarial, Tributación I" },
-        { cycle: "III Ciclo", desc: "Contabilidad de Costos Industriales, Costeo por Procesos" },
-        { cycle: "IV Ciclo", desc: "Software Contable ERP de Aplicación, Legislación Laboral" },
-        { cycle: "V Ciclo", desc: "Auditoría Financiera Integral, Contabilidad Gubernamental" },
-        { cycle: "VI Ciclo", desc: "Planeamiento Financiero Avanzado y Formulación de Estados de Control" }
-      ],
-      icon: <Landmark className="w-5 h-5 text-[#9F062A]" />,
       salaryEst: "S/. 1,700 - S/. 3,800",
-      image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=800&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=800&auto=format&fit=crop",
+      icon: <Landmark className="w-5 h-5 text-[#9F062A]" />,
+      careerPath: [
+        { cycle: "I Ciclo", courses: ["Contabilidad General I", "Matemática Financiera Aplicada", "Documentación Comercial y Contable", "Tecnología de la Información"] },
+        { cycle: "II Ciclo", courses: ["Plan Contable General Empresarial", "Tributación I (IGV y Comprobantes)", "Contabilidad General II", "Estadística Aplicada"] },
+        { cycle: "III Ciclo", courses: ["Contabilidad de Costos Industriales", "Costeo por Procesos y Órdenes", "Tributación II (Renta y Retenciones)", "Legislación Comercial"] },
+        { cycle: "IV Ciclo", courses: ["Software Contable ERP de Aplicación", "Legislación Laboral y Planillas", "Formulación de Estados Financieros", "Finanzas Empresariales"] },
+        { cycle: "V Ciclo", courses: ["Auditoría Financiera e Integral", "Contabilidad Gubernamental del Estado", "Análisis e Interpretación de Estados", "Costos para la Toma de Decisiones"] },
+        { cycle: "VI Ciclo", courses: ["Planeamiento Financiero y Fiscal Avanzado", "Peritaje Contable y Tributario", "Proyecto de Titulación Profesional", "Ética y Deontología Profesional"] }
+      ]
     }
   ];
 
@@ -244,6 +244,8 @@ export default function PortalHome({
       answer: "Ofrecemos turnos en horario Diurno (Mañana/Tarde) y Nocturno, permitiendo a nuestros estudiantes trabajar y realizar sus prácticas profesionales mientras estudian."
     }
   ];
+
+  const activeCareer = careersDetail.find(c => c.id === selectedProgramId) || careersDetail[0];
 
   return (
     <div id="home-view" className="flex flex-col min-h-screen bg-white font-sans text-slate-900 selection:bg-[#9F062A] selection:text-white">
@@ -288,13 +290,13 @@ export default function PortalHome({
         </div>
       </div>
 
-      {/* 2. NAVEGACIÓN LIMPIA Y PROFESIONAL CON LOGO ORIGINAL */}
+      {/* 2. NAVEGACIÓN LIMPIA, ESPACIOSA Y PROFESIONAL CON LOGO ORIGINAL */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center relative">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10 py-3.5 flex justify-between items-center gap-6 relative">
           
           {/* Logo Institucional Original sin Modificaciones */}
           <div 
-            className="flex items-center gap-3.5 cursor-pointer select-none" 
+            className="flex items-center gap-3.5 cursor-pointer select-none shrink-0" 
             onClick={() => { setCurrentTab("inicio"); setMobileMenuOpen(false); }}
           >
             <img 
@@ -313,145 +315,151 @@ export default function PortalHome({
             </div>
           </div>
 
-          {/* Menú de Navegación Principal con Indicador Rojo */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 text-[12px] xl:text-[13px] font-bold text-slate-700">
+          {/* Menú de Navegación Principal Holgado con Dropdown Flotante */}
+          <nav className="hidden lg:flex items-center gap-4 xl:gap-6 text-[13px] font-bold text-slate-700">
             
             <button 
               onClick={() => { setCurrentTab("inicio"); setActiveDropdown(null); }} 
-              className={`px-3.5 py-2 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "inicio" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+              className={`py-2 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "inicio" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
             >
               <span>INICIO</span>
               {currentTab === "inicio" && (
-                <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#9F062A] rounded-full" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
               )}
             </button>
 
-            {/* Nosotros */}
+            {/* Nosotros Dropdown */}
             <div 
-              className="relative group py-2"
+              className="relative py-2"
               onMouseEnter={() => setActiveDropdown("nosotros")}
               onMouseLeave={() => setActiveDropdown(null)}
             >
               <button 
                 onClick={() => setCurrentTab("nosotros")}
-                className={`px-3.5 py-2 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "nosotros" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+                className={`py-2 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "nosotros" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
               >
                 <span>NOSOTROS</span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-500 group-hover:rotate-180 transition-transform" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
                 {currentTab === "nosotros" && (
-                  <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#9F062A] rounded-full" />
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
                 )}
               </button>
 
-              <div className="absolute top-full left-0 hidden group-hover:block w-56 bg-white border border-slate-200 shadow-xl rounded-lg p-2 z-50 animate-fade-in">
-                <button
-                  onClick={() => setCurrentTab("nosotros")}
-                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase"
-                >
-                  Misión, Visión y Valores
-                </button>
-                <button
-                  onClick={() => setCurrentTab("nosotros")}
-                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase mt-1"
-                >
-                  Plana Directiva y Autoridades
-                </button>
-              </div>
+              {activeDropdown === "nosotros" && (
+                <div className="absolute top-full left-0 w-60 bg-white border border-slate-200 shadow-xl rounded-xl p-2.5 z-50 animate-fade-in mt-1">
+                  <button
+                    onClick={() => { setCurrentTab("nosotros"); setActiveDropdown(null); }}
+                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold uppercase flex items-center gap-2"
+                  >
+                    <Award className="w-4 h-4 text-[#9F062A]" /> Misión, Visión y Valores
+                  </button>
+                  <button
+                    onClick={() => { setCurrentTab("nosotros"); setActiveDropdown(null); }}
+                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold uppercase mt-1 flex items-center gap-2"
+                  >
+                    <Users className="w-4 h-4 text-[#9F062A]" /> Plana Directiva y Autoridades
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Programas */}
+            {/* Programas Dropdown */}
             <div 
-              className="relative group py-2"
+              className="relative py-2"
               onMouseEnter={() => setActiveDropdown("programas")}
               onMouseLeave={() => setActiveDropdown(null)}
             >
               <button 
                 onClick={() => setCurrentTab("programas")}
-                className={`px-3.5 py-2 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "programas" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+                className={`py-2 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "programas" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
               >
                 <span>PROGRAMAS</span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-500 group-hover:rotate-180 transition-transform" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
                 {currentTab === "programas" && (
-                  <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#9F062A] rounded-full" />
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
                 )}
               </button>
 
-              <div className="absolute top-full left-0 hidden group-hover:block w-72 bg-white border border-slate-200 shadow-xl rounded-lg p-3 z-50 animate-fade-in space-y-1">
-                <span className="text-[10px] uppercase font-black text-[#9F062A] tracking-wider block px-2 mb-1">Especialidades Técnicas:</span>
-                <button
-                  onClick={() => { setSelectedProgramId("electronica"); setCurrentTab("programas"); }}
-                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col"
-                >
-                  <span>Electricidad Industrial</span>
-                  <span className="text-[10px] text-slate-500 normal-case font-normal">Control de PLCs, Motores y Subestaciones</span>
-                </button>
-                <button
-                  onClick={() => { setSelectedProgramId("contabilidad"); setCurrentTab("programas"); }}
-                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col mt-1"
-                >
-                  <span>Contabilidad Financiera</span>
-                  <span className="text-[10px] text-slate-500 normal-case font-normal">Tributación Empresarial, NIIF y Software ERP</span>
-                </button>
-              </div>
+              {activeDropdown === "programas" && (
+                <div className="absolute top-full left-0 w-80 bg-white border border-slate-200 shadow-xl rounded-xl p-3 z-50 animate-fade-in space-y-1 mt-1">
+                  <span className="text-[10px] uppercase font-black text-[#9F062A] tracking-wider block px-2 mb-1">Especialidades Licenciadas:</span>
+                  <button
+                    onClick={() => { setSelectedProgramId("electronica"); setCurrentTab("programas"); setActiveDropdown(null); }}
+                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col"
+                  >
+                    <span className="flex items-center gap-2"><Zap className="w-4 h-4 text-[#9F062A]" /> Electricidad Industrial</span>
+                    <span className="text-[10px] text-slate-500 normal-case font-normal mt-0.5">Control de PLCs, Motores y Subestaciones</span>
+                  </button>
+                  <button
+                    onClick={() => { setSelectedProgramId("contabilidad"); setCurrentTab("programas"); setActiveDropdown(null); }}
+                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col mt-1"
+                  >
+                    <span className="flex items-center gap-2"><Landmark className="w-4 h-4 text-[#9F062A]" /> Contabilidad Financiera</span>
+                    <span className="text-[10px] text-slate-500 normal-case font-normal mt-0.5">Tributación Empresarial, NIIF y ERP</span>
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* Admisión */}
+            {/* Admisión Dropdown */}
             <div 
-              className="relative group py-2"
+              className="relative py-2"
               onMouseEnter={() => setActiveDropdown("admision")}
               onMouseLeave={() => setActiveDropdown(null)}
             >
               <button 
                 onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
-                className={`px-3.5 py-2 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "admision" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+                className={`py-2 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "admision" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
               >
                 <span>ADMISIÓN</span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-500 group-hover:rotate-180 transition-transform" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
                 {currentTab === "admision" && (
-                  <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#9F062A] rounded-full" />
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
                 )}
               </button>
 
-              <div className="absolute top-full left-0 hidden group-hover:block w-64 bg-white border border-slate-200 shadow-xl rounded-lg p-2 z-50 animate-fade-in">
-                <button
-                  onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
-                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase"
-                >
-                  Pre-Inscripción Virtual 2026-I
-                </button>
-                <button
-                  onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
-                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase mt-1"
-                >
-                  Tasas y Requisitos del Examen
-                </button>
-              </div>
+              {activeDropdown === "admision" && (
+                <div className="absolute top-full left-0 w-64 bg-white border border-slate-200 shadow-xl rounded-xl p-2.5 z-50 animate-fade-in mt-1">
+                  <button
+                    onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); setActiveDropdown(null); }}
+                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold uppercase flex items-center gap-2"
+                  >
+                    <CheckSquare className="w-4 h-4 text-[#9F062A]" /> Pre-Inscripción Virtual 2026-I
+                  </button>
+                  <button
+                    onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); setActiveDropdown(null); }}
+                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold uppercase mt-1 flex items-center gap-2"
+                  >
+                    <Landmark className="w-4 h-4 text-[#9F062A]" /> Tasas y Requisitos del Examen
+                  </button>
+                </div>
+              )}
             </div>
 
             <button 
               onClick={() => { setCurrentTab("transparencia"); setActiveDropdown(null); }} 
-              className={`px-3.5 py-2 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "transparencia" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+              className={`py-2 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "transparencia" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
             >
               <span>TRANSPARENCIA</span>
               {currentTab === "transparencia" && (
-                <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#9F062A] rounded-full" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
               )}
             </button>
 
             <button 
               onClick={() => { setCurrentTab("contactanos"); setActiveDropdown(null); }} 
-              className={`px-3.5 py-2 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "contactanos" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+              className={`py-2 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "contactanos" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
             >
               <span>CONTÁCTANOS</span>
               {currentTab === "contactanos" && (
-                <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[#9F062A] rounded-full" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#9F062A] rounded-full" />
               )}
             </button>
 
           </nav>
 
           {/* Botón Destacado de Intranet Académica en Granate */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3 shrink-0">
             <button 
               onClick={onEnterIntranet}
               className="flex items-center gap-2 bg-[#9F062A] hover:bg-[#800521] text-white px-5 py-2.5 rounded-lg font-bold tracking-wide transition-all shadow-md text-xs cursor-pointer active:scale-95"
@@ -667,7 +675,7 @@ export default function PortalHome({
             <section className="py-16 px-4 bg-slate-50">
               <div className="max-w-7xl mx-auto space-y-12">
                 <div className="text-center max-w-3xl mx-auto">
-                  <span className="text-[#9F062A] font-black text-xs uppercase tracking-widest block">CONOCE NUESTRAS ESPECIALIDADES</span>
+                  <span className="text-[#9F062A] font-black text-xs uppercase tracking-widest block font-mono">CONOCE NUESTRAS ESPECIALIDADES</span>
                   <h3 className="text-2xl sm:text-3xl font-black text-slate-900 uppercase tracking-tight mt-1">
                     Carreras Profesionales Licenciadas
                   </h3>
@@ -707,10 +715,10 @@ export default function PortalHome({
 
                       <div className="p-6 pt-0">
                         <button
-                          onClick={() => { setSelectedProgramId(career.id); setProgramSelection(career.id); setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
+                          onClick={() => { setSelectedProgramId(career.id); setProgramSelection(career.id); setCurrentTab("programas"); }}
                           className="w-full py-3 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                         >
-                          <span>Pre-inscribirme en {career.name}</span>
+                          <span>Ver Malla Curricular y Cursos</span>
                           <ArrowRight className="w-4 h-4 text-amber-300" />
                         </button>
                       </div>
@@ -724,7 +732,7 @@ export default function PortalHome({
             <section className="py-16 px-4 bg-white border-t border-slate-200">
               <div className="max-w-7xl mx-auto space-y-10">
                 <div className="text-center max-w-3xl mx-auto">
-                  <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block">PROCESO ORDINARIO DE ADMISIÓN 2026</span>
+                  <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">PROCESO ORDINARIO DE ADMISIÓN 2026</span>
                   <h3 className="text-2xl sm:text-3xl font-black mt-1 text-slate-900 uppercase">Pasos para la Inscripción</h3>
                 </div>
 
@@ -751,7 +759,7 @@ export default function PortalHome({
             <section className="bg-slate-50 border-t border-slate-200 py-16 px-4">
               <div className="max-w-4xl mx-auto space-y-8">
                 <div className="text-center">
-                  <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block">RESOLVEMOS TUS DUDAS</span>
+                  <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">RESOLVEMOS TUS DUDAS</span>
                   <h3 className="text-2xl sm:text-3xl font-black mt-1 text-slate-900 uppercase">Preguntas Frecuentes</h3>
                 </div>
 
@@ -782,12 +790,186 @@ export default function PortalHome({
           </div>
         )}
 
-        {/* ================= ADMISIÓN VIEW (REDISEÑADA COMPLETA Y ELEGANTE) ================= */}
+        {/* ================= PROGRAMAS VIEW (DETALLE COMPLETO DE CURSOS POR CICLO I AL VI) ================= */}
+        {currentTab === "programas" && (
+          <div className="bg-slate-50 py-16 px-4 min-h-screen">
+            <div className="max-w-7xl mx-auto space-y-12">
+              
+              <div className="text-center max-w-3xl mx-auto">
+                <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">MALLA CURRICULAR Y PLANES DE ESTUDIO</span>
+                <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Programas de Estudio Licenciados</h2>
+                <p className="text-xs sm:text-sm text-slate-600 font-medium mt-2 leading-relaxed">
+                  Conoce en detalle el plan modular por ciclos académicos, la carga horaria y las competencias profesionales de cada especialidad.
+                </p>
+              </div>
+
+              {/* Selector de Carrera */}
+              <div className="flex justify-center items-center gap-3">
+                {careersDetail.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedProgramId(c.id)}
+                    className={`px-6 py-3 rounded-xl font-black text-xs uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-2 ${selectedProgramId === c.id ? "bg-[#9F062A] text-white border-[#9F062A] shadow-md" : "bg-white text-slate-700 border-slate-200 hover:bg-rose-50 hover:text-[#9F062A]"}`}
+                  >
+                    {c.icon}
+                    <span>{c.name}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Detalle Completo de la Carrera Seleccionada */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-10 shadow-xs space-y-10 max-w-5xl mx-auto">
+                
+                {/* Cabecera del Programa */}
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-b border-slate-200 pb-8">
+                  <div className="flex items-center gap-4">
+                    <img src={activeCareer.image} alt={activeCareer.name} className="w-20 h-20 rounded-2xl object-cover border border-slate-200 shadow-xs" />
+                    <div>
+                      <span className="bg-rose-50 text-[#9F062A] text-[10px] font-mono px-3 py-1 rounded font-extrabold uppercase border border-rose-100">
+                        {activeCareer.hours}
+                      </span>
+                      <h3 className="text-2xl font-black text-slate-900 uppercase mt-2">{activeCareer.name}</h3>
+                      <span className="text-xs text-slate-500 font-bold block mt-0.5">{activeCareer.title}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Proyección Salarial Promedio:</span>
+                    <span className="text-emerald-700 font-black text-base bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                      {activeCareer.salaryEst}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Perfil del Egresado */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-[#9F062A] flex items-center gap-2">
+                    <UserCheck className="w-4 h-4" />
+                    Perfil Profesional del Egresado
+                  </h4>
+                  <p className="text-xs sm:text-sm text-slate-700 font-medium leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    {activeCareer.profile}
+                  </p>
+                </div>
+
+                {/* Malla Curricular Detallada: Ciclo I al VI */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-[#9F062A] flex items-center gap-2">
+                    <Layers className="w-4 h-4" />
+                    Plan de Estudios por Ciclos Académicos (Ciclo I al VI)
+                  </h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {activeCareer.careerPath.map((cp, idx) => (
+                      <div key={idx} className="bg-slate-50 border border-slate-200 p-5 rounded-xl space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                          <span className="bg-[#9F062A] text-white text-[10px] font-mono px-2.5 py-0.5 rounded font-black uppercase">
+                            {cp.cycle}
+                          </span>
+                          <span className="text-[9px] font-bold text-slate-400 uppercase">Modular</span>
+                        </div>
+                        <ul className="space-y-2 text-xs text-slate-700 font-semibold">
+                          {cp.courses.map((course, cIdx) => (
+                            <li key={cIdx} className="flex items-start gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#9F062A] shrink-0 mt-1.5" />
+                              <span>{course}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Botón de Postulación a la Carrera */}
+                <div className="pt-4 border-t border-slate-200 text-center">
+                  <button
+                    onClick={() => { setProgramSelection(activeCareer.id); setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
+                    className="py-4 px-8 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-xl text-xs uppercase tracking-widest shadow-md transition-all inline-flex items-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <span>Postular a {activeCareer.name}</span>
+                    <ArrowRight className="w-4 h-4 text-amber-300" />
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* ================= NOSOTROS VIEW (INCLUYE AUTORIDADES Y PLANA DIRECTIVA) ================= */}
+        {currentTab === "nosotros" && (
+          <div className="bg-slate-50 py-16 px-4 min-h-screen">
+            <div className="max-w-7xl mx-auto space-y-12">
+              
+              <div className="text-center max-w-3xl mx-auto">
+                <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">CONOCE NUESTRA INSTITUCIÓN</span>
+                <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Misión, Visión y Autoridades</h2>
+                <p className="text-xs sm:text-sm text-slate-600 font-medium mt-2 leading-relaxed">
+                  Comprometidos con la calidad educativa tecnológica pública en Villa María del Triunfo.
+                </p>
+              </div>
+
+              {/* Misión y Visión */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                <div className="bg-white border border-slate-200 p-8 rounded-2xl space-y-4 shadow-xs">
+                  <div className="w-12 h-12 bg-rose-50 text-[#9F062A] rounded-xl flex items-center justify-center border border-rose-100">
+                    <Award className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 uppercase">Nuestra Misión</h3>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                    Somos un Instituto de Educación Superior Tecnológico Público que forma profesionales técnicos competitivos, con pensamiento crítico, valores éticos e innovación tecnológica, capaces de responder a las exigencias del mercado laboral y contribuir al desarrollo socioeconómico del Perú.
+                  </p>
+                </div>
+
+                <div className="bg-white border border-slate-200 p-8 rounded-2xl space-y-4 shadow-xs">
+                  <div className="w-12 h-12 bg-rose-50 text-[#9F062A] rounded-xl flex items-center justify-center border border-rose-100">
+                    <Compass className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 uppercase">Nuestra Visión</h3>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+                    Ser un Instituto de Educación Superior Tecnológico Público referente en Lima Metropolitana, acreditado y reconocido por su excelencia académica, calidad educativa, infraestructura moderna y alto nivel de empleabilidad de sus egresados.
+                  </p>
+                </div>
+              </div>
+
+              {/* Plana Directiva y Autoridades Institucionales */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xs space-y-8 max-w-5xl mx-auto">
+                <div className="border-b border-slate-200 pb-3 text-center sm:text-left">
+                  <h3 className="text-xl font-black text-slate-900 uppercase">Plana Directiva y Autoridades</h3>
+                  <span className="text-xs text-slate-500 font-medium">Equipo directivo responsable de la gestión académica y administrativa</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                  {[
+                    { role: "Director General", name: "Lic. Manuel Ramos", detail: "Gestión Institucional y Desarrollo Estratégico" },
+                    { role: "Secretaría Académica", name: "Mg. Rosa Elvira Huamán", detail: "Control de Registros, Matrículas y Certificaciones" },
+                    { role: "Jefe de Unidad Académica", name: "Ing. Carlos Mendoza", detail: "Supervisión Curricular y Plana Docente" },
+                    { role: "Coordinador de Admisión", name: "Lic. Luis Alberto Castillo", detail: "Proceso de Admisión Ordinario y Evaluaciones" },
+                    { role: "Jefatura de Investigación", name: "Ing. Jorge Luis Toledo", detail: "Proyectos de Innovación Tecnológica" },
+                    { role: "Jefatura de Bienestar", name: "Lic. Elena Morales", detail: "Atención al Estudiante y Empleabilidad" }
+                  ].map((auth, idx) => (
+                    <div key={idx} className="bg-slate-50 border border-slate-200 p-5 rounded-xl space-y-2">
+                      <span className="bg-rose-50 text-[#9F062A] text-[10px] font-bold uppercase px-2.5 py-0.5 rounded border border-rose-100 font-mono">
+                        {auth.role}
+                      </span>
+                      <h4 className="text-sm font-black text-slate-900 uppercase pt-1">{auth.name}</h4>
+                      <p className="text-xs text-slate-500 font-medium">{auth.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* ================= ADMISIÓN VIEW ================= */}
         {currentTab === "admision" && (
           <div className="bg-slate-50 py-16 px-4 min-h-screen">
             <div className="max-w-7xl mx-auto space-y-10">
               
-              {/* Encabezado Institucional de Admisión */}
               <div className="text-center max-w-3xl mx-auto">
                 <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">PROCESO ORDINARIO 2026-I</span>
                 <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Pre-Inscripción Virtual de Admisión</h2>
@@ -796,13 +978,11 @@ export default function PortalHome({
                 </p>
               </div>
 
-              {/* Grid 2 Columnas: Requisitos & Tasas + Formulario de Pre-Inscripción */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
                 
                 {/* Lado Izquierdo: Tasas Ordinarias y Requisitos del Proceso */}
                 <div className="lg:col-span-5 space-y-6">
                   
-                  {/* Cuadro de Tasas Institucionales */}
                   <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
                     <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                       <div className="p-2.5 bg-rose-50 text-[#9F062A] rounded-lg border border-rose-100">
@@ -830,7 +1010,6 @@ export default function PortalHome({
                     </div>
                   </div>
 
-                  {/* Cuadro de Requisitos de Postulante */}
                   <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
                     <h3 className="text-sm font-black text-slate-900 uppercase border-b border-slate-100 pb-2 flex items-center gap-2">
                       <FileCheck className="w-4 h-4 text-[#9F062A]" />
@@ -852,7 +1031,6 @@ export default function PortalHome({
                     </ul>
                   </div>
 
-                  {/* Asistencia */}
                   <div className="bg-rose-50 border border-rose-200 p-5 rounded-xl text-xs space-y-2 text-rose-950">
                     <span className="font-extrabold uppercase text-[#9F062A] block">¿Necesitas ayuda con tu inscripción?</span>
                     <p className="font-medium leading-relaxed text-slate-700">
@@ -862,7 +1040,7 @@ export default function PortalHome({
 
                 </div>
 
-                {/* Lado Derecho: Formulario Oficial de Pre-Inscripción Rediseñado */}
+                {/* Lado Derecho: Formulario Oficial de Pre-Inscripción */}
                 <div className="lg:col-span-7">
                   <div className="bg-white border-2 border-slate-200 p-6 sm:p-8 rounded-2xl shadow-md">
                     
@@ -998,12 +1176,11 @@ export default function PortalHome({
           </div>
         )}
 
-        {/* ================= CONTÁCTANOS VIEW (REDISEÑADA COMPLETA Y ELEGANTE) ================= */}
+        {/* ================= CONTÁCTANOS VIEW ================= */}
         {currentTab === "contactanos" && (
           <div className="bg-slate-50 py-16 px-4 min-h-screen">
             <div className="max-w-7xl mx-auto space-y-10">
               
-              {/* Encabezado Mesa de Partes */}
               <div className="text-center max-w-3xl mx-auto">
                 <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">MESA DE PARTES Y SECRETARÍA</span>
                 <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Canales de Atención Institucional</h2>
@@ -1012,13 +1189,10 @@ export default function PortalHome({
                 </p>
               </div>
 
-              {/* Grid 2 Columnas: Canales de Atención + Formulario de Contacto */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
                 
-                {/* Lado Izquierdo: Tarjetas de Información de Contacto */}
                 <div className="lg:col-span-5 space-y-4">
                   
-                  {/* Dirección del Campus */}
                   <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs flex items-start gap-4">
                     <div className="p-3 bg-rose-50 text-[#9F062A] rounded-lg shrink-0 border border-rose-100">
                       <MapPin className="w-5 h-5" />
@@ -1030,7 +1204,6 @@ export default function PortalHome({
                     </div>
                   </div>
 
-                  {/* Teléfonos y Central */}
                   <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs flex items-start gap-4">
                     <div className="p-3 bg-rose-50 text-[#9F062A] rounded-lg shrink-0 border border-rose-100">
                       <Phone className="w-5 h-5" />
@@ -1042,7 +1215,6 @@ export default function PortalHome({
                     </div>
                   </div>
 
-                  {/* Correo Electrónico */}
                   <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs flex items-start gap-4">
                     <div className="p-3 bg-rose-50 text-[#9F062A] rounded-lg shrink-0 border border-rose-100">
                       <Mail className="w-5 h-5" />
@@ -1054,7 +1226,6 @@ export default function PortalHome({
                     </div>
                   </div>
 
-                  {/* Horario Institucional */}
                   <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs flex items-start gap-4">
                     <div className="p-3 bg-rose-50 text-[#9F062A] rounded-lg shrink-0 border border-rose-100">
                       <Clock className="w-5 h-5" />
@@ -1068,7 +1239,6 @@ export default function PortalHome({
 
                 </div>
 
-                {/* Lado Derecho: Formulario de Contacto / Mesa de Partes */}
                 <div className="lg:col-span-7">
                   <div className="bg-white border-2 border-slate-200 p-6 sm:p-8 rounded-2xl shadow-md">
                     <div className="border-b border-slate-200 pb-4 mb-5">
@@ -1154,70 +1324,6 @@ export default function PortalHome({
                 </div>
 
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================= NOSOTROS VIEW ================= */}
-        {currentTab === "nosotros" && (
-          <div className="max-w-7xl mx-auto py-16 px-4 space-y-12">
-            <div className="text-center max-w-3xl mx-auto">
-              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">INSTITUCIONAL</span>
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Misión, Visión y Autoridades</h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-white border border-slate-200 p-8 rounded-xl space-y-4 shadow-xs">
-                <div className="w-12 h-12 bg-rose-50 text-[#9F062A] rounded-lg flex items-center justify-center border border-rose-100">
-                  <Award className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-black text-slate-900 uppercase">Nuestra Misión</h3>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
-                  Somos un Instituto de Educación Superior Tecnológico Público que forma profesionales técnicos competitivos, con pensamiento crítico, valores éticos e innovación tecnológica, capaces de responder a las exigencias del mercado laboral y contribuir al desarrollo socioeconómico del Perú.
-                </p>
-              </div>
-
-              <div className="bg-white border border-slate-200 p-8 rounded-xl space-y-4 shadow-xs">
-                <div className="w-12 h-12 bg-rose-50 text-[#9F062A] rounded-lg flex items-center justify-center border border-rose-100">
-                  <Compass className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-black text-slate-900 uppercase">Nuestra Visión</h3>
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
-                  Ser un Instituto de Educación Superior Tecnológico Público referente en Lima Metropolitana, acreditado y reconocido por su excelencia académica, calidad educativa, infraestructura moderna y alto nivel de empleabilidad de sus egresados.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================= PROGRAMAS VIEW ================= */}
-        {currentTab === "programas" && (
-          <div className="max-w-7xl mx-auto py-16 px-4 space-y-12">
-            <div className="text-center max-w-3xl mx-auto">
-              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">OFERTA EDUCATIVA</span>
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Programas de Estudio Licenciados</h2>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {careersDetail.map((career) => (
-                <div key={career.id} className="bg-white border border-slate-200 p-8 rounded-xl space-y-6 shadow-xs">
-                  <div className="flex items-center gap-4">
-                    <img src={career.image} alt={career.name} className="w-20 h-20 rounded-xl object-cover border border-slate-200" />
-                    <div>
-                      <h3 className="text-xl font-black text-slate-900 uppercase">{career.name}</h3>
-                      <span className="text-xs text-[#9F062A] font-bold block mt-1">{career.hours}</span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-slate-600 leading-relaxed font-medium">{career.profile}</p>
-                  
-                  <button
-                    onClick={() => { setProgramSelection(career.id); setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
-                    className="w-full py-3 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-lg text-xs uppercase tracking-wider"
-                  >
-                    Postular a esta carrera
-                  </button>
-                </div>
-              ))}
             </div>
           </div>
         )}
