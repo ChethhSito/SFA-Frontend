@@ -100,16 +100,16 @@ export default function Sidebar({
   };
 
   const SidebarContent = ({ collapsed = false }: { collapsed?: boolean }) => (
-    <div className="flex flex-col h-full bg-white relative z-20 w-full overflow-hidden select-none">
+    <div className="flex flex-col h-full bg-white relative z-20">
       {/* Header of Institution */}
-      <div className={`p-4 flex items-center gap-3 border-b border-slate-100 ${collapsed ? "justify-center px-2" : ""}`}>
+      <div className={`p-4 flex items-center border-b border-slate-100 ${collapsed ? "justify-center" : "gap-3"}`}>
         {renderLogo()}
         {!collapsed && (
           <div className="text-left min-w-0 flex-1">
             <h1 className="text-xs font-black text-[#8B0026] tracking-tight leading-none uppercase truncate">
               {institution.name}
             </h1>
-            <span className="text-[9.5px] text-slate-400 font-extrabold uppercase tracking-wide block mt-1 truncate">
+            <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wide block mt-1 truncate">
               {institution.subtitle}
             </span>
           </div>
@@ -117,23 +117,23 @@ export default function Sidebar({
       </div>
 
       {/* User Status Profile Card */}
-      <div className={`py-3 ${collapsed ? "px-2" : "px-3"}`}>
-        <div className={`bg-slate-50/80 border border-slate-100 rounded-2xl text-left relative overflow-hidden transition-all ${collapsed ? "p-2 text-center flex flex-col items-center" : "p-3.5"}`}>
-          <div className={`flex items-center gap-2.5 ${collapsed ? "justify-center" : ""}`}>
+      <div className={`py-3 ${collapsed ? "px-2" : "px-4 mt-1"}`}>
+        <div className={`bg-slate-50/80 border border-slate-200/80 rounded-2xl text-left relative overflow-hidden transition-colors ${collapsed ? "p-2 flex flex-col items-center justify-center" : "p-3.5"}`}>
+          <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
             {user.avatar ? (
               <img 
                 src={user.avatar} 
                 alt="Avatar" 
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-slate-100 shrink-0" 
+                className="w-9 h-9 rounded-full object-cover ring-2 ring-amber-400/40 shrink-0" 
               />
             ) : (
-              <div className="h-9 w-9 bg-amber-400 text-slate-950 border border-amber-300 rounded-full flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+              <div className="h-9 w-9 bg-amber-400 text-slate-900 border border-amber-300 rounded-full flex items-center justify-center font-black text-xs shrink-0 tracking-tight">
                 {getInitials(user.name)}
               </div>
             )}
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <h4 className="text-[11px] font-black text-slate-900 leading-tight block truncate" title={user.name}>
+                <h4 className="text-[11px] font-black text-slate-800 leading-tight block truncate" title={user.name}>
                   {user.name}
                 </h4>
                 <span className="text-[9px] text-slate-500 font-bold block truncate mt-0.5" title={user.role}>
@@ -144,7 +144,7 @@ export default function Sidebar({
           </div>
           
           {!collapsed && (
-            <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex justify-between items-center text-[10px] font-bold">
+            <div className="mt-3 pt-2 border-t border-slate-200/60 flex justify-between items-center text-[10px] font-bold">
               <span className="text-slate-400 uppercase tracking-widest text-[8.5px] font-black">ESTADO:</span>
               <Badge variant={getStatusVariant(user.status)} className="font-extrabold tracking-wider px-2 py-0.5 text-[8.5px] uppercase border">
                 {user.status}
@@ -155,7 +155,7 @@ export default function Sidebar({
       </div>
 
       {extraContent && !collapsed && (
-        <div className="px-3 pb-2">
+        <div className="px-4 pb-2">
           {extraContent}
         </div>
       )}
@@ -164,7 +164,6 @@ export default function Sidebar({
       <div className={`flex-1 overflow-y-auto space-y-4 custom-scrollbar text-left ${collapsed ? "px-2 py-2" : "px-3 py-2"}`}>
         {sections.map((section, idx) => (
           <div key={idx} className="space-y-1">
-            {/* Section Title */}
             {!collapsed && (
               <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block px-2 mb-1">
                 {section.title}
@@ -183,6 +182,7 @@ export default function Sidebar({
                 return (
                   <div key={itemIdx} className="space-y-0.5">
                     <button
+                      title={collapsed ? item.label : undefined}
                       onClick={() => {
                         if (hasSubItems && !collapsed) {
                           setExpandedItems(prev => ({
@@ -194,22 +194,21 @@ export default function Sidebar({
                           setIsOpenMobile(false);
                         }
                       }}
-                      title={collapsed ? item.label : undefined}
-                      className={`w-full text-left py-2.5 rounded-xl transition-all duration-150 flex items-center justify-between cursor-pointer text-xs font-semibold ${
-                        collapsed ? "px-0 justify-center" : "px-3"
+                      className={`w-full transition-all duration-150 flex items-center cursor-pointer text-xs font-semibold ${
+                        collapsed ? "justify-center p-2.5 rounded-xl" : "justify-between py-2.5 px-3 rounded-xl"
                       } ${
                         item.active
-                          ? "bg-[#9F062A] text-white font-bold shadow-sm shadow-[#9F062A]/20"
+                          ? "bg-[#9F062A] text-white font-bold shadow-sm shadow-[#9F062A]/20 border border-red-900/20"
                           : isSubActive
                             ? "bg-slate-100 text-[#9F062A] font-bold border border-slate-200"
-                            : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-950"
+                            : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
                       }`}
                     >
-                      <div className={`flex items-center gap-3 min-w-0 ${collapsed ? "justify-center" : ""}`}>
-                        <span className={`w-4 h-4 shrink-0 flex items-center justify-center transition-colors ${item.active ? "text-amber-300" : isSubActive ? "text-[#9F062A]" : "text-slate-500"}`}>
+                      <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3 min-w-0"}`}>
+                        <span className={`w-4 h-4 shrink-0 flex items-center justify-center transition-colors ${item.active ? "text-amber-400" : isSubActive ? "text-[#9F062A]" : "text-slate-400"}`}>
                           {item.icon}
                         </span>
-                        {!collapsed && <span className="truncate tracking-wide">{item.label}</span>}
+                        {!collapsed && <span className="truncate tracking-wide text-[11.5px]">{item.label}</span>}
                       </div>
                       {!collapsed && hasSubItems && (
                         <span className="shrink-0 text-slate-400 ml-1">
@@ -222,7 +221,7 @@ export default function Sidebar({
                       )}
                     </button>
 
-                    {/* Smooth disclosure for subItems */}
+                    {/* Disclosure for subItems */}
                     {!collapsed && hasSubItems && (
                       <AnimatePresence initial={false}>
                         {isExpanded && (
@@ -231,7 +230,7 @@ export default function Sidebar({
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
                             transition={{ duration: 0.15, ease: "easeInOut" }}
-                            className="overflow-hidden pl-4 pr-1 space-y-1 mt-1 border-l border-slate-200 ml-3 py-0.5"
+                            className="overflow-hidden pl-5 pr-1 space-y-1 mt-1 border-l border-slate-100 ml-4 py-0.5"
                           >
                             {item.subItems!.map((sub, subIdx) => {
                               const isThisSubActive = sub.active;
@@ -242,7 +241,7 @@ export default function Sidebar({
                                     if (onItemClick) onItemClick(sub.route);
                                     setIsOpenMobile(false);
                                   }}
-                                  className={`w-full text-left py-2 px-2.5 rounded-lg transition-all duration-150 flex items-center gap-2 cursor-pointer text-[11px] font-semibold ${
+                                  className={`w-full text-left py-2 px-3 rounded-lg transition-all duration-150 flex items-center gap-2.5 cursor-pointer text-[11px] font-semibold ${
                                     isThisSubActive
                                       ? "bg-[#9F062A]/10 text-[#9F062A] font-extrabold border-l-2 border-[#9F062A]"
                                       : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
@@ -271,11 +270,13 @@ export default function Sidebar({
 
       {/* Logout Action Bar */}
       {onLogout && (
-        <div className={`p-3 border-t border-slate-100 bg-slate-50/50 shrink-0 ${collapsed ? "flex justify-center" : ""}`}>
+        <div className={`border-t border-slate-100 bg-slate-50/50 shrink-0 ${collapsed ? "p-2" : "p-3"}`}>
           <button
             onClick={onLogout}
             title={collapsed ? "Cerrar Sesión" : undefined}
-            className={`py-2 px-3 rounded-xl bg-transparent hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-xs font-bold uppercase transition-all flex items-center gap-2 tracking-wider border border-transparent hover:border-rose-100 cursor-pointer ${collapsed ? "w-10 h-10 justify-center px-0" : "w-full justify-center"}`}
+            className={`w-full py-2.5 rounded-xl text-slate-600 hover:text-rose-700 hover:bg-rose-50 text-xs font-bold uppercase transition-all flex items-center justify-center tracking-wider cursor-pointer ${
+              collapsed ? "px-0" : "px-3 gap-2 border border-slate-200/60 bg-white shadow-2xs"
+            }`}
           >
             <LogOut className="w-4 h-4 shrink-0 text-slate-500 hover:text-rose-600" />
             {!collapsed && <span>Cerrar Sesión</span>}
@@ -287,8 +288,8 @@ export default function Sidebar({
 
   return (
     <>
-      {/* 1. Mobile Top Header */}
-      <div className="md:hidden w-full bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shrink-0 z-40 relative shadow-xs">
+      {/* 1. Hamburger Header for Mobile Screens */}
+      <div className="md:hidden w-full bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shrink-0 z-40 relative">
         <div className="flex items-center gap-2.5">
           {renderLogo()}
           <div className="text-left">
@@ -302,24 +303,27 @@ export default function Sidebar({
         </div>
         <button
           onClick={() => setIsOpenMobile(!isOpenMobile)}
-          className="p-1.5 text-slate-600 hover:text-[#9F062A] hover:bg-slate-50 rounded-lg transition-colors border border-slate-200 shadow-xs cursor-pointer"
+          className="p-1.5 text-slate-500 hover:text-[#9F062A] hover:bg-slate-50 rounded-lg transition-colors border border-slate-200 shadow-2xs cursor-pointer"
           aria-label="Abrir menú"
         >
           {isOpenMobile ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
-      {/* 2. Mobile Overlay Drawer */}
+      {/* 2. Drawer Slide Overlay for Mobile */}
       <AnimatePresence>
         {isOpenMobile && (
           <>
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.4 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpenMobile(false)}
-              className="md:hidden fixed inset-0 bg-slate-950 z-40"
+              className="md:hidden fixed inset-0 bg-black z-40"
             />
+
+            {/* Sidebar drawer panel */}
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
@@ -336,26 +340,22 @@ export default function Sidebar({
                 </button>
               </div>
               <div className="w-full h-full">
-                <SidebarContent collapsed={false} />
+                <SidebarContent />
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      {/* 3. Desktop Sidebar (Collapsible with Toggle Arrow) */}
-      <aside 
-        className={`hidden md:flex flex-col relative z-20 h-full bg-white border-r border-slate-200 shadow-xs shrink-0 transition-all duration-300 ease-in-out select-none ${
-          isCollapsed ? "w-16" : "w-64"
-        } ${className}`}
-      >
-        {/* Toggle Collapse Button on Border */}
+      {/* 3. Sticky and Collapsible Sidebar on Desktop Screens */}
+      <aside className={`hidden md:flex flex-col h-full bg-white border-r border-slate-200 shadow-xs shrink-0 select-none relative z-30 transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-64"} ${className}`}>
+        {/* Toggle arrow button on the right edge */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="hidden md:flex absolute -right-3.5 top-5 z-30 w-7 h-7 bg-white border border-slate-200 text-slate-600 hover:text-[#9F062A] hover:bg-slate-50 rounded-full shadow-md items-center justify-center transition-all cursor-pointer hover:scale-105"
-          title={isCollapsed ? "Expandir menú de navegación" : "Colapsar menú de navegación"}
+          title={isCollapsed ? "Expandir menú lateral" : "Colapsar menú lateral"}
+          className="absolute -right-3.5 top-6 z-40 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#9F062A] border border-slate-300 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"
         >
-          {isCollapsed ? <ChevronRight className="w-4 h-4 text-slate-700" /> : <ChevronLeft className="w-4 h-4 text-slate-700" />}
+          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
 
         <SidebarContent collapsed={isCollapsed} />
