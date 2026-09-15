@@ -58,4 +58,33 @@ body {
   scrollbar-color: #9F062A #F1F5F9;
 }
 
+/* Custom Styled Select Inputs and Options */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239F062A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.15em;
+  padding-right: 2.75rem;
+}
+
+select option {
+  background-color: #FFFFFF;
+  color: #0F172A;
+  padding: 12px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+select option:hover, 
+select option:focus, 
+select option:active, 
+select option:checked {
+  background-color: #9F062A !important;
+  color: #FFFFFF !important;
+}
+
+
 

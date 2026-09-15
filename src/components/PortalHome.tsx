@@ -323,7 +323,7 @@ export default function PortalHome({
             
             <button 
               onClick={() => { setCurrentTab("inicio"); setActiveDropdown(null); }} 
-              className={`py-1 px-1 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "inicio" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+              className={`py-1 px-1 relative transition-colors uppercase tracking-wider cursor-pointer outline-none focus:outline-none focus:ring-0 select-none ${currentTab === "inicio" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
             >
               <span>INICIO</span>
               {currentTab === "inicio" && (
@@ -339,7 +339,7 @@ export default function PortalHome({
             >
               <button 
                 onClick={() => setCurrentTab("nosotros")}
-                className={`py-1 px-1 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "nosotros" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+                className={`py-1 px-1 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer outline-none focus:outline-none focus:ring-0 select-none ${currentTab === "nosotros" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
               >
                 <span>NOSOTROS</span>
                 <ChevronDown className="w-3 h-3 text-slate-400" />
@@ -349,18 +349,20 @@ export default function PortalHome({
               </button>
 
               {activeDropdown === "nosotros" && (
-                <div className="absolute top-full left-0 w-56 bg-white border border-slate-200 shadow-xl rounded-lg p-2 z-50 animate-fade-in mt-1">
+                <div className="absolute top-full left-0 w-64 bg-white border border-slate-200/90 shadow-2xl rounded-xl p-2 z-50 animate-fade-in mt-1.5 space-y-1">
                   <button
                     onClick={() => { setCurrentTab("nosotros"); setActiveDropdown(null); }}
-                    className="w-full text-left p-2 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase flex items-center gap-2"
+                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold uppercase flex items-center gap-2.5 text-slate-800"
                   >
-                    <Award className="w-3.5 h-3.5 text-[#9F062A]" /> Misión, Visión y Valores
+                    <Award className="w-4 h-4 text-[#9F062A] shrink-0" />
+                    <span>Misión, Visión y Valores</span>
                   </button>
                   <button
                     onClick={() => { setCurrentTab("nosotros"); setActiveDropdown(null); }}
-                    className="w-full text-left p-2 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase mt-0.5 flex items-center gap-2"
+                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold uppercase flex items-center gap-2.5 text-slate-800"
                   >
-                    <Users className="w-3.5 h-3.5 text-[#9F062A]" /> Plana Directiva y Autoridades
+                    <Users className="w-4 h-4 text-[#9F062A] shrink-0" />
+                    <span>Plana Directiva y Autoridades</span>
                   </button>
                 </div>
               )}
@@ -374,7 +376,7 @@ export default function PortalHome({
             >
               <button 
                 onClick={() => setCurrentTab("programas")}
-                className={`py-1 px-1 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "programas" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+                className={`py-1 px-1 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer outline-none focus:outline-none focus:ring-0 select-none ${currentTab === "programas" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
               >
                 <span>PROGRAMAS</span>
                 <ChevronDown className="w-3 h-3 text-slate-400" />
@@ -384,21 +386,21 @@ export default function PortalHome({
               </button>
 
               {activeDropdown === "programas" && (
-                <div className="absolute top-full left-0 w-72 bg-white border border-slate-200 shadow-xl rounded-lg p-2.5 z-50 animate-fade-in space-y-1 mt-1">
-                  <span className="text-[9px] uppercase font-black text-[#9F062A] tracking-wider block px-2 mb-1">Especialidades Licenciadas:</span>
+                <div className="absolute top-full left-0 w-72 bg-white border border-slate-200/90 shadow-2xl rounded-xl p-2.5 z-50 animate-fade-in space-y-1 mt-1.5">
+                  <span className="text-[9px] uppercase font-black text-[#9F062A] tracking-wider block px-2 mb-1 font-mono">Especialidades Licenciadas:</span>
                   <button
                     onClick={() => { setSelectedProgramId("electronica"); setCurrentTab("programas"); setActiveDropdown(null); }}
-                    className="w-full text-left p-2 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col"
+                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col"
                   >
-                    <span className="flex items-center gap-2"><Zap className="w-3.5 h-3.5 text-[#9F062A]" /> Electricidad Industrial</span>
-                    <span className="text-[9px] text-slate-500 normal-case font-normal mt-0.5">Control de PLCs, Motores y Subestaciones</span>
+                    <span className="flex items-center gap-2"><Zap className="w-4 h-4 text-[#9F062A] shrink-0" /> Electricidad Industrial</span>
+                    <span className="text-[9px] text-slate-500 normal-case font-normal mt-0.5 ml-6">Control de PLCs, Motores y Subestaciones</span>
                   </button>
                   <button
                     onClick={() => { setSelectedProgramId("contabilidad"); setCurrentTab("programas"); setActiveDropdown(null); }}
-                    className="w-full text-left p-2 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col mt-0.5"
+                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col mt-0.5"
                   >
-                    <span className="flex items-center gap-2"><Landmark className="w-3.5 h-3.5 text-[#9F062A]" /> Contabilidad Financiera</span>
-                    <span className="text-[9px] text-slate-500 normal-case font-normal mt-0.5">Tributación Empresarial, NIIF y ERP</span>
+                    <span className="flex items-center gap-2"><Landmark className="w-4 h-4 text-[#9F062A] shrink-0" /> Contabilidad Financiera</span>
+                    <span className="text-[9px] text-slate-500 normal-case font-normal mt-0.5 ml-6">Tributación Empresarial, NIIF y ERP</span>
                   </button>
                 </div>
               )}
@@ -412,7 +414,7 @@ export default function PortalHome({
             >
               <button 
                 onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
-                className={`py-1 px-1 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer ${currentTab === "admision" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+                className={`py-1 px-1 relative transition-colors uppercase tracking-wider inline-flex items-center gap-1 cursor-pointer outline-none focus:outline-none focus:ring-0 select-none ${currentTab === "admision" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
               >
                 <span>ADMISIÓN</span>
                 <ChevronDown className="w-3 h-3 text-slate-400" />
@@ -422,18 +424,20 @@ export default function PortalHome({
               </button>
 
               {activeDropdown === "admision" && (
-                <div className="absolute top-full left-0 w-60 bg-white border border-slate-200 shadow-xl rounded-lg p-2 z-50 animate-fade-in mt-1">
+                <div className="absolute top-full left-0 w-64 bg-white border border-slate-200/90 shadow-2xl rounded-xl p-2 z-50 animate-fade-in mt-1.5 space-y-1">
                   <button
                     onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); setActiveDropdown(null); }}
-                    className="w-full text-left p-2 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase flex items-center gap-2"
+                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold uppercase flex items-center gap-2.5 text-slate-800"
                   >
-                    <CheckSquare className="w-3.5 h-3.5 text-[#9F062A]" /> Pre-Inscripción Virtual 2026-I
+                    <CheckSquare className="w-4 h-4 text-[#9F062A] shrink-0" />
+                    <span>Pre-Inscripción Virtual 2026-I</span>
                   </button>
                   <button
                     onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); setActiveDropdown(null); }}
-                    className="w-full text-left p-2 hover:bg-rose-50 hover:text-[#9F062A] rounded-md transition-colors text-[11px] font-bold uppercase mt-0.5 flex items-center gap-2"
+                    className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold uppercase flex items-center gap-2.5 text-slate-800"
                   >
-                    <Landmark className="w-3.5 h-3.5 text-[#9F062A]" /> Tasas y Requisitos del Examen
+                    <Landmark className="w-4 h-4 text-[#9F062A] shrink-0" />
+                    <span>Tasas y Requisitos del Examen</span>
                   </button>
                 </div>
               )}
@@ -441,7 +445,7 @@ export default function PortalHome({
 
             <button 
               onClick={() => { setCurrentTab("transparencia"); setActiveDropdown(null); }} 
-              className={`py-1 px-1 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "transparencia" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+              className={`py-1 px-1 relative transition-colors uppercase tracking-wider cursor-pointer outline-none focus:outline-none focus:ring-0 select-none ${currentTab === "transparencia" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
             >
               <span>TRANSPARENCIA</span>
               {currentTab === "transparencia" && (
@@ -451,7 +455,7 @@ export default function PortalHome({
 
             <button 
               onClick={() => { setCurrentTab("contactanos"); setActiveDropdown(null); }} 
-              className={`py-1 px-1 relative transition-colors uppercase tracking-wider cursor-pointer ${currentTab === "contactanos" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
+              className={`py-1 px-1 relative transition-colors uppercase tracking-wider cursor-pointer outline-none focus:outline-none focus:ring-0 select-none ${currentTab === "contactanos" ? "text-[#9F062A] font-extrabold" : "hover:text-[#9F062A]"}`}
             >
               <span>CONTÁCTANOS</span>
               {currentTab === "contactanos" && (
@@ -807,17 +811,22 @@ export default function PortalHome({
               </div>
 
               {/* Selector de Carrera */}
-              <div className="flex justify-center items-center gap-3">
-                {careersDetail.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => setSelectedProgramId(c.id)}
-                    className={`px-6 py-3 rounded-xl font-black text-xs uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-2 ${selectedProgramId === c.id ? "bg-[#9F062A] text-white border-[#9F062A] shadow-md" : "bg-white text-slate-700 border-slate-200 hover:bg-rose-50 hover:text-[#9F062A]"}`}
-                  >
-                    {c.icon}
-                    <span>{c.name}</span>
-                  </button>
-                ))}
+              <div className="flex justify-center items-center gap-3 flex-wrap">
+                {careersDetail.map((c) => {
+                  const isActive = selectedProgramId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setSelectedProgramId(c.id)}
+                      className={`px-6 py-3 rounded-xl font-black text-xs uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-2.5 ${isActive ? "bg-[#9F062A] text-white border-[#9F062A] shadow-md" : "bg-white text-slate-700 border-slate-200 hover:bg-rose-50 hover:text-[#9F062A]"}`}
+                    >
+                      {React.cloneElement(c.icon as React.ReactElement, {
+                        className: `w-5 h-5 ${isActive ? "text-amber-300" : "text-[#9F062A]"}`
+                      })}
+                      <span>{c.name}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Detalle Completo de la Carrera Seleccionada */}
@@ -1613,22 +1622,94 @@ export default function PortalHome({
         {currentTab === "transparencia" && (
           <div className="max-w-7xl mx-auto py-16 px-4 space-y-12">
             <div className="text-center max-w-3xl mx-auto">
-              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">PORTAL DE TRANSPARENCIA</span>
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Documentos Oficiales Institucionales</h2>
+              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">PORTAL DE TRANSPARENCIA INSTITUCIONAL</span>
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Reglamentos y Documentos Oficiales</h2>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium mt-2 max-w-2xl mx-auto leading-relaxed">
+                Acceso público a la normativa académica, resoluciones de licenciamiento, reglamentos de titulación y directivas de gestión institucional del IESTP San Francisco de Asís.
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
-                { title: "Resolución de Licenciamiento R.M. 124-2021", desc: "Resolución Ministerial oficial de licenciamiento emitido por MINEDU." },
-                { title: "Reglamento Académico Institucional 2026", desc: "Normas de evaluación, asistencia, convalidación y permanencia académica." },
-                { title: "Cuadro de Vacantes Admisión 2026-I", desc: "Distribución oficial de vacantes por programa de estudios." }
+                { 
+                  title: "Resolución de Licenciamiento R.M. 124-2021", 
+                  code: "R.M. 124-2021-MINEDU", 
+                  size: "2.4 MB PDF",
+                  desc: "Resolución Ministerial oficial expedida por el Ministerio de Educación que otorga el licenciamiento institucional." 
+                },
+                { 
+                  title: "Reglamento Académico Institucional 2026", 
+                  code: "REG-ACAD-2026-I", 
+                  size: "1.8 MB PDF",
+                  desc: "Normas integrales de evaluación semestral, asistencia, convalidación de asignaturas y permanencia académica." 
+                },
+                { 
+                  title: "Reglamento del Proceso de Admisión Ordinario", 
+                  code: "REG-ADM-2026-I", 
+                  size: "1.2 MB PDF",
+                  desc: "Lineamientos del examen de admisión, ponderación de contenidos, vacantes y adjudicación de plazas." 
+                },
+                { 
+                  title: "Reglamento de Titulación Profesional y EFSRT", 
+                  code: "REG-TIT-2026", 
+                  size: "1.5 MB PDF",
+                  desc: "Requisitos y procedimientos para la obtención del Título a Nombre de la Nación y prácticas pre-profesionales." 
+                },
+                { 
+                  title: "Reglamento de Investigación e Innovación", 
+                  code: "REG-INV-2026", 
+                  size: "1.1 MB PDF",
+                  desc: "Directivas para el desarrollo de proyectos de investigación aplicada e innovación tecnológica en módulos." 
+                },
+                { 
+                  title: "Reglamento de Conducta y Ética Estudiantil", 
+                  code: "COD-ETICA-2026", 
+                  size: "950 KB PDF",
+                  desc: "Código de ética, normas de convivencia, deberes, derechos y procedimiento disciplinario de la comunidad." 
+                },
+                { 
+                  title: "Reglamento de Protección de Datos Personales", 
+                  code: "DIR-DATOS-2026", 
+                  size: "820 KB PDF",
+                  desc: "Política de seguridad, privacidad y tratamiento de datos personales de postulantes y estudiantes matriculados." 
+                },
+                { 
+                  title: "Cuadro Oficial de Vacantes Admisión 2026-I", 
+                  code: "VAC-ADM-2026", 
+                  size: "650 KB PDF",
+                  desc: "Distribución oficial de vacantes por programa de estudios para los turnos diurno y nocturno." 
+                },
+                { 
+                  title: "Directiva de Becas y Bienestar Estudiantil", 
+                  code: "DIR-BEC-2026", 
+                  size: "890 KB PDF",
+                  desc: "Criterios y procedimientos para exoneración de tasas académicas por rendimiento o vulnerabilidad." 
+                }
               ].map((doc, idx) => (
-                <div key={idx} className="bg-white border border-slate-200 p-6 rounded-xl space-y-3 shadow-xs">
-                  <FileText className="w-8 h-8 text-[#9F062A]" />
-                  <h3 className="text-base font-black text-slate-900 uppercase">{doc.title}</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed">{doc.desc}</p>
-                  <button className="text-xs text-[#9F062A] font-bold uppercase tracking-wider flex items-center gap-1 hover:underline">
-                    <span>Descargar PDF</span> &rarr;
+                <div key={idx} className="bg-white border border-slate-200 p-6 rounded-2xl space-y-4 shadow-xs hover:border-[#9F062A] transition-all hover:shadow-md flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div className="p-2.5 bg-rose-50 rounded-xl border border-rose-100 text-[#9F062A]">
+                        <FileText className="w-6 h-6" />
+                      </div>
+                      <span className="text-[9.5px] font-mono font-bold text-[#9F062A] bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
+                        {doc.code}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-black text-slate-900 uppercase leading-snug">{doc.title}</h3>
+                      <span className="text-[10px] text-slate-400 font-medium block mt-0.5">{doc.size}</span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                      {doc.desc}
+                    </p>
+                  </div>
+
+                  <button className="pt-3 border-t border-slate-100 text-xs text-[#9F062A] font-bold uppercase tracking-wider flex items-center justify-between hover:text-[#800521] transition-colors cursor-pointer w-full">
+                    <span className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Descargar PDF Oficial</span>
+                    <ArrowRight className="w-4 h-4 text-amber-500" />
                   </button>
                 </div>
               ))}
