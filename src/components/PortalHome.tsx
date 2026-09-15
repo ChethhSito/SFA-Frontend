@@ -735,29 +735,85 @@ export default function PortalHome({
               </div>
             </section>
 
-            {/* 6. PASO A PASO DEL PROCESO DE ADMISIÓN */}
-            <section className="py-16 px-4 bg-white border-t border-slate-200">
-              <div className="max-w-7xl mx-auto space-y-10">
-                <div className="text-center max-w-3xl mx-auto">
-                  <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">PROCESO ORDINARIO DE ADMISIÓN 2026</span>
-                  <h3 className="text-2xl sm:text-3xl font-black mt-1 text-slate-900 uppercase">Pasos para la Inscripción</h3>
+            {/* 6. PASO A PASO DEL PROCESO DE ADMISIÓN (DISEÑO MEJORADO EN TIMELINE CONECTADO) */}
+            <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white border-t border-slate-200">
+              <div className="max-w-7xl mx-auto space-y-12">
+                <div className="text-center max-w-3xl mx-auto space-y-2">
+                  <span className="bg-[#9F062A] text-white font-extrabold text-[10px] uppercase tracking-widest px-3.5 py-1 rounded-full inline-block font-mono shadow-2xs">
+                    PROCESO ORDINARIO DE ADMISIÓN 2026-I
+                  </span>
+                  <h3 className="text-2xl sm:text-4xl font-black text-slate-900 uppercase tracking-tight">Pasos para la Inscripción</h3>
+                  <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
+                    Sigue estos 4 pasos sencillos para completar tu pre-inscripción y rendir tu examen de admisión institucional.
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  {[
-                    { step: "01", title: "Pre-Inscripción", desc: "Registra tus datos personales en el formulario virtual para obtener tu código." },
-                    { step: "02", title: "Pago de Tasa", desc: "Abona S/. 120 por derecho de examen de admisión en el Banco de la Nación." },
-                    { step: "03", title: "Examen de Admisión", desc: "Rinde la evaluación de aptitud y conocimientos en nuestro campus." },
-                    { step: "04", title: "Matrícula e Inicio", desc: "Con tu vacante adjudicada, realiza tu matrícula institucional." }
-                  ].map((st, idx) => (
-                    <div key={idx} className="bg-slate-50 border border-slate-200 p-6 rounded-xl relative">
-                      <span className="w-8 h-8 rounded-full bg-[#9F062A] text-white font-black text-xs flex items-center justify-center mb-3">
-                        {st.step}
-                      </span>
-                      <h4 className="text-sm font-black text-slate-900 uppercase mb-1">{st.title}</h4>
-                      <p className="text-xs text-slate-600 font-medium leading-relaxed">{st.desc}</p>
-                    </div>
-                  ))}
+                {/* Timeline Conectado de 4 Pasos */}
+                <div className="relative">
+                  
+                  {/* Línea Conectora Horizontal en Escritorio */}
+                  <div className="hidden lg:block absolute top-1/2 left-16 right-16 h-1 bg-gradient-to-r from-[#9F062A] via-[#9F062A]/60 to-[#CFA020] -translate-y-6 z-0 rounded-full" />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+                    {[
+                      { 
+                        step: "01", 
+                        title: "Pre-Inscripción Virtual", 
+                        desc: "Registra tus datos personales en el formulario para obtener tu Código Oficial de Postulante.",
+                        icon: <CheckSquare className="w-6 h-6 text-[#9F062A]" />,
+                        action: "Formulario Virtual"
+                      },
+                      { 
+                        step: "02", 
+                        title: "Pago de Tasa Ordinaria", 
+                        desc: "Abona S/. 120 por derecho de examen en las agencias o agentes del Banco de la Nación.",
+                        icon: <Landmark className="w-6 h-6 text-[#9F062A]" />,
+                        action: "Banco de la Nación"
+                      },
+                      { 
+                        step: "03", 
+                        title: "Examen de Admisión", 
+                        desc: "Rinde la evaluación presencial de aptitud académica y conocimientos en nuestro campus.",
+                        icon: <FileText className="w-6 h-6 text-[#9F062A]" />,
+                        action: "Evaluación Campus"
+                      },
+                      { 
+                        step: "04", 
+                        title: "Adjudicación y Matrícula", 
+                        desc: "Con tu vacante obtenida, formaliza tu matrícula semestral e inicia tu carrera profesional.",
+                        icon: <GraduationCap className="w-6 h-6 text-[#9F062A]" />,
+                        action: "Inicio de Clases"
+                      }
+                    ].map((st, idx) => (
+                      <div 
+                        key={idx} 
+                        className="bg-white border-2 border-slate-200/90 rounded-2xl p-6 space-y-4 shadow-xs hover:border-[#9F062A] hover:shadow-md transition-all flex flex-col justify-between relative group"
+                      >
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <div className="w-12 h-12 rounded-xl bg-rose-50 text-[#9F062A] flex items-center justify-center border border-rose-100 group-hover:bg-[#9F062A] group-hover:text-white transition-colors">
+                              {st.icon}
+                            </div>
+                            <span className="w-9 h-9 rounded-full bg-[#800521] text-amber-300 font-mono font-black text-xs flex items-center justify-center border-2 border-white shadow-xs">
+                              {st.step}
+                            </span>
+                          </div>
+
+                          <div>
+                            <h4 className="text-base font-black text-slate-900 uppercase tracking-tight">{st.title}</h4>
+                            <p className="text-xs text-slate-600 font-medium leading-relaxed mt-1.5">{st.desc}</p>
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                          <span className="text-[10px] font-mono font-extrabold uppercase text-[#9F062A] bg-rose-50 px-2.5 py-0.5 rounded border border-rose-100">
+                            {st.action}
+                          </span>
+                          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#9F062A] group-hover:translate-x-1 transition-all" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </section>
@@ -837,8 +893,9 @@ export default function PortalHome({
                   <div className="flex items-center gap-4">
                     <img src={activeCareer.image} alt={activeCareer.name} className="w-20 h-20 rounded-2xl object-cover border border-slate-200 shadow-xs" />
                     <div>
-                      <span className="bg-rose-50 text-[#9F062A] text-[10px] font-mono px-3 py-1 rounded font-extrabold uppercase border border-rose-100">
-                        {activeCareer.hours}
+                      <span className="bg-[#9F062A] text-amber-300 text-[10.5px] font-mono px-3.5 py-1.5 rounded-lg font-black uppercase tracking-wider border border-red-950 inline-flex items-center gap-1.5 shadow-2xs">
+                        <Clock className="w-3.5 h-3.5 text-amber-300" />
+                        <span>{activeCareer.hours}</span>
                       </span>
                       <h3 className="text-2xl font-black text-slate-900 uppercase mt-2">{activeCareer.name}</h3>
                       <span className="text-xs text-slate-500 font-bold block mt-0.5">{activeCareer.title}</span>
@@ -917,19 +974,20 @@ export default function PortalHome({
               
               {/* 1. Header Banner Institucional con Imagen Real de Facachada del Campus */}
               <div className="bg-gradient-to-r from-[#800521] via-[#9F062A] to-slate-900 rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden shadow-lg border border-red-950">
-                {/* Imagen Institucional de la Fachada Real con Fundido Suave */}
-                <div className="absolute top-0 right-0 w-full sm:w-1/2 h-full opacity-40 sm:opacity-65 pointer-events-none overflow-hidden">
+                {/* Imagen Institucional de la Fachada Real con Fundido Total Continuo */}
+                <div className="absolute inset-0 w-full h-full opacity-40 sm:opacity-55 pointer-events-none overflow-hidden">
                   <img 
                     src="/campus_facade_sfa.jpg" 
                     alt="Fachada Principal IESTP San Francisco de Asís" 
-                    className="w-full h-full object-cover object-center" 
+                    className="w-full h-full object-cover object-right" 
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521]/80 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#630217] via-[#800521]/95 via-45% to-transparent" />
                 </div>
 
                 <div className="relative z-10 max-w-xl space-y-4">
-                  <span className="bg-amber-400/20 text-amber-300 text-xs font-mono font-bold uppercase tracking-widest px-3.5 py-1 rounded-full border border-amber-400/30 inline-block shadow-xs">
-                    INSTITUCIÓN PÚBLICA LICENCIADA • R.M. 124-2021
+                  <span className="bg-slate-900/90 text-amber-300 text-[11px] font-mono font-black uppercase tracking-widest px-4 py-1.5 rounded-lg border border-amber-400/30 inline-flex items-center gap-2 shadow-xs">
+                    <Award className="w-3.5 h-3.5 text-amber-300" />
+                    <span>INSTITUCIÓN PÚBLICA LICENCIADA • R.M. 124-2021</span>
                   </span>
                   <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight leading-tight">
                     Nuestra Identidad e Historia
