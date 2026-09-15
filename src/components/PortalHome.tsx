@@ -735,66 +735,73 @@ export default function PortalHome({
               </div>
             </section>
 
-            {/* 6. PASO A PASO DEL PROCESO DE ADMISIÓN (DISEÑO MEJORADO EN TIMELINE CONECTADO) */}
-            <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-white border-t border-slate-200">
-              <div className="max-w-7xl mx-auto space-y-12">
-                <div className="text-center max-w-3xl mx-auto space-y-2">
-                  <span className="bg-[#9F062A] text-white font-extrabold text-[10px] uppercase tracking-widest px-3.5 py-1 rounded-full inline-block font-mono shadow-2xs">
+            {/* 6. PASO A PASO DEL PROCESO DE ADMISIÓN (DISEÑO ESCALONADO TIPO ESCALERA) */}
+            <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 via-white to-slate-50 border-t border-slate-200 overflow-hidden">
+              <div className="max-w-7xl mx-auto space-y-16">
+                <div className="text-center max-w-3xl mx-auto space-y-3">
+                  <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">
                     PROCESO ORDINARIO DE ADMISIÓN 2026-I
                   </span>
-                  <h3 className="text-2xl sm:text-4xl font-black text-slate-900 uppercase tracking-tight">Pasos para la Inscripción</h3>
+                  <h3 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase tracking-tight">
+                    Pasos para la Inscripción
+                  </h3>
                   <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
-                    Sigue estos 4 pasos sencillos para completar tu pre-inscripción y rendir tu examen de admisión institucional.
+                    Sigue esta secuencia escalonada de 4 pasos para completar tu pre-inscripción y asegurar tu vacante institucional.
                   </p>
                 </div>
 
-                {/* Timeline Conectado de 4 Pasos */}
-                <div className="relative">
+                {/* Contenedor Escalonado tipo Escalera */}
+                <div className="relative pt-6 pb-12">
                   
-                  {/* Línea Conectora Horizontal en Escritorio */}
-                  <div className="hidden lg:block absolute top-1/2 left-16 right-16 h-1 bg-gradient-to-r from-[#9F062A] via-[#9F062A]/60 to-[#CFA020] -translate-y-6 z-0 rounded-full" />
+                  {/* Línea Conectora en Escalera (Escritorio) */}
+                  <div className="hidden lg:block absolute bottom-12 left-16 right-16 h-1 bg-gradient-to-r from-[#9F062A] via-[#800521] to-[#CFA020] z-0 rounded-full opacity-30" />
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-6 relative z-10 items-end">
                     {[
                       { 
                         step: "01", 
                         title: "Pre-Inscripción Virtual", 
-                        desc: "Registra tus datos personales en el formulario para obtener tu Código Oficial de Postulante.",
+                        desc: "Registra tus datos personales en el formulario web para obtener tu Código Oficial de Postulante.",
                         icon: <CheckSquare className="w-6 h-6 text-[#9F062A]" />,
-                        action: "Formulario Virtual"
+                        stairClass: "lg:translate-y-12"
                       },
                       { 
                         step: "02", 
                         title: "Pago de Tasa Ordinaria", 
                         desc: "Abona S/. 120 por derecho de examen en las agencias o agentes del Banco de la Nación.",
                         icon: <Landmark className="w-6 h-6 text-[#9F062A]" />,
-                        action: "Banco de la Nación"
+                        stairClass: "lg:translate-y-8"
                       },
                       { 
                         step: "03", 
                         title: "Examen de Admisión", 
                         desc: "Rinde la evaluación presencial de aptitud académica y conocimientos en nuestro campus.",
                         icon: <FileText className="w-6 h-6 text-[#9F062A]" />,
-                        action: "Evaluación Campus"
+                        stairClass: "lg:translate-y-4"
                       },
                       { 
                         step: "04", 
                         title: "Adjudicación y Matrícula", 
-                        desc: "Con tu vacante obtenida, formaliza tu matrícula semestral e inicia tu carrera profesional.",
+                        desc: "Con tu vacante obtenida, formaliza tu matrícula semestral e inicia tus clases profesionales.",
                         icon: <GraduationCap className="w-6 h-6 text-[#9F062A]" />,
-                        action: "Inicio de Clases"
+                        stairClass: "lg:translate-y-0"
                       }
                     ].map((st, idx) => (
                       <div 
                         key={idx} 
-                        className="bg-white border-2 border-slate-200/90 rounded-2xl p-6 space-y-4 shadow-xs hover:border-[#9F062A] hover:shadow-md transition-all flex flex-col justify-between relative group"
+                        className={`bg-white border-2 border-slate-200/90 rounded-2xl p-6 space-y-4 shadow-sm hover:border-[#9F062A] hover:shadow-xl transition-all duration-300 flex flex-col justify-between relative group ${st.stairClass}`}
                       >
-                        <div className="space-y-3">
+                        {/* Indicador Numérico de Peldaño / Escalón */}
+                        <div className="absolute -top-3 left-6 bg-slate-900 text-amber-400 text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border border-slate-700 shadow-xs">
+                          Peldaño {st.step}
+                        </div>
+
+                        <div className="space-y-4 pt-2">
                           <div className="flex justify-between items-center">
-                            <div className="w-12 h-12 rounded-xl bg-rose-50 text-[#9F062A] flex items-center justify-center border border-rose-100 group-hover:bg-[#9F062A] group-hover:text-white transition-colors">
+                            <div className="w-12 h-12 rounded-xl bg-amber-50 text-[#9F062A] flex items-center justify-center border border-amber-200/60 shadow-2xs group-hover:scale-105 transition-transform">
                               {st.icon}
                             </div>
-                            <span className="w-9 h-9 rounded-full bg-[#800521] text-amber-300 font-mono font-black text-xs flex items-center justify-center border-2 border-white shadow-xs">
+                            <span className="w-8 h-8 rounded-full bg-[#800521] text-amber-300 font-mono font-black text-xs flex items-center justify-center border border-amber-400/40 shadow-xs">
                               {st.step}
                             </span>
                           </div>
@@ -805,9 +812,9 @@ export default function PortalHome({
                           </div>
                         </div>
 
-                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                          <span className="text-[10px] font-mono font-extrabold uppercase text-[#9F062A] bg-rose-50 px-2.5 py-0.5 rounded border border-rose-100">
-                            {st.action}
+                        <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-700 group-hover:text-[#9F062A] transition-colors">
+                            Paso {st.step} del Proceso
                           </span>
                           <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#9F062A] group-hover:translate-x-1 transition-all" />
                         </div>
