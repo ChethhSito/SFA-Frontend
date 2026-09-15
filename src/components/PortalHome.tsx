@@ -69,6 +69,9 @@ export default function PortalHome({
   // FAQ interactive state
   const [expandedFaqId, setExpandedFaqId] = useState<number | null>(null);
 
+  // Values carousel slider state
+  const [currentValueIdx, setCurrentValueIdx] = useState(0);
+
   // Handle live admission registration via NestJS REST API → MongoDB
   const handlePreEnrollmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -898,33 +901,40 @@ export default function PortalHome({
           </div>
         )}
 
-        {/* ================= NOSOTROS VIEW (INCLUYE AUTORIDADES Y PLANA DIRECTIVA) ================= */}
+        {/* ================= NOSOTROS VIEW (INCLUYE AUTORIDADES Y PLANA DIRECTIVA EN ORGANIGRAMA) ================= */}
         {currentTab === "nosotros" && (
           <div className="bg-slate-50 py-12 sm:py-16 px-4 min-h-screen">
             <div className="max-w-6xl mx-auto space-y-12">
               
-              {/* Header Banner Institucional */}
-              <div className="bg-gradient-to-r from-[#800521] via-[#9F062A] to-[#630217] rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden shadow-lg border border-red-950">
-                <div className="absolute top-0 right-0 transform translate-x-10 -translate-y-10 opacity-10 pointer-events-none">
-                  <Building2 className="w-96 h-96 text-white" />
+              {/* 1. Header Banner Institucional con Imagen de Historia del Campus */}
+              <div className="bg-gradient-to-r from-[#800521] via-[#9F062A] to-slate-900 rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden shadow-lg border border-red-950">
+                {/* Imagen Institucional Real con Degradado Orgánico */}
+                <div className="absolute top-0 right-0 w-full sm:w-1/2 h-full opacity-35 sm:opacity-50 pointer-events-none overflow-hidden">
+                  <img 
+                    src="/hero_campus_sfa.jpg" 
+                    alt="Campus IESTP San Francisco de Asís" 
+                    className="w-full h-full object-cover object-center transform scale-105" 
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521]/80 to-transparent" />
                 </div>
+
                 <div className="relative z-10 max-w-2xl space-y-4">
-                  <span className="bg-amber-400/20 text-amber-300 text-xs font-mono font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-amber-400/30 inline-block">
+                  <span className="bg-amber-400/20 text-amber-300 text-xs font-mono font-bold uppercase tracking-widest px-3.5 py-1 rounded-full border border-amber-400/30 inline-block shadow-xs">
                     INSTITUCIÓN PÚBLICA LICENCIADA • R.M. 124-2021
                   </span>
                   <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight leading-tight">
                     Nuestra Identidad e Historia
                   </h2>
                   <p className="text-xs sm:text-sm text-rose-100 font-medium leading-relaxed">
-                    El Instituto de Educación Superior Tecnológico Público San Francisco de Asís lidera la formación técnica profesional gratuita en Villa María del Triunfo y Lima Sur, preparando líderes preparados para transformar el país.
+                    El Instituto de Educación Superior Tecnológico Público San Francisco de Asís lidera la formación técnica profesional gratuita en Villa María del Triunfo y Lima Sur, formando líderes capacitados con ética, innovación y visión de futuro para transformar el país.
                   </p>
                 </div>
               </div>
 
-              {/* Misión y Visión */}
+              {/* 2. Misión y Visión */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
-                <div className="bg-white border border-slate-200 p-8 rounded-2xl space-y-4 shadow-sm relative overflow-hidden group hover:border-[#9F062A] transition-colors">
+                <div className="bg-white border border-slate-200 p-8 rounded-2xl space-y-4 shadow-xs relative overflow-hidden group hover:border-[#9F062A] transition-colors">
                   <div className="w-2 h-full bg-[#9F062A] absolute top-0 left-0" />
                   <div className="w-12 h-12 bg-rose-50 text-[#9F062A] rounded-xl flex items-center justify-center border border-rose-100">
                     <Award className="w-6 h-6" />
@@ -935,7 +945,7 @@ export default function PortalHome({
                   </p>
                 </div>
 
-                <div className="bg-white border border-slate-200 p-8 rounded-2xl space-y-4 shadow-sm relative overflow-hidden group hover:border-[#CFA020] transition-colors">
+                <div className="bg-white border border-slate-200 p-8 rounded-2xl space-y-4 shadow-xs relative overflow-hidden group hover:border-[#CFA020] transition-colors">
                   <div className="w-2 h-full bg-[#CFA020] absolute top-0 left-0" />
                   <div className="w-12 h-12 bg-amber-50 text-[#CFA020] rounded-xl flex items-center justify-center border border-amber-100">
                     <Compass className="w-6 h-6" />
@@ -948,63 +958,238 @@ export default function PortalHome({
 
               </div>
 
-              {/* Valores Institucionales */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xs space-y-6">
-                <div className="text-center max-w-2xl mx-auto space-y-1">
-                  <span className="text-[#9F062A] font-black text-xs uppercase tracking-widest font-mono">PRINCIPIOS FUNDAMENTALES</span>
-                  <h3 className="text-2xl font-black text-slate-900 uppercase">Valores Institucionales</h3>
+              {/* 3. Carrusel Interactivo de Valores Institucionales */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xs space-y-8">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-slate-100 pb-4">
+                  <div>
+                    <span className="text-[#9F062A] font-black text-xs uppercase tracking-widest font-mono">PRINCIPIOS FUNDAMENTALES</span>
+                    <h3 className="text-2xl font-black text-slate-900 uppercase mt-0.5">Valores Institucionales</h3>
+                  </div>
+
+                  {/* Botones de Navegación del Carrusel */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentValueIdx((prev) => (prev === 0 ? 4 : prev - 1))}
+                      className="w-9 h-9 rounded-full border border-slate-200 bg-slate-50 hover:bg-[#9F062A] hover:text-white hover:border-[#9F062A] transition-colors flex items-center justify-center cursor-pointer text-slate-700 shadow-2xs"
+                      aria-label="Anterior Valor"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentValueIdx((prev) => (prev === 4 ? 0 : prev + 1))}
+                      className="w-9 h-9 rounded-full border border-slate-200 bg-slate-50 hover:bg-[#9F062A] hover:text-white hover:border-[#9F062A] transition-colors flex items-center justify-center cursor-pointer text-slate-700 shadow-2xs"
+                      aria-label="Siguiente Valor"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {[
-                    { title: "Excelencia Académica", desc: "Rigurosidad en el aprendizaje práctico e innovación continua.", icon: <CheckCircle2 className="w-5 h-5 text-[#9F062A]" /> },
-                    { title: "Ética y Deontología", desc: "Honestidad, transparencia y compromiso con la sociedad.", icon: <ShieldCheck className="w-5 h-5 text-[#9F062A]" /> },
-                    { title: "Innovación Tecnológica", desc: "Uso de herramientas modernas y tecnología de punta.", icon: <Zap className="w-5 h-5 text-[#9F062A]" /> },
-                    { title: "Inclusión y Equidad", desc: "Acceso a la educación superior pública de calidad sin distinciones.", icon: <Users className="w-5 h-5 text-[#9F062A]" /> }
-                  ].map((val, idx) => (
-                    <div key={idx} className="bg-slate-50 border border-slate-200 p-5 rounded-xl space-y-2 hover:bg-rose-50/40 transition-colors">
-                      <div className="p-2 bg-white rounded-lg w-fit border border-slate-200 shadow-2xs">
-                        {val.icon}
+                {/* Tarjetas del Carrusel de Valores */}
+                <div className="relative overflow-hidden">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[
+                      {
+                        title: "Excelencia Académica",
+                        subtitle: "Calidad Formativa de Nivel Superior",
+                        desc: "Rigurosidad en el aprendizaje práctico, actualización tecnológica constante y desarrollo de competencias alineadas a las demandas reales del mercado laboral peruano.",
+                        icon: <CheckCircle2 className="w-6 h-6 text-[#9F062A]" />,
+                        tag: "PRINCIPIO 01"
+                      },
+                      {
+                        title: "Ética y Deontología",
+                        subtitle: "Integridad y Transparencia",
+                        desc: "Formación integral sustentada en valores humanos, honestidad profesional, transparencia en la gestión y compromiso indestructible con la comunidad estudiantil.",
+                        icon: <ShieldCheck className="w-6 h-6 text-[#9F062A]" />,
+                        tag: "PRINCIPIO 02"
+                      },
+                      {
+                        title: "Innovación Tecnológica",
+                        subtitle: "Equipamiento Moderno",
+                        desc: "Uso de laboratorios totalmente equipados con tecnología industrial, simuladores ERP, tableros PLC automatizados y herramientas digitales avanzadas.",
+                        icon: <Zap className="w-6 h-6 text-[#9F062A]" />,
+                        tag: "PRINCIPIO 03"
+                      },
+                      {
+                        title: "Inclusión y Equidad Social",
+                        subtitle: "Educación Gratuita Abierta",
+                        desc: "Garantizamos el derecho universal a la educación superior tecnológica gratuita en Villa María del Triunfo sin distinciones ni barreras económicas.",
+                        icon: <Users className="w-6 h-6 text-[#9F062A]" />,
+                        tag: "PRINCIPIO 04"
+                      },
+                      {
+                        title: "Compromiso Social",
+                        subtitle: "Transformación Comunitaria",
+                        desc: "Alianzas estratégicas empresariales e institucionales para impulsar proyectos de desarrollo socioeconómico y alta empleabilidad para nuestros egresados.",
+                        icon: <HeartHandshake className="w-6 h-6 text-[#9F062A]" />,
+                        tag: "PRINCIPIO 05"
+                      }
+                    ].slice(currentValueIdx % 3, (currentValueIdx % 3) + 3).concat(
+                      [
+                        {
+                          title: "Excelencia Académica",
+                          subtitle: "Calidad Formativa de Nivel Superior",
+                          desc: "Rigurosidad en el aprendizaje práctico, actualización tecnológica constante y desarrollo de competencias alineadas a las demandas reales del mercado laboral peruano.",
+                          icon: <CheckCircle2 className="w-6 h-6 text-[#9F062A]" />,
+                          tag: "PRINCIPIO 01"
+                        },
+                        {
+                          title: "Ética y Deontología",
+                          subtitle: "Integridad y Transparencia",
+                          desc: "Formación integral sustentada en valores humanos, honestidad profesional, transparencia en la gestión y compromiso indestructible con la comunidad estudiantil.",
+                          icon: <ShieldCheck className="w-6 h-6 text-[#9F062A]" />,
+                          tag: "PRINCIPIO 02"
+                        },
+                        {
+                          title: "Innovación Tecnológica",
+                          subtitle: "Equipamiento Moderno",
+                          desc: "Uso de laboratorios totalmente equipados con tecnología industrial, simuladores ERP, tableros PLC automatizados y herramientas digitales avanzadas.",
+                          icon: <Zap className="w-6 h-6 text-[#9F062A]" />,
+                          tag: "PRINCIPIO 03"
+                        }
+                      ]
+                    ).slice(0, 3).map((val, idx) => (
+                      <div 
+                        key={idx} 
+                        className="bg-slate-50 border border-slate-200 p-6 rounded-2xl space-y-4 hover:border-[#9F062A] transition-all hover:shadow-md flex flex-col justify-between"
+                      >
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <div className="p-2.5 bg-rose-50 rounded-xl border border-rose-100">
+                              {val.icon}
+                            </div>
+                            <span className="text-[10px] font-mono font-bold text-[#9F062A] bg-rose-50 px-2.5 py-0.5 rounded border border-rose-100">
+                              {val.tag}
+                            </span>
+                          </div>
+                          <div>
+                            <h4 className="text-base font-black text-slate-900 uppercase">{val.title}</h4>
+                            <span className="text-[11px] font-semibold text-slate-500 block">{val.subtitle}</span>
+                          </div>
+                          <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                            {val.desc}
+                          </p>
+                        </div>
                       </div>
-                      <h4 className="text-xs font-black text-slate-900 uppercase pt-1">{val.title}</h4>
-                      <p className="text-[11px] text-slate-600 font-medium leading-relaxed">{val.desc}</p>
-                    </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Indicadores de Paginación del Carrusel */}
+                <div className="flex justify-center items-center gap-2 pt-2">
+                  {[0, 1, 2, 3, 4].map((idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentValueIdx(idx)}
+                      className={`h-2 rounded-full transition-all cursor-pointer ${currentValueIdx === idx ? "w-8 bg-[#9F062A]" : "w-2 bg-slate-200 hover:bg-slate-300"}`}
+                      aria-label={`Ver valor ${idx + 1}`}
+                    />
                   ))}
                 </div>
               </div>
 
-              {/* Plana Directiva y Autoridades Institucionales */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xs space-y-8">
-                <div className="border-b border-slate-200 pb-4 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center gap-2">
-                  <div>
-                    <h3 className="text-xl font-black text-slate-900 uppercase">Plana Directiva y Autoridades</h3>
-                    <span className="text-xs text-slate-500 font-medium">Equipo directivo responsable de la gestión académica y administrativa</span>
-                  </div>
-                  <span className="bg-[#9F062A] text-white text-[10px] font-mono font-bold px-3 py-1 rounded-md uppercase">
-                    GESTIÓN INSTITUCIONAL 2026
+              {/* 4. Organigrama Institucional Gráfico (Plana Directiva y Autoridades) */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xs space-y-10">
+                
+                <div className="text-center max-w-2xl mx-auto space-y-1">
+                  <span className="bg-[#9F062A] text-white text-[10px] font-mono font-bold px-3 py-1 rounded-md uppercase tracking-wider inline-block mb-1">
+                    ORGANIGRAMA INSTITUCIONAL 2026
                   </span>
+                  <h3 className="text-2xl font-black text-slate-900 uppercase">Estructura Organizacional y Autoridades</h3>
+                  <p className="text-xs text-slate-500 font-medium">Jerarquía oficial de la plana directiva del IESTP San Francisco de Asís</p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {[
-                    { role: "Director General", name: "Lic. Manuel Ramos", detail: "Gestión Institucional y Desarrollo Estratégico" },
-                    { role: "Secretaría Académica", name: "Mg. Rosa Elvira Huamán", detail: "Control de Registros, Matrículas y Certificaciones" },
-                    { role: "Jefe de Unidad Académica", name: "Ing. Carlos Mendoza", detail: "Supervisión Curricular y Plana Docente" },
-                    { role: "Coordinador de Admisión", name: "Lic. Luis Alberto Castillo", detail: "Proceso de Admisión Ordinario y Evaluaciones" },
-                    { role: "Jefatura de Investigación", name: "Ing. Jorge Luis Toledo", detail: "Proyectos de Innovación Tecnológica" },
-                    { role: "Jefatura de Bienestar", name: "Lic. Elena Morales", detail: "Atención al Estudiante y Empleabilidad" }
-                  ].map((auth, idx) => (
-                    <div key={idx} className="bg-slate-50 border border-slate-200 p-5 rounded-xl space-y-2 hover:shadow-sm transition-shadow">
-                      <div className="flex justify-between items-start">
-                        <span className="bg-rose-50 text-[#9F062A] text-[10px] font-bold uppercase px-2.5 py-0.5 rounded border border-rose-100 font-mono">
-                          {auth.role}
-                        </span>
-                      </div>
-                      <h4 className="text-sm font-black text-slate-900 uppercase pt-1">{auth.name}</h4>
-                      <p className="text-xs text-slate-500 font-medium leading-relaxed">{auth.detail}</p>
+                {/* Gráfico Visual del Organigrama */}
+                <div className="relative pt-4 pb-6 space-y-8">
+                  
+                  {/* NIVEL 1: ALTA DIRECCIÓN (DIRECTOR GENERAL) */}
+                  <div className="flex justify-center">
+                    <div className="w-full max-w-md bg-gradient-to-b from-[#800521] to-[#9F062A] text-white rounded-2xl p-6 text-center shadow-lg border-2 border-amber-400/40 relative z-10">
+                      <span className="bg-amber-400 text-slate-950 font-black text-[10px] uppercase px-3 py-0.5 rounded-full font-mono tracking-wider shadow-xs inline-block mb-2">
+                        ALTA DIRECCIÓN GENERAL
+                      </span>
+                      <h4 className="text-lg font-black uppercase tracking-tight text-white">LIC. MANUEL RAMOS</h4>
+                      <p className="text-xs text-amber-200 font-bold uppercase mt-0.5">Director General</p>
+                      <p className="text-[11px] text-rose-100 font-medium mt-2 pt-2 border-t border-rose-800/60">
+                        Gestión Institucional, Convenios y Desarrollo Estratégico
+                      </p>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Línea Conectora Vertical desde el Nivel 1 */}
+                  <div className="w-0.5 h-8 bg-[#9F062A] mx-auto -my-4 relative z-0" />
+
+                  {/* Línea Conectora Horizontal del Nivel 2 */}
+                  <div className="hidden sm:block w-3/4 max-w-3xl h-0.5 bg-slate-300 mx-auto relative z-0" />
+
+                  {/* NIVEL 2: DIRECCIÓN ACADÉMICA Y ADMINISTRATIVA (2 NODOS) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto relative z-10">
+                    
+                    {/* Nodo 2.1 */}
+                    <div className="bg-rose-50/50 border-2 border-[#9F062A]/40 rounded-xl p-5 text-center shadow-xs hover:border-[#9F062A] transition-colors relative">
+                      <div className="hidden sm:block w-0.5 h-4 bg-slate-300 absolute -top-4 left-1/2 -translate-x-1/2" />
+                      <span className="bg-[#9F062A] text-white font-bold text-[9px] uppercase px-2.5 py-0.5 rounded font-mono block w-fit mx-auto mb-1.5">
+                        SECRETARÍA ACADÉMICA
+                      </span>
+                      <h5 className="text-sm font-black text-slate-900 uppercase">MG. ROSA ELVIRA HUAMÁN</h5>
+                      <p className="text-[11px] text-slate-600 font-medium mt-1">Control de Registros, Matrículas y Certificaciones Oficiales</p>
+                    </div>
+
+                    {/* Nodo 2.2 */}
+                    <div className="bg-rose-50/50 border-2 border-[#9F062A]/40 rounded-xl p-5 text-center shadow-xs hover:border-[#9F062A] transition-colors relative">
+                      <div className="hidden sm:block w-0.5 h-4 bg-slate-300 absolute -top-4 left-1/2 -translate-x-1/2" />
+                      <span className="bg-[#9F062A] text-white font-bold text-[9px] uppercase px-2.5 py-0.5 rounded font-mono block w-fit mx-auto mb-1.5">
+                        UNIDAD ACADÉMICA
+                      </span>
+                      <h5 className="text-sm font-black text-slate-900 uppercase">ING. CARLOS MENDOZA</h5>
+                      <p className="text-[11px] text-slate-600 font-medium mt-1">Supervisión Curricular, Módulos y Plana Docente</p>
+                    </div>
+
+                  </div>
+
+                  {/* Línea Conectora Vertical hacia el Nivel 3 */}
+                  <div className="w-0.5 h-8 bg-slate-300 mx-auto -my-4 relative z-0" />
+
+                  {/* Línea Conectora Horizontal del Nivel 3 */}
+                  <div className="hidden md:block w-5/6 max-w-4xl h-0.5 bg-slate-300 mx-auto relative z-0" />
+
+                  {/* NIVEL 3: JEFATURAS DE ÁREA Y COORDINACIONES (3 NODOS) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-5xl mx-auto relative z-10">
+                    
+                    {/* Nodo 3.1 */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-2xs hover:border-[#9F062A] transition-colors relative">
+                      <div className="hidden md:block w-0.5 h-4 bg-slate-300 absolute -top-4 left-1/2 -translate-x-1/2" />
+                      <span className="bg-slate-100 text-slate-700 font-bold text-[9px] uppercase px-2 py-0.5 rounded border border-slate-200 block w-fit mx-auto mb-1 font-mono">
+                        COORDINACIÓN DE ADMISIÓN
+                      </span>
+                      <h6 className="text-xs font-black text-slate-900 uppercase">LIC. LUIS ALBERTO CASTILLO</h6>
+                      <p className="text-[10px] text-slate-500 font-medium mt-1">Proceso de Admisión Ordinario 2026</p>
+                    </div>
+
+                    {/* Nodo 3.2 */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-2xs hover:border-[#9F062A] transition-colors relative">
+                      <div className="hidden md:block w-0.5 h-4 bg-slate-300 absolute -top-4 left-1/2 -translate-x-1/2" />
+                      <span className="bg-slate-100 text-slate-700 font-bold text-[9px] uppercase px-2 py-0.5 rounded border border-slate-200 block w-fit mx-auto mb-1 font-mono">
+                        JEFATURA DE INVESTIGACIÓN
+                      </span>
+                      <h6 className="text-xs font-black text-slate-900 uppercase">ING. JORGE LUIS TOLEDO</h6>
+                      <p className="text-[10px] text-slate-500 font-medium mt-1">Proyectos de Innovación Tecnológica</p>
+                    </div>
+
+                    {/* Nodo 3.3 */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-2xs hover:border-[#9F062A] transition-colors relative">
+                      <div className="hidden md:block w-0.5 h-4 bg-slate-300 absolute -top-4 left-1/2 -translate-x-1/2" />
+                      <span className="bg-slate-100 text-slate-700 font-bold text-[9px] uppercase px-2 py-0.5 rounded border border-slate-200 block w-fit mx-auto mb-1 font-mono">
+                        JEFATURA DE BIENESTAR
+                      </span>
+                      <h6 className="text-xs font-black text-slate-900 uppercase">LIC. ELENA MORALES</h6>
+                      <p className="text-[10px] text-slate-500 font-medium mt-1">Atención Estudiantil y Empleabilidad</p>
+                    </div>
+
+                  </div>
+
                 </div>
+
               </div>
 
             </div>
