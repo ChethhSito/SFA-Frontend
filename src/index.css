@@ -35,3 +35,27 @@ body {
   background-color: rgba(159, 6, 42, 0.4);
 }
 
+/* Global Institutional Scrollbar for standard browser window */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+  border-left: 1px solid #E2E8F0;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #9F062A 0%, #800521 100%);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #800521 0%, #630217 100%);
+}
+
+/* Firefox scrollbar compatibility */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #9F062A #F1F5F9;
+}
+
+

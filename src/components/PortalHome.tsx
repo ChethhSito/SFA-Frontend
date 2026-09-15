@@ -251,8 +251,8 @@ export default function PortalHome({
     <div id="home-view" className="flex flex-col min-h-screen bg-white font-sans text-slate-900 selection:bg-[#9F062A] selection:text-white">
       
       {/* 1. TOPBAR DELGADO INSTITUCIONAL DE CONTACTO */}
-      <div className="bg-[#800521] text-white py-1.5 px-4 sm:px-6 lg:px-10 text-xs font-semibold border-b border-red-950">
-        <div className="w-full max-w-[1700px] mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
+      <div className="bg-[#800521] text-white py-1.5 px-4 sm:px-8 lg:px-12 text-xs font-semibold border-b border-red-950">
+        <div className="w-full max-w-full mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
           
           <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 sm:gap-6 text-[10.5px]">
             <span className="flex items-center gap-1.5 font-bold tracking-wide">
@@ -292,7 +292,7 @@ export default function PortalHome({
 
       {/* 2. NAVEGACIÓN LIMPIA, FINA Y ELEGANTE CON LOGO INSTITUCIONAL */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-        <div className="w-full max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-10 py-2 flex justify-between items-center gap-4 relative">
+        <div className="w-full max-w-full mx-auto px-4 sm:px-8 lg:px-12 py-2 flex justify-between items-center gap-4 relative">
           
           {/* Logo Institucional Fino y Pegado a la Izquierda */}
           <div 
@@ -900,45 +900,89 @@ export default function PortalHome({
 
         {/* ================= NOSOTROS VIEW (INCLUYE AUTORIDADES Y PLANA DIRECTIVA) ================= */}
         {currentTab === "nosotros" && (
-          <div className="bg-slate-50 py-16 px-4 min-h-screen">
-            <div className="max-w-7xl mx-auto space-y-12">
+          <div className="bg-slate-50 py-12 sm:py-16 px-4 min-h-screen">
+            <div className="max-w-6xl mx-auto space-y-12">
               
-              <div className="text-center max-w-3xl mx-auto">
-                <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">CONOCE NUESTRA INSTITUCIÓN</span>
-                <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Misión, Visión y Autoridades</h2>
-                <p className="text-xs sm:text-sm text-slate-600 font-medium mt-2 leading-relaxed">
-                  Comprometidos con la calidad educativa tecnológica pública en Villa María del Triunfo.
-                </p>
+              {/* Header Banner Institucional */}
+              <div className="bg-gradient-to-r from-[#800521] via-[#9F062A] to-[#630217] rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden shadow-lg border border-red-950">
+                <div className="absolute top-0 right-0 transform translate-x-10 -translate-y-10 opacity-10 pointer-events-none">
+                  <Building2 className="w-96 h-96 text-white" />
+                </div>
+                <div className="relative z-10 max-w-2xl space-y-4">
+                  <span className="bg-amber-400/20 text-amber-300 text-xs font-mono font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-amber-400/30 inline-block">
+                    INSTITUCIÓN PÚBLICA LICENCIADA • R.M. 124-2021
+                  </span>
+                  <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tight leading-tight">
+                    Nuestra Identidad e Historia
+                  </h2>
+                  <p className="text-xs sm:text-sm text-rose-100 font-medium leading-relaxed">
+                    El Instituto de Educación Superior Tecnológico Público San Francisco de Asís lidera la formación técnica profesional gratuita en Villa María del Triunfo y Lima Sur, preparando líderes preparados para transformar el país.
+                  </p>
+                </div>
               </div>
 
               {/* Misión y Visión */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                <div className="bg-white border border-slate-200 p-8 rounded-2xl space-y-4 shadow-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <div className="bg-white border border-slate-200 p-8 rounded-2xl space-y-4 shadow-sm relative overflow-hidden group hover:border-[#9F062A] transition-colors">
+                  <div className="w-2 h-full bg-[#9F062A] absolute top-0 left-0" />
                   <div className="w-12 h-12 bg-rose-50 text-[#9F062A] rounded-xl flex items-center justify-center border border-rose-100">
                     <Award className="w-6 h-6" />
                   </div>
-                  <h3 className="text-xl font-black text-slate-900 uppercase">Nuestra Misión</h3>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-wide">Nuestra Misión</h3>
                   <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
                     Somos un Instituto de Educación Superior Tecnológico Público que forma profesionales técnicos competitivos, con pensamiento crítico, valores éticos e innovación tecnológica, capaces de responder a las exigencias del mercado laboral y contribuir al desarrollo socioeconómico del Perú.
                   </p>
                 </div>
 
-                <div className="bg-white border border-slate-200 p-8 rounded-2xl space-y-4 shadow-xs">
-                  <div className="w-12 h-12 bg-rose-50 text-[#9F062A] rounded-xl flex items-center justify-center border border-rose-100">
+                <div className="bg-white border border-slate-200 p-8 rounded-2xl space-y-4 shadow-sm relative overflow-hidden group hover:border-[#CFA020] transition-colors">
+                  <div className="w-2 h-full bg-[#CFA020] absolute top-0 left-0" />
+                  <div className="w-12 h-12 bg-amber-50 text-[#CFA020] rounded-xl flex items-center justify-center border border-amber-100">
                     <Compass className="w-6 h-6" />
                   </div>
-                  <h3 className="text-xl font-black text-slate-900 uppercase">Nuestra Visión</h3>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-wide">Nuestra Visión</h3>
                   <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
                     Ser un Instituto de Educación Superior Tecnológico Público referente en Lima Metropolitana, acreditado y reconocido por su excelencia académica, calidad educativa, infraestructura moderna y alto nivel de empleabilidad de sus egresados.
                   </p>
                 </div>
+
+              </div>
+
+              {/* Valores Institucionales */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xs space-y-6">
+                <div className="text-center max-w-2xl mx-auto space-y-1">
+                  <span className="text-[#9F062A] font-black text-xs uppercase tracking-widest font-mono">PRINCIPIOS FUNDAMENTALES</span>
+                  <h3 className="text-2xl font-black text-slate-900 uppercase">Valores Institucionales</h3>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    { title: "Excelencia Académica", desc: "Rigurosidad en el aprendizaje práctico e innovación continua.", icon: <CheckCircle2 className="w-5 h-5 text-[#9F062A]" /> },
+                    { title: "Ética y Deontología", desc: "Honestidad, transparencia y compromiso con la sociedad.", icon: <ShieldCheck className="w-5 h-5 text-[#9F062A]" /> },
+                    { title: "Innovación Tecnológica", desc: "Uso de herramientas modernas y tecnología de punta.", icon: <Zap className="w-5 h-5 text-[#9F062A]" /> },
+                    { title: "Inclusión y Equidad", desc: "Acceso a la educación superior pública de calidad sin distinciones.", icon: <Users className="w-5 h-5 text-[#9F062A]" /> }
+                  ].map((val, idx) => (
+                    <div key={idx} className="bg-slate-50 border border-slate-200 p-5 rounded-xl space-y-2 hover:bg-rose-50/40 transition-colors">
+                      <div className="p-2 bg-white rounded-lg w-fit border border-slate-200 shadow-2xs">
+                        {val.icon}
+                      </div>
+                      <h4 className="text-xs font-black text-slate-900 uppercase pt-1">{val.title}</h4>
+                      <p className="text-[11px] text-slate-600 font-medium leading-relaxed">{val.desc}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Plana Directiva y Autoridades Institucionales */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xs space-y-8 max-w-5xl mx-auto">
-                <div className="border-b border-slate-200 pb-3 text-center sm:text-left">
-                  <h3 className="text-xl font-black text-slate-900 uppercase">Plana Directiva y Autoridades</h3>
-                  <span className="text-xs text-slate-500 font-medium">Equipo directivo responsable de la gestión académica y administrativa</span>
+              <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xs space-y-8">
+                <div className="border-b border-slate-200 pb-4 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center gap-2">
+                  <div>
+                    <h3 className="text-xl font-black text-slate-900 uppercase">Plana Directiva y Autoridades</h3>
+                    <span className="text-xs text-slate-500 font-medium">Equipo directivo responsable de la gestión académica y administrativa</span>
+                  </div>
+                  <span className="bg-[#9F062A] text-white text-[10px] font-mono font-bold px-3 py-1 rounded-md uppercase">
+                    GESTIÓN INSTITUCIONAL 2026
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -950,12 +994,14 @@ export default function PortalHome({
                     { role: "Jefatura de Investigación", name: "Ing. Jorge Luis Toledo", detail: "Proyectos de Innovación Tecnológica" },
                     { role: "Jefatura de Bienestar", name: "Lic. Elena Morales", detail: "Atención al Estudiante y Empleabilidad" }
                   ].map((auth, idx) => (
-                    <div key={idx} className="bg-slate-50 border border-slate-200 p-5 rounded-xl space-y-2">
-                      <span className="bg-rose-50 text-[#9F062A] text-[10px] font-bold uppercase px-2.5 py-0.5 rounded border border-rose-100 font-mono">
-                        {auth.role}
-                      </span>
+                    <div key={idx} className="bg-slate-50 border border-slate-200 p-5 rounded-xl space-y-2 hover:shadow-sm transition-shadow">
+                      <div className="flex justify-between items-start">
+                        <span className="bg-rose-50 text-[#9F062A] text-[10px] font-bold uppercase px-2.5 py-0.5 rounded border border-rose-100 font-mono">
+                          {auth.role}
+                        </span>
+                      </div>
                       <h4 className="text-sm font-black text-slate-900 uppercase pt-1">{auth.name}</h4>
-                      <p className="text-xs text-slate-500 font-medium">{auth.detail}</p>
+                      <p className="text-xs text-slate-500 font-medium leading-relaxed">{auth.detail}</p>
                     </div>
                   ))}
                 </div>
