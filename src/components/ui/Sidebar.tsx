@@ -1,5 +1,5 @@
 import React, { useState, ReactNode } from "react";
-import { GraduationCap, Menu, X, LogOut, ChevronDown, ChevronRight, ChevronLeft } from "lucide-react";
+import { GraduationCap, Menu, X, LogOut, ChevronDown, ChevronRight, ChevronLeft, Home } from "lucide-react";
 import Badge from "./Badge";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -40,6 +40,7 @@ export interface SidebarProps {
   sections: SidebarSection[];
   onItemClick?: (route: string) => void;
   onLogout?: () => void;
+  onGoToPortal?: () => void;
   extraContent?: ReactNode;
   className?: string;
 }
@@ -50,6 +51,7 @@ export default function Sidebar({
   sections,
   onItemClick,
   onLogout,
+  onGoToPortal,
   extraContent,
   className = ""
 }: SidebarProps) {
@@ -268,19 +270,34 @@ export default function Sidebar({
         ))}
       </div>
 
-      {/* Logout Action Bar */}
-      {onLogout && (
-        <div className={`border-t border-slate-100 bg-slate-50/50 shrink-0 ${collapsed ? "p-2" : "p-3"}`}>
-          <button
-            onClick={onLogout}
-            title={collapsed ? "Cerrar Sesión" : undefined}
-            className={`w-full py-2.5 rounded-xl text-slate-600 hover:text-rose-700 hover:bg-rose-50 text-xs font-bold uppercase transition-all flex items-center justify-center tracking-wider cursor-pointer ${
-              collapsed ? "px-0" : "px-3 gap-2 border border-slate-200/60 bg-white shadow-2xs"
-            }`}
-          >
-            <LogOut className="w-4 h-4 shrink-0 text-slate-500 hover:text-rose-600" />
-            {!collapsed && <span>Cerrar Sesión</span>}
-          </button>
+      {/* Footer Action Bar */}
+      {(onGoToPortal || onLogout) && (
+        <div className={`border-t border-slate-100 bg-slate-50/50 shrink-0 space-y-1.5 ${collapsed ? "p-2" : "p-3"}`}>
+          {onGoToPortal && (
+            <button
+              onClick={onGoToPortal}
+              title={collapsed ? "Volver al Portal Principal" : undefined}
+              className={`w-full py-2 rounded-xl text-slate-700 hover:text-[#9F062A] hover:bg-red-50 text-xs font-bold uppercase transition-all flex items-center justify-center tracking-wider cursor-pointer ${
+                collapsed ? "px-0" : "px-3 gap-2 border border-slate-200/60 bg-white shadow-2xs"
+              }`}
+            >
+              <Home className="w-4 h-4 shrink-0 text-[#9F062A]" />
+              {!collapsed && <span>Portal Principal</span>}
+            </button>
+          )}
+
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              title={collapsed ? "Cerrar Sesión" : undefined}
+              className={`w-full py-2 rounded-xl text-slate-600 hover:text-rose-700 hover:bg-rose-50 text-xs font-bold uppercase transition-all flex items-center justify-center tracking-wider cursor-pointer ${
+                collapsed ? "px-0" : "px-3 gap-2 border border-slate-200/60 bg-white shadow-2xs"
+              }`}
+            >
+              <LogOut className="w-4 h-4 shrink-0 text-slate-500 hover:text-rose-600" />
+              {!collapsed && <span>Cerrar Sesión</span>}
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -1,11 +1,25 @@
 import React, { useState } from "react";
 import { 
-  ShieldAlert, CheckCircle, XCircle, FileText, CreditCard, Users, 
-  MapPin, Plus, Trash2, Award, Calendar, FileSpreadsheet, Compass, LogOut, Save, GraduationCap, CheckSquare, Mail, Phone, MessageSquare, Printer, BookOpen
+  ShieldAlert, CheckCircle, CheckCircle2, XCircle, FileText, CreditCard, Users, 
+  MapPin, Plus, Trash2, Award, Calendar, FileSpreadsheet, Compass, LogOut, Save, GraduationCap, CheckSquare, Mail, Phone, MessageSquare, Printer, BookOpen,
+  Eye, RefreshCw, AlertTriangle, Clock, X
 } from "lucide-react";
 import { Applicant, Enrollment, StudentPersonalData, Program, Classroom, Teacher, Graduation, AdmissionPeriod, Course, CourseAssignment, AttendanceRecord, MpaPeriod } from "../types";
 import { ACADEMIC_PROGRAMS } from "../mockData";
 import { createAdmissionPeriod, updateAdmissionPeriod } from "../services/api";
+
+const sanitizePeriodName = (str: string) => {
+  if (!str) return "";
+  return str
+    .replace(/\uFFFD/g, "")
+    .replace(/Acad[\u0080-\uFFFFa-zA-Z]*mico/gi, "Académico")
+    .replace(/Acad[\u0080-\uFFFFa-zA-Z]*mica/gi, "Académica")
+    .replace(/Admisi[\u0080-\uFFFFa-zA-Z]*n/gi, "Admisión")
+    .replace(/Matr[\u0080-\uFFFFa-zA-Z]*cula/gi, "Matrícula")
+    .replace(/Per[\u0080-\uFFFFa-zA-Z]*odo/gi, "Período")
+    .replace(/Evauaci[\u0080-\uFFFFa-zA-Z]*n/gi, "Evaluación")
+    .replace(/Publicaci[\u0080-\uFFFFa-zA-Z]*n/gi, "Publicación");
+};
 
 // Reusable Custom Design System Components
 import Button from "./ui/Button";
@@ -39,6 +53,7 @@ interface AdminDashboardProps {
   onUpdateAssignments?: (asgs: CourseAssignment[]) => void;
   onUpdateAttendance?: (att: AttendanceRecord[]) => void;
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
 export default function AdminDashboard({
@@ -62,7 +77,8 @@ export default function AdminDashboard({
   onUpdateCourses = () => {},
   onUpdateAssignments = () => {},
   onUpdateAttendance = () => {},
-  onLogout
+  onLogout,
+  onGoToPortal
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<"caja_admision" | "caja_regular" | "secretaria" | "postulantes" | "vistas" | "matricula" | "matriculados" | "periodos" | "soporte">("periodos");
   const [selectedMatriculaDni, setSelectedMatriculaDni] = useState<string | null>(null);
@@ -121,6 +137,14 @@ export default function AdminDashboard({
 
   // Local state for the new period creator
   const [selectedAcademicPeriodId, setSelectedAcademicPeriodId] = useState("");
+  const sanitizePeriodName = (name?: string) => {
+    if (!name) return "";
+    return name
+      .replace(/Acad[\uFFFD\?a-zA-Z]*mico/gi, "Académico")
+      .replace(/Acadmico/gi, "Académico")
+      .replace(/Periodo\s+Periodo/gi, "Periodo");
+  };
+
   const [newPeriodResultsPublicationDate, setNewPeriodResultsPublicationDate] = useState("");
   const [mpaPeriods, setMpaPeriods] = useState<MpaPeriod[]>([]);
   
@@ -132,7 +156,7 @@ export default function AdminDashboard({
         if (Array.isArray(loaded) && loaded.length > 0) {
           loaded = loaded.map((p: any) => ({
             ...p,
-            name: p.name?.replace(/^Semestre\s+/i, "Periodo ") || p.name
+            name: sanitizePeriodName(p.name?.replace(/^Semestre\s+/i, "Periodo ") || p.name)
           }));
           setMpaPeriods(loaded);
           return;
@@ -363,7 +387,7 @@ export default function AdminDashboard({
     const currentPayStatus = existing?.paymentStatus || "No Pagado";
     if (currentPayStatus !== "Validado") {
       alert(
-        `❌ CONTROL DE RECAUDACIÓN Y PAGOS (MAMC):\n\nNo se puede registrar la matrícula de este ingresante porque su pago único de S/. 250.00 de matrícula aún no ha sido VALIDADO por la Oficina de Caja.\n\nPor favor, vaya a la pestaña de "Caja (Matrículas)" para auditar, verificar y registrar la conformidad del voucher antes de continuar.`
+        `CONTROL DE RECAUDACIÓN Y PAGOS (MAMC):\n\nNo se puede registrar la matrícula de este ingresante porque su pago único de S/. 250.00 de matrícula aún no ha sido VALIDADO por la Oficina de Caja.\n\nPor favor, vaya a la pestaña de "Caja (Matrículas)" para auditar, verificar y registrar la conformidad del voucher antes de continuar.`
       );
       return;
     }
@@ -865,6 +889,7 @@ export default function AdminDashboard({
         ]}
         onItemClick={(route) => setActiveTab(route as any)}
         onLogout={onLogout}
+        onGoToPortal={onGoToPortal}
       />
 
       {/* Main viewport area - scrollable only inside */}
@@ -925,7 +950,8 @@ export default function AdminDashboard({
                                 )}
                                 className="px-2 py-1 bg-[#9F062A]/10 hover:bg-[#9F062A]/20 text-[#9F062A] text-[9px] font-black uppercase tracking-wider rounded border border-[#9F062A]/20 transition-all cursor-pointer flex items-center gap-1 mt-1 shrink-0"
                               >
-                                👁️ Ver Voucher Adjunto
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Ver Voucher Adjunto</span>
                               </button>
                             ) : (
                               <span className="text-[9px] text-slate-400 font-bold block mt-0.5">Sin Voucher Físico</span>
@@ -934,13 +960,21 @@ export default function AdminDashboard({
                           <td className="p-4 font-bold">S/. 120.00</td>
                           <td className="p-4">
                             {app.paymentStatus === "Validado" ? (
-                              <Badge variant="success" pulse>VALIDADO</Badge>
+                              <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Validado
+                              </span>
                             ) : app.paymentStatus === "Observado" ? (
-                              <Badge variant="danger">OBSERVADO</Badge>
+                              <span className="text-xs font-bold text-red-700 flex items-center gap-1">
+                                <AlertTriangle className="w-3.5 h-3.5 text-red-600" /> Observado
+                              </span>
                             ) : app.paymentStatus === "Rechazado" ? (
-                              <Badge variant="danger">RECHAZADO</Badge>
+                              <span className="text-xs font-bold text-red-700 flex items-center gap-1">
+                                <XCircle className="w-3.5 h-3.5 text-red-600" /> Rechazado
+                              </span>
                             ) : (
-                              <Badge variant="warning">PENDIENTE</Badge>
+                              <span className="text-xs font-bold text-amber-700 flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5 text-amber-500" /> Pendiente
+                              </span>
                             )}
                           </td>
                           <td className="p-4 text-center">
@@ -964,23 +998,21 @@ export default function AdminDashboard({
                                 </Button>
                               </div>
                             ) : (
-                              <div className="flex flex-col items-center gap-2 justify-center">
-                                {app.paymentStatus === "Observado" ? (
-                                  <div className="text-left max-w-xs p-1.5 bg-red-50/60 border border-red-200 rounded text-[9.5px] font-bold text-slate-700 leading-tight">
-                                    <span className="font-black uppercase text-red-750 block text-[8px] mb-0.5">Observado:</span>
-                                    "{app.paymentObservations}"
-                                  </div>
-                                ) : app.paymentStatus === "Rechazado" ? (
-                                  <span className="text-red-700 font-black text-[10px] uppercase tracking-wider">Pago Rechazado</span>
+                              <div className="flex items-center justify-center gap-2">
+                                {app.paymentStatus === "Validado" ? (
+                                  <span className="text-emerald-700 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Aprobado
+                                  </span>
                                 ) : (
                                   <span className="text-emerald-700 font-black text-[10px] uppercase tracking-wider">Aprobado / Cerrado</span>
                                 )}
                                 <button 
                                   onClick={() => handleResetApplicantPayment(app.dni)}
-                                  className="text-[8.5px] uppercase font-sans font-black bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded px-2 py-1 tracking-wider transition-colors cursor-pointer"
+                                  className="text-[8.5px] uppercase font-sans font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded px-2 py-1 tracking-wider transition-colors cursor-pointer flex items-center gap-1"
                                   title="Restablecer para poder cambiar de estado o corregir aprobación por causalidad"
                                 >
-                                  🔄 Corregir / Reestablecer
+                                  <RefreshCw className="w-3 h-3" />
+                                  <span>Restablecer</span>
                                 </button>
                               </div>
                             )}
@@ -1055,7 +1087,8 @@ export default function AdminDashboard({
                                   )}
                                   className="px-2 py-1 bg-[#9F062A]/10 hover:bg-[#9F062A]/20 text-[#9F062A] text-[9px] font-black uppercase tracking-wider rounded border border-[#9F062A]/20 transition-all cursor-pointer flex items-center gap-1 mt-1 shrink-0"
                                 >
-                                  👁️ Ver Voucher Adjunto
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>Ver Voucher Adjunto</span>
                                 </button>
                               ) : (
                                 <span className="text-[9px] text-slate-400 font-bold block mt-0.5">Sin Voucher Físico</span>
@@ -1064,20 +1097,30 @@ export default function AdminDashboard({
                             <td className="p-4 font-bold">S/. 250.00</td>
                             <td className="p-4">
                               {enr.paymentStatus === "Validado" ? (
-                                <Badge variant="success" pulse>VALIDADO</Badge>
+                                <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Validado
+                                </span>
                               ) : enr.paymentStatus === "Observado" ? (
-                                <Badge variant="danger">RECHAZADO/OBS.</Badge>
+                                <span className="text-xs font-bold text-red-700 flex items-center gap-1">
+                                  <AlertTriangle className="w-3.5 h-3.5 text-red-600" /> Rechazado / Obs.
+                                </span>
                               ) : (
-                                <Badge variant="warning">PENDIENTE</Badge>
+                                <span className="text-xs font-bold text-amber-700 flex items-center gap-1">
+                                  <Clock className="w-3.5 h-3.5 text-amber-500" /> Pendiente
+                                </span>
                               )}
                             </td>
                             <td className="p-4">
                               {enr.academicStatus === "MATRICULADO" ? (
-                                <Badge variant="success">MATRICULADO</Badge>
+                                <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Matriculado
+                                </span>
                               ) : enr.paymentStatus === "Validado" ? (
-                                <Badge variant="warning" className="bg-sky-100 text-sky-850 border-sky-300">PENDIENTE A MATRICULAR</Badge>
+                                <span className="text-xs font-bold text-sky-700 flex items-center gap-1">
+                                  <Clock className="w-3.5 h-3.5 text-sky-500" /> Pendiente a matricular
+                                </span>
                               ) : (
-                                <Badge variant="neutral">SOLO ADMITIDO</Badge>
+                                <span className="text-xs font-bold text-slate-600">Admitido</span>
                               )}
                             </td>
                             <td className="p-4 text-center">
@@ -1102,13 +1145,16 @@ export default function AdminDashboard({
                                 </div>
                               ) : (
                                 <div className="flex flex-col items-center gap-1">
-                                  <span className="text-emerald-700 font-black text-[10px] uppercase tracking-wider">Verificado / Cerrado</span>
+                                  <span className="text-emerald-700 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verificado
+                                  </span>
                                   <button 
                                     onClick={() => handleResetEnrollmentPayment(enr.studentDni)}
-                                    className="text-[8px] uppercase font-sans font-black bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded px-2 py-0.5 tracking-wider transition-colors cursor-pointer"
+                                    className="text-[8.5px] uppercase font-sans font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded px-2 py-0.5 tracking-wider transition-colors cursor-pointer flex items-center gap-1"
                                     title="Restablecer para poder corregir o cambiar de estado"
                                   >
-                                    🔄 Restablecer 
+                                    <RefreshCw className="w-3 h-3" />
+                                    <span>Restablecer</span>
                                   </button>
                                 </div>
                               )}
@@ -1334,19 +1380,25 @@ export default function AdminDashboard({
                               </td>
                               <td className="p-3.5 border-none">
                                 {app.paymentStatus === "Validado" ? (
-                                  <Badge variant="success">Tasa Validada (S/.120)</Badge>
+                                  <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Tasa Validada (S/ 120)
+                                  </span>
                                 ) : app.paymentStatus === "Observado" ? (
-                                  <Badge variant="danger">Tasa Observada</Badge>
+                                  <span className="text-xs font-bold text-red-700 flex items-center gap-1">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-red-600" /> Tasa Observada
+                                  </span>
                                 ) : (
-                                  <Badge variant="warning">Por Revisar</Badge>
+                                  <span className="text-xs font-bold text-amber-700 flex items-center gap-1">
+                                    <Clock className="w-3.5 h-3.5 text-amber-500" /> Por revisar
+                                  </span>
                                 )}
                               </td>
                               <td className="p-3.5 border-none">
                                 <div className="flex flex-col gap-1">
                                   <div className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-tight">
-                                    <span className="text-emerald-700 font-black">✓ {valCount} OK</span>
-                                    {obsCount > 0 && <span className="text-red-655 font-black">⚠ {obsCount} OBS</span>}
-                                    {pendCount > 0 && <span className="text-amber-600 font-black">⏳ {pendCount} PEND</span>}
+                                    <span className="text-emerald-700 font-black">{valCount} OK</span>
+                                    {obsCount > 0 && <span className="text-red-600 font-black">{obsCount} OBS</span>}
+                                    {pendCount > 0 && <span className="text-amber-600 font-black">{pendCount} PEND</span>}
                                   </div>
                                   <div className="w-24 h-1 border border-slate-200 bg-slate-100 rounded-full overflow-hidden">
                                     <div 
@@ -1637,7 +1689,7 @@ export default function AdminDashboard({
                                         }`}
                                       >
                                         <option value="pendiente">PENDIENTE / EVALUACION</option>
-                                        <option value="admitido">★ ADMITIDO (INGRESO) ★</option>
+                                        <option value="admitido">ADMITIDO (INGRESO)</option>
                                         <option value="no_admitido">NO ADMITIDO (HISTORIAL)</option>
                                       </select>
                                     </div>
@@ -2020,22 +2072,22 @@ export default function AdminDashboard({
                                     </span>
                                     <div className="flex flex-col items-end gap-1 shrink-0">
                                       {isEnr ? (
-                                        <Badge variant="success" className="text-[8px] px-1.5 py-0.5 font-bold leading-none">MATRICULADO</Badge>
+                                        <span className="text-[10px] font-bold text-emerald-700 flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-600" /> Matriculado</span>
                                       ) : candEnr?.paymentStatus === "Validado" ? (
-                                        <Badge variant="warning" className="text-[8px] px-1.5 py-0.5 bg-sky-100 text-sky-850 border-sky-300 font-bold leading-none">PENDIENTE MATRÍCULA</Badge>
+                                        <span className="text-[10px] font-bold text-sky-700 flex items-center gap-1"><Clock className="w-3 h-3 text-sky-500" /> Pendiente matrícula</span>
                                       ) : (
-                                        <Badge variant="neutral" className="text-[8px] px-1.5 py-0.5 font-bold leading-none">ADMITIDO</Badge>
+                                        <span className="text-[10px] font-bold text-slate-600">Admitido</span>
                                       )}
                                       {(() => {
                                         const payStatus = candEnr?.paymentStatus || "No Pagado";
                                         if (payStatus === "Validado") {
-                                          return <Badge variant="success" className="text-[8.5px] px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border-emerald-150 font-black leading-none">PAGO VALIDADO</Badge>;
+                                          return <span className="text-[10px] font-bold text-emerald-700 flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-600" /> Pago validado</span>;
                                         } else if (payStatus === "Pendiente") {
-                                          return <Badge variant="warning" className="text-[8.5px] px-1.5 py-0.5 bg-amber-50 text-amber-700 border-amber-150 font-black leading-none animate-pulse">PENDIENTE VALIDACIÓN</Badge>;
+                                          return <span className="text-[10px] font-bold text-amber-700 flex items-center gap-1"><Clock className="w-3 h-3 text-amber-500" /> Pendiente validación</span>;
                                         } else if (payStatus === "Observado") {
-                                          return <Badge variant="danger" className="text-[8.5px] px-1.5 py-0.5 font-black leading-none">PAGO OBSERVADO</Badge>;
+                                          return <span className="text-[10px] font-bold text-red-700 flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-red-600" /> Pago observado</span>;
                                         } else {
-                                          return <Badge variant="danger" className="text-[8.5px] px-1.5 py-0.5 bg-rose-50 text-[#9F062A] border-rose-100 font-black leading-none">PENDIENTE DE PAGO</Badge>;
+                                          return <span className="text-[10px] font-bold text-red-700 flex items-center gap-1"><Clock className="w-3 h-3 text-red-600" /> Pendiente de pago</span>;
                                         }
                                       })()}
                                     </div>
@@ -2091,13 +2143,13 @@ export default function AdminDashboard({
                               {(() => {
                                 const payStatus = existingEnrollment?.paymentStatus || "No Pagado";
                                 if (payStatus === "Validado") {
-                                  return <span className="text-[11px] font-black text-emerald-400 block uppercase mt-0.5">VALIDADO ✓</span>;
+                                  return <span className="text-[11px] font-black text-emerald-400 block uppercase mt-0.5">VALIDADO</span>;
                                 } else if (payStatus === "Pendiente") {
-                                  return <span className="text-[11px] font-black text-sky-400 block uppercase mt-0.5 animate-pulse">PENDIENTE VALIDACIÓN ⚠️</span>;
+                                  return <span className="text-[11px] font-black text-sky-400 block uppercase mt-0.5">PENDIENTE VALIDACIÓN</span>;
                                 } else if (payStatus === "Observado") {
-                                  return <span className="text-[11px] font-black text-rose-500 block uppercase mt-0.5">PAGO OBSERVADO ❌</span>;
+                                  return <span className="text-[11px] font-black text-rose-500 block uppercase mt-0.5">PAGO OBSERVADO</span>;
                                 } else {
-                                  return <span className="text-[11px] font-black text-rose-500 block uppercase mt-0.5">PENDIENTE DE PAGO ❌</span>;
+                                  return <span className="text-[11px] font-black text-rose-500 block uppercase mt-0.5">PENDIENTE DE PAGO</span>;
                                 }
                               })()}
                             </div>
@@ -2130,8 +2182,8 @@ export default function AdminDashboard({
                                     <p className="flex justify-between"><span className="text-slate-400 font-bold uppercase text-[9px]">N° de Operación:</span> <span className="font-mono text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{existingEnrollment.paymentOperation}</span></p>
                                   )}
                                 </div>
-                                <p className="text-[11px] text-[#9F062A] font-extrabold leading-normal pt-3 animate-pulse">
-                                  ⚠️ POR FAVOR, REVISE Y APRUEBE EL VOUCHER EN LA SECCIÓN "CAJA (MATRÍCULAS)" ANTES DE CONTINUAR CON LA SECRETARÍA GENERAL.
+                                <p className="text-[11px] text-[#9F062A] font-extrabold leading-normal pt-3">
+                                  POR FAVOR, REVISE Y APRUEBE EL VOUCHER EN LA SECCIÓN "CAJA (MATRÍCULAS)" ANTES DE CONTINUAR CON LA SECRETARÍA GENERAL.
                                 </p>
                               </div>
                             </div>
@@ -2248,7 +2300,7 @@ export default function AdminDashboard({
                                           const isScheduled = mpaTasks.some(tk => tk.groupId === grp.id);
                                           return (
                                             <option key={grp.id} value={grp.id}>
-                                              {grp.name} (Ciclo {grp.cycle}) {isScheduled ? "✓ Programado" : "✗ Sin Programación"}
+                                              {grp.name} (Ciclo {grp.cycle}) {isScheduled ? "Programado" : "Sin Programación"}
                                             </option>
                                           );
                                         });
@@ -2289,7 +2341,7 @@ export default function AdminDashboard({
                                   <div className="bg-slate-50 rounded-xl overflow-hidden border border-slate-150">
                                     {cicloICourses.length === 0 ? (
                                       <div className="p-6 text-center text-[#9F062A] bg-rose-50/25 border border-rose-100 rounded-xl text-xs font-bold space-y-1">
-                                        <p>⚠️ No existen asignaturas pre-diseñadas para el Ciclo I en esta carrera.</p>
+                                        <p>No existen asignaturas pre-diseñadas para el Ciclo I en esta carrera.</p>
                                         <p className="text-[10px] text-slate-500 font-medium leading-relaxed">Configure primero la malla/versión curricular y sus cursos asociados dentro de la Planificación Académica (MPA).</p>
                                       </div>
                                     ) : (
@@ -2632,38 +2684,37 @@ export default function AdminDashboard({
               </div>
             )}
 
-            {/* Interactive Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Form card: Create Period */}
-              <div className="lg:col-span-5">
-                <Card>
-                  <CardHeader>
-                    <div>
-                      <CardTitle>Aperturar Nuevo Periodo</CardTitle>
-                      <CardDescription>Registre un nuevo ciclo académico reprogramando las fechas clave</CardDescription>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {mpaPeriods.length === 0 ? (
-                      <div className="py-8 px-4 text-center space-y-4">
-                        <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center mx-auto text-[#9F062A]">
-                          <ShieldAlert className="w-6 h-6" />
-                        </div>
-                        <div className="space-y-1">
-                          <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider block">Planificación requerida</h4>
-                          <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
-                            No se registran períodos académicos en el MPA. Es obligatorio que primero cree al menos un período académico en el Módulo de Planificación Académica antes de aperturar un proceso de admisión.
-                          </p>
-                        </div>
-                        <div className="pt-2">
-                          <span className="inline-block bg-rose-50 text-[#9F062A] text-[9px] font-black uppercase px-3 py-1.5 rounded tracking-wider border border-rose-100">
-                             Requiere Registro en MPA
-                          </span>
-                        </div>
+            {/* Interactive Stacked Layout: Top Form, Bottom List */}
+            <div className="space-y-6">
+              {/* Top Form card: Create Period */}
+              <Card>
+                <CardHeader className="border-b border-slate-100">
+                  <div>
+                    <CardTitle>Aperturar Nuevo Periodo de Admisión</CardTitle>
+                    <CardDescription>Registre un nuevo ciclo académico reprogramando sus fechas clave de pre-inscripción, examen y matrícula</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {mpaPeriods.length === 0 ? (
+                    <div className="py-8 px-4 text-center space-y-4">
+                      <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center mx-auto text-[#9F062A]">
+                        <ShieldAlert className="w-6 h-6" />
                       </div>
-                    ) : (
-                      <form onSubmit={handleCreatePeriod} className="space-y-4 text-xs font-semibold text-left">
-                      <div className="space-y-2">
+                      <div className="space-y-1">
+                        <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider block">Planificación requerida</h4>
+                        <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
+                          No se registran períodos académicos en el MPA. Es obligatorio que primero cree al menos un período académico en el Módulo de Planificación Académica antes de aperturar un proceso de admisión.
+                        </p>
+                      </div>
+                      <div className="pt-2">
+                        <span className="inline-block bg-rose-50 text-[#9F062A] text-[9px] font-black uppercase px-3 py-1.5 rounded tracking-wider border border-rose-100">
+                           Requiere Registro en MPA
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleCreatePeriod} className="space-y-6 text-xs font-semibold text-left">
+                      <div className="space-y-2 max-w-xl">
                         <label className="block text-[10px] font-black text-[#9F062A] uppercase tracking-wide">
                           Seleccionar Período Académico del MPA *
                         </label>
@@ -2671,14 +2722,14 @@ export default function AdminDashboard({
                           required
                           value={selectedAcademicPeriodId}
                           onChange={(e) => handleMpaPeriodChange(e.target.value)}
-                          className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded text-xs focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] focus:bg-white font-extrabold text-slate-800 cursor-pointer"
+                          className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] focus:bg-white font-extrabold text-slate-800 cursor-pointer"
                         >
                           <option value="">-- SELECCIONE PERÍODO ACADÉMICO --</option>
                           {mpaPeriods.map(ap => {
                             const alreadyLinked = admissionPeriods.some(adp => adp.academicPeriodId === ap.id);
                             return (
                               <option key={ap.id} value={ap.id} disabled={alreadyLinked}>
-                                {ap.name} {alreadyLinked ? " (Ya tiene Admisión)" : ""}
+                                {sanitizePeriodName(ap.name)} {alreadyLinked ? " (Ya tiene Admisión)" : ""}
                               </option>
                             );
                           })}
@@ -2687,9 +2738,9 @@ export default function AdminDashboard({
                           Por restricciones de integración, un Período Académico solo puede tener un único Período de Admisión asociado.
                         </p>
                         {selectedAcademicPeriodId && (
-                          <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-3 text-[10px] text-amber-900 leading-normal font-medium space-y-1 animate-fade-in mt-1.5">
+                          <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-3 text-[10px] text-amber-900 leading-normal font-medium space-y-1 animate-fade-in mt-2">
                             <span className="font-extrabold uppercase text-amber-800 flex items-center gap-1 text-[9.5px]">
-                              💡 Fechas Sugeridas Calculadas
+                              Fechas Sugeridas Calculadas
                             </span>
                             <p>
                               Se han pre-completado fechas referenciales calculadas en base a la Fecha de Inicio de Clases del MPA:
@@ -2699,272 +2750,329 @@ export default function AdminDashboard({
                               <li><strong>Evaluación y Publicación:</strong> 20 días antes del inicio de clases</li>
                               <li><strong>Matrícula Regular:</strong> 10 días antes del inicio de clases</li>
                             </ul>
-                            <p className="font-bold text-slate-500 mt-1 italic text-[9px]">
-                              * Usted es libre de modificar estas fechas individualmente según sea necesario.
-                            </p>
                           </div>
                         )}
                       </div>
 
-                      {/* Section 1: Pre-inscripción */}
-                      <div className="border-t border-slate-100 pt-3 space-y-2">
-                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                          1. Periodo de Pre-Inscripción
-                        </span>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className="block text-[9px] font-bold text-slate-500 uppercase">
-                              Fecha Inicio
-                            </label>
-                            <input
-                              type="date"
-                              required
-                              value={newPeriodPreEnrollmentStartDate}
-                              onChange={(e) => setNewPeriodPreEnrollmentStartDate(e.target.value)}
-                              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded text-[11px] focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] focus:bg-white font-bold"
-                            />
+                      {/* 4 HORIZONTAL GRID COLUMNS FOR DATES */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-2 border-t border-slate-100">
+                        {/* Section 1: Pre-inscripción */}
+                        <div className="p-4 bg-slate-50/70 border border-slate-200/80 rounded-xl space-y-3">
+                          <span className="block text-[10px] font-black text-[#9F062A] uppercase tracking-widest border-b pb-1.5 border-slate-200">
+                            1. Pre-Inscripción Virtual
+                          </span>
+                          <div className="space-y-2">
+                            <div className="space-y-1">
+                              <label className="block text-[9px] font-bold text-slate-500 uppercase">
+                                Fecha Inicio
+                              </label>
+                              <input
+                                type="date"
+                                required
+                                value={newPeriodPreEnrollmentStartDate}
+                                max={newPeriodPreEnrollmentEndDate || undefined}
+                                onChange={(e) => setNewPeriodPreEnrollmentStartDate(e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] cursor-pointer"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="block text-[9px] font-bold text-slate-500 uppercase">
+                                Fecha Límite
+                              </label>
+                              <input
+                                type="date"
+                                required
+                                value={newPeriodPreEnrollmentEndDate}
+                                min={newPeriodPreEnrollmentStartDate || undefined}
+                                max={newPeriodAdmissionDate || undefined}
+                                onChange={(e) => setNewPeriodPreEnrollmentEndDate(e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] cursor-pointer"
+                              />
+                            </div>
                           </div>
-                          <div className="space-y-1">
-                            <label className="block text-[9px] font-bold text-slate-500 uppercase">
-                              Fecha Límite
-                            </label>
-                            <input
-                              type="date"
-                              required
-                              value={newPeriodPreEnrollmentEndDate}
-                              onChange={(e) => setNewPeriodPreEnrollmentEndDate(e.target.value)}
-                              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded text-[11px] focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] focus:bg-white font-bold"
-                            />
+                        </div>
+
+                        {/* Section 2: Examen y Publicación */}
+                        <div className="p-4 bg-slate-50/70 border border-slate-200/80 rounded-xl space-y-3">
+                          <span className="block text-[10px] font-black text-[#9F062A] uppercase tracking-widest border-b pb-1.5 border-slate-200">
+                            2. Evaluación y Publicación
+                          </span>
+                          <div className="space-y-2">
+                            <div className="space-y-1">
+                              <label className="block text-[9px] font-bold text-slate-500 uppercase">
+                                Fecha de Examen
+                              </label>
+                              <input
+                                type="date"
+                                required
+                                value={newPeriodAdmissionDate}
+                                min={newPeriodPreEnrollmentEndDate || newPeriodPreEnrollmentStartDate || undefined}
+                                max={newPeriodResultsPublicationDate || undefined}
+                                onChange={(e) => setNewPeriodAdmissionDate(e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] cursor-pointer"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="block text-[9px] font-bold text-slate-500 uppercase">
+                                Publicación Resultados
+                              </label>
+                              <input
+                                type="date"
+                                required
+                                value={newPeriodResultsPublicationDate}
+                                min={newPeriodAdmissionDate || undefined}
+                                max={newPeriodEnrollmentStartDate || undefined}
+                                onChange={(e) => setNewPeriodResultsPublicationDate(e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] cursor-pointer"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Section 3: Matrícula Regular */}
+                        <div className="p-4 bg-slate-50/70 border border-slate-200/80 rounded-xl space-y-3">
+                          <span className="block text-[10px] font-black text-[#9F062A] uppercase tracking-widest border-b pb-1.5 border-slate-200">
+                            3. Matrícula Regular
+                          </span>
+                          <div className="space-y-2">
+                            <div className="space-y-1">
+                              <label className="block text-[9px] font-bold text-slate-500 uppercase">
+                                Inicio Matrícula
+                              </label>
+                              <input
+                                type="date"
+                                required
+                                value={newPeriodEnrollmentStartDate}
+                                min={newPeriodResultsPublicationDate || newPeriodAdmissionDate || undefined}
+                                max={newPeriodEnrollmentEndDate || undefined}
+                                onChange={(e) => setNewPeriodEnrollmentStartDate(e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] cursor-pointer"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="block text-[9px] font-bold text-slate-500 uppercase">
+                                Límite Matrícula
+                              </label>
+                              <input
+                                type="date"
+                                required
+                                value={newPeriodEnrollmentEndDate}
+                                min={newPeriodEnrollmentStartDate || undefined}
+                                max={newPeriodClassesStartDate || undefined}
+                                onChange={(e) => setNewPeriodEnrollmentEndDate(e.target.value)}
+                                className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] cursor-pointer"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Section 4: Inicio de Clases */}
+                        <div className="p-4 bg-slate-50/70 border border-slate-200/80 rounded-xl space-y-3 flex flex-col justify-between">
+                          <div>
+                            <span className="block text-[10px] font-black text-[#9F062A] uppercase tracking-widest border-b pb-1.5 border-slate-200 mb-3">
+                              4. Inicio del Ciclo Académico
+                            </span>
+                            <div className="space-y-1">
+                              <label className="block text-[9px] font-bold text-slate-500 uppercase">
+                                Fecha Inicio Clases (MPA)
+                              </label>
+                              <input
+                                type="date"
+                                disabled
+                                value={newPeriodClassesStartDate}
+                                className="w-full px-3 py-1.5 bg-slate-200/70 border border-slate-300 rounded-lg text-xs font-bold text-slate-600 cursor-not-allowed"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Section 2: Examen de Admisión y Resultados */}
-                      <div className="border-t border-slate-100 pt-3 space-y-2">
-                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                          2. Evaluación y Publicación
-                        </span>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className="block text-[9px] font-bold text-slate-500 uppercase">
-                              Fecha de Examen
-                            </label>
-                            <input
-                              type="date"
-                              required
-                              value={newPeriodAdmissionDate}
-                              onChange={(e) => setNewPeriodAdmissionDate(e.target.value)}
-                              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded text-[11px] focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] focus:bg-white font-bold"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="block text-[9px] font-bold text-slate-500 uppercase">
-                              Publicación Resultados
-                            </label>
-                            <input
-                              type="date"
-                              required
-                              value={newPeriodResultsPublicationDate}
-                              onChange={(e) => setNewPeriodResultsPublicationDate(e.target.value)}
-                              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded text-[11px] focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] focus:bg-white font-bold"
-                            />
-                          </div>
-                        </div>
+                      <div className="flex justify-end pt-2">
+                        <Button
+                          type="submit"
+                          variant="primary"
+                          className="font-extrabold uppercase text-xs tracking-wider py-3 px-6 flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Registrar Periodo de Admisión</span>
+                        </Button>
                       </div>
-
-                      {/* Section 3: Matrícula */}
-                      <div className="border-t border-slate-100 pt-3 space-y-2">
-                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                          3. Periodo de Matrícula Regular
-                        </span>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <label className="block text-[9px] font-bold text-slate-500 uppercase">
-                              Inicio Matrícula
-                            </label>
-                            <input
-                              type="date"
-                              required
-                              value={newPeriodEnrollmentStartDate}
-                              onChange={(e) => setNewPeriodEnrollmentStartDate(e.target.value)}
-                              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded text-[11px] focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] focus:bg-white font-bold"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="block text-[9px] font-bold text-slate-500 uppercase">
-                              Límite Matrícula
-                            </label>
-                            <input
-                              type="date"
-                              required
-                              value={newPeriodEnrollmentEndDate}
-                              onChange={(e) => setNewPeriodEnrollmentEndDate(e.target.value)}
-                              className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded text-[11px] focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] focus:bg-white font-bold"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Section 4: Inicio de Clases */}
-                      <div className="border-t border-slate-100 pt-3 space-y-2">
-                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                          4. Inicio del Ciclo Académico
-                        </span>
-                        <div className="space-y-1">
-                          <label className="block text-[9px] font-bold text-slate-500 uppercase">
-                            Fecha de Inicio de Clases (Establecido por el MPA)
-                          </label>
-                          <input
-                            type="date"
-                            disabled
-                            value={newPeriodClassesStartDate}
-                            className="w-full px-3 py-1.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-bold text-slate-500 cursor-not-allowed"
-                          />
-                        </div>
-                      </div>
-
-                      <Button
-                        type="submit"
-                        variant="primary"
-                        className="w-full font-black uppercase text-[10px] tracking-widest py-3 flex items-center justify-center gap-1.5 cursor-pointer mt-4"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Registrar Periodo de Admisión
-                      </Button>
                     </form>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                  )}
+                </CardContent>
+              </Card>
 
-              {/* List of Periods */}
-              <div className="lg:col-span-7">
-                <Card>
-                  <CardHeader>
-                    <div>
-                      <CardTitle>Listado de Periodos Académicos registrados</CardTitle>
-                      <CardDescription>Habilite o deshabilite el estado de admisión (Los registros son indefinidos y no se eliminan)</CardDescription>
+              {/* Bottom List of Periods (Full Width) */}
+              <Card>
+                <CardHeader className="border-b border-slate-100">
+                  <div>
+                    <CardTitle>Listado de Periodos Académicos Registrados</CardTitle>
+                    <CardDescription>Habilite o deshabilite el estado de admisión (Los registros son indefinidos y no se eliminan)</CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {mpaPeriods.length === 0 ? (
+                    <div className="p-12 text-center space-y-3 col-span-full">
+                      <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-150 flex items-center justify-center mx-auto text-slate-400 mb-2">
+                        <Calendar className="w-6 h-6" />
+                      </div>
+                      <p className="text-slate-500 font-extrabold text-xs uppercase tracking-wider">
+                        Sin períodos académicos en MPA
+                      </p>
+                      <p className="text-[11px] text-slate-400 font-semibold leading-normal max-w-sm mx-auto">
+                        Debe registrar y publicar primeramente un período escolar dentro del módulo de Planificación Académica (MPA) para habilitar esta vista.
+                      </p>
                     </div>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    {mpaPeriods.length === 0 ? (
-                      <div className="p-12 text-center space-y-3 col-span-full">
-                        <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-150 flex items-center justify-center mx-auto text-slate-400 mb-2">
-                          <Calendar className="w-6 h-6" />
-                        </div>
-                        <p className="text-slate-500 font-extrabold text-xs uppercase tracking-wider">
-                          Sin períodos académicos en MPA
-                        </p>
-                        <p className="text-[11px] text-slate-400 font-semibold leading-normal max-w-sm mx-auto">
-                          Debe registrar y publicar primeramente un período escolar dentro del módulo de Planificación Académica (MPA) para habilitar esta vista.
-                        </p>
-                      </div>
-                    ) : admissionPeriods.length === 0 ? (
-                      <div className="p-8 text-center text-slate-400 font-semibold text-xs">
-                        No hay periodos registrados en el sistema.
-                      </div>
-                    ) : (
-                      <div className="divide-y text-xs font-semibold divide-slate-100">
-                        {admissionPeriods.map((period) => (
-                          <div
-                            key={period.id}
-                            className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center hover:bg-slate-50/50 transition-all gap-4 text-left"
-                          >
-                            <div className="space-y-2 text-left w-full">
-                              <div className="flex items-center gap-2">
-                                <span className="font-extrabold text-slate-900 tracking-wide block text-sm">
-                                  ADMISIÓN {period.name}
-                                </span>
-                                {period.status === "APERTURADO" && (
-                                  <Badge variant="success" className="font-black text-[9px] uppercase tracking-wide">
-                                    APERTURADO
-                                  </Badge>
-                                )}
-                                {period.status === "PENDIENTE" && (
-                                  <Badge variant="warning" className="font-bold text-[9px] uppercase tracking-wide">
-                                    PENDIENTE
-                                  </Badge>
-                                )}
-                                {period.status === "EXAMEN" && (
-                                  <Badge variant="brand" className="font-black text-[9px] uppercase tracking-wide bg-[#9F062A] text-white hover:bg-[#9F062A]">
-                                    EN EXAMEN
-                                  </Badge>
-                                )}
-                                {period.status === "MATRICULA" && (
-                                  <Badge variant="info" className="font-black text-[9px] uppercase tracking-wide bg-indigo-600 text-white hover:bg-indigo-600">
-                                    MATRÍCULA
-                                  </Badge>
-                                )}
-                                {period.status === "CERRADO" && (
-                                  <Badge variant="neutral" className="font-bold text-[9px] uppercase tracking-wide text-slate-400 bg-slate-100 border-none">
-                                    CERRADO
-                                  </Badge>
-                                )}
+                  ) : admissionPeriods.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400 font-semibold text-xs">
+                      No hay periodos registrados en el sistema.
+                    </div>
+                  ) : (
+                    <div className="divide-y text-xs font-semibold divide-slate-100">
+                      {admissionPeriods.map((period) => (
+                        <div
+                          key={period.id}
+                          className="p-5 space-y-4 hover:bg-slate-50/40 transition-all text-left"
+                        >
+                          {/* Header bar: Title & Status badge */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <div className="p-2 rounded-lg bg-red-50 text-[#9F062A]">
+                                <Calendar className="w-5 h-5" />
                               </div>
-
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 pt-3 border-t border-slate-100 text-[10px] text-slate-500 font-bold">
-                                <div className="space-y-0.5">
-                                  <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">PRE-INSCRIPCIÓN VIRTUAL</span>
-                                  <span className="text-slate-800 font-extrabold flex items-center gap-1.5 mt-0.5">
-                                    <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                    <span>
-                                      {period.preEnrollmentStartDate ? new Date(period.preEnrollmentStartDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : "-"} al {period.preEnrollmentEndDate ? new Date(period.preEnrollmentEndDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) : "-"}
-                                    </span>
-                                  </span>
-                                </div>
-                                <div className="space-y-0.5">
-                                  <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">EXAMEN DE ADMISIÓN</span>
-                                  <span className="text-slate-800 font-extrabold flex items-center gap-1.5 mt-0.5">
-                                    <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                    {period.admissionDate ? new Date(period.admissionDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}
-                                  </span>
-                                </div>
-                                <div className="space-y-0.5">
-                                  <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">PUBLICACIÓN DE RESULTADOS</span>
-                                  <span className="text-[#9F062A] font-extrabold flex items-center gap-1.5 mt-0.5">
-                                    <Award className="w-3.5 h-3.5 text-[#9F062A] shrink-0" />
-                                    {period.resultsPublicationDate ? new Date(period.resultsPublicationDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "24 de Marzo, 2026"}
-                                  </span>
-                                </div>
-                                <div className="space-y-0.5">
-                                  <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider">MATRÍCULA REGULAR</span>
-                                  <span className="text-slate-800 font-extrabold flex items-center gap-1.5 mt-0.5">
-                                    <CheckSquare className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                    <span>
-                                      {period.enrollmentStartDate ? new Date(period.enrollmentStartDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : "-"} al {period.enrollmentEndDate ? new Date(period.enrollmentEndDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) : "-"}
-                                    </span>
-                                  </span>
-                                </div>
-                                <div className="space-y-0.5">
-                                  <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider font-mono">INICIO DE CLASES</span>
-                                  <span className="text-indigo-950 font-black flex items-center gap-1.5 mt-0.5">
-                                    <GraduationCap className="w-4 h-4 text-indigo-500 shrink-0" />
-                                    {period.classesStartDate ? new Date(period.classesStartDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}
-                                  </span>
-                                </div>
-                                {(() => {
-                                  const mpaP = mpaPeriods.find(ap => ap.id === period.academicPeriodId);
-                                  return (
-                                    <div className="space-y-0.5">
-                                      <span className="text-[9px] font-black uppercase text-slate-400 block tracking-wider font-mono">PERÍODO ASOCIADO (MPA)</span>
-                                      <span className="text-emerald-900 font-black flex items-center gap-1.5 mt-0.5 uppercase text-[10px]">
-                                        <Compass className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                        {mpaP ? mpaP.name : "PERIODO PREESTABLECIDO"}
-                                      </span>
-                                    </div>
-                                  );
-                                })()}
+                              <div>
+                                <span className="font-black text-slate-900 tracking-wide text-base block">
+                                  ADMISIÓN {sanitizePeriodName(period.name)}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-bold block">
+                                  ID Periodo: {period.id}
+                                </span>
                               </div>
                             </div>
 
-                            <div className="flex flex-col gap-1 w-full sm:w-48 shrink-0">
-                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">
+                            <div className="flex items-center gap-2">
+                              {period.status === "APERTURADO" && (
+                                <span className="px-3 py-1 bg-emerald-100/80 text-emerald-800 border border-emerald-200/80 text-xs font-black uppercase tracking-wider rounded-full flex items-center gap-1.5 shadow-3xs">
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Aperturado (Pre-Inscripción)
+                                </span>
+                              )}
+                              {period.status === "PENDIENTE" && (
+                                <span className="px-3 py-1 bg-amber-100/80 text-amber-800 border border-amber-200/80 text-xs font-black uppercase tracking-wider rounded-full flex items-center gap-1.5 shadow-3xs">
+                                  <Clock className="w-4 h-4 text-amber-600" /> Pendiente (Inactivo)
+                                </span>
+                              )}
+                              {period.status === "EXAMEN" && (
+                                <span className="px-3 py-1 bg-red-100/80 text-[#9F062A] border border-red-200/80 text-xs font-black uppercase tracking-wider rounded-full flex items-center gap-1.5 shadow-3xs">
+                                  <FileText className="w-4 h-4 text-[#9F062A]" /> Examen de Admisión
+                                </span>
+                              )}
+                              {period.status === "MATRICULA" && (
+                                <span className="px-3 py-1 bg-indigo-100/80 text-indigo-800 border border-indigo-200/80 text-xs font-black uppercase tracking-wider rounded-full flex items-center gap-1.5 shadow-3xs">
+                                  <CreditCard className="w-4 h-4 text-indigo-600" /> Matrícula Regular
+                                </span>
+                              )}
+                              {period.status === "CERRADO" && (
+                                <span className="px-3 py-1 bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold uppercase tracking-wider rounded-full flex items-center gap-1.5 shadow-3xs">
+                                  Cerrado / Finalizado
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 3x2 Grid for key dates & details */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {/* Card 1: Pre-Inscripción Virtual */}
+                            <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3.5 space-y-1">
+                              <span className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">
+                                PRE-INSCRIPCIÓN VIRTUAL
+                              </span>
+                              <div className="text-slate-800 font-extrabold text-xs flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-[#9F062A] shrink-0" />
+                                <span>
+                                  {period.preEnrollmentStartDate ? new Date(period.preEnrollmentStartDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : "-"} al {period.preEnrollmentEndDate ? new Date(period.preEnrollmentEndDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) : "-"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Card 2: Examen de Admisión */}
+                            <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3.5 space-y-1">
+                              <span className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">
+                                EXAMEN DE ADMISIÓN
+                              </span>
+                              <div className="text-slate-800 font-extrabold text-xs flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-[#9F062A] shrink-0" />
+                                <span>
+                                  {period.admissionDate ? new Date(period.admissionDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Card 3: Publicación de Resultados */}
+                            <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3.5 space-y-1">
+                              <span className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">
+                                PUBLICACIÓN DE RESULTADOS
+                              </span>
+                              <div className="text-[#9F062A] font-extrabold text-xs flex items-center gap-2">
+                                <Award className="w-4 h-4 text-[#9F062A] shrink-0" />
+                                <span>
+                                  {period.resultsPublicationDate ? new Date(period.resultsPublicationDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "24 de Marzo, 2026"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Card 4: Matrícula Regular */}
+                            <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3.5 space-y-1">
+                              <span className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">
+                                MATRÍCULA REGULAR
+                              </span>
+                              <div className="text-slate-800 font-extrabold text-xs flex items-center gap-2">
+                                <CheckSquare className="w-4 h-4 text-indigo-600 shrink-0" />
+                                <span>
+                                  {period.enrollmentStartDate ? new Date(period.enrollmentStartDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : "-"} al {period.enrollmentEndDate ? new Date(period.enrollmentEndDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) : "-"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Card 5: Inicio de Clases */}
+                            <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3.5 space-y-1">
+                              <span className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">
+                                INICIO DE CLASES
+                              </span>
+                              <div className="text-indigo-950 font-black text-xs flex items-center gap-2">
+                                <GraduationCap className="w-4 h-4 text-indigo-600 shrink-0" />
+                                <span>
+                                  {period.classesStartDate ? new Date(period.classesStartDate + "T12:00:00").toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Card 6: Período Asociado (MPA) */}
+                            {(() => {
+                              const mpaP = mpaPeriods.find(ap => ap.id === period.academicPeriodId);
+                              return (
+                                <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3.5 space-y-1">
+                                  <span className="text-[9.5px] font-black uppercase text-slate-400 block tracking-wider">
+                                    PERÍODO ASOCIADO (MPA)
+                                  </span>
+                                  <div className="text-emerald-900 font-black text-xs flex items-center gap-2 uppercase">
+                                    <Compass className="w-4 h-4 text-emerald-600 shrink-0" />
+                                    <span>{mpaP ? sanitizePeriodName(mpaP.name) : "PERIODO PREESTABLECIDO"}</span>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+
+                          {/* Action Bar */}
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 bg-slate-50/50 p-3 rounded-xl border border-slate-200/60">
+                            <div className="flex items-center gap-3 flex-1">
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">
                                 Cambiar Estado:
                               </label>
                               <select
                                 value={period.status}
                                 onChange={(e) => handleUpdatePeriodStatus(period.id, e.target.value as any)}
-                                className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-[11px] focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] font-extrabold text-slate-800 uppercase appearance-none cursor-pointer mb-2"
+                                className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-black text-slate-800 focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] uppercase cursor-pointer flex-1 max-w-md shadow-3xs"
                               >
                                 <option value="PENDIENTE">PENDIENTE (INACTIVO)</option>
                                 <option value="APERTURADO">APERTURADO (PRE-INSCRIPCIÓN)</option>
@@ -2972,22 +3080,22 @@ export default function AdminDashboard({
                                 <option value="MATRICULA">REGISTRANDO MATRÍCULA</option>
                                 <option value="CERRADO">CERRADO / FINALIZADO</option>
                               </select>
-
-                              <button
-                                onClick={() => handleDeletePeriod(period.id)}
-                                className="w-full px-2.5 py-1.5 text-[10px] font-bold text-red-650 hover:text-red-750 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 rounded-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                <span>Eliminar Periodo</span>
-                              </button>
                             </div>
+
+                            <button
+                              onClick={() => handleDeletePeriod(period.id)}
+                              className="px-4 py-2 text-xs font-extrabold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 hover:border-rose-300 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-2 shadow-3xs"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              <span>Eliminar Periodo</span>
+                            </button>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </PageTransition>
         )}
@@ -3330,35 +3438,49 @@ export default function AdminDashboard({
         ];
 
         return (
-          <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto animate-fade-in text-left">
-            <div className="w-full max-w-4xl bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-8 max-h-[90vh] animate-scale-up">
-              {/* Header */}
-              <div className="bg-slate-900 px-6 py-4 flex justify-between items-center text-white shrink-0">
-                <div>
-                  <h3 className="font-extrabold text-[#9F062A] text-[9px] uppercase tracking-widest leading-none">Carpeta de Admisión</h3>
-                  <h2 className="text-sm font-black uppercase mt-1">
-                    Dossier de Prepostulante: {app.name} {app.lastName}
-                  </h2>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto animate-fade-in text-left">
+            <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-6 max-h-[92vh] animate-scale-up">
+              {/* Modal Header */}
+              <div className="bg-slate-900 px-6 py-4 flex justify-between items-center text-white shrink-0 border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#9F062A]/20 border border-[#9F062A]/40 flex items-center justify-center text-[#9F062A]">
+                    <FileSpreadsheet className="w-5 h-5 text-red-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-[#9F062A] text-[9.5px] uppercase tracking-widest leading-none">
+                        Carpeta de Admisión
+                      </span>
+                      <span className="bg-slate-800 text-slate-300 text-[9px] font-mono font-bold px-2 py-0.5 rounded border border-slate-700">
+                        DNI: {app.dni}
+                      </span>
+                    </div>
+                    <h2 className="text-base font-black uppercase text-white mt-1 tracking-wide">
+                      Dossier de Prepostulante: {app.name} {app.lastName}
+                    </h2>
+                  </div>
                 </div>
+
                 <button
                   onClick={() => setSelectedDossierAppDni(null)}
-                  className="bg-slate-800 hover:bg-slate-700 text-white rounded-lg px-3 py-1.5 text-[10px] font-black uppercase border border-slate-700 cursor-pointer transition-colors"
+                  className="bg-slate-800 hover:bg-rose-950/80 hover:text-red-300 text-slate-300 rounded-xl px-3.5 py-2 text-xs font-black uppercase border border-slate-700 cursor-pointer transition-all flex items-center gap-1.5"
                 >
-                  Cerrar
+                  <X className="w-4 h-4" />
+                  <span>Cerrar</span>
                 </button>
               </div>
 
               {/* Scrollable Content */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-slate-50">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   
                   {/* Left panel: the 4 documents */}
                   <div className="lg:col-span-8 space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                        Requisitos de Admisión Registrados
+                    <div className="flex justify-between items-center bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                      <h3 className="text-xs font-black text-slate-800 uppercase tracking-wide flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-[#9F062A]" /> Requisitos de Admisión Registrados
                       </h3>
-                      <span className="text-[10px] text-slate-800 font-extrabold bg-[#9F062A]/5 text-[#9F062A] border border-[#9F062A]/10 px-2 py-0.5 rounded-full">
+                      <span className="text-xs font-extrabold text-[#9F062A] bg-red-50 border border-red-200 px-3 py-1 rounded-full font-mono">
                         {docsConfig.filter(d => appDocs[d.key]?.status === "Validado").length} de 4 Aprobados
                       </span>
                     </div>
@@ -3371,35 +3493,47 @@ export default function AdminDashboard({
                         const currentObsText = individualDocObs[obsInputKey] || "";
 
                         return (
-                          <div key={item.key} className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs flex flex-col gap-3">
+                          <div key={item.key} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-3xs flex flex-col gap-3.5 hover:border-slate-300 transition-all">
                             <div className="flex justify-between items-start">
-                              <div>
-                                <h4 className="font-extrabold text-[12px] uppercase text-slate-900 tracking-tight leading-none">
-                                  {item.label}
+                              <div className="space-y-1">
+                                <h4 className="font-extrabold text-xs uppercase text-slate-900 tracking-tight flex items-center gap-2">
+                                  <span>{item.label}</span>
                                 </h4>
-                                <span className="text-[10px] text-slate-500 font-medium block mt-1">
-                                  {isUploaded ? `Archivo: ${docState.fileName}` : "Sin archivo recibido del postulante"}
+                                <span className="text-[10.5px] text-slate-500 font-medium block">
+                                  {isUploaded ? (
+                                    <span className="font-mono text-slate-700 font-semibold">Archivo: {docState.fileName}</span>
+                                  ) : (
+                                    <span className="text-slate-400 italic">Sin archivo recibido del postulante</span>
+                                  )}
                                 </span>
                               </div>
                               <div>
                                 {docState.status === "Validado" ? (
-                                  <Badge variant="success">VALIDADO</Badge>
+                                  <span className="text-xs font-black text-emerald-800 bg-emerald-100/80 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Validado
+                                  </span>
                                 ) : docState.status === "Observado" ? (
-                                  <Badge variant="danger">OBSERVADO</Badge>
+                                  <span className="text-xs font-black text-rose-800 bg-rose-100/80 border border-rose-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Observado
+                                  </span>
                                 ) : docState.status === "Pendiente" ? (
-                                  <Badge variant="warning">POR REVISAR</Badge>
+                                  <span className="text-xs font-black text-amber-800 bg-amber-100/80 border border-amber-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-amber-600" /> Por revisar
+                                  </span>
                                 ) : (
-                                  <Badge variant="neutral">SIN ENVIAR</Badge>
+                                  <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+                                    Sin enviar
+                                  </span>
                                 )}
                               </div>
                             </div>
 
                             {/* Verification view or notice */}
                             {isUploaded ? (
-                              <div className="bg-slate-50 border border-slate-100 rounded-lg p-2.5 flex items-center justify-between">
-                                <span className="text-[10px] text-emerald-800 font-bold flex items-center gap-1.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                  Adjunto cargado y listo
+                              <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3 flex items-center justify-between">
+                                <span className="text-[10.5px] text-emerald-800 font-bold flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                  Adjunto cargado y listo para auditoría
                                 </span>
                                 <button
                                   type="button"
@@ -3409,14 +3543,15 @@ export default function AdminDashboard({
                                     studentLastName: app.lastName,
                                     fileDataUrl: docState.fileDataUrl
                                   })}
-                                  className="inline-flex items-center gap-1.5 uppercase font-black text-[9px] tracking-wider bg-slate-900 hover:bg-black text-white px-2.5 py-1.5 rounded-lg border border-transparent shadow-3xs transition-colors cursor-pointer"
+                                  className="inline-flex items-center gap-1.5 uppercase font-extrabold text-[10px] tracking-wider bg-slate-900 hover:bg-[#9F062A] text-white px-3 py-1.5 rounded-lg border border-transparent shadow-3xs transition-all cursor-pointer"
                                 >
-                                  Ver Documento
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>Ver Documento</span>
                                 </button>
                               </div>
                             ) : (
-                              <div className="bg-slate-50 border border-slate-100 rounded-lg p-3 text-center">
-                                <p className="text-[10px] text-slate-450 italic font-bold">
+                              <div className="bg-slate-50/70 border border-slate-200/50 rounded-xl p-3 text-center">
+                                <p className="text-[10.5px] text-slate-400 italic font-medium">
                                   No existe vista preview. El postulante aún no ha subido el archivo.
                                 </p>
                               </div>
@@ -3424,13 +3559,16 @@ export default function AdminDashboard({
 
                             {/* Current observations message */}
                             {docState.status === "Observado" && docState.observations && (
-                              <div className="bg-rose-50 text-red-655 px-2.5 py-2 rounded-lg border border-rose-100 text-[10.5px] font-bold italic leading-tight">
-                                * Observación registrada: "{docState.observations}"
+                              <div className="bg-rose-50 text-rose-800 p-3 rounded-xl border border-rose-200 text-xs font-semibold italic leading-snug">
+                                <span className="text-[#9F062A] font-black uppercase tracking-wider block text-[9.5px] not-italic mb-0.5">
+                                  Observación Registrada
+                                </span>
+                                "{docState.observations}"
                               </div>
                             )}
 
                             {/* Actions frame */}
-                            <div className="pt-2.5 border-t border-slate-100 space-y-2">
+                            <div className="pt-3 border-t border-slate-100 space-y-2.5">
                               <div className="flex gap-2">
                                 <input
                                   type="text"
@@ -3440,17 +3578,17 @@ export default function AdminDashboard({
                                     ...individualDocObs,
                                     [obsInputKey]: e.target.value
                                   })}
-                                  className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs placeholder-slate-400 focus:outline-[#9F062A] font-medium"
+                                  className="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] focus:bg-white font-medium shadow-3xs"
                                 />
                               </div>
-                              <div className="flex justify-end gap-1.5">
+                              <div className="flex justify-end items-center gap-2">
                                 <button
                                   type="button"
                                   onClick={() => {
                                     handleValidateApplicantDocument(app.dni, item.key, "Pendiente", "");
                                     setIndividualDocObs({ ...individualDocObs, [obsInputKey]: "" });
                                   }}
-                                  className="px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer"
+                                  className="px-3 py-1.5 rounded-lg text-xs font-extrabold uppercase text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200"
                                 >
                                   Pendiente
                                 </button>
@@ -3463,7 +3601,7 @@ export default function AdminDashboard({
                                     }
                                     handleValidateApplicantDocument(app.dni, item.key, "Observado", currentObsText.trim());
                                   }}
-                                  className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
+                                  className="px-3.5 py-1.5 rounded-lg text-xs font-black uppercase bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer shadow-3xs"
                                 >
                                   Observar
                                 </button>
@@ -3473,7 +3611,7 @@ export default function AdminDashboard({
                                     handleValidateApplicantDocument(app.dni, item.key, "Validado", "");
                                     setIndividualDocObs({ ...individualDocObs, [obsInputKey]: "" });
                                   }}
-                                  className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
+                                  className="px-3.5 py-1.5 rounded-lg text-xs font-black uppercase bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer shadow-3xs"
                                 >
                                   Aprobar / Validar
                                 </button>
@@ -3487,72 +3625,92 @@ export default function AdminDashboard({
 
                   {/* Right panel: Overall Folder Status & Decisions */}
                   <div className="lg:col-span-4 space-y-4">
-                    <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                      Estado del Expediente
+                    <h3 className="text-xs font-black text-slate-800 uppercase tracking-wide bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs flex items-center gap-2">
+                      <Compass className="w-4 h-4 text-[#9F062A]" /> Estado del Expediente
                     </h3>
 
-                    <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-3xs space-y-4">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-3xs space-y-4">
                       {/* Read-only Admission fee payment status */}
-                      <div className="space-y-1 block">
-                        <span className="text-[10px] uppercase text-slate-500 font-bold block">
+                      <div className="space-y-1.5 block">
+                        <span className="text-[10px] uppercase text-slate-500 font-extrabold block tracking-wider">
                           Estado del Pago (Tasa S/. 120):
                         </span>
                         <div className="pt-0.5">
                           {app.paymentStatus === "Validado" ? (
-                            <Badge variant="success">PAGO VALIDADO</Badge>
+                            <span className="text-xs font-black text-emerald-800 bg-emerald-100/80 border border-emerald-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Pago Validado
+                            </span>
                           ) : app.paymentStatus === "Observado" ? (
-                            <Badge variant="danger">PAGO OBSERVADO</Badge>
+                            <span className="text-xs font-black text-rose-800 bg-rose-100/80 border border-rose-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Pago Observado
+                            </span>
                           ) : app.paymentStatus === "Rechazado" ? (
-                            <Badge variant="danger">PAGO RECHAZADO</Badge>
+                            <span className="text-xs font-black text-rose-800 bg-rose-100/80 border border-rose-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+                              <XCircle className="w-3.5 h-3.5 text-rose-600" /> Pago Rechazado
+                            </span>
                           ) : app.paymentStatus === "Pendiente" ? (
-                            <Badge variant="warning">PAGO EN EVALUACIÓN</Badge>
+                            <span className="text-xs font-black text-amber-800 bg-amber-100/80 border border-amber-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-amber-600" /> En Evaluación
+                            </span>
                           ) : (
-                            <Badge variant="neutral">SIN ENVIAR</Badge>
+                            <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                              Sin enviar
+                            </span>
                           )}
-                          <p className="text-[9px] text-slate-450 mt-1 italic font-semibold leading-tight">
+                          <p className="text-[9.5px] text-slate-400 mt-1.5 italic font-medium leading-relaxed">
                             * Solo lectura. La validación de tasas se gestiona exclusivamente por la división de Caja & Tesorería.
                           </p>
                         </div>
                       </div>
 
-                      <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                        <label className="text-[10px] font-black uppercase text-slate-500 tracking-wide block">
+                      <div className="space-y-1.5 pt-3 border-t border-slate-100">
+                        <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">
                           Período de Admisión Asociado:
                         </label>
-                        <div className="px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black text-slate-700 font-sans flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#9F062A]"></span>
-                          {admissionPeriods.find(p => p.id === (app.periodId || "1"))?.name || "Periodo Regular 2026-I"}
+                        <div className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black text-slate-800 font-sans flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-[#9F062A]"></span>
+                          <span>
+                            {sanitizePeriodName(admissionPeriods.find(p => p.id === (app.periodId || "1"))?.name || "Periodo Regular 2026-I")}
+                          </span>
                         </div>
                       </div>
 
-                      <div className="space-y-1 pt-2 border-t border-slate-100">
-                        <span className="text-[10px] uppercase text-slate-500 font-bold block">
+                      <div className="space-y-1.5 pt-3 border-t border-slate-100">
+                        <span className="text-[10px] uppercase text-slate-500 font-extrabold block tracking-wider">
                           Estado de Carpeta Registrado:
                         </span>
                         <div className="pt-0.5">
                           {app.folderStatus === "Enrolled" ? (
-                            <Badge variant="success" className="py-1 px-3 text-xs">APROBADA (MATRICULADO)</Badge>
+                            <span className="text-xs font-black text-emerald-800 bg-emerald-100/80 border border-emerald-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Aprobada (Matriculado)
+                            </span>
                           ) : app.folderStatus === "Approved" ? (
-                            <Badge variant="gold" className="py-1 px-3 text-xs">APROBADA</Badge>
+                            <span className="text-xs font-black text-emerald-800 bg-emerald-100/80 border border-emerald-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Aprobada
+                            </span>
                           ) : app.folderStatus === "Observed" ? (
-                            <Badge variant="danger" className="py-1 px-3 text-xs">OBSERVADA</Badge>
+                            <span className="text-xs font-black text-rose-800 bg-rose-100/80 border border-rose-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Observada
+                            </span>
                           ) : (
-                            <Badge variant="warning" className="py-1 px-3 text-xs">PENDIENTE</Badge>
+                            <span className="text-xs font-black text-amber-800 bg-amber-100/80 border border-amber-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-amber-600" /> Pendiente
+                            </span>
                           )}
                         </div>
                       </div>
 
                       {app.folderObservations && app.folderStatus === "Observed" && (
-                        <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs font-semibold text-rose-800 italic leading-snug">
-                          <span className="text-[#9F062A] font-black uppercase tracking-wider block text-[9px] not-italic mb-1">
-                            ⚠️ Observación de Carpeta
+                        <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-semibold text-rose-800 italic leading-snug">
+                          <span className="text-[#9F062A] font-black uppercase tracking-wider block text-[9.5px] not-italic mb-1">
+                            Observación de Carpeta
                           </span>
                           "{app.folderObservations}"
                         </div>
                       )}
 
-                      <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                        <label className="text-[10px] font-black uppercase text-slate-500 tracking-wide block">
+                      <div className="space-y-1.5 pt-3 border-t border-slate-100">
+                        <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">
                           Observación Global:
                         </label>
                         <textarea
@@ -3563,40 +3721,49 @@ export default function AdminDashboard({
                             ...folderObservationInput,
                             [app.dni]: e.target.value
                           })}
-                          className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold placeholder-slate-400 focus:outline-[#9F062A]"
+                          className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] focus:bg-white shadow-3xs"
                         />
                       </div>
 
-                      <div className="space-y-2 pt-2 border-t border-slate-100">
-                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-wide block">
+                      <div className="space-y-2.5 pt-3 border-t border-slate-100">
+                        <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">
                           Control de Carpeta (Carpeta Completa):
                         </span>
-                        <div className="grid grid-cols-2 gap-1.5">
+                        <div className="grid grid-cols-3 gap-2">
                           {[
                             { id: "Pending" as const, label: "Pendiente" },
                             { id: "Observed" as const, label: "Observado" },
                             { id: "Approved" as const, label: "Aprobada" }
-                          ].map((opt) => (
-                            <button
-                              key={opt.id}
-                              onClick={() => {
-                                if (opt.id === "Observed" && !(folderObservationInput[app.dni] || "").trim()) {
-                                  alert("Por favor ingrese una observacion antes de marcar la carpeta como observada.");
-                                  return;
-                                }
-                                handleUpdateFolderStatus(app.dni, opt.id);
-                              }}
-                              className={`px-2 py-2 rounded-lg text-[9.5px] font-extrabold uppercase tracking-wide transition-all cursor-pointer border ${
-                                app.folderStatus === opt.id
-                                  ? "bg-slate-900 text-white border-transparent shadow-xs"
-                                  : opt.id === "Observed" ? "bg-red-50 text-red-655 hover:bg-rose-100 border-rose-200" :
-                                    opt.id === "Approved" ? "bg-yellow-50 text-yellow-700 hover:bg-yellow-105 border-yellow-200" :
-                                    "bg-white text-slate-600 hover:bg-slate-100 border-slate-200"
-                              }`}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
+                          ].map((opt) => {
+                            const isSelected = app.folderStatus === opt.id;
+                            return (
+                              <button
+                                key={opt.id}
+                                onClick={() => {
+                                  if (opt.id === "Observed" && !(folderObservationInput[app.dni] || "").trim()) {
+                                    alert("Por favor ingrese una observacion antes de marcar la carpeta como observada.");
+                                    return;
+                                  }
+                                  handleUpdateFolderStatus(app.dni, opt.id);
+                                }}
+                                className={`py-2 px-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border flex items-center justify-center text-center shadow-3xs ${
+                                  isSelected
+                                    ? opt.id === "Approved"
+                                      ? "bg-emerald-600 text-white border-emerald-700 font-extrabold shadow-sm"
+                                      : opt.id === "Observed"
+                                        ? "bg-rose-700 text-white border-rose-800 font-extrabold shadow-sm"
+                                        : "bg-amber-600 text-white border-amber-700 font-extrabold shadow-sm"
+                                    : opt.id === "Observed"
+                                      ? "bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200"
+                                      : opt.id === "Approved"
+                                        ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200"
+                                        : "bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200"
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 

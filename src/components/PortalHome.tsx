@@ -5,7 +5,8 @@ import {
   HelpCircle, LogIn, Landmark, Check, Send, FileText, FileCheck,
   ChevronDown, Globe, Users, Calendar, CheckSquare, Menu, X, Loader2,
   CheckCircle2, ArrowRight, ShieldCheck, Zap, Building2, HeartHandshake,
-  Instagram, Clock, FileSpreadsheet, ShieldAlert, UserCheck, Layers, Cpu, Download
+  Instagram, Clock, FileSpreadsheet, ShieldAlert, UserCheck, Layers, Cpu, Download,
+  User, LogOut, LayoutDashboard
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { AdmissionPeriod } from "../types";
@@ -13,11 +14,13 @@ import { createApplicant, fetchApplicantByDni, sendTransactionalWelcomeEmail } f
 
 interface PortalHomeProps {
   onEnterIntranet: () => void;
+  onLogout?: () => void;
   admissionPeriods?: AdmissionPeriod[];
 }
 
 export default function PortalHome({
   onEnterIntranet,
+  onLogout,
   admissionPeriods = []
 }: PortalHomeProps) {
   // Dynamic active/matching period check using current date validation
@@ -26,6 +29,24 @@ export default function PortalHome({
     admissionPeriods[0];
 
   const displayPeriod = activePeriod || admissionPeriods[0];
+
+  // Check if user has an active intranet session stored in localStorage
+  const activeSessionRole = (() => {
+    const roles = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
+    for (const r of roles) {
+      if (localStorage.getItem(`sfa_session_${r}`)) return r;
+    }
+    return null;
+  })();
+
+  const activeRoleLabel = activeSessionRole === "administrador" ? "Gestor MAMC" :
+    activeSessionRole === "superadmin" ? "SuperAdmin" :
+    activeSessionRole === "postulante" ? "Postulante" :
+    activeSessionRole === "alumno" ? "Alumno" :
+    activeSessionRole === "docente" ? "Docente" :
+    activeSessionRole === "mpa" ? "Planificación (MPA)" :
+    activeSessionRole === "mge" ? "Gestión Estudiantes (MGE)" :
+    activeSessionRole === "maf" ? "Finanzas (MAF)" : null;
 
   // Navigation State
   const [currentTab, setCurrentTab] = useState<
@@ -501,15 +522,82 @@ export default function PortalHome({
 
           </nav>
 
-          {/* Botón Compacto y Fino de Intranet Académica */}
+          {/* User Profile Pill or Intranet Académica Button */}
           <div className="hidden lg:flex items-center gap-3 shrink-0">
-            <button
-              onClick={onEnterIntranet}
-              className="flex items-center gap-1.5 bg-[#9F062A] hover:bg-[#800521] text-white px-3 py-1.5 rounded-md font-bold tracking-wide transition-all shadow-xs text-[10.5px] cursor-pointer active:scale-95"
-            >
-              <GraduationCap className="w-3.5 h-3.5 text-amber-300" />
-              <span>Intranet Académica</span>
-            </button>
+            {activeSessionRole ? (
+              <div className="relative group">
+                <button
+                  type="button"
+                  onClick={onEnterIntranet}
+                  className="flex items-center gap-2.5 bg-white hover:bg-slate-50 text-slate-800 pl-2 pr-3.5 py-1.5 rounded-full font-bold text-[11px] transition-all shadow-2xs border border-slate-250 cursor-pointer group-hover:border-[#9F062A] group-hover:shadow-md"
+                >
+                  <div className="w-7 h-7 rounded-full bg-[#9F062A]/10 text-[#9F062A] border border-[#9F062A]/30 flex items-center justify-center font-black text-[10px] relative shrink-0 shadow-3xs">
+                    <User className="w-4 h-4 text-[#9F062A]" />
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white animate-pulse" />
+                  </div>
+                  <div className="text-left leading-tight">
+                    <span className="block text-[11px] font-black tracking-tight text-slate-900 uppercase">
+                      {activeRoleLabel}
+                    </span>
+                    <span className="block text-[8.5px] text-emerald-700 font-extrabold uppercase tracking-wider flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-emerald-500 inline-block" /> Sesión Activa
+                    </span>
+                  </div>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#9F062A] group-hover:rotate-180 transition-all ml-0.5" />
+                </button>
+
+                {/* Hover Bridge & Dropdown Menu */}
+                <div className="absolute top-full right-0 w-60 pt-2 -mt-1 z-50 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200">
+                  <div className="bg-white border border-slate-200 shadow-2xl rounded-2xl p-2.5 space-y-1.5 text-left">
+                    <div className="px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#9F062A] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+                        <User className="w-4 h-4 text-amber-300" />
+                      </div>
+                      <div className="leading-tight overflow-hidden">
+                        <span className="text-[9px] font-black uppercase text-[#9F062A] tracking-wider block">
+                          Sesión Conectada
+                        </span>
+                        <span className="text-xs font-black text-slate-900 uppercase truncate block mt-0.5">
+                          {activeRoleLabel}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={onEnterIntranet}
+                      className="w-full text-left p-2.5 bg-[#9F062A]/5 hover:bg-[#9F062A] text-[#9F062A] hover:text-white rounded-xl transition-all text-[11px] font-extrabold uppercase flex items-center justify-between cursor-pointer border border-[#9F062A]/20 group/btn"
+                    >
+                      <div className="flex items-center gap-2">
+                        <LayoutDashboard className="w-4 h-4" />
+                        <span>Ir a mi Módulo</span>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
+                    </button>
+
+                    {onLogout && (
+                      <button
+                        type="button"
+                        onClick={onLogout}
+                        className="w-full text-left p-2.5 hover:bg-rose-50 text-slate-600 hover:text-rose-700 rounded-xl transition-all text-[11px] font-extrabold uppercase flex items-center gap-2 cursor-pointer border border-transparent hover:border-rose-100"
+                      >
+                        <LogOut className="w-4 h-4 text-slate-400 hover:text-rose-600" />
+                        <span>Cerrar Sesión</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onEnterIntranet}
+                className="flex items-center gap-1.5 bg-[#9F062A] hover:bg-[#800521] text-white px-3.5 py-1.5 rounded-lg font-bold tracking-wide transition-all shadow-xs text-[10.5px] cursor-pointer active:scale-95"
+              >
+                <GraduationCap className="w-3.5 h-3.5 text-amber-300" />
+                <span>Intranet Académica</span>
+              </button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -565,13 +653,52 @@ export default function PortalHome({
               >
                 CONTÁCTANOS
               </button>
-              <div className="pt-3 border-t border-slate-200">
-                <button
-                  onClick={() => { onEnterIntranet(); setMobileMenuOpen(false); }}
-                  className="w-full py-3 bg-[#9F062A] text-white rounded-lg font-bold uppercase tracking-wider text-center text-xs flex items-center justify-center gap-2 shadow-md"
-                >
-                  <GraduationCap className="w-4 h-4 text-amber-300" /> Intranet Académica
-                </button>
+              <div className="pt-3 border-t border-slate-200 space-y-2">
+                {activeSessionRole ? (
+                  <>
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-[#9F062A] text-white flex items-center justify-center font-black text-xs relative shadow-3xs">
+                          <User className="w-4 h-4 text-amber-300" />
+                          <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white" />
+                        </div>
+                        <div className="text-left leading-tight">
+                          <span className="text-xs font-black text-slate-900 block uppercase">{activeRoleLabel}</span>
+                          <span className="text-[9px] text-emerald-700 font-extrabold uppercase block">Sesión Activa</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => { onEnterIntranet(); setMobileMenuOpen(false); }}
+                      className="w-full py-3 bg-[#9F062A] text-white rounded-xl font-extrabold uppercase tracking-wider text-center text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-amber-300" />
+                      <span>Ir a mi Módulo ({activeRoleLabel})</span>
+                    </button>
+
+                    {onLogout && (
+                      <button
+                        type="button"
+                        onClick={() => { onLogout(); setMobileMenuOpen(false); }}
+                        className="w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl font-extrabold uppercase tracking-wider text-center text-xs flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4 text-rose-600" />
+                        <span>Cerrar Sesión</span>
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { onEnterIntranet(); setMobileMenuOpen(false); }}
+                    className="w-full py-3 bg-[#9F062A] text-white rounded-xl font-bold uppercase tracking-wider text-center text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                  >
+                    <GraduationCap className="w-4 h-4 text-amber-300" />
+                    <span>Intranet Académica</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>

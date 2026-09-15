@@ -26,6 +26,7 @@ interface AdminRouterProps {
   onUpdateAssignments?: (asgs: CourseAssignment[]) => void;
   onUpdateAttendance?: (att: AttendanceRecord[]) => void;
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
 export default function AdminRouter(props: AdminRouterProps) {

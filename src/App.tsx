@@ -60,9 +60,15 @@ import {
 
 export default function App() {
   // Navigation / Auth State
-  const [currentUser, setCurrentUser] = useState<{ role: Role; identifier: string }>({
-    role: "portal",
-    identifier: ""
+  const [currentUser, setCurrentUser] = useState<{ role: Role; identifier: string }>(() => {
+    const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
+    for (const r of roles) {
+      const saved = localStorage.getItem(`sfa_session_${r}`);
+      if (saved) {
+        return { role: r, identifier: saved };
+      }
+    }
+    return { role: "portal", identifier: "" };
   });
 
   // Custom global alert modal state
@@ -138,7 +144,10 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          return parsed.map((p: any) => ({
+            ...p,
+            name: (p.name || "").replace(/Acad[\uFFFD\?a-zA-Z]*mico/gi, "Académico").replace(/Acadmico/gi, "Académico")
+          }));
         }
       }
     } catch (e) {
@@ -429,10 +438,25 @@ export default function App() {
   };
 
   const handleLoginSuccess = (role: Role, identifier: string) => {
+    localStorage.setItem(`sfa_session_${role}`, identifier);
     setCurrentUser({ role, identifier });
   };
 
+  const handleEnterIntranet = () => {
+    const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
+    for (const r of roles) {
+      const saved = localStorage.getItem(`sfa_session_${r}`);
+      if (saved) {
+        setCurrentUser({ role: r, identifier: saved });
+        return;
+      }
+    }
+    setCurrentUser({ role: "login", identifier: "" });
+  };
+
   const handleLogout = () => {
+    const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
+    roles.forEach((r) => localStorage.removeItem(`sfa_session_${r}`));
     setCurrentUser({ role: "portal", identifier: "" });
   };
 
@@ -518,7 +542,7 @@ export default function App() {
       {/* 1. Portal Public view */}
       {currentUser.role === "portal" && (
         <PortalHome 
-          onEnterIntranet={() => setCurrentUser({ role: "login", identifier: "" })} 
+          onEnterIntranet={handleEnterIntranet} 
           admissionPeriods={admissionPeriods}
         />
       )}
@@ -609,6 +633,7 @@ export default function App() {
           onUpdateAssignments={(updated) => saveDatabaseState("sfa_assignments", updated, setAssignments)}
           onUpdateAttendance={(updated) => saveDatabaseState("sfa_attendance", updated, setAttendance)}
           onLogout={handleLogout}
+          onGoToPortal={() => setCurrentUser({ role: "portal", identifier: "" })}
         />
       )}
 
