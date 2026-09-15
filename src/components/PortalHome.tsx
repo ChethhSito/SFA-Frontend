@@ -5,7 +5,7 @@ import {
   HelpCircle, LogIn, Landmark, Check, Send, FileText, FileCheck,
   ChevronDown, Globe, Users, Calendar, CheckSquare, Menu, X, Loader2,
   CheckCircle2, ArrowRight, ShieldCheck, Zap, Building2, HeartHandshake,
-  Instagram
+  Instagram, Clock, FileSpreadsheet, ShieldAlert
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { AdmissionPeriod } from "../types";
@@ -59,6 +59,7 @@ export default function PortalHome({
   // Contact form state
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
+  const [contactSubject, setContactSubject] = useState("admision");
   const [contactMessage, setContactMessage] = useState("");
   const [contactSuccessMsg, setContactSuccessMsg] = useState("");
 
@@ -84,7 +85,7 @@ export default function PortalHome({
       const existing = await fetchApplicantByDni(dniInput);
       if (existing) {
         setSubmitSuccessMsg(
-          `El DNI ${dniInput} ya se encuentra registrado. Utilice su DNI o Código de Postulante como usuario para acceder a la Intranet.`
+          `El DNI ${dniInput} ya se encuentra registrado en la base de datos de Admisión. Utilice su DNI o Código como usuario en el portal de Intranet.`
         );
         setIsSubmittingForm(false);
         return;
@@ -133,7 +134,7 @@ export default function PortalHome({
       });
 
       setSubmitSuccessMsg(
-        `¡Pre-inscripción registrada con éxito! Código Oficial de Postulante: ${generatedApplicantCode}. Sus credenciales de acceso a la Intranet han sido generadas.`
+        `¡Pre-inscripción registrada con éxito! Código Oficial de Postulante: ${generatedApplicantCode}. Sus credenciales de acceso han sido enviadas a su correo electrónico (${emailInput}).`
       );
 
       try {
@@ -176,7 +177,7 @@ export default function PortalHome({
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setContactSuccessMsg("¡Gracias! Su mensaje ha sido enviado a la Secretaría Académica. Le responderemos a la brevedad.");
+    setContactSuccessMsg("¡Mensaje recibido con éxito! Su solicitud ha sido remitida a Mesa de Partes Virtuales de la Secretaría Académica. Nos comunicaremos en un plazo máximo de 24 horas hábiles.");
     setContactName("");
     setContactEmail("");
     setContactMessage("");
@@ -247,13 +248,13 @@ export default function PortalHome({
   return (
     <div id="home-view" className="flex flex-col min-h-screen bg-white font-sans text-slate-900 selection:bg-[#9F062A] selection:text-white">
       
-      {/* 1. TOPBAR DELGADO CON INFORMACIÓN DE CONTACTO E INSTITUCIONAL */}
-      <div className="bg-[#800521] text-white py-1.5 px-4 text-xs font-semibold border-b border-red-950">
+      {/* 1. TOPBAR DELGADO INSTITUCIONAL DE CONTACTO */}
+      <div className="bg-[#800521] text-white py-2 px-4 text-xs font-semibold border-b border-red-950">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-2">
           
           <div className="flex flex-wrap justify-center md:justify-start items-center gap-4 sm:gap-6 text-[11px]">
             <span className="flex items-center gap-1.5 font-bold tracking-wide">
-              <MapPin className="w-3.5 h-3.5 text-amber-300" />
+              <Building2 className="w-3.5 h-3.5 text-amber-300" />
               IESTP SAN FRANCISCO DE ASÍS
             </span>
             <span className="flex items-center gap-1.5 text-slate-100 hover:text-amber-300 transition-colors">
@@ -265,7 +266,7 @@ export default function PortalHome({
               admision@iestpsfa.edu.pe
             </span>
             <span className="hidden lg:flex items-center gap-1.5 text-slate-200">
-              <Building2 className="w-3.5 h-3.5 text-amber-300" />
+              <MapPin className="w-3.5 h-3.5 text-amber-300" />
               VMT - Pachacútec Cdra. 50
             </span>
           </div>
@@ -287,7 +288,7 @@ export default function PortalHome({
         </div>
       </div>
 
-      {/* 2. NAVEGACIÓN BLANCA, LIMPIA Y PROFESIONAL CON LOGO ORIGINAL */}
+      {/* 2. NAVEGACIÓN LIMPIA Y PROFESIONAL CON LOGO ORIGINAL */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center relative">
           
@@ -299,7 +300,7 @@ export default function PortalHome({
             <img 
               src="/SFA-Logo.jpeg" 
               alt="Logo Oficial IESTP San Francisco de Asís" 
-              className="w-12 h-12 sm:w-14 sm:h-14 object-contain rounded-full border-2 border-[#CFA020] shadow-sm shrink-0 bg-white p-0.5" 
+              className="w-12 h-12 sm:w-14 sm:h-14 object-contain rounded-full border-2 border-[#CFA020] shadow-xs shrink-0 bg-white p-0.5" 
             />
             <div>
               <h1 className="text-sm sm:text-lg font-black tracking-tight leading-none uppercase">
@@ -533,7 +534,7 @@ export default function PortalHome({
         {currentTab === "inicio" && (
           <div className="space-y-0">
             
-            {/* 3. HERO PRINCIPAL INSTITUCIONAL Y REALISTA */}
+            {/* HERO PRINCIPAL INSTITUCIONAL Y REALISTA */}
             <section className="relative min-h-[500px] lg:min-h-[560px] bg-slate-950 flex items-center overflow-hidden">
               
               {/* Fotografía Realista de Estudiantes del Instituto */}
@@ -662,186 +663,64 @@ export default function PortalHome({
               </div>
             </section>
 
-            {/* 5. SECCIÓN DE PRE-INSCRIPCIÓN VIRTUAL Y DESTACADOS */}
+            {/* 5. CARRERAS DESTACADAS Y PRESENTACIÓN INSTITUCIONAL */}
             <section className="py-16 px-4 bg-slate-50">
-              <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-                
-                {/* Lado Izquierdo: Información y Carreras */}
-                <div className="lg:col-span-7 space-y-8">
-                  <div className="border-l-4 border-[#9F062A] pl-4">
-                    <span className="text-[#9F062A] font-black text-xs uppercase tracking-widest block">OFERTA EDUCATIVA PÚBLICA LICENCIADA</span>
-                    <h3 className="text-2xl sm:text-3xl font-black text-slate-900 uppercase tracking-tight mt-1">
-                      Programas de Estudio Profesionales
-                    </h3>
-                  </div>
-
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
+              <div className="max-w-7xl mx-auto space-y-12">
+                <div className="text-center max-w-3xl mx-auto">
+                  <span className="text-[#9F062A] font-black text-xs uppercase tracking-widest block">CONOCE NUESTRAS ESPECIALIDADES</span>
+                  <h3 className="text-2xl sm:text-3xl font-black text-slate-900 uppercase tracking-tight mt-1">
+                    Carreras Profesionales Licenciadas
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium mt-2">
                     Ofrecemos módulos formativos estructurados durante 3 años lectivos con titulación oficial expedida directamente por el Ministerio de Educación (MINEDU), asegurando arancel mensual S/. 0.00.
                   </p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {careersDetail.map((career) => (
-                      <div 
-                        key={career.id}
-                        className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow"
-                      >
-                        <div className="relative h-44 bg-slate-100">
-                          <img 
-                            src={career.image} 
-                            alt={career.name} 
-                            className="w-full h-full object-cover" 
-                          />
-                          <span className="absolute top-3 right-3 bg-slate-900/90 text-[#CFA020] text-[10px] font-mono px-2.5 py-1 rounded font-bold uppercase">
-                            3 AÑOS - TITULACIÓN OFICIAL
-                          </span>
-                        </div>
-
-                        <div className="p-5 space-y-3">
-                          <h4 className="text-base font-black text-slate-900 uppercase">{career.name}</h4>
-                          <p className="text-xs text-slate-600 font-normal leading-relaxed line-clamp-3">
-                            {career.profile}
-                          </p>
-                        </div>
-
-                        <div className="p-5 pt-0">
-                          <button
-                            onClick={() => { setSelectedProgramId(career.id); setProgramSelection(career.id); setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
-                            className="w-full py-2.5 bg-rose-50 hover:bg-[#9F062A] text-[#9F062A] hover:text-white font-extrabold rounded-lg text-xs uppercase tracking-wider border border-rose-200 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                          >
-                            <span>Pre-inscribirme</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
 
-                {/* Lado Derecho: Tarjeta de Pre-Inscripción Directa */}
-                <div className="lg:col-span-5">
-                  <div className="bg-white border-2 border-rose-100 p-6 sm:p-8 rounded-2xl shadow-lg relative">
-                    <div className="border-b border-slate-200 pb-4 mb-4">
-                      <span className="text-[10px] font-black uppercase text-[#9F062A] tracking-widest block">ADMISIÓN ORDINARIA 2026-I</span>
-                      <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mt-1">Pre-Inscripción Virtual</h3>
-                      <p className="text-xs text-slate-500 font-medium mt-1">Obtén tu código oficial de postulante en tiempo real.</p>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                  {careersDetail.map((career) => (
+                    <div 
+                      key={career.id}
+                      className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow"
+                    >
+                      <div className="relative h-48 bg-slate-100">
+                        <img 
+                          src={career.image} 
+                          alt={career.name} 
+                          className="w-full h-full object-cover" 
+                        />
+                        <span className="absolute top-3 right-3 bg-[#9F062A] text-white text-[10px] font-mono px-3 py-1 rounded font-bold uppercase tracking-wider shadow-xs">
+                          3 AÑOS - TITULACIÓN OFICIAL
+                        </span>
+                      </div>
 
-                    {submitSuccessMsg ? (
-                      <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-5 rounded-xl text-xs space-y-3">
-                        <div className="flex items-start gap-2.5">
-                          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                          <p className="font-semibold leading-relaxed">{submitSuccessMsg}</p>
+                      <div className="p-6 space-y-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="p-2 rounded-lg bg-rose-50 border border-rose-100">
+                            {career.icon}
+                          </div>
+                          <h4 className="text-lg font-black text-slate-900 uppercase">{career.name}</h4>
                         </div>
+                        <p className="text-xs text-slate-600 font-normal leading-relaxed">
+                          {career.profile}
+                        </p>
+                      </div>
+
+                      <div className="p-6 pt-0">
                         <button
-                          onClick={() => setSubmitSuccessMsg("")}
-                          className="w-full py-2.5 bg-emerald-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider"
+                          onClick={() => { setSelectedProgramId(career.id); setProgramSelection(career.id); setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
+                          className="w-full py-3 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                         >
-                          Realizar Otra Inscripción
+                          <span>Pre-inscribirme en {career.name}</span>
+                          <ArrowRight className="w-4 h-4 text-amber-300" />
                         </button>
                       </div>
-                    ) : (
-                      <form onSubmit={handlePreEnrollmentSubmit} className="space-y-3.5">
-                        <div>
-                          <label className="text-[11px] font-bold uppercase text-slate-700 block mb-1">DNI del Postulante *</label>
-                          <input 
-                            type="text"
-                            maxLength={8}
-                            required
-                            placeholder="Ingrese 8 dígitos de su DNI"
-                            value={dniInput}
-                            onChange={(e) => setDniInput(e.target.value.replace(/\D/g, ""))}
-                            className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-[11px] font-bold uppercase text-slate-700 block mb-1">Nombres *</label>
-                            <input 
-                              type="text"
-                              required
-                              placeholder="Sus Nombres"
-                              value={nameInput}
-                              onChange={(e) => setNameInput(e.target.value)}
-                              className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[11px] font-bold uppercase text-slate-700 block mb-1">Apellidos *</label>
-                            <input 
-                              type="text"
-                              required
-                              placeholder="Sus Apellidos"
-                              value={lastNameInput}
-                              onChange={(e) => setLastNameInput(e.target.value)}
-                              className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-[11px] font-bold uppercase text-slate-700 block mb-1">Correo Electrónico *</label>
-                            <input 
-                              type="email"
-                              required
-                              placeholder="correo@ejemplo.com"
-                              value={emailInput}
-                              onChange={(e) => setEmailInput(e.target.value)}
-                              className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[11px] font-bold uppercase text-slate-700 block mb-1">Celular *</label>
-                            <input 
-                              type="tel"
-                              required
-                              placeholder="987654321"
-                              value={phoneInput}
-                              onChange={(e) => setPhoneInput(e.target.value)}
-                              className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition-all"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="text-[11px] font-bold uppercase text-slate-700 block mb-1">Programa al que Postula *</label>
-                          <select 
-                            value={programSelection}
-                            onChange={(e) => setProgramSelection(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-3.5 py-2.5 text-xs text-slate-900 outline-none transition-all cursor-pointer font-medium"
-                          >
-                            <option value="electronica">Electricidad Industrial (3 Años)</option>
-                            <option value="contabilidad">Contabilidad Financiera (3 Años)</option>
-                          </select>
-                        </div>
-
-                        <button 
-                          type="submit"
-                          disabled={isSubmittingForm}
-                          className="w-full mt-2 py-3 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-lg text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                        >
-                          {isSubmittingForm ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin text-amber-300" />
-                              <span>Registrando...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Send className="w-4 h-4 text-amber-300" />
-                              <span>Completar Pre-Inscripción</span>
-                            </>
-                          )}
-                        </button>
-                      </form>
-                    )}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-
               </div>
             </section>
 
-            {/* 6. PASO A PASO ADMISIÓN */}
+            {/* 6. PASO A PASO DEL PROCESO DE ADMISIÓN */}
             <section className="py-16 px-4 bg-white border-t border-slate-200">
               <div className="max-w-7xl mx-auto space-y-10">
                 <div className="text-center max-w-3xl mx-auto">
@@ -868,7 +747,7 @@ export default function PortalHome({
               </div>
             </section>
 
-            {/* FREQUENTLY ASKED QUESTIONS */}
+            {/* PREGUNTAS FRECUENTES */}
             <section className="bg-slate-50 border-t border-slate-200 py-16 px-4">
               <div className="max-w-4xl mx-auto space-y-8">
                 <div className="text-center">
@@ -903,11 +782,387 @@ export default function PortalHome({
           </div>
         )}
 
+        {/* ================= ADMISIÓN VIEW (REDISEÑADA COMPLETA Y ELEGANTE) ================= */}
+        {currentTab === "admision" && (
+          <div className="bg-slate-50 py-16 px-4 min-h-screen">
+            <div className="max-w-7xl mx-auto space-y-10">
+              
+              {/* Encabezado Institucional de Admisión */}
+              <div className="text-center max-w-3xl mx-auto">
+                <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">PROCESO ORDINARIO 2026-I</span>
+                <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Pre-Inscripción Virtual de Admisión</h2>
+                <p className="text-xs sm:text-sm text-slate-600 font-medium mt-2 leading-relaxed">
+                  Completa el formulario oficial para obtener tu Código de Postulante y registrar tus credenciales de acceso a la Intranet Académica.
+                </p>
+              </div>
+
+              {/* Grid 2 Columnas: Requisitos & Tasas + Formulario de Pre-Inscripción */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                
+                {/* Lado Izquierdo: Tasas Ordinarias y Requisitos del Proceso */}
+                <div className="lg:col-span-5 space-y-6">
+                  
+                  {/* Cuadro de Tasas Institucionales */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
+                    <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                      <div className="p-2.5 bg-rose-50 text-[#9F062A] rounded-lg border border-rose-100">
+                        <Landmark className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black text-slate-900 uppercase">Tasas Ordinarias de Admisión</h3>
+                        <span className="text-[10px] text-slate-500 font-medium">Aranceles oficiales aprobados por la Dirección</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 text-xs font-semibold">
+                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <span className="text-slate-700">Derecho de Examen de Admisión Ordinario</span>
+                        <span className="text-[#9F062A] font-black text-sm">S/. 120.00</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-200">
+                        <span className="text-slate-700">Matrícula Semestral Regular</span>
+                        <span className="text-[#9F062A] font-black text-sm">S/. 250.00</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-emerald-50 text-emerald-900 rounded-lg border border-emerald-200">
+                        <span className="font-bold">Pensión Mensual de Enseñanza</span>
+                        <span className="font-black text-sm text-emerald-700">S/. 0.00 (Gratuito)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cuadro de Requisitos de Postulante */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
+                    <h3 className="text-sm font-black text-slate-900 uppercase border-b border-slate-100 pb-2 flex items-center gap-2">
+                      <FileCheck className="w-4 h-4 text-[#9F062A]" />
+                      Documentos Requeridos
+                    </h3>
+                    <ul className="space-y-2.5 text-xs text-slate-600 font-medium">
+                      <li className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>Copia simple de DNI vigente o Carné de Extranjería.</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>Certificado oficial de estudios de 5to de Secundaria (original o digital MINEDU).</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>Voucher original de pago por derecho de examen (Banco de la Nación).</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Asistencia */}
+                  <div className="bg-rose-50 border border-rose-200 p-5 rounded-xl text-xs space-y-2 text-rose-950">
+                    <span className="font-extrabold uppercase text-[#9F062A] block">¿Necesitas ayuda con tu inscripción?</span>
+                    <p className="font-medium leading-relaxed text-slate-700">
+                      Comunícate con la Secretaría de Admisión llamando al <strong>01 500 6177</strong> o escribiendo a <strong>admision@iestpsfa.edu.pe</strong>.
+                    </p>
+                  </div>
+
+                </div>
+
+                {/* Lado Derecho: Formulario Oficial de Pre-Inscripción Rediseñado */}
+                <div className="lg:col-span-7">
+                  <div className="bg-white border-2 border-slate-200 p-6 sm:p-8 rounded-2xl shadow-md">
+                    
+                    <div className="border-b border-slate-200 pb-4 mb-5 flex justify-between items-center">
+                      <div>
+                        <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Formulario de Inscripción Virtual</h3>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">Ingresa tus datos completos tal como figuran en tu DNI.</p>
+                      </div>
+                      <span className="bg-[#9F062A] text-white text-[10px] font-mono font-bold px-3 py-1 rounded-md uppercase">
+                        ADMISIÓN 2026-I
+                      </span>
+                    </div>
+
+                    {submitSuccessMsg ? (
+                      <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-6 rounded-xl text-xs space-y-4">
+                        <div className="flex items-start gap-3">
+                          <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
+                          <p className="font-semibold text-sm leading-relaxed">{submitSuccessMsg}</p>
+                        </div>
+                        <button
+                          onClick={() => setSubmitSuccessMsg("")}
+                          className="w-full py-3 bg-emerald-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider"
+                        >
+                          Realizar Otra Inscripción
+                        </button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handlePreEnrollmentSubmit} className="space-y-4">
+                        
+                        <div>
+                          <label className="text-xs font-bold uppercase text-slate-700 block mb-1">DNI del Postulante *</label>
+                          <input 
+                            type="text"
+                            maxLength={8}
+                            required
+                            placeholder="Ingrese 8 dígitos de su DNI"
+                            value={dniInput}
+                            onChange={(e) => setDniInput(e.target.value.replace(/\D/g, ""))}
+                            className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Nombres *</label>
+                            <input 
+                              type="text"
+                              required
+                              placeholder="Sus Nombres completos"
+                              value={nameInput}
+                              onChange={(e) => setNameInput(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Apellidos *</label>
+                            <input 
+                              type="text"
+                              required
+                              placeholder="Sus Apellidos completos"
+                              value={lastNameInput}
+                              onChange={(e) => setLastNameInput(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Correo Electrónico *</label>
+                            <input 
+                              type="email"
+                              required
+                              placeholder="correo@ejemplo.com"
+                              value={emailInput}
+                              onChange={(e) => setEmailInput(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Teléfono / Celular *</label>
+                            <input 
+                              type="tel"
+                              required
+                              placeholder="987654321"
+                              value={phoneInput}
+                              onChange={(e) => setPhoneInput(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Programa al que Postula *</label>
+                          <select 
+                            value={programSelection}
+                            onChange={(e) => setProgramSelection(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 outline-none font-medium cursor-pointer"
+                          >
+                            <option value="electronica">Electricidad Industrial (3 Años - Título Oficial)</option>
+                            <option value="contabilidad">Contabilidad Financiera (3 Años - Título Oficial)</option>
+                          </select>
+                        </div>
+
+                        <button 
+                          type="submit"
+                          disabled={isSubmittingForm}
+                          className="w-full mt-4 py-3.5 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-lg text-xs uppercase tracking-wider shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95"
+                        >
+                          {isSubmittingForm ? (
+                            <>
+                              <Loader2 className="w-5 h-5 animate-spin text-amber-300" />
+                              <span>Registrando en Sistema...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-5 h-5 text-amber-300" />
+                              <span>Completar Registro de Pre-Inscripción</span>
+                            </>
+                          )}
+                        </button>
+
+                        <p className="text-[10px] text-slate-500 text-center font-medium pt-2">
+                          Al registrarte se generará tu Código de Postulante y se enviarán tus credenciales de la Intranet por correo electrónico.
+                        </p>
+                      </form>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= CONTÁCTANOS VIEW (REDISEÑADA COMPLETA Y ELEGANTE) ================= */}
+        {currentTab === "contactanos" && (
+          <div className="bg-slate-50 py-16 px-4 min-h-screen">
+            <div className="max-w-7xl mx-auto space-y-10">
+              
+              {/* Encabezado Mesa de Partes */}
+              <div className="text-center max-w-3xl mx-auto">
+                <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">MESA DE PARTES Y SECRETARÍA</span>
+                <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Canales de Atención Institucional</h2>
+                <p className="text-xs sm:text-sm text-slate-600 font-medium mt-2 leading-relaxed">
+                  Estamos a tu disposición para resolver consultas sobre admisión, trámites documentarios, traslados e información académica.
+                </p>
+              </div>
+
+              {/* Grid 2 Columnas: Canales de Atención + Formulario de Contacto */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                
+                {/* Lado Izquierdo: Tarjetas de Información de Contacto */}
+                <div className="lg:col-span-5 space-y-4">
+                  
+                  {/* Dirección del Campus */}
+                  <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs flex items-start gap-4">
+                    <div className="p-3 bg-rose-50 text-[#9F062A] rounded-lg shrink-0 border border-rose-100">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-black text-slate-900 uppercase">Ubicación del Campus</h3>
+                      <p className="text-xs text-slate-600 font-medium mt-1">Av. Pachacútec Cdra. 50, Villa María del Triunfo, Lima - Perú.</p>
+                      <span className="text-[10px] text-slate-400 font-semibold block mt-1">Referencia: Altura del Paradero Pachacútec.</span>
+                    </div>
+                  </div>
+
+                  {/* Teléfonos y Central */}
+                  <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs flex items-start gap-4">
+                    <div className="p-3 bg-rose-50 text-[#9F062A] rounded-lg shrink-0 border border-rose-100">
+                      <Phone className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-black text-slate-900 uppercase">Central Telefónica</h3>
+                      <p className="text-xs text-slate-600 font-bold mt-1">01 500 6177</p>
+                      <span className="text-[10px] text-slate-500 font-medium block mt-1">Horario de atención: Lunes a Viernes de 8:00 am a 5:00 pm.</span>
+                    </div>
+                  </div>
+
+                  {/* Correo Electrónico */}
+                  <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs flex items-start gap-4">
+                    <div className="p-3 bg-rose-50 text-[#9F062A] rounded-lg shrink-0 border border-rose-100">
+                      <Mail className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-black text-slate-900 uppercase">Mesa de Partes Virtual</h3>
+                      <p className="text-xs text-[#9F062A] font-bold mt-1">admision@iestpsfa.edu.pe</p>
+                      <span className="text-[10px] text-slate-500 font-medium block mt-1">Recepción de solicitudes de trámites y consultas.</span>
+                    </div>
+                  </div>
+
+                  {/* Horario Institucional */}
+                  <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs flex items-start gap-4">
+                    <div className="p-3 bg-rose-50 text-[#9F062A] rounded-lg shrink-0 border border-rose-100">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-black text-slate-900 uppercase">Turnos Académicos</h3>
+                      <p className="text-xs text-slate-600 font-medium mt-1">Turno Mañana: 8:00 am - 1:00 pm</p>
+                      <p className="text-xs text-slate-600 font-medium">Turno Noche: 6:00 pm - 10:00 pm</p>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Lado Derecho: Formulario de Contacto / Mesa de Partes */}
+                <div className="lg:col-span-7">
+                  <div className="bg-white border-2 border-slate-200 p-6 sm:p-8 rounded-2xl shadow-md">
+                    <div className="border-b border-slate-200 pb-4 mb-5">
+                      <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Envío de Mensajes y Consultas</h3>
+                      <p className="text-xs text-slate-500 font-medium mt-0.5">Escribe tu consulta y el área encargada te responderá a la brevedad.</p>
+                    </div>
+
+                    {contactSuccessMsg ? (
+                      <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-5 rounded-xl text-xs space-y-3">
+                        <div className="flex items-start gap-2.5">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                          <p className="font-semibold leading-relaxed">{contactSuccessMsg}</p>
+                        </div>
+                        <button
+                          onClick={() => setContactSuccessMsg("")}
+                          className="w-full py-2.5 bg-emerald-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider"
+                        >
+                          Enviar Otra Consulta
+                        </button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleContactSubmit} className="space-y-4">
+                        <div>
+                          <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Nombre Completo *</label>
+                          <input 
+                            type="text"
+                            required
+                            placeholder="Ingrese su nombre y apellido"
+                            value={contactName}
+                            onChange={(e) => setContactName(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Correo Electrónico *</label>
+                          <input 
+                            type="email"
+                            required
+                            placeholder="correo@ejemplo.com"
+                            value={contactEmail}
+                            onChange={(e) => setContactEmail(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Área o Tipo de Consulta *</label>
+                          <select 
+                            value={contactSubject}
+                            onChange={(e) => setContactSubject(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 outline-none font-medium cursor-pointer"
+                          >
+                            <option value="admision">Información sobre Admisión 2026</option>
+                            <option value="tramites">Trámites de Secretaría Académica</option>
+                            <option value="traslados">Traslados y Convalidaciones</option>
+                            <option value="otros">Otras Consultas Institucionales</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Mensaje *</label>
+                          <textarea 
+                            rows={4}
+                            required
+                            placeholder="Describa aquí su consulta detalladamente..."
+                            value={contactMessage}
+                            onChange={(e) => setContactMessage(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+                          />
+                        </div>
+
+                        <button 
+                          type="submit"
+                          className="w-full py-3.5 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-lg text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                        >
+                          <Send className="w-4 h-4 text-amber-300" />
+                          <span>Enviar Consulta a Secretaría Académica</span>
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ================= NOSOTROS VIEW ================= */}
         {currentTab === "nosotros" && (
           <div className="max-w-7xl mx-auto py-16 px-4 space-y-12">
             <div className="text-center max-w-3xl mx-auto">
-              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block">INSTITUCIONAL</span>
+              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">INSTITUCIONAL</span>
               <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Misión, Visión y Autoridades</h2>
             </div>
 
@@ -939,7 +1194,7 @@ export default function PortalHome({
         {currentTab === "programas" && (
           <div className="max-w-7xl mx-auto py-16 px-4 space-y-12">
             <div className="text-center max-w-3xl mx-auto">
-              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block">OFERTA EDUCATIVA</span>
+              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">OFERTA EDUCATIVA</span>
               <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Programas de Estudio Licenciados</h2>
             </div>
 
@@ -967,133 +1222,11 @@ export default function PortalHome({
           </div>
         )}
 
-        {/* ================= ADMISIÓN VIEW ================= */}
-        {currentTab === "admision" && (
-          <div className="max-w-4xl mx-auto py-16 px-4 space-y-8">
-            <div className="text-center">
-              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block">PROCESO DE ADMISIÓN 2026-I</span>
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Formulario Oficial de Pre-Inscripción</h2>
-            </div>
-
-            <div className="bg-white border border-slate-200 p-8 rounded-xl shadow-xs">
-              {submitSuccessMsg ? (
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-6 rounded-xl text-xs space-y-4">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
-                    <p className="font-semibold text-sm leading-relaxed">{submitSuccessMsg}</p>
-                  </div>
-                  <button
-                    onClick={() => setSubmitSuccessMsg("")}
-                    className="w-full py-3 bg-emerald-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider"
-                  >
-                    Registrar Otro Postulante
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handlePreEnrollmentSubmit} className="space-y-4">
-                  <div>
-                    <label className="text-xs font-bold uppercase text-slate-700 block mb-1">DNI del Postulante *</label>
-                    <input 
-                      type="text"
-                      maxLength={8}
-                      required
-                      placeholder="Ingrese 8 dígitos de su DNI"
-                      value={dniInput}
-                      onChange={(e) => setDniInput(e.target.value.replace(/\D/g, ""))}
-                      className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Nombres *</label>
-                      <input 
-                        type="text"
-                        required
-                        placeholder="Sus Nombres completos"
-                        value={nameInput}
-                        onChange={(e) => setNameInput(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Apellidos *</label>
-                      <input 
-                        type="text"
-                        required
-                        placeholder="Sus Apellidos completos"
-                        value={lastNameInput}
-                        onChange={(e) => setLastNameInput(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Correo Electrónico *</label>
-                      <input 
-                        type="email"
-                        required
-                        placeholder="correo@ejemplo.com"
-                        value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Teléfono / Celular *</label>
-                      <input 
-                        type="tel"
-                        required
-                        placeholder="987654321"
-                        value={phoneInput}
-                        onChange={(e) => setPhoneInput(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Programa al que Postula *</label>
-                    <select 
-                      value={programSelection}
-                      onChange={(e) => setProgramSelection(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 outline-none cursor-pointer"
-                    >
-                      <option value="electronica">Electricidad Industrial (3 Años)</option>
-                      <option value="contabilidad">Contabilidad Financiera (3 Años)</option>
-                    </select>
-                  </div>
-
-                  <button 
-                    type="submit"
-                    disabled={isSubmittingForm}
-                    className="w-full mt-4 py-3.5 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-lg text-xs uppercase tracking-wider shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    {isSubmittingForm ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin text-amber-300" />
-                        <span>Guardando Registro...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-5 h-5 text-amber-300" />
-                        <span>Completar Registro de Pre-Inscripción</span>
-                      </>
-                    )}
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* ================= TRANSPARENCIA VIEW ================= */}
         {currentTab === "transparencia" && (
           <div className="max-w-7xl mx-auto py-16 px-4 space-y-12">
             <div className="text-center max-w-3xl mx-auto">
-              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block">PORTAL DE TRANSPARENCIA</span>
+              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">PORTAL DE TRANSPARENCIA</span>
               <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Documentos Oficiales Institucionales</h2>
             </div>
 
@@ -1112,66 +1245,6 @@ export default function PortalHome({
                   </button>
                 </div>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* ================= CONTACTANOS VIEW ================= */}
-        {currentTab === "contactanos" && (
-          <div className="max-w-4xl mx-auto py-16 px-4 space-y-8">
-            <div className="text-center">
-              <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block">MESA DE PARTES VIRTUAL</span>
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Contáctanos</h2>
-            </div>
-
-            <div className="bg-white border border-slate-200 p-8 rounded-xl space-y-6 shadow-xs">
-              {contactSuccessMsg ? (
-                <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-4 rounded-lg text-xs font-bold">
-                  {contactSuccessMsg}
-                </div>
-              ) : (
-                <form onSubmit={handleContactSubmit} className="space-y-4">
-                  <div>
-                    <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Nombre Completo *</label>
-                    <input 
-                      type="text" 
-                      required
-                      placeholder="Su Nombre"
-                      value={contactName}
-                      onChange={(e) => setContactName(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 text-xs text-slate-900 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Correo Electrónico *</label>
-                    <input 
-                      type="email" 
-                      required
-                      placeholder="correo@ejemplo.com"
-                      value={contactEmail}
-                      onChange={(e) => setContactEmail(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 text-xs text-slate-900 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Mensaje o Consulta *</label>
-                    <textarea 
-                      rows={4}
-                      required
-                      placeholder="Escriba aquí su mensaje..."
-                      value={contactMessage}
-                      onChange={(e) => setContactMessage(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-3 text-xs text-slate-900 outline-none"
-                    />
-                  </div>
-                  <button 
-                    type="submit"
-                    className="w-full py-3.5 bg-[#9F062A] text-white font-extrabold rounded-lg text-xs uppercase tracking-wider"
-                  >
-                    Enviar Mensaje
-                  </button>
-                </form>
-              )}
             </div>
           </div>
         )}
