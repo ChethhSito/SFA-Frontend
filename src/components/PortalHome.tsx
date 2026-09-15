@@ -906,19 +906,19 @@ export default function PortalHome({
           <div className="bg-slate-50 py-12 sm:py-16 px-4 min-h-screen">
             <div className="max-w-6xl mx-auto space-y-12">
               
-              {/* 1. Header Banner Institucional con Imagen de Historia del Campus */}
+              {/* 1. Header Banner Institucional con Imagen Real de Facachada del Campus */}
               <div className="bg-gradient-to-r from-[#800521] via-[#9F062A] to-slate-900 rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden shadow-lg border border-red-950">
-                {/* Imagen Institucional Real con Degradado Orgánico */}
-                <div className="absolute top-0 right-0 w-full sm:w-1/2 h-full opacity-35 sm:opacity-50 pointer-events-none overflow-hidden">
+                {/* Imagen Institucional de la Fachada Real con Fundido Suave */}
+                <div className="absolute top-0 right-0 w-full sm:w-1/2 h-full opacity-40 sm:opacity-65 pointer-events-none overflow-hidden">
                   <img 
-                    src="/hero_campus_sfa.jpg" 
-                    alt="Campus IESTP San Francisco de Asís" 
-                    className="w-full h-full object-cover object-center transform scale-105" 
+                    src="/campus_facade_sfa.jpg" 
+                    alt="Fachada Principal IESTP San Francisco de Asís" 
+                    className="w-full h-full object-cover object-center" 
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521]/80 to-transparent" />
                 </div>
 
-                <div className="relative z-10 max-w-2xl space-y-4">
+                <div className="relative z-10 max-w-xl space-y-4">
                   <span className="bg-amber-400/20 text-amber-300 text-xs font-mono font-bold uppercase tracking-widest px-3.5 py-1 rounded-full border border-amber-400/30 inline-block shadow-xs">
                     INSTITUCIÓN PÚBLICA LICENCIADA • R.M. 124-2021
                   </span>
@@ -958,10 +958,10 @@ export default function PortalHome({
 
               </div>
 
-              {/* 3. Carrusel Interactivo de Valores Institucionales */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xs space-y-8">
+              {/* 3. Carrusel Interactivo de Valores Institucionales (Tarjeta Central Destacada y Centrada) */}
+              <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-10 shadow-xs space-y-8">
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-slate-100 pb-4">
-                  <div>
+                  <div className="text-center sm:text-left">
                     <span className="text-[#9F062A] font-black text-xs uppercase tracking-widest font-mono">PRINCIPIOS FUNDAMENTALES</span>
                     <h3 className="text-2xl font-black text-slate-900 uppercase mt-0.5">Valores Institucionales</h3>
                   </div>
@@ -970,14 +970,14 @@ export default function PortalHome({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setCurrentValueIdx((prev) => (prev === 0 ? 4 : prev - 1))}
-                      className="w-9 h-9 rounded-full border border-slate-200 bg-slate-50 hover:bg-[#9F062A] hover:text-white hover:border-[#9F062A] transition-colors flex items-center justify-center cursor-pointer text-slate-700 shadow-2xs"
+                      className="w-10 h-10 rounded-full border border-slate-200 bg-slate-50 hover:bg-[#9F062A] hover:text-white hover:border-[#9F062A] transition-colors flex items-center justify-center cursor-pointer text-slate-700 shadow-2xs active:scale-95"
                       aria-label="Anterior Valor"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => setCurrentValueIdx((prev) => (prev === 4 ? 0 : prev + 1))}
-                      className="w-9 h-9 rounded-full border border-slate-200 bg-slate-50 hover:bg-[#9F062A] hover:text-white hover:border-[#9F062A] transition-colors flex items-center justify-center cursor-pointer text-slate-700 shadow-2xs"
+                      className="w-10 h-10 rounded-full border border-slate-200 bg-slate-50 hover:bg-[#9F062A] hover:text-white hover:border-[#9F062A] transition-colors flex items-center justify-center cursor-pointer text-slate-700 shadow-2xs active:scale-95"
                       aria-label="Siguiente Valor"
                     >
                       <ChevronRight className="w-5 h-5" />
@@ -985,95 +985,94 @@ export default function PortalHome({
                   </div>
                 </div>
 
-                {/* Tarjetas del Carrusel de Valores */}
-                <div className="relative overflow-hidden">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {[
-                      {
-                        title: "Excelencia Académica",
-                        subtitle: "Calidad Formativa de Nivel Superior",
-                        desc: "Rigurosidad en el aprendizaje práctico, actualización tecnológica constante y desarrollo de competencias alineadas a las demandas reales del mercado laboral peruano.",
-                        icon: <CheckCircle2 className="w-6 h-6 text-[#9F062A]" />,
-                        tag: "PRINCIPIO 01"
-                      },
-                      {
-                        title: "Ética y Deontología",
-                        subtitle: "Integridad y Transparencia",
-                        desc: "Formación integral sustentada en valores humanos, honestidad profesional, transparencia en la gestión y compromiso indestructible con la comunidad estudiantil.",
-                        icon: <ShieldCheck className="w-6 h-6 text-[#9F062A]" />,
-                        tag: "PRINCIPIO 02"
-                      },
-                      {
-                        title: "Innovación Tecnológica",
-                        subtitle: "Equipamiento Moderno",
-                        desc: "Uso de laboratorios totalmente equipados con tecnología industrial, simuladores ERP, tableros PLC automatizados y herramientas digitales avanzadas.",
-                        icon: <Zap className="w-6 h-6 text-[#9F062A]" />,
-                        tag: "PRINCIPIO 03"
-                      },
-                      {
-                        title: "Inclusión y Equidad Social",
-                        subtitle: "Educación Gratuita Abierta",
-                        desc: "Garantizamos el derecho universal a la educación superior tecnológica gratuita en Villa María del Triunfo sin distinciones ni barreras económicas.",
-                        icon: <Users className="w-6 h-6 text-[#9F062A]" />,
-                        tag: "PRINCIPIO 04"
-                      },
-                      {
-                        title: "Compromiso Social",
-                        subtitle: "Transformación Comunitaria",
-                        desc: "Alianzas estratégicas empresariales e institucionales para impulsar proyectos de desarrollo socioeconómico y alta empleabilidad para nuestros egresados.",
-                        icon: <HeartHandshake className="w-6 h-6 text-[#9F062A]" />,
-                        tag: "PRINCIPIO 05"
-                      }
-                    ].slice(currentValueIdx % 3, (currentValueIdx % 3) + 3).concat(
-                      [
-                        {
-                          title: "Excelencia Académica",
-                          subtitle: "Calidad Formativa de Nivel Superior",
-                          desc: "Rigurosidad en el aprendizaje práctico, actualización tecnológica constante y desarrollo de competencias alineadas a las demandas reales del mercado laboral peruano.",
-                          icon: <CheckCircle2 className="w-6 h-6 text-[#9F062A]" />,
-                          tag: "PRINCIPIO 01"
-                        },
-                        {
-                          title: "Ética y Deontología",
-                          subtitle: "Integridad y Transparencia",
-                          desc: "Formación integral sustentada en valores humanos, honestidad profesional, transparencia en la gestión y compromiso indestructible con la comunidad estudiantil.",
-                          icon: <ShieldCheck className="w-6 h-6 text-[#9F062A]" />,
-                          tag: "PRINCIPIO 02"
-                        },
-                        {
-                          title: "Innovación Tecnológica",
-                          subtitle: "Equipamiento Moderno",
-                          desc: "Uso de laboratorios totalmente equipados con tecnología industrial, simuladores ERP, tableros PLC automatizados y herramientas digitales avanzadas.",
-                          icon: <Zap className="w-6 h-6 text-[#9F062A]" />,
-                          tag: "PRINCIPIO 03"
-                        }
-                      ]
-                    ).slice(0, 3).map((val, idx) => (
+                {/* Tarjetas del Carrusel de Valores (Central Destacada, Grande y Centrada) */}
+                {(() => {
+                  const valuesList = [
+                    {
+                      title: "Excelencia Académica",
+                      subtitle: "Calidad Formativa de Nivel Superior",
+                      desc: "Rigurosidad en el aprendizaje práctico, actualización tecnológica constante y desarrollo de competencias profesionales alineadas a las demandas reales del mercado laboral peruano.",
+                      icon: <CheckCircle2 className="w-8 h-8 text-[#9F062A]" />
+                    },
+                    {
+                      title: "Ética y Deontología",
+                      subtitle: "Integridad y Transparencia",
+                      desc: "Formación integral sustentada en valores humanos, honestidad profesional, transparencia en la gestión académica y un compromiso indestructible con la comunidad estudiantil.",
+                      icon: <ShieldCheck className="w-8 h-8 text-[#9F062A]" />
+                    },
+                    {
+                      title: "Innovación Tecnológica",
+                      subtitle: "Equipamiento Industrial Moderno",
+                      desc: "Uso de laboratorios equipados con tecnología industrial avanzada, simuladores ERP de última generación, módulos PLC automatizados y plataformas digitales completas.",
+                      icon: <Zap className="w-8 h-8 text-[#9F062A]" />
+                    },
+                    {
+                      title: "Inclusión y Equidad",
+                      subtitle: "Educación Superior Gratuita y Abierta",
+                      desc: "Garantizamos el derecho universal a la educación técnica profesional de calidad sin pensiones mensuales (S/. 0.00) ni barreras económicas en Villa María del Triunfo.",
+                      icon: <Users className="w-8 h-8 text-[#9F062A]" />
+                    },
+                    {
+                      title: "Compromiso Social",
+                      subtitle: "Transformación Socioeconómica",
+                      desc: "Alianzas estratégicas con empresas e instituciones para impulsar proyectos de investigación aplicada, prácticas pre-profesionales y alta tasa de empleabilidad.",
+                      icon: <HeartHandshake className="w-8 h-8 text-[#9F062A]" />
+                    }
+                  ];
+
+                  const total = valuesList.length;
+                  const activeIdx = currentValueIdx % total;
+                  const leftIdx = (activeIdx + total - 1) % total;
+                  const rightIdx = (activeIdx + 1) % total;
+
+                  const leftVal = valuesList[leftIdx];
+                  const centerVal = valuesList[activeIdx];
+                  const rightVal = valuesList[rightIdx];
+
+                  return (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center py-4">
+                      
+                      {/* Tarjeta Izquierda (Secundaria) */}
                       <div 
-                        key={idx} 
-                        className="bg-slate-50 border border-slate-200 p-6 rounded-2xl space-y-4 hover:border-[#9F062A] transition-all hover:shadow-md flex flex-col justify-between"
+                        onClick={() => setCurrentValueIdx(leftIdx)}
+                        className="hidden lg:flex lg:col-span-3 bg-slate-50 border border-slate-200 p-5 rounded-2xl flex-col items-center justify-center text-center opacity-70 hover:opacity-100 hover:border-[#9F062A] transition-all cursor-pointer scale-95 space-y-2 select-none shadow-2xs"
                       >
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <div className="p-2.5 bg-rose-50 rounded-xl border border-rose-100">
-                              {val.icon}
-                            </div>
-                            <span className="text-[10px] font-mono font-bold text-[#9F062A] bg-rose-50 px-2.5 py-0.5 rounded border border-rose-100">
-                              {val.tag}
-                            </span>
-                          </div>
-                          <div>
-                            <h4 className="text-base font-black text-slate-900 uppercase">{val.title}</h4>
-                            <span className="text-[11px] font-semibold text-slate-500 block">{val.subtitle}</span>
-                          </div>
-                          <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                            {val.desc}
-                          </p>
+                        <div className="p-2.5 bg-white rounded-xl border border-slate-200">
+                          {leftVal.icon}
                         </div>
+                        <h4 className="text-sm font-black text-slate-800 uppercase leading-snug">{leftVal.title}</h4>
+                        <span className="text-[10px] font-semibold text-slate-500 uppercase block">{leftVal.subtitle}</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
+
+                      {/* Tarjeta Central (MUCHO MÁS GRANDE Y CENTRADA) */}
+                      <div className="lg:col-span-6 bg-gradient-to-b from-white to-rose-50/30 border-2 border-[#9F062A] p-8 sm:p-10 rounded-3xl flex flex-col items-center justify-center text-center shadow-xl z-10 space-y-4 scale-100 sm:scale-105 transition-all">
+                        <div className="w-16 h-16 bg-rose-100/80 rounded-2xl flex items-center justify-center border-2 border-rose-200 shadow-xs">
+                          {centerVal.icon}
+                        </div>
+                        <div className="space-y-1">
+                          <h4 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight">{centerVal.title}</h4>
+                          <span className="text-xs font-extrabold text-[#9F062A] tracking-wider uppercase block">{centerVal.subtitle}</span>
+                        </div>
+                        <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed max-w-lg">
+                          {centerVal.desc}
+                        </p>
+                      </div>
+
+                      {/* Tarjeta Derecha (Secundaria) */}
+                      <div 
+                        onClick={() => setCurrentValueIdx(rightIdx)}
+                        className="hidden lg:flex lg:col-span-3 bg-slate-50 border border-slate-200 p-5 rounded-2xl flex-col items-center justify-center text-center opacity-70 hover:opacity-100 hover:border-[#9F062A] transition-all cursor-pointer scale-95 space-y-2 select-none shadow-2xs"
+                      >
+                        <div className="p-2.5 bg-white rounded-xl border border-slate-200">
+                          {rightVal.icon}
+                        </div>
+                        <h4 className="text-sm font-black text-slate-800 uppercase leading-snug">{rightVal.title}</h4>
+                        <span className="text-[10px] font-semibold text-slate-500 uppercase block">{rightVal.subtitle}</span>
+                      </div>
+
+                    </div>
+                  );
+                })()}
 
                 {/* Indicadores de Paginación del Carrusel */}
                 <div className="flex justify-center items-center gap-2 pt-2">
@@ -1081,15 +1080,15 @@ export default function PortalHome({
                     <button
                       key={idx}
                       onClick={() => setCurrentValueIdx(idx)}
-                      className={`h-2 rounded-full transition-all cursor-pointer ${currentValueIdx === idx ? "w-8 bg-[#9F062A]" : "w-2 bg-slate-200 hover:bg-slate-300"}`}
+                      className={`h-2.5 rounded-full transition-all cursor-pointer ${currentValueIdx % 5 === idx ? "w-9 bg-[#9F062A]" : "w-2.5 bg-slate-200 hover:bg-slate-300"}`}
                       aria-label={`Ver valor ${idx + 1}`}
                     />
                   ))}
                 </div>
               </div>
 
-              {/* 4. Organigrama Institucional Gráfico (Plana Directiva y Autoridades) */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xs space-y-10">
+              {/* 4. Organigrama Institucional Gráfico de Alta Fidelidad */}
+              <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-10 shadow-xs space-y-10">
                 
                 <div className="text-center max-w-2xl mx-auto space-y-1">
                   <span className="bg-[#9F062A] text-white text-[10px] font-mono font-bold px-3 py-1 rounded-md uppercase tracking-wider inline-block mb-1">
@@ -1099,91 +1098,139 @@ export default function PortalHome({
                   <p className="text-xs text-slate-500 font-medium">Jerarquía oficial de la plana directiva del IESTP San Francisco de Asís</p>
                 </div>
 
-                {/* Gráfico Visual del Organigrama */}
+                {/* Gráfico Visual del Organigrama Conectado */}
                 <div className="relative pt-4 pb-6 space-y-8">
                   
                   {/* NIVEL 1: ALTA DIRECCIÓN (DIRECTOR GENERAL) */}
                   <div className="flex justify-center">
-                    <div className="w-full max-w-md bg-gradient-to-b from-[#800521] to-[#9F062A] text-white rounded-2xl p-6 text-center shadow-lg border-2 border-amber-400/40 relative z-10">
-                      <span className="bg-amber-400 text-slate-950 font-black text-[10px] uppercase px-3 py-0.5 rounded-full font-mono tracking-wider shadow-xs inline-block mb-2">
-                        ALTA DIRECCIÓN GENERAL
-                      </span>
-                      <h4 className="text-lg font-black uppercase tracking-tight text-white">LIC. MANUEL RAMOS</h4>
-                      <p className="text-xs text-amber-200 font-bold uppercase mt-0.5">Director General</p>
-                      <p className="text-[11px] text-rose-100 font-medium mt-2 pt-2 border-t border-rose-800/60">
+                    <div className="w-full max-w-lg bg-gradient-to-b from-[#800521] via-[#9F062A] to-[#630217] text-white rounded-2xl p-6 text-center shadow-xl border-2 border-amber-400/50 relative z-10 flex flex-col items-center space-y-3">
+                      
+                      <div className="w-14 h-14 bg-amber-400 text-[#800521] font-black text-lg rounded-full flex items-center justify-center shadow-md border-2 border-white font-mono">
+                        MR
+                      </div>
+
+                      <div>
+                        <span className="bg-amber-400 text-slate-950 font-black text-[9.5px] uppercase px-3 py-0.5 rounded-full font-mono tracking-wider shadow-xs inline-block mb-1">
+                          ALTA DIRECCIÓN GENERAL
+                        </span>
+                        <h4 className="text-lg sm:text-xl font-black uppercase tracking-tight text-white">LIC. MANUEL RAMOS</h4>
+                        <p className="text-xs text-amber-200 font-bold uppercase mt-0.5">Director General</p>
+                      </div>
+
+                      <p className="text-[11px] text-rose-100 font-medium pt-2 border-t border-rose-800/80 w-full">
                         Gestión Institucional, Convenios y Desarrollo Estratégico
                       </p>
                     </div>
                   </div>
 
-                  {/* Línea Conectora Vertical desde el Nivel 1 */}
+                  {/* Conector Vertical Central Nivel 1 -> Nivel 2 */}
                   <div className="w-0.5 h-8 bg-[#9F062A] mx-auto -my-4 relative z-0" />
 
-                  {/* Línea Conectora Horizontal del Nivel 2 */}
-                  <div className="hidden sm:block w-3/4 max-w-3xl h-0.5 bg-slate-300 mx-auto relative z-0" />
+                  {/* Rama Conectora Horizontal Nivel 2 */}
+                  <div className="hidden sm:block w-3/4 max-w-3xl h-0.5 bg-[#9F062A]/60 mx-auto relative z-0" />
 
                   {/* NIVEL 2: DIRECCIÓN ACADÉMICA Y ADMINISTRATIVA (2 NODOS) */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto relative z-10">
                     
                     {/* Nodo 2.1 */}
-                    <div className="bg-rose-50/50 border-2 border-[#9F062A]/40 rounded-xl p-5 text-center shadow-xs hover:border-[#9F062A] transition-colors relative">
-                      <div className="hidden sm:block w-0.5 h-4 bg-slate-300 absolute -top-4 left-1/2 -translate-x-1/2" />
-                      <span className="bg-[#9F062A] text-white font-bold text-[9px] uppercase px-2.5 py-0.5 rounded font-mono block w-fit mx-auto mb-1.5">
-                        SECRETARÍA ACADÉMICA
-                      </span>
-                      <h5 className="text-sm font-black text-slate-900 uppercase">MG. ROSA ELVIRA HUAMÁN</h5>
-                      <p className="text-[11px] text-slate-600 font-medium mt-1">Control de Registros, Matrículas y Certificaciones Oficiales</p>
+                    <div className="bg-gradient-to-b from-rose-50/80 to-white border-2 border-[#9F062A]/40 rounded-2xl p-5 text-center shadow-sm hover:border-[#9F062A] transition-all flex flex-col items-center space-y-2 relative">
+                      <div className="hidden sm:block w-0.5 h-4 bg-[#9F062A]/60 absolute -top-4 left-1/2 -translate-x-1/2" />
+                      
+                      <div className="w-10 h-10 bg-[#9F062A] text-white font-black text-xs rounded-full flex items-center justify-center font-mono shadow-2xs">
+                        RH
+                      </div>
+                      
+                      <div>
+                        <span className="bg-[#9F062A] text-white font-bold text-[9px] uppercase px-2.5 py-0.5 rounded font-mono inline-block mb-1">
+                          SECRETARÍA ACADÉMICA
+                        </span>
+                        <h5 className="text-sm font-black text-slate-900 uppercase">MG. ROSA ELVIRA HUAMÁN</h5>
+                      </div>
+
+                      <p className="text-[11px] text-slate-600 font-medium">Control de Registros, Matrículas y Certificaciones Oficiales</p>
                     </div>
 
                     {/* Nodo 2.2 */}
-                    <div className="bg-rose-50/50 border-2 border-[#9F062A]/40 rounded-xl p-5 text-center shadow-xs hover:border-[#9F062A] transition-colors relative">
-                      <div className="hidden sm:block w-0.5 h-4 bg-slate-300 absolute -top-4 left-1/2 -translate-x-1/2" />
-                      <span className="bg-[#9F062A] text-white font-bold text-[9px] uppercase px-2.5 py-0.5 rounded font-mono block w-fit mx-auto mb-1.5">
-                        UNIDAD ACADÉMICA
-                      </span>
-                      <h5 className="text-sm font-black text-slate-900 uppercase">ING. CARLOS MENDOZA</h5>
-                      <p className="text-[11px] text-slate-600 font-medium mt-1">Supervisión Curricular, Módulos y Plana Docente</p>
+                    <div className="bg-gradient-to-b from-rose-50/80 to-white border-2 border-[#9F062A]/40 rounded-2xl p-5 text-center shadow-sm hover:border-[#9F062A] transition-all flex flex-col items-center space-y-2 relative">
+                      <div className="hidden sm:block w-0.5 h-4 bg-[#9F062A]/60 absolute -top-4 left-1/2 -translate-x-1/2" />
+                      
+                      <div className="w-10 h-10 bg-[#9F062A] text-white font-black text-xs rounded-full flex items-center justify-center font-mono shadow-2xs">
+                        CM
+                      </div>
+
+                      <div>
+                        <span className="bg-[#9F062A] text-white font-bold text-[9px] uppercase px-2.5 py-0.5 rounded font-mono inline-block mb-1">
+                          UNIDAD ACADÉMICA
+                        </span>
+                        <h5 className="text-sm font-black text-slate-900 uppercase">ING. CARLOS MENDOZA</h5>
+                      </div>
+
+                      <p className="text-[11px] text-slate-600 font-medium">Supervisión Curricular, Módulos y Plana Docente</p>
                     </div>
 
                   </div>
 
-                  {/* Línea Conectora Vertical hacia el Nivel 3 */}
+                  {/* Conector Vertical Central Nivel 2 -> Nivel 3 */}
                   <div className="w-0.5 h-8 bg-slate-300 mx-auto -my-4 relative z-0" />
 
-                  {/* Línea Conectora Horizontal del Nivel 3 */}
+                  {/* Rama Conectora Horizontal Nivel 3 */}
                   <div className="hidden md:block w-5/6 max-w-4xl h-0.5 bg-slate-300 mx-auto relative z-0" />
 
                   {/* NIVEL 3: JEFATURAS DE ÁREA Y COORDINACIONES (3 NODOS) */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-5xl mx-auto relative z-10">
                     
                     {/* Nodo 3.1 */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-2xs hover:border-[#9F062A] transition-colors relative">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-xs hover:border-[#9F062A] transition-all flex flex-col items-center space-y-2 relative">
                       <div className="hidden md:block w-0.5 h-4 bg-slate-300 absolute -top-4 left-1/2 -translate-x-1/2" />
-                      <span className="bg-slate-100 text-slate-700 font-bold text-[9px] uppercase px-2 py-0.5 rounded border border-slate-200 block w-fit mx-auto mb-1 font-mono">
-                        COORDINACIÓN DE ADMISIÓN
-                      </span>
-                      <h6 className="text-xs font-black text-slate-900 uppercase">LIC. LUIS ALBERTO CASTILLO</h6>
-                      <p className="text-[10px] text-slate-500 font-medium mt-1">Proceso de Admisión Ordinario 2026</p>
+                      
+                      <div className="w-8 h-8 bg-slate-100 text-slate-700 font-bold text-[11px] rounded-full flex items-center justify-center font-mono border border-slate-200">
+                        LC
+                      </div>
+
+                      <div>
+                        <span className="bg-slate-100 text-slate-700 font-bold text-[9px] uppercase px-2 py-0.5 rounded border border-slate-200 inline-block mb-1 font-mono">
+                          COORDINACIÓN ADMISIÓN
+                        </span>
+                        <h6 className="text-xs font-black text-slate-900 uppercase">LIC. LUIS ALBERTO CASTILLO</h6>
+                      </div>
+
+                      <p className="text-[10px] text-slate-500 font-medium">Proceso de Admisión Ordinario 2026</p>
                     </div>
 
                     {/* Nodo 3.2 */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-2xs hover:border-[#9F062A] transition-colors relative">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-xs hover:border-[#9F062A] transition-all flex flex-col items-center space-y-2 relative">
                       <div className="hidden md:block w-0.5 h-4 bg-slate-300 absolute -top-4 left-1/2 -translate-x-1/2" />
-                      <span className="bg-slate-100 text-slate-700 font-bold text-[9px] uppercase px-2 py-0.5 rounded border border-slate-200 block w-fit mx-auto mb-1 font-mono">
-                        JEFATURA DE INVESTIGACIÓN
-                      </span>
-                      <h6 className="text-xs font-black text-slate-900 uppercase">ING. JORGE LUIS TOLEDO</h6>
-                      <p className="text-[10px] text-slate-500 font-medium mt-1">Proyectos de Innovación Tecnológica</p>
+                      
+                      <div className="w-8 h-8 bg-slate-100 text-slate-700 font-bold text-[11px] rounded-full flex items-center justify-center font-mono border border-slate-200">
+                        JT
+                      </div>
+
+                      <div>
+                        <span className="bg-slate-100 text-slate-700 font-bold text-[9px] uppercase px-2 py-0.5 rounded border border-slate-200 inline-block mb-1 font-mono">
+                          JEFATURA INVESTIGACIÓN
+                        </span>
+                        <h6 className="text-xs font-black text-slate-900 uppercase">ING. JORGE LUIS TOLEDO</h6>
+                      </div>
+
+                      <p className="text-[10px] text-slate-500 font-medium">Proyectos de Innovación Tecnológica</p>
                     </div>
 
                     {/* Nodo 3.3 */}
-                    <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-2xs hover:border-[#9F062A] transition-colors relative">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-xs hover:border-[#9F062A] transition-all flex flex-col items-center space-y-2 relative">
                       <div className="hidden md:block w-0.5 h-4 bg-slate-300 absolute -top-4 left-1/2 -translate-x-1/2" />
-                      <span className="bg-slate-100 text-slate-700 font-bold text-[9px] uppercase px-2 py-0.5 rounded border border-slate-200 block w-fit mx-auto mb-1 font-mono">
-                        JEFATURA DE BIENESTAR
-                      </span>
-                      <h6 className="text-xs font-black text-slate-900 uppercase">LIC. ELENA MORALES</h6>
-                      <p className="text-[10px] text-slate-500 font-medium mt-1">Atención Estudiantil y Empleabilidad</p>
+                      
+                      <div className="w-8 h-8 bg-slate-100 text-slate-700 font-bold text-[11px] rounded-full flex items-center justify-center font-mono border border-slate-200">
+                        EM
+                      </div>
+
+                      <div>
+                        <span className="bg-slate-100 text-slate-700 font-bold text-[9px] uppercase px-2 py-0.5 rounded border border-slate-200 inline-block mb-1 font-mono">
+                          JEFATURA BIENESTAR
+                        </span>
+                        <h6 className="text-xs font-black text-slate-900 uppercase">LIC. ELENA MORALES</h6>
+                      </div>
+
+                      <p className="text-[10px] text-slate-500 font-medium">Atención Estudiantil y Empleabilidad</p>
                     </div>
 
                   </div>
