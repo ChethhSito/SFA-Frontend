@@ -1348,17 +1348,32 @@ export default function PortalHome({
                     ) : (
                       <form onSubmit={handlePreEnrollmentSubmit} className="space-y-4">
                         
-                        <div>
-                          <label className="text-xs font-bold uppercase text-slate-700 block mb-1">DNI del Postulante *</label>
-                          <input 
-                            type="text"
-                            maxLength={8}
-                            required
-                            placeholder="Ingrese 8 dígitos de su DNI"
-                            value={dniInput}
-                            onChange={(e) => setDniInput(e.target.value.replace(/\D/g, ""))}
-                            className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
-                          />
+                        {/* DNI y Programa al que Postula en la misma fila */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs font-bold uppercase text-slate-700 block mb-1">DNI del Postulante *</label>
+                            <input 
+                              type="text"
+                              maxLength={8}
+                              required
+                              placeholder="Ingrese 8 dígitos de su DNI"
+                              value={dniInput}
+                              onChange={(e) => setDniInput(e.target.value.replace(/\D/g, ""))}
+                              className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Programa al que Postula *</label>
+                            <select 
+                              value={programSelection}
+                              onChange={(e) => setProgramSelection(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 outline-none font-medium cursor-pointer"
+                            >
+                              <option value="electronica">Electricidad Industrial</option>
+                              <option value="contabilidad">Contabilidad Financiera</option>
+                            </select>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1409,18 +1424,6 @@ export default function PortalHome({
                               className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
                             />
                           </div>
-                        </div>
-
-                        <div>
-                          <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Programa al que Postula *</label>
-                          <select 
-                            value={programSelection}
-                            onChange={(e) => setProgramSelection(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 outline-none font-medium cursor-pointer"
-                          >
-                            <option value="electronica">Electricidad Industrial (3 Años - Título Oficial)</option>
-                            <option value="contabilidad">Contabilidad Financiera (3 Años - Título Oficial)</option>
-                          </select>
                         </div>
 
                         <button 
