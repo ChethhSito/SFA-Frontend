@@ -2061,8 +2061,8 @@ export default function PostulanteDashboard({
 
                 <div className="p-4 bg-slate-50 border rounded-lg text-left text-xs text-slate-600 font-semibold leading-relaxed space-y-2.5">
                   <span className="text-[10px] text-[#9F062A] tracking-wider uppercase block font-black leading-none">REQUISITOS PENDIENTES DE VALIDACIÓN:</span>
-                  <p>• Derecho de Admisión S/. 120: <span className="font-extrabold text-slate-900">{applicant.paymentStatus === "Validado" ? "Aprobado" : "Pendiente de validación"}</span></p>
-                  <p>• Expediente de Documentos: <span className="font-extrabold text-slate-900">{globalProgressPercentage}% completado ({approvedCount} de 4 validados)</span></p>
+                  <p>• Derecho de Admisión S/. 120: <span className="font-extrabold text-slate-900">{applicant.paymentStatus === "Validado" ? "✓ Aprobado" : applicant.paymentStatus === "Pendiente" ? "En revisión por secretaría" : "No registrado aún"}</span></p>
+                  <p>• Expediente de Documentos: <span className="font-extrabold text-slate-900">{globalProgressPercentage === 100 ? "✓ Completo" : `${globalProgressPercentage}% completado (${approvedCount} de 4 validados)`}</span></p>
                 </div>
 
                 <div className="pt-4 border-t text-left">
