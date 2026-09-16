@@ -133,6 +133,16 @@ export default function Sidebar({
     return "brand";
   };
 
+  const renderItemIcon = (icon: ReactNode | any) => {
+    if (!icon) return null;
+    if (React.isValidElement(icon)) return icon;
+    if (typeof icon === "function" || (typeof icon === "object" && (icon as any).$$typeof)) {
+      const IconComp = icon as any;
+      return <IconComp className="w-4 h-4" />;
+    }
+    return icon;
+  };
+
   const renderLogo = () => {
     if (!instLogo) {
       return (
@@ -152,7 +162,7 @@ export default function Sidebar({
         </div>
       );
     }
-    return instLogo;
+    return renderItemIcon(instLogo);
   };
 
   const SidebarContent = ({ collapsed = false }: { collapsed?: boolean }) => (
@@ -262,7 +272,7 @@ export default function Sidebar({
                     >
                       <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3 min-w-0"}`}>
                         <span className={`w-4 h-4 shrink-0 flex items-center justify-center transition-colors ${item.active ? "text-amber-400" : isSubActive ? "text-[#9F062A]" : "text-slate-400"}`}>
-                          {item.icon}
+                          {renderItemIcon(item.icon)}
                         </span>
                         {!collapsed && <span className="truncate tracking-wide text-[11.5px]">{item.label}</span>}
                       </div>
@@ -305,7 +315,7 @@ export default function Sidebar({
                                 >
                                   {sub.icon && (
                                     <span className={`w-3.5 h-3.5 shrink-0 flex items-center justify-center transition-colors ${isThisSubActive ? "text-[#9F062A]" : "text-slate-400"}`}>
-                                      {sub.icon}
+                                      {renderItemIcon(sub.icon)}
                                     </span>
                                   )}
                                   <span className="truncate tracking-wide leading-none">{sub.label}</span>
