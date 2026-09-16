@@ -24,20 +24,36 @@ export interface SidebarSection {
 }
 
 export interface SidebarProps {
-  institution: {
+  institution?: {
     name: string;
     subtitle: string;
     logo?: ReactNode | string;
   };
 
-  user: {
+  user?: {
     name: string;
     role: string;
     status: string;
     avatar?: string;
   };
 
-  sections: SidebarSection[];
+  sections?: SidebarSection[];
+  
+  // Alternate flat props for simple dashboards
+  title?: string;
+  subtitle?: string;
+  logo?: ReactNode | string;
+  items?: Array<{ id: string; label: string; icon?: ReactNode; badge?: string }>;
+  activeId?: string;
+  onSelect?: (id: string) => void;
+  userProfile?: {
+    name?: string;
+    role?: string;
+    status?: string;
+    avatar?: string;
+    avatarBg?: string;
+  };
+
   onItemClick?: (route: string) => void;
   onLogout?: () => void;
   onGoToPortal?: () => void;
@@ -49,6 +65,13 @@ export default function Sidebar({
   institution,
   user,
   sections,
+  title,
+  subtitle,
+  logo,
+  items,
+  activeId,
+  onSelect,
+  userProfile,
   onItemClick,
   onLogout,
   onGoToPortal,
@@ -58,6 +81,37 @@ export default function Sidebar({
   const [isOpenMobile, setIsOpenMobile] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+
+  // Resolve institution header values
+  const instName = institution?.name || title || "SFA Admisión";
+  const instSubtitle = institution?.subtitle || subtitle || "Portal Institucional";
+  const instLogo = institution?.logo !== undefined ? institution.logo : logo;
+
+  // Resolve user values
+  const userName = user?.name || userProfile?.name || "Usuario";
+  const userRole = user?.role || userProfile?.role || "Postulante 2026-I";
+  const userStatus = user?.status || userProfile?.status || "Activo";
+  const userAvatar = user?.avatar || userProfile?.avatar;
+
+  // Resolve sections vs flat items
+  const resolvedSections: SidebarSection[] = (sections && sections.length > 0)
+    ? sections
+    : (items && items.length > 0)
+      ? [{
+          title: "Menú Principal",
+          items: items.map(it => ({
+            label: it.label,
+            icon: it.icon,
+            route: it.id,
+            active: activeId === it.id
+          }))
+        }]
+      : [];
+
+  const handleNavigation = (route: string) => {
+    if (onItemClick) onItemClick(route);
+    if (onSelect) onSelect(route);
+  };
 
   // Helper to extract initials
   const getInitials = (name: string) => {
@@ -71,7 +125,7 @@ export default function Sidebar({
 
   // Helper to render Status Badge colors dynamically
   const getStatusVariant = (status: string) => {
-    const s = status.toUpperCase();
+    const s = (status || "").toUpperCase();
     if (s.includes("ADMITIDO")) return "warning";
     if (s.includes("MATRICULADO") || s.includes("VALIDADO") || s.includes("APROBADO") || s.includes("APTO")) return "success";
     if (s.includes("OBSERVADO") || s.includes("RECHAZADO") || s.includes("FALTA") || s.includes("NO APTO")) return "danger";
@@ -80,25 +134,25 @@ export default function Sidebar({
   };
 
   const renderLogo = () => {
-    if (!institution.logo) {
+    if (!instLogo) {
       return (
         <div className="h-10 w-10 bg-[#8B0026] text-[#CFA020] rounded-xl flex items-center justify-center font-bold shadow-md shrink-0 border border-[#8B0026]/10">
           <GraduationCap className="w-5 h-5" />
         </div>
       );
     }
-    if (typeof institution.logo === "string") {
+    if (typeof instLogo === "string") {
       return (
         <div className="h-10 w-10 bg-[#8B0026] text-[#CFA020] rounded-xl flex items-center justify-center font-bold shadow-md shrink-0 overflow-hidden">
-          {institution.logo.startsWith("http") ? (
-            <img src={institution.logo} alt="Logo" className="w-full h-full object-cover" />
+          {instLogo.startsWith("http") ? (
+            <img src={instLogo} alt="Logo" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-white text-base font-black">{institution.logo}</span>
+            <span className="text-white text-base font-black">{instLogo}</span>
           )}
         </div>
       );
     }
-    return institution.logo;
+    return instLogo;
   };
 
   const SidebarContent = ({ collapsed = false }: { collapsed?: boolean }) => (
@@ -109,10 +163,10 @@ export default function Sidebar({
         {!collapsed && (
           <div className="text-left min-w-0 flex-1">
             <h1 className="text-xs font-black text-[#8B0026] tracking-tight leading-none uppercase truncate">
-              {institution.name}
+              {instName}
             </h1>
             <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wide block mt-1 truncate">
-              {institution.subtitle}
+              {instSubtitle}
             </span>
           </div>
         )}
@@ -122,24 +176,24 @@ export default function Sidebar({
       <div className={`py-3 ${collapsed ? "px-2" : "px-4 mt-1"}`}>
         <div className={`bg-slate-50/80 border border-slate-200/80 rounded-2xl text-left relative overflow-hidden transition-colors ${collapsed ? "p-2 flex flex-col items-center justify-center" : "p-3.5"}`}>
           <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
-            {user.avatar ? (
+            {userAvatar ? (
               <img 
-                src={user.avatar} 
+                src={userAvatar} 
                 alt="Avatar" 
                 className="w-9 h-9 rounded-full object-cover ring-2 ring-amber-400/40 shrink-0" 
               />
             ) : (
               <div className="h-9 w-9 bg-amber-400 text-slate-900 border border-amber-300 rounded-full flex items-center justify-center font-black text-xs shrink-0 tracking-tight">
-                {getInitials(user.name)}
+                {getInitials(userName)}
               </div>
             )}
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <h4 className="text-[11px] font-black text-slate-800 leading-tight block truncate" title={user.name}>
-                  {user.name}
+                <h4 className="text-[11px] font-black text-slate-800 leading-tight block truncate" title={userName}>
+                  {userName}
                 </h4>
-                <span className="text-[9px] text-slate-500 font-bold block truncate mt-0.5" title={user.role}>
-                  {user.role}
+                <span className="text-[9px] text-slate-500 font-bold block truncate mt-0.5" title={userRole}>
+                  {userRole}
                 </span>
               </div>
             )}
@@ -148,8 +202,8 @@ export default function Sidebar({
           {!collapsed && (
             <div className="mt-3 pt-2 border-t border-slate-200/60 flex justify-between items-center text-[10px] font-bold">
               <span className="text-slate-400 uppercase tracking-widest text-[8.5px] font-black">ESTADO:</span>
-              <Badge variant={getStatusVariant(user.status)} className="font-extrabold tracking-wider px-2 py-0.5 text-[8.5px] uppercase border">
-                {user.status}
+              <Badge variant={getStatusVariant(userStatus)} className="font-extrabold tracking-wider px-2 py-0.5 text-[8.5px] uppercase border">
+                {userStatus}
               </Badge>
             </div>
           )}
@@ -164,9 +218,9 @@ export default function Sidebar({
 
       {/* Scrollable Navigation Sections */}
       <div className={`flex-1 overflow-y-auto space-y-4 custom-scrollbar text-left ${collapsed ? "px-2 py-2" : "px-3 py-2"}`}>
-        {sections.map((section, idx) => (
+        {resolvedSections.map((section, idx) => (
           <div key={idx} className="space-y-1">
-            {!collapsed && (
+            {!collapsed && section.title && (
               <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block px-2 mb-1">
                 {section.title}
               </span>
@@ -192,7 +246,7 @@ export default function Sidebar({
                             [item.route]: !isExpanded
                           }));
                         } else {
-                          if (onItemClick) onItemClick(item.route);
+                          handleNavigation(item.route);
                           setIsOpenMobile(false);
                         }
                       }}
@@ -311,10 +365,10 @@ export default function Sidebar({
           {renderLogo()}
           <div className="text-left">
             <h1 className="text-xs font-black text-[#9F062A] tracking-tight leading-none uppercase">
-              {institution.name}
+              {instName}
             </h1>
             <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wide block mt-0.5">
-              {institution.subtitle}
+              {instSubtitle}
             </span>
           </div>
         </div>
