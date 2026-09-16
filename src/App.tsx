@@ -318,7 +318,8 @@ export default function App() {
                   merged.push(fa);
                 }
               });
-              localStorage.setItem("sfa_applicants", JSON.stringify(merged));
+              // Strip fileDataUrls before localStorage (images live in Firestore/memory only)
+              localStorage.setItem("sfa_applicants", JSON.stringify(stripFileDataUrls(merged)));
               return merged;
             });
           }
