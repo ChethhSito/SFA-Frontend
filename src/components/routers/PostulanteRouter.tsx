@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import PostulanteDashboard from "../postulante/PostulanteDashboard";
+import PostulanteDashboard from "../postulante";
 import { Applicant, Enrollment } from "../../types";
 import { Lock, ArrowLeft, Loader2 } from "lucide-react";
 import Button from "../ui/Button";

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import AdminDashboard from "../admin/AdminDashboard";
+import AdminDashboard from "../admin";
 import { Applicant, Enrollment, StudentPersonalData, Classroom, Teacher, Graduation, AdmissionPeriod, Course, CourseAssignment, AttendanceRecord } from "../../types";
 import { ShieldAlert, Lock, ArrowLeft } from "lucide-react";
 import Button from "../ui/Button";

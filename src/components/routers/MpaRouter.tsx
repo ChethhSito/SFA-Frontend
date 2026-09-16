@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import MpaDashboard from "../mpa/MpaDashboard";
+import MpaDashboard from "../mpa";
 import { Lock, ArrowLeft } from "lucide-react";
 import Button from "../ui/Button";
 

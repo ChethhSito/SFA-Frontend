@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import MgeDashboard from "../mge/MgeDashboard";
+import MgeDashboard from "../mge";
 import { Applicant, Enrollment, StudentPersonalData, Course, CourseAssignment, AttendanceRecord, Graduation, AdmissionPeriod } from "../../types";
 import { Lock, ArrowLeft, Calendar } from "lucide-react";
 import Button from "../ui/Button";

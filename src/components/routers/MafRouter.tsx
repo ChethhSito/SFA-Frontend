@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import MafDashboard from "../maf/MafDashboard";
+import MafDashboard from "../maf";
 import { Lock, ArrowLeft } from "lucide-react";
 import Button from "../ui/Button";
 
