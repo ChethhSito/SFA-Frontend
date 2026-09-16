@@ -337,13 +337,34 @@ export default function App() {
     };
   }, []);
 
+  // Helper: strip heavy base64 fileDataUrl from docs before persisting to localStorage
+  const stripFileDataUrls = (applicantsList: any[]): any[] => {
+    return applicantsList.map((app) => {
+      if (!app.docs) return app;
+      const strippedDocs: any = {};
+      for (const [key, val] of Object.entries(app.docs)) {
+        const doc = val as any;
+        strippedDocs[key] = { ...doc, fileDataUrl: undefined };
+      }
+      return { ...app, docs: strippedDocs };
+    });
+  };
+
   const saveDatabaseState = (
     key: string,
     value: any,
     setter: React.Dispatch<React.SetStateAction<any>>
   ) => {
     setter(value);
-    localStorage.setItem(key, JSON.stringify(value));
+    try {
+      // Strip fileDataUrls from applicants before saving to avoid localStorage QuotaExceededError
+      const toSave = key === "sfa_applicants" && Array.isArray(value)
+        ? stripFileDataUrls(value)
+        : value;
+      localStorage.setItem(key, JSON.stringify(toSave));
+    } catch (e) {
+      console.warn(`[localStorage] Could not save ${key} — quota likely exceeded:`, e);
+    }
   };
 
   const handleUpdateApplicantsFromAdmin = async (updatedList: any[]) => {
@@ -420,14 +441,15 @@ export default function App() {
 
     if (isFirebaseEnabled) {
       // Sync each modified applicant back to Firestore
+      // IMPORTANT: use DNI as document ID so PostulanteRouter's onSnapshot can pick it up
       for (const updatedApp of updatedList) {
         const existingApp = applicants.find(a => a.dni === updatedApp.dni);
         if (!existingApp || JSON.stringify(existingApp) !== JSON.stringify(updatedApp)) {
-          const docId = updatedApp.id || updatedApp.uid || updatedApp.applicantCode;
+          const docId = updatedApp.dni; // Always use DNI for consistency with PostulanteRouter
           if (docId) {
             try {
               await saveDocumentGeneric("applicants", docId, updatedApp);
-              console.log(`Synced applicant ${updatedApp.dni} modification to Firestore.`);
+              console.log(`Synced applicant ${updatedApp.dni} validation to Firestore (docId=DNI).`);
             } catch (err) {
               console.error(`Error syncing applicant ${updatedApp.dni} to Firestore:`, err);
             }

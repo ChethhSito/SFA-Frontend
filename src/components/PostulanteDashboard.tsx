@@ -3,7 +3,7 @@ import {
   FileText, CreditCard, Award, HelpCircle, Upload, LogOut, ArrowRight, CheckCircle2, 
   XCircle, Clock, ChevronRight, Download, RefreshCw, AlertTriangle, Play, HelpCircle as HelpIcon,
   ChevronLeft, ArrowLeft, Terminal, LayoutDashboard, Compass, Info, CheckSquare, Settings,
-  Landmark, Store, Smartphone, Printer, Check
+  Landmark, Store, Smartphone, Printer, Check, Calendar, MapPin, Lightbulb
 } from "lucide-react";
 import { Applicant, ProgramId, Enrollment } from "../types";
 import { ACADEMIC_PROGRAMS, REAL_MPA_COURSES } from "../mockData";
@@ -362,8 +362,15 @@ export default function PostulanteDashboard({
   return (
     <div 
       id="portal-postulante"
-      className="relative min-h-screen w-full bg-[#f8fafc] font-sans text-slate-800 flex flex-col md:flex-row overflow-x-hidden"
+      className="relative h-screen w-full bg-slate-50 font-sans text-slate-800 overflow-hidden flex flex-col md:flex-row"
+      style={{
+        backgroundImage: `radial-gradient(ellipse at top right, rgba(207,160,32,0.03), transparent 50%), radial-gradient(ellipse at bottom left, rgba(159,6,42,0.02), transparent 50%)`
+      }}
     >
+      {/* Floating slowly rotating graphic background color shapes to mirror the Login Portal style */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#9F062A]/3 rounded-full blur-[90px] pointer-events-none animate-pulse duration-[10s]" />
+      <div className="absolute bottom-1/5 right-1/4 w-[450px] h-[450px] bg-amber-400/2 rounded-full blur-[110px] pointer-events-none animate-pulse duration-[15s]" />
+
       {/* 3. SIDEBAR NAVIGATION */}
       <Sidebar
         institution={{
@@ -517,7 +524,7 @@ export default function PostulanteDashboard({
                   <p className="text-slate-500 font-semibold mt-1 text-[11px] leading-relaxed">Carrera oficial registrada en el sistema de admisiones.</p>
                 </div>
                 <div className="mt-4 pt-2.5 border-t flex justify-between items-center text-[#9F062A] font-extrabold uppercase text-[9px]">
-                  <span>Completado ✓</span>
+                  <span className="flex items-center gap-1 text-emerald-700 font-bold"><Check className="w-3.5 h-3.5" /> Completado</span>
                 </div>
               </div>
 
@@ -561,7 +568,7 @@ export default function PostulanteDashboard({
                 <div>
                   <span className="font-extrabold text-[10px] text-slate-400 block uppercase">4. Examen y Admisión</span>
                   <span className={`font-black uppercase text-xs mt-1 block ${isActuallyAdmitted ? "text-emerald-600 animate-pulse" : (applicant.admitted === "NO ADMITIDO" ? "text-rose-600" : "text-slate-500")}`}>
-                    {isActuallyAdmitted ? "★ ADMITIDO ★" : (applicant.admitted === "NO ADMITIDO" ? "NO ADMITIDO" : "PENDIENTE EVAL")}
+                    {isActuallyAdmitted ? "ADMITIDO" : (applicant.admitted === "NO ADMITIDO" ? "NO ADMITIDO" : "PENDIENTE EVAL")}
                   </span>
                   <p className="text-slate-500 font-semibold mt-1 text-[11px] leading-relaxed">Asignación de aula de examen, rendición presencial y publicación de resultados oficiales.</p>
                 </div>
@@ -1207,28 +1214,28 @@ export default function PostulanteDashboard({
 
               </div>
 
-              {/* R: SIDEBAR FOR PROGRESS GAUGE */}
-              <div className="space-y-4">
+              {/* R: SIDEBAR FOR PROGRESS GAUGE (REPLICATING SCREENSHOT 2 SIDEBAR WIDGETS) */}
+              <div className="space-y-6">
                 
-                {/* Visual Progress card on right matching institutional style */}
-                <div className="bg-[#9F062A] text-white p-5 rounded-md shadow-2xs flex flex-col justify-between border border-[#800521] text-left space-y-4">
+                {/* Visual Progress card on right matching deep solid red look of image 2 */}
+                <div className="bg-[#9F062A] text-white p-5 rounded-2xl shadow-xl flex flex-col justify-between border-l-4 border-amber-400 text-left">
                   <div>
-                    <h3 className="font-black text-white text-xs uppercase tracking-wider block border-b border-white/10 pb-2 text-white/90">Progreso del Expediente</h3>
+                    <h3 className="font-black text-white text-xs sm:text-sm uppercase tracking-wider block leading-none">Progreso del Expediente</h3>
                     
-                    <div className="mt-4 flex justify-between items-baseline">
+                    <div className="mt-5 flex justify-between items-baseline">
                       <span className="text-[10px] text-slate-200 font-bold uppercase tracking-widest block">ESTADO GLOBAL</span>
                       <span className="text-2xl font-black text-amber-300 font-mono leading-none">{globalProgressPercentage}%</span>
                     </div>
 
                     {/* Progress bar */}
-                    <div className="w-full bg-[#800521] h-2 rounded-full overflow-hidden mt-3 mb-4 border border-black/10">
+                    <div className="w-full bg-slate-900/40 h-2 rounded-full overflow-hidden mt-3 mb-4">
                       <div 
                         className="bg-amber-400 h-full transition-all duration-300" 
                         style={{ width: `${globalProgressPercentage}%` }}
                       />
                     </div>
 
-                    <p className="text-slate-100 font-medium text-[11px] leading-relaxed">
+                    <p className="text-slate-100 font-medium text-[11px] leading-normal mb-5">
                       Ha completado <strong className="text-white font-extrabold">{approvedCount} de {totalDocs}</strong> documentos requeridos. Debe subsanar las observaciones para continuar con el proceso de asignación de vacante y matrícula de estudiante.
                     </p>
                   </div>
@@ -1241,50 +1248,49 @@ export default function PostulanteDashboard({
                         alert(`¡Expediente enviado a revisión final! El comité académico de admisiones confirmará su plaza de estudios hoy mismo.`);
                       }
                     }}
-                    className="w-full bg-white hover:bg-slate-50 text-[#9F062A] hover:text-[#800521] py-2.5 rounded-md font-extrabold text-xs uppercase tracking-wider shadow-2xs transition-colors cursor-pointer text-center"
+                    className="w-full bg-white hover:bg-slate-100 text-[#9F062A] hover:text-[#800521] py-3 rounded-xl font-bold text-xs uppercase tracking-widest shadow-md transition-all cursor-pointer text-center"
                   >
                     Enviar a Revisión Final
                   </button>
                 </div>
 
-                {/* Instructions card */}
-                <div className="bg-white p-5 rounded-md border border-slate-200 text-left shadow-2xs">
-                  <span className="text-[10px] font-black text-[#9F062A] uppercase tracking-wider block border-b border-slate-100 pb-2 mb-3 flex items-center gap-1.5">
-                    <Info className="w-3.5 h-3.5 text-[#9F062A]" /> Instrucciones Importantes
+                {/* Instructions card EXACTLY matching Layout requirements list detail on image 2 */}
+                <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-sm text-left">
+                  <span className="text-[10px] font-black text-[#9F062A] uppercase tracking-wider block border-b pb-2 mb-3 flex items-center gap-1.5">
+                    <Info className="w-4 h-4 text-[#9F062A]" />
+                    Instrucciones Importantes
                   </span>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div className="flex gap-2.5 text-xs">
                       <span className="font-black text-[#9F062A] text-[11px] font-mono select-none">01.</span>
-                      <p className="text-slate-600 font-medium leading-relaxed text-[11px]">Todos los documentos deben estar en formato de imagen (JPG, JPEG o PNG).</p>
+                      <p className="text-slate-600 font-bold leading-normal text-[11px]">Todos los documentos deben estar en formato de imagen (JPG, JPEG o PNG).</p>
                     </div>
 
                     <div className="flex gap-2.5 text-xs">
                       <span className="font-black text-[#9F062A] text-[11px] font-mono select-none">02.</span>
-                      <p className="text-slate-600 font-medium leading-relaxed text-[11px]">Asegúrese de que la captura o escaneo fotográfico sea nítida, legible y con buena iluminación.</p>
+                      <p className="text-slate-600 font-bold leading-normal text-[11px]">Asegúrese de que la captura o escaneo fotográfico sea nítida, legible y con buena iluminación.</p>
                     </div>
 
                     <div className="flex gap-2.5 text-xs">
                       <span className="font-black text-[#9F062A] text-[11px] font-mono select-none">03.</span>
-                      <p className="text-slate-600 font-medium leading-relaxed text-[11px]">El peso máximo por cada imagen cargada debe ser menor a 5MB.</p>
+                      <p className="text-slate-600 font-bold leading-normal text-[11px]">El peso máximo por cada imagen cargada debe ser menor a 5MB.</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Need Help contact card */}
-                <div className="bg-slate-50 p-4 rounded-md border border-slate-200 text-left space-y-2">
-                  <div className="flex items-center gap-2">
-                    <HelpIcon className="w-4 h-4 text-[#9F062A]" />
-                    <h4 className="font-black text-slate-800 text-xs uppercase tracking-wide">¿Necesita ayuda?</h4>
-                  </div>
-                  <p className="text-[11px] text-slate-500 font-medium leading-normal">
+                {/* Need Help contact card matching image 2 */}
+                <div className="bg-slate-100/80 p-5 rounded-xl border border-slate-200 shadow-sm text-center">
+                  <HelpCircle className="w-6 h-6 text-[#9F062A] mx-auto mb-2" />
+                  <h4 className="font-black text-slate-800 text-xs sm:text-sm leading-tight">¿Necesita ayuda?</h4>
+                  <p className="text-[11px] text-slate-500 font-semibold mt-1.5 leading-normal max-w-sm mx-auto">
                     Nuestro equipo de secretaría académica está disponible para guiarte en tu proceso de L-V de 8am a 6pm.
                   </p>
                   <button 
                     onClick={() => setActiveTab("soporte")}
-                    className="text-[10px] text-[#9F062A] hover:text-[#800521] font-black uppercase tracking-wider block mt-2 cursor-pointer hover:underline"
+                    className="text-[10px] text-[#9F062A] hover:text-[#CFA020] font-black uppercase tracking-wider block mx-auto mt-3.5 border-b border-[#9F062A] hover:border-[#CFA020] cursor-pointer"
                   >
-                    Contactar Soporte &rarr;
+                    Contactar Soporte
                   </button>
                 </div>
 
@@ -1685,7 +1691,7 @@ export default function PostulanteDashboard({
                 {/* 1. TOP GREEN NOTIFICATION BOX (MATCHES IMAGE 3 EXACTLY) */}
                 <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex gap-3 text-emerald-900 shadow-sm animate-fade-in items-start">
                   <span className="h-6 w-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold shrink-0 mt-0.5">
-                    <Check className="w-3.5 h-3.5" />
+                    <Check className="w-4 h-4 text-emerald-700" />
                   </span>
                   <div>
                     <span className="font-extrabold text-[12px] block text-emerald-950">
@@ -1719,8 +1725,8 @@ export default function PostulanteDashboard({
                       {/* Display grid for Place, Date, Hour & Modality */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-bold leading-relaxed text-left border-b pb-6 mb-6">
                         <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
-                          <span className="h-8 w-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                            <Clock className="w-4 h-4 text-emerald-600" />
+                          <span className="h-8 w-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm shrink-0">
+                            <Calendar className="w-4 h-4 text-emerald-600" />
                           </span>
                           <div>
                             <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Fecha de Matrícula</span>
@@ -1730,7 +1736,7 @@ export default function PostulanteDashboard({
                         </div>
 
                         <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
-                          <span className="h-8 w-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                          <span className="h-8 w-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm shrink-0">
                             <Clock className="w-4 h-4 text-indigo-600" />
                           </span>
                           <div>
@@ -1741,8 +1747,8 @@ export default function PostulanteDashboard({
                         </div>
 
                         <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
-                          <span className="h-8 w-8 rounded-full bg-[#9F062A]/5 text-[#9F062A] flex items-center justify-center shrink-0">
-                            <Landmark className="w-4 h-4 text-[#9F062A]" />
+                          <span className="h-8 w-8 rounded-full bg-[#9F062A]/5 text-[#9F062A] flex items-center justify-center text-sm shrink-0">
+                            <MapPin className="w-4 h-4 text-[#9F062A]" />
                           </span>
                           <div>
                             <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Ubicación Física</span>
@@ -1752,7 +1758,7 @@ export default function PostulanteDashboard({
                         </div>
 
                         <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
-                          <span className="h-8 w-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                          <span className="h-8 w-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-sm shrink-0">
                             <Award className="w-4 h-4 text-amber-600" />
                           </span>
                           <div>
@@ -1780,8 +1786,8 @@ export default function PostulanteDashboard({
 
                     </div>
 
-                    {/* BLUE INFO BOX ON BOTTOM LEFT */}
-                    <div className="p-4 bg-sky-50 border border-sky-100 rounded-lg flex gap-3 text-sky-905 text-left text-xs leading-relaxed items-start">
+                    {/* BLUE INFO BOX ON BOTTOM LEFT OF IMAGE 3 */}
+                    <div className="p-4 bg-sky-50 border border-sky-100 rounded-lg flex gap-3 text-sky-905 text-left text-xs leading-relaxed">
                       <Info className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
                       <p className="text-[#2F6187] font-semibold text-[11px]">
                         <strong>Recordatorio de Admisión:</strong> Recuerde traer su DNI físico vigente y la constancia de ingreso e inscripción de matrícula impresa. El acceso de ventanillas administrativas cerrará puntualmente en las fechas asignadas de Matrícula.
@@ -1876,7 +1882,7 @@ export default function PostulanteDashboard({
                 {/* 1. TOP INDIGO NOTIFICATION BOX */}
                 <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex gap-3 text-indigo-900 shadow-sm animate-fade-in items-start">
                   <span className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold shrink-0 mt-0.5">
-                    <Check className="w-3.5 h-3.5" />
+                    <Check className="w-4 h-4 text-indigo-700" />
                   </span>
                   <div>
                     <span className="font-extrabold text-[12px] block text-indigo-950">
@@ -1910,8 +1916,8 @@ export default function PostulanteDashboard({
                       {/* Display grid for Place, Date, Hour & Modality */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-bold leading-relaxed text-left border-b pb-6 mb-6">
                         <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
-                          <span className="h-8 w-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                            <Clock className="w-4 h-4 text-amber-600" />
+                          <span className="h-8 w-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-sm shrink-0">
+                            <Calendar className="w-4 h-4 text-amber-600" />
                           </span>
                           <div>
                             <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Fecha del Examen</span>
@@ -1921,7 +1927,7 @@ export default function PostulanteDashboard({
                         </div>
 
                         <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
-                          <span className="h-8 w-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                          <span className="h-8 w-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm shrink-0">
                             <Clock className="w-4 h-4 text-emerald-600" />
                           </span>
                           <div>
@@ -1932,8 +1938,8 @@ export default function PostulanteDashboard({
                         </div>
 
                         <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
-                          <span className="h-8 w-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                            <Landmark className="w-4 h-4 text-indigo-600" />
+                          <span className="h-8 w-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm shrink-0">
+                            <MapPin className="w-4 h-4 text-indigo-600" />
                           </span>
                           <div>
                             <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Ubicación / Aula Física</span>
@@ -1947,7 +1953,7 @@ export default function PostulanteDashboard({
                         </div>
 
                         <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex gap-3 items-center">
-                          <span className="h-8 w-8 rounded-full bg-[#9F062A]/5 text-[#9F062A] flex items-center justify-center shrink-0">
+                          <span className="h-8 w-8 rounded-full bg-[#9F062A]/5 text-[#9F062A] flex items-center justify-center text-sm shrink-0">
                             <FileText className="w-4 h-4 text-[#9F062A]" />
                           </span>
                           <div>
@@ -1960,7 +1966,7 @@ export default function PostulanteDashboard({
 
                       {/* Info Notice card explaining they cannot download certificate yet */}
                       <div className="p-4 bg-[#FAF7EE] border border-[#D5A023]/25 rounded-lg text-xs leading-relaxed text-slate-700 font-bold flex gap-2.5 text-left items-start">
-                        <AlertTriangle className="w-4 h-4 text-[#D5A023] shrink-0 mt-0.5" />
+                        <AlertTriangle className="w-4 h-4 text-[#CFA020] shrink-0 mt-0.5" />
                         <div className="text-[11px] text-slate-750 font-semibold">
                           <strong>Constancia de Admisión bloqueada temporalmente:</strong> No se cuenta con una vacante adjudicada previamente. Una vez que asista y rinda satisfactoriamente la evaluación presencial general en su aula reservada, secretaría registrará sus notas calificadas para habilitar el egreso definitivo de su Constancia Digital oficial.
                         </div>
@@ -1969,7 +1975,7 @@ export default function PostulanteDashboard({
                     </div>
 
                     {/* RECOMMENDATIONS BOX */}
-                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex gap-3 text-left items-start">
+                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg flex gap-3 text-left">
                       <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                       <p className="text-blue-800 font-semibold text-[11px] leading-relaxed">
                         <strong>Requerimientos obligatorios para examen:</strong> Es mandatorio portar su DNI físico vigente, su lápiz 2B de carbón, un borrador limpio y el comprobante físico del pago impreso para poder acceder a las instalaciones del campus.
@@ -2061,7 +2067,7 @@ export default function PostulanteDashboard({
 
                 <div className="pt-4 border-t text-left">
                   <p className="text-[10px] text-slate-500 font-medium leading-normal bg-slate-50 border border-slate-200 p-3 rounded flex items-start gap-2">
-                    <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <Lightbulb className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                     <span><strong>Siguiente Paso:</strong> Una vez validados todos sus documentos y el pago por secretaría académica, se habilitará la asignación de su aula para que rinda el examen presencial correspondiente para adjudicarse su vacante oficial.</span>
                   </p>
                 </div>
@@ -2777,7 +2783,7 @@ export default function PostulanteDashboard({
                 {/* Gold Crest Decal Header */}
                 <div className="border-b-[3px] border-amber-500 pb-3 mb-6 text-center">
                   <div className="text-amber-600 text-center flex justify-center gap-1.5 font-bold uppercase tracking-widest text-[9px] mb-1.5">
-                    <span>★★★★ MINISTERIO DE EDUCACIÓN EN EL PERÚ ★★★★</span>
+                    <span>MINISTERIO DE EDUCACIÓN DEL PERÚ</span>
                   </div>
                   <h1 className="text-[13px] font-black text-slate-900 uppercase tracking-wider mb-0.5 leading-none">
                     INSTITUTO DE EDUCACIÓN SUPERIOR TECNOLÓGICO PÚBLICO
@@ -2920,7 +2926,7 @@ export default function PostulanteDashboard({
             {/* Modal Bottom toolbar buttons */}
             <div className="bg-slate-50 px-6 py-4 border-t border-slate-150 flex flex-wrap gap-2.5 items-center justify-between text-xs font-bold text-slate-700">
               <span className="text-[10px] text-[#2F6187] font-semibold flex items-center gap-1">
-                <span>💡</span>
+                <Lightbulb className="w-3.5 h-3.5 text-amber-500" />
                 <span>Sugerencia: Imprima el documento para presentarlo en ventanilla.</span>
               </span>
 

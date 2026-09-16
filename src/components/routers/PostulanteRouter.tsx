@@ -74,29 +74,90 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
     ) || null;
   }
 
+  // Merge persisted doc statuses from localStorage back into the resolved applicant.
+  // This fixes the "NO ENVIADO" bug after refresh: when the main localStorage/API
+  // doesn't carry the docs (due to base64 size issues), the dedicated doc status
+  // key (sfa_doc_status_{dni}) is used as the source of truth for status/fileName.
+  if (applicantToRender && currentDni) {
+    try {
+      const savedDocs = localStorage.getItem(`sfa_doc_status_${currentDni}`);
+      if (savedDocs) {
+        const parsed = JSON.parse(savedDocs);
+        const existingDocs = (applicantToRender as any).docs || {};
+        const mergedDocs: any = {};
+        const allKeys = new Set([...Object.keys(parsed), ...Object.keys(existingDocs)]);
+        for (const key of allKeys) {
+          const persisted = parsed[key];
+          const live = existingDocs[key];
+          // Use the persisted status if live shows "No Enviado" but persisted shows something else
+          if (persisted && persisted.status && persisted.status !== "No Enviado") {
+            mergedDocs[key] = { ...live, ...persisted };
+          } else {
+            mergedDocs[key] = live || { status: "No Enviado" };
+          }
+        }
+        applicantToRender = { ...applicantToRender, docs: mergedDocs } as Applicant;
+      }
+    } catch (e) {
+      console.warn("Could not read doc status from localStorage:", e);
+    }
+  }
+
+
   const handleUpdateLiveApplicant = async (updated: Applicant) => {
-    // Update locally immediately
+    // Update locally immediately (full data with fileDataUrl for current session)
     onUpdateApplicant(updated);
     setLiveApplicant(updated);
 
-    // Persist to NestJS Backend (MongoDB)
+    // Save doc status/fileName to dedicated localStorage key (without heavy base64)
+    // This guarantees the postulante sees their uploaded docs after refresh
+    if (updated.docs) {
+      const docsForStorage: any = {};
+      for (const [key, val] of Object.entries(updated.docs)) {
+        const d = val as any;
+        docsForStorage[key] = {
+          status: d.status,
+          fileName: d.fileName,
+          observations: d.observations
+        };
+      }
+      try {
+        localStorage.setItem(`sfa_doc_status_${updated.dni}`, JSON.stringify(docsForStorage));
+      } catch (e) {
+        console.warn("Could not save doc status to localStorage:", e);
+      }
+    }
+
+    // Persist to NestJS Backend (MongoDB) — strip fileDataUrl to avoid payload size limits
+    const forApi = {
+      ...updated,
+      docs: updated.docs
+        ? Object.fromEntries(
+            Object.entries(updated.docs).map(([k, v]: [string, any]) => [
+              k,
+              { status: v.status, fileName: v.fileName, observations: v.observations }
+            ])
+          )
+        : undefined
+    };
     try {
-      await updateApplicant(updated.dni, updated);
+      await updateApplicant(updated.dni, forApi as any);
       console.log("Updated applicant in Backend REST API successfully!");
     } catch (apiErr) {
       console.error("Error saving updated applicant to REST API:", apiErr);
     }
     
-    // Update in Firebase Firestore if enabled
+    // Update in Firebase Firestore if enabled (also strip fileDataUrl for Firestore 1MB limit)
     if (isFirebaseEnabled && session) {
       try {
-        await saveDocumentGeneric("applicants", session, updated);
+        await saveDocumentGeneric("applicants", session, forApi);
         console.log("Updated live applicant profile successfully in Firestore!");
       } catch (err) {
         console.error("Error saving updated applicant to Firestore:", err);
       }
     }
   };
+
 
   if (loading) {
     return (
