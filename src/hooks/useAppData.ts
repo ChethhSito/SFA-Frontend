@@ -5,6 +5,10 @@ import { useStudentEnrollment } from "./alumno/useStudentEnrollment";
 import { useStudentGrades } from "./alumno/useStudentGrades";
 import { useTeacherClassroom } from "./docente/useTeacherClassroom";
 import { useMaterialUpload } from "./docente/useMaterialUpload";
+import { useUsersManager } from "./superadmin/useUsersManager";
+import { useAcademicPlanning } from "./mpa/useAcademicPlanning";
+import { useGraduationsManager } from "./mge/useGraduationsManager";
+import { useFinanceManager } from "./maf/useFinanceManager";
 
 export function useAppData() {
   const authSession = useAuthSession();
@@ -14,6 +18,10 @@ export function useAppData() {
   const classroomHook = useTeacherClassroom();
   const materialHook = useMaterialUpload();
   const applicantsHook = useApplicantsManager();
+  const usersHook = useUsersManager();
+  const mpaHook = useAcademicPlanning();
+  const mgeHook = useGraduationsManager();
+  const mafHook = useFinanceManager(enrollmentHook.enrollments, enrollmentHook.handleUpdateEnrollments);
 
   const handleUpdateApplicantsFromAdmin = async (updatedList: any[]) => {
     let currentEnrollments = [...enrollmentHook.enrollments];
@@ -115,30 +123,44 @@ export function useAppData() {
     // Enrollments
     enrollments: enrollmentHook.enrollments,
     setEnrollments: enrollmentHook.setEnrollments,
+    enrollmentsLoading: enrollmentHook.enrollmentsLoading,
+    enrollmentsError: enrollmentHook.enrollmentsError,
     handleUpdateEnrollments: enrollmentHook.handleUpdateEnrollments,
+    handleCreateEnrollment: enrollmentHook.handleCreateEnrollment,
+    handleUpdateEnrollmentByDni: enrollmentHook.handleUpdateEnrollmentByDni,
 
-    // Students & Grades
+    // Students & Grades (MGE)
     studentsData: gradesHook.studentsData,
     setStudentsData: gradesHook.setStudentsData,
     cycleStatuses: gradesHook.cycleStatuses,
     setCycleStatuses: gradesHook.setCycleStatuses,
-    graduations: gradesHook.graduations,
-    setGraduations: gradesHook.setGraduations,
+    graduations: mgeHook.graduations,
+    setGraduations: mgeHook.setGraduations,
+    graduationsLoading: mgeHook.graduationsLoading,
+    graduationsError: mgeHook.graduationsError,
     handleUpdateStudentsData: gradesHook.handleUpdateStudentsData,
-    handleUpdateGraduations: gradesHook.handleUpdateGraduations,
+    handleUpdateGraduations: mgeHook.handleUpdateGraduations,
+    handleCreateGraduation: mgeHook.handleCreateGraduation,
+    handleUpdateGraduationByDni: mgeHook.handleUpdateGraduationByDni,
 
-    // Classroom, Teachers & Courses
+    // Academic Planning (MPA)
+    courses: mpaHook.courses,
+    setCourses: mpaHook.setCourses,
+    coursesLoading: mpaHook.coursesLoading,
+    coursesError: mpaHook.coursesError,
+    handleUpdateCourses: mpaHook.handleUpdateCourses,
+    handleCreateCourse: mpaHook.handleCreateCourse,
+    handleUpdateCourseByCode: mpaHook.handleUpdateCourseByCode,
+
+    // Classroom & Teachers (Docente)
     classrooms: classroomHook.classrooms,
     setClassrooms: classroomHook.setClassrooms,
     teachers: classroomHook.teachers,
     setTeachers: classroomHook.setTeachers,
-    courses: classroomHook.courses,
-    setCourses: classroomHook.setCourses,
     attendance: classroomHook.attendance,
     setAttendance: classroomHook.setAttendance,
     handleUpdateClassrooms: classroomHook.handleUpdateClassrooms,
     handleUpdateTeachers: classroomHook.handleUpdateTeachers,
-    handleUpdateCourses: classroomHook.handleUpdateCourses,
     handleUpdateAttendance: classroomHook.handleUpdateAttendance,
 
     // Materials, Assignments & Evaluations
@@ -148,6 +170,20 @@ export function useAppData() {
     setAssignments: materialHook.setAssignments,
     evaluations: materialHook.evaluations,
     handleUpdateMaterials: materialHook.handleUpdateMaterials,
-    handleUpdateAssignments: materialHook.handleUpdateAssignments
+    handleUpdateAssignments: materialHook.handleUpdateAssignments,
+
+    // SuperAdmin (Users Management)
+    systemUsers: usersHook.users,
+    setSystemUsers: usersHook.setUsers,
+    usersLoading: usersHook.usersLoading,
+    usersError: usersHook.usersError,
+    handleCreateUser: usersHook.handleCreateUser,
+    handleUpdateUser: usersHook.handleUpdateUser,
+    handleDeleteUser: usersHook.handleDeleteUser,
+
+    // MAF (Finance & Payments)
+    financeTransactions: mafHook.transactions,
+    handleRegisterPayment: mafHook.handleRegisterPayment,
+    getTotalRevenue: mafHook.getTotalRevenue
   };
 }

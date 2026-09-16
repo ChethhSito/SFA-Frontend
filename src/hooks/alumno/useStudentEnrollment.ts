@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { INITIAL_ENROLLMENTS } from "../../data/mockData";
-import { fetchEnrollments } from "../../services/api";
+import {
+  fetchEnrollments,
+  createEnrollment as apiCreateEnrollment,
+  updateEnrollment as apiUpdateEnrollment
+} from "../../services/api";
 
 export function useStudentEnrollment() {
   const [enrollments, setEnrollments] = useState<any[]>(() => {
@@ -33,6 +37,25 @@ export function useStudentEnrollment() {
     return INITIAL_ENROLLMENTS;
   });
 
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchEnrollments()
+      .then((apiEnrolls) => {
+        if (apiEnrolls && apiEnrolls.length > 0) {
+          setEnrollments(apiEnrolls);
+          localStorage.setItem("sfa_enrollments", JSON.stringify(apiEnrolls));
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching enrollments from REST API:", err);
+        setError("Error al cargar matrículas.");
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   const handleUpdateEnrollments = (updatedList: any[]) => {
     setEnrollments(updatedList);
     try {
@@ -42,9 +65,30 @@ export function useStudentEnrollment() {
     }
   };
 
+  const handleCreateEnrollment = async (newEnrollment: any) => {
+    const created = await apiCreateEnrollment(newEnrollment);
+    const itemToSave = created || newEnrollment;
+    const exists = enrollments.some((e) => e.studentDni === itemToSave.studentDni);
+    const nextList = exists
+      ? enrollments.map((e) => (e.studentDni === itemToSave.studentDni ? itemToSave : e))
+      : [...enrollments, itemToSave];
+    handleUpdateEnrollments(nextList);
+    return itemToSave;
+  };
+
+  const handleUpdateEnrollmentByDni = async (studentDni: string, data: any) => {
+    await apiUpdateEnrollment(studentDni, data);
+    const nextList = enrollments.map((e) => (e.studentDni === studentDni ? { ...e, ...data } : e));
+    handleUpdateEnrollments(nextList);
+  };
+
   return {
     enrollments,
     setEnrollments,
-    handleUpdateEnrollments
+    enrollmentsLoading: loading,
+    enrollmentsError: error,
+    handleUpdateEnrollments,
+    handleCreateEnrollment,
+    handleUpdateEnrollmentByDni
   };
 }

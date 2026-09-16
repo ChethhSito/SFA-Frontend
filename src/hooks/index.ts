@@ -5,4 +5,8 @@ export * from "./alumno/useStudentEnrollment";
 export * from "./alumno/useStudentGrades";
 export * from "./docente/useTeacherClassroom";
 export * from "./docente/useMaterialUpload";
+export * from "./superadmin/useUsersManager";
+export * from "./mpa/useAcademicPlanning";
+export * from "./mge/useGraduationsManager";
+export * from "./maf/useFinanceManager";
 export * from "./useAppData";
