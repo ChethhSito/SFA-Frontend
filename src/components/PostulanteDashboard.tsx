@@ -3,7 +3,7 @@ import {
   FileText, CreditCard, Award, HelpCircle, Upload, LogOut, ArrowRight, CheckCircle2, 
   XCircle, Clock, ChevronRight, Download, RefreshCw, AlertTriangle, Play, HelpCircle as HelpIcon,
   ChevronLeft, ArrowLeft, Terminal, LayoutDashboard, Compass, Info, CheckSquare, Settings,
-  Landmark, Store, Smartphone, Printer, Check, Calendar, MapPin, Lightbulb
+  Landmark, Store, Smartphone, Printer, Check, Calendar, MapPin, Lightbulb, ChevronDown, ChevronUp, Headset, MessageSquare
 } from "lucide-react";
 import { Applicant, ProgramId, Enrollment } from "../types";
 import { ACADEMIC_PROGRAMS, REAL_MPA_COURSES } from "../mockData";
@@ -92,6 +92,43 @@ export default function PostulanteDashboard({
 
   const [stagedFotoFile, setStagedFotoFile] = useState<string>("");
   const [stagedFotoPreview, setStagedFotoPreview] = useState<string>("");
+
+  // Accordion toggle state for documents (DNI open by default)
+  const [openDocs, setOpenDocs] = useState<Record<string, boolean>>({
+    dniFile: true,
+    certificadoFile: false,
+    partidaFile: false,
+    fotoFile: false
+  });
+
+  const toggleDoc = (docKey: string) => {
+    setOpenDocs(prev => ({ ...prev, [docKey]: !prev[docKey] }));
+  };
+
+  // Modal state for uploading/previewing document
+  const [stagedUploadModal, setStagedUploadModal] = useState<{
+    docKey: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile";
+    docTitle: string;
+    fileName: string;
+    fileDataUrl: string;
+  } | null>(null);
+
+  const handleCancelUploadModal = () => {
+    if (!stagedUploadModal) return;
+    const key = stagedUploadModal.docKey;
+    if (key === "dniFile") { setStagedDniFile(""); setStagedDniPreview(""); }
+    else if (key === "certificadoFile") { setStagedCertFile(""); setStagedCertPreview(""); }
+    else if (key === "partidaFile") { setStagedPartidaFile(""); setStagedPartidaPreview(""); }
+    else if (key === "fotoFile") { setStagedFotoFile(""); setStagedFotoPreview(""); }
+    setStagedUploadModal(null);
+  };
+
+  const handleConfirmUploadModal = () => {
+    if (!stagedUploadModal) return;
+    const key = stagedUploadModal.docKey;
+    handleSaveDocument(key);
+    setStagedUploadModal(null);
+  };
 
   // Image preview modal states
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -196,6 +233,13 @@ export default function PostulanteDashboard({
     if (!file) return;
 
     const fileName = file.name;
+    const docTitles = {
+      dniFile: "Copia Legible de DNI",
+      certificadoFile: "Certificado de Secundaria",
+      partidaFile: "Partida de Nacimiento",
+      fotoFile: "Foto Tamaño Carné"
+    };
+
     compressAndResizeImage(file, (compressedDataUrl) => {
       if (docKey === "dniFile") {
         setStagedDniFile(fileName);
@@ -210,7 +254,15 @@ export default function PostulanteDashboard({
         setStagedFotoFile(fileName);
         setStagedFotoPreview(compressedDataUrl);
       }
+
+      setStagedUploadModal({
+        docKey,
+        docTitle: docTitles[docKey],
+        fileName,
+        fileDataUrl: compressedDataUrl
+      });
     });
+    e.target.value = "";
   };
 
   // Save/Submit selected file to institutional verification
@@ -457,37 +509,35 @@ export default function PostulanteDashboard({
         {/* ACTIVE TABS SWITCH */}
         {activeTab === "dashboard" && (
           <PageTransition id="dashboard" className="space-y-6">
-            <div className="p-6 bg-slate-900 text-white rounded-xl shadow-md border-b-4 border-[#CFA020] relative overflow-hidden">
-              <div className="relative z-10">
-                <span className="text-[10px] text-amber-300 font-black tracking-widest uppercase block mb-1">PROCESO DE ADMISIÓN CONTINUA INSTITUCIONAL</span>
-                <h2 className="text-xl md:text-2xl font-black font-display tracking-tight flex flex-wrap items-center gap-2.5">
+            {/* INSTITUTIONAL HEADER BANNER */}
+            <div className="p-7 md:p-8 bg-gradient-to-r from-[#8B0020] via-[#700019] to-[#590013] text-white rounded-2xl shadow-lg border-b-4 border-[#CFA020] relative overflow-hidden space-y-4">
+              <div className="relative z-10 space-y-2">
+                <span className="text-[11px] text-amber-300 font-black tracking-widest uppercase block">PROCESO DE ADMISIÓN CONTINUA INSTITUCIONAL</span>
+                <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight flex flex-wrap items-center gap-3">
                   ¡Hola, {applicant.name}!
-                  <span className="text-[10px] bg-amber-400 text-slate-950 font-mono px-2 py-0.5 rounded-md font-bold uppercase tracking-widest leading-none">
-                    Código Postulante: {applicant.applicantCode || "Asignando..."}
+                  <span className="text-[11px] bg-black/30 backdrop-blur-xs text-amber-300 font-mono px-3 py-1 rounded-lg font-bold uppercase tracking-wider border border-amber-400/30">
+                    CÓDIGO POSTULANTE: {applicant.applicantCode || "202610028"}
                   </span>
                 </h2>
-                <p className="text-xs text-slate-300 font-semibold mt-1">Sube tus requisitos digitales para reservar tu vacante de estudios en la carrera técnica de <strong>{currentProgram.name}</strong>. (DNI: {applicant.dni})</p>
+                <p className="text-xs md:text-sm text-slate-200 font-medium leading-relaxed max-w-3xl">
+                  Sube tus requisitos digitales para reservar tu vacante de estudios en la carrera técnica de <strong className="text-white underline decoration-amber-400 decoration-2 underline-offset-2">{currentProgram.name}</strong>. (DNI: {applicant.dni})
+                </p>
                 
-                <div className="mt-5 flex flex-wrap gap-4 text-xs font-bold items-center text-slate-200">
-                  <div className="bg-white/10 px-3.5 py-2.5 rounded-lg flex items-center gap-2 border border-white/5">
-                    Operación Pago Tasas: 
-                    {applicant.paymentStatus === "Validado" ? (
-                      <Badge variant="success" pulse>VALIDADO</Badge>
-                    ) : (
-                      <Badge variant="warning">{applicant.paymentStatus}</Badge>
-                    )}
+                <div className="pt-2 flex flex-wrap gap-6 text-xs font-bold items-center text-slate-200 border-t border-white/10">
+                  <div className="flex items-center gap-2 font-mono">
+                    <span className="text-slate-300 font-medium uppercase text-[11px]">Operación Pago Tasas:</span> 
+                    <span className={`font-extrabold text-[13px] tracking-wider uppercase px-2 py-0.5 rounded ${applicant.paymentStatus === "Validado" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30" : "bg-amber-500/20 text-amber-300 border border-amber-400/30"}`}>
+                      {applicant.paymentStatus === "Validado" ? "VALIDADO" : (applicant.paymentStatus || "NO PAGADO")}
+                    </span>
                   </div>
 
-                  <div className="bg-white/10 px-3.5 py-2.5 rounded-lg flex items-center gap-2 border border-white/5">
-                    Expediente Digital: 
-                    <Badge variant="gold" className="font-mono">{globalProgressPercentage}% completado</Badge>
+                  <div className="flex items-center gap-2 font-mono">
+                    <span className="text-slate-300 font-medium uppercase text-[11px]">Expediente Digital:</span> 
+                    <span className="font-extrabold text-amber-300 text-[13px] tracking-wider px-2 py-0.5 bg-amber-400/10 border border-amber-400/30 rounded">
+                      {globalProgressPercentage}% COMPLETADO
+                    </span>
                   </div>
                 </div>
-              </div>
-
-              {/* Decorative shield background vector in solid sidebar banner */}
-              <div className="absolute right-6 bottom-6 opacity-10 pointer-events-none hidden md:block">
-                <Compass className="w-32 h-32" />
               </div>
             </div>
 
@@ -516,95 +566,165 @@ export default function PostulanteDashboard({
             )}
 
             {/* PROGRESS LANDING TIMELINE WIDGET */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-              <div className="p-4 bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col justify-between">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-5 text-xs">
+              
+              {/* STEP 1: Inscripción Inicial (Siempre Completado) */}
+              <div className="p-5 bg-emerald-50/90 border border-emerald-300/80 rounded-2xl shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between group">
                 <div>
-                  <span className="font-extrabold text-[10px] text-slate-400 block uppercase">1. Inscripción Inicial</span>
-                  <span className="font-black text-slate-800 block text-xs mt-1">{currentProgram.name}</span>
-                  <p className="text-slate-500 font-semibold mt-1 text-[11px] leading-relaxed">Carrera oficial registrada en el sistema de admisiones.</p>
+                  <span className="inline-block bg-emerald-600 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-2">1. INSCRIPCIÓN INICIAL</span>
+                  <h4 className="font-black text-emerald-950 text-sm mt-1">{currentProgram.name}</h4>
+                  <p className="text-emerald-800/90 font-medium text-[11px] mt-1.5 leading-relaxed">Carrera oficial registrada en el sistema de admisiones.</p>
                 </div>
-                <div className="mt-4 pt-2.5 border-t flex justify-between items-center text-[#9F062A] font-extrabold uppercase text-[9px]">
-                  <span className="flex items-center gap-1 text-emerald-700 font-bold"><Check className="w-3.5 h-3.5" /> Completado</span>
-                </div>
-              </div>
-
-              <div className="p-4 bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col justify-between">
-                <div>
-                  <span className="font-extrabold text-[10px] text-slate-400 block uppercase">2. Tasa de Derechos S/ 120</span>
-                  <span className="font-black text-slate-800 block text-xs mt-1">Estado: {applicant.paymentStatus}</span>
-                  <p className="text-slate-500 font-semibold mt-1 text-[11px] leading-relaxed">
-                    Operación de validación bancaria. {applicant.paymentOperation ? `Ref: ${applicant.paymentOperation}` : "Sin registrar."}
-                  </p>
-                </div>
-                <div className="mt-4 pt-2.5 border-t">
-                  <button 
-                    onClick={() => setActiveTab("pagos")}
-                    className="text-[#9F062A] hover:text-[#CFA020] font-extrabold uppercase text-[9px] flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>Ir a Pagos</span> <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-4 bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col justify-between">
-                <div>
-                  <span className="font-extrabold text-[10px] text-slate-400 block uppercase">3. Validación de Expediente</span>
-                  <span className="font-black text-slate-800 block text-xs mt-1">Aprobados: {approvedCount} de 4</span>
-                  <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
-                    <div className="bg-[#9F062A] h-full" style={{ width: `${globalProgressPercentage}%` }} />
-                  </div>
-                </div>
-                <div className="mt-4 pt-2.5 border-t">
-                  <button 
-                    onClick={() => setActiveTab("documentos")}
-                    className="text-[#9F062A] hover:text-[#CFA020] font-extrabold uppercase text-[9px] flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>Subir Documentos</span> <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="p-4 bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col justify-between">
-                <div>
-                  <span className="font-extrabold text-[10px] text-slate-400 block uppercase">4. Examen y Admisión</span>
-                  <span className={`font-black uppercase text-xs mt-1 block ${isActuallyAdmitted ? "text-emerald-600 animate-pulse" : (applicant.admitted === "NO ADMITIDO" ? "text-rose-600" : "text-slate-500")}`}>
-                    {isActuallyAdmitted ? "ADMITIDO" : (applicant.admitted === "NO ADMITIDO" ? "NO ADMITIDO" : "PENDIENTE EVAL")}
+                <div className="mt-5 pt-3 border-t border-emerald-200/80 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-emerald-700 font-extrabold text-[11px] uppercase tracking-wider">
+                    <Check className="w-4 h-4 text-emerald-600 stroke-[3]" /> Completado
                   </span>
-                  <p className="text-slate-500 font-semibold mt-1 text-[11px] leading-relaxed">Asignación de aula de examen, rendición presencial y publicación de resultados oficiales.</p>
-                </div>
-                <div className="mt-4 pt-2.5 border-t">
-                  <button 
-                    onClick={() => setActiveTab("resultados")}
-                    className="text-[#9F062A] hover:text-[#CFA020] font-extrabold uppercase text-[9px] flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>Ver Resultados</span> <ChevronRight className="w-3 h-3" />
-                  </button>
                 </div>
               </div>
+
+              {/* STEP 2: Tasa de Derechos */}
+              {(() => {
+                const isPaymentDone = applicant.paymentStatus === "Validado";
+                return (
+                  <div className={`p-5 rounded-2xl border shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between group ${
+                    isPaymentDone ? "bg-emerald-50/90 border-emerald-300/80 text-emerald-950" : "bg-white border-slate-200/80 hover:border-slate-300 text-slate-800"
+                  }`}>
+                    <div>
+                      <span className={`inline-block font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-2 ${
+                        isPaymentDone ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"
+                      }`}>2. TASA DE DERECHOS S/ 120</span>
+                      <h4 className={`font-black text-sm mt-1 ${isPaymentDone ? "text-emerald-950" : "text-slate-800"}`}>Estado: {applicant.paymentStatus || "No Pagado"}</h4>
+                      <p className={`font-medium text-[11px] mt-1.5 leading-relaxed ${isPaymentDone ? "text-emerald-800/90" : "text-slate-500"}`}>
+                        Operación de validación bancaria. {applicant.paymentOperation ? `Ref: ${applicant.paymentOperation}` : "Sin registrar."}
+                      </p>
+                    </div>
+                    <div className={`mt-5 pt-3 border-t ${isPaymentDone ? "border-emerald-200/80" : "border-slate-100"}`}>
+                      {isPaymentDone ? (
+                        <span className="flex items-center gap-1.5 text-emerald-700 font-extrabold text-[11px] uppercase tracking-wider"><Check className="w-4 h-4 text-emerald-600 stroke-[3]" /> Completado</span>
+                      ) : (
+                        <button 
+                          onClick={() => setActiveTab("pagos")}
+                          className="w-full bg-[#8B0020] hover:bg-[#700019] text-white font-black uppercase text-[11px] tracking-wider py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs group-hover:shadow cursor-pointer"
+                        >
+                          <span>Ir a Pagos</span> <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* STEP 3: Validación de Expediente */}
+              {(() => {
+                const isFolderDone = approvedCount >= 4;
+                return (
+                  <div className={`p-5 rounded-2xl border shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between group ${
+                    isFolderDone ? "bg-emerald-50/90 border-emerald-300/80 text-emerald-950" : "bg-white border-slate-200/80 hover:border-slate-300 text-slate-800"
+                  }`}>
+                    <div>
+                      <span className={`inline-block font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-2 ${
+                        isFolderDone ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"
+                      }`}>3. VALIDACIÓN DE EXPEDIENTE</span>
+                      <h4 className={`font-black text-sm mt-1 ${isFolderDone ? "text-emerald-950" : "text-slate-800"}`}>Aprobados: {approvedCount} de 4</h4>
+                      <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-2">
+                        <div className={`h-full transition-all duration-300 ${isFolderDone ? "bg-emerald-600" : "bg-[#8B0020]"}`} style={{ width: `${globalProgressPercentage}%` }} />
+                      </div>
+                    </div>
+                    <div className={`mt-5 pt-3 border-t ${isFolderDone ? "border-emerald-200/80" : "border-slate-100"}`}>
+                      {isFolderDone ? (
+                        <span className="flex items-center gap-1.5 text-emerald-700 font-extrabold text-[11px] uppercase tracking-wider"><Check className="w-4 h-4 text-emerald-600 stroke-[3]" /> Completado</span>
+                      ) : (
+                        <button 
+                          onClick={() => setActiveTab("documentos")}
+                          className="w-full bg-[#8B0020] hover:bg-[#700019] text-white font-black uppercase text-[11px] tracking-wider py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs group-hover:shadow cursor-pointer"
+                        >
+                          <span>Subir Documentos</span> <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* STEP 4: Examen y Admisión */}
+              {(() => {
+                const isAdmittedDone = isActuallyAdmitted;
+                return (
+                  <div className={`p-5 rounded-2xl border shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-200 flex flex-col justify-between group ${
+                    isAdmittedDone ? "bg-emerald-50/90 border-emerald-300/80 text-emerald-950" : "bg-white border-slate-200/80 hover:border-slate-300 text-slate-800"
+                  }`}>
+                    <div>
+                      <span className={`inline-block font-extrabold text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-2 ${
+                        isAdmittedDone ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"
+                      }`}>4. EXAMEN Y ADMISIÓN</span>
+                      <h4 className={`font-black text-sm mt-1 uppercase ${isAdmittedDone ? "text-emerald-700" : (applicant.admitted === "NO ADMITIDO" ? "text-rose-600" : "text-slate-700")}`}>
+                        {isAdmittedDone ? "ADMITIDO" : (applicant.admitted === "NO ADMITIDO" ? "NO ADMITIDO" : "PENDIENTE EVAL")}
+                      </h4>
+                      <p className={`font-medium text-[11px] mt-1.5 leading-relaxed ${isAdmittedDone ? "text-emerald-800/90" : "text-slate-500"}`}>Asignación de aula de examen, rendición presencial y publicación de resultados oficiales.</p>
+                    </div>
+                    <div className={`mt-5 pt-3 border-t ${isAdmittedDone ? "border-emerald-200/80" : "border-slate-100"}`}>
+                      {isAdmittedDone ? (
+                        <span className="flex items-center gap-1.5 text-emerald-700 font-extrabold text-[11px] uppercase tracking-wider"><Check className="w-4 h-4 text-emerald-600 stroke-[3]" /> Completado</span>
+                      ) : (
+                        <button 
+                          onClick={() => setActiveTab("resultados")}
+                          className="w-full bg-[#8B0020] hover:bg-[#700019] text-white font-black uppercase text-[11px] tracking-wider py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs group-hover:shadow cursor-pointer"
+                        >
+                          <span>Ver Resultados</span> <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
             </div>
 
-            {/* PRE-VISUAL EXPLANATION */}
-            <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-4">
-              <h3 className="text-xs uppercase font-extrabold tracking-widest text-slate-400">Guía de Procedimiento para Ingreso Exitoso</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-600 font-semibold leading-relaxed">
-                <div>
-                  <span className="text-[#9F062A] font-extrabold block text-sm mb-1.5">A. Depósito de Tasa</span>
-                  Realice el abono de S/.120 en cualquier agente del Banco de la Nación. Ingrese a la pestaña de pagos y registre el código numérico de operación que figura en su comprobante físico.
+            {/* PRE-VISUAL EXPLANATION GUIDE */}
+            <div className="bg-white p-7 rounded-2xl border border-slate-200/80 shadow-xs space-y-5">
+              <div className="flex items-center gap-2.5 border-b border-slate-100 pb-3">
+                <div className="w-8 h-8 rounded-lg bg-[#8B0020]/10 flex items-center justify-center text-[#8B0020]">
+                  <Compass className="w-4 h-4" />
                 </div>
-                <div>
-                  <span className="text-[#9F062A] font-extrabold block text-sm mb-1.5">B. Adjunte los 4 Requisitos</span>
-                  Escanee de forma nítida en PDF su DNI, su Partida de Nacimiento, su Certificado secundario oficial, y suba su foto tamaño carné formal. Se validarán en un plazo estimado de 24 horas hábiles.
+                <h3 className="text-xs uppercase font-black tracking-widest text-slate-700">Guía de Procedimiento para Ingreso Exitoso</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
+                <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/60 hover:bg-slate-50 transition-colors space-y-2">
+                  <div className="flex items-center gap-2 font-black text-[#8B0020] text-xs">
+                    <span className="w-6 h-6 rounded-full bg-[#8B0020] text-white flex items-center justify-center text-[10px] font-bold">A</span>
+                    <span>Depósito de Tasa</span>
+                  </div>
+                  <p className="text-slate-600 font-medium text-[11px] leading-relaxed">
+                    Realice el abono de S/.120 en cualquier agente del Banco de la Nación. Ingrese a la pestaña de pagos y registre el código numérico de operación que figura en su comprobante físico.
+                  </p>
                 </div>
-                <div>
-                  <span className="text-[#9F062A] font-extrabold block text-sm mb-1.5">C. Examen y Admisión</span>
-                  Cuando sus requisitos físicos se validen, se le programará un aula de evaluación presencial. Tras rendir y aprobar el examen, se asignará su estado "Admitido" con su Constancia Oficial de Admisión.
+
+                <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/60 hover:bg-slate-50 transition-colors space-y-2">
+                  <div className="flex items-center gap-2 font-black text-[#8B0020] text-xs">
+                    <span className="w-6 h-6 rounded-full bg-[#8B0020] text-white flex items-center justify-center text-[10px] font-bold">B</span>
+                    <span>Adjunte los 4 Requisitos</span>
+                  </div>
+                  <p className="text-slate-600 font-medium text-[11px] leading-relaxed">
+                    Escanee de forma nítida en PDF su DNI, su Partida de Nacimiento, su Certificado secundario oficial, y suba su foto tamaño carné formal. Se validarán en un plazo estimado de 24 horas hábiles.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/60 hover:bg-slate-50 transition-colors space-y-2">
+                  <div className="flex items-center gap-2 font-black text-[#8B0020] text-xs">
+                    <span className="w-6 h-6 rounded-full bg-[#8B0020] text-white flex items-center justify-center text-[10px] font-bold">C</span>
+                    <span>Examen y Admisión</span>
+                  </div>
+                  <p className="text-slate-600 font-medium text-[11px] leading-relaxed">
+                    Cuando sus requisitos físicos se validen, se le programará un aula de evaluación presencial. Tras rendir y aprobar el examen, se asignará su estado "Admitido" con su Constancia Oficial de Admisión.
+                  </p>
                 </div>
               </div>
             </div>
           </PageTransition>
         )}
 
-        {/* TAB 2: DOCUMENTOS DE ADMISIÓN (REPLICATING SCREENSHOT 2 PERFECTLY) */}
+        {/* TAB 2: DOCUMENTOS DE ADMISIÓN (REFORMA VISUAL REORGANIZADA Y DESPLEGABLE) */}
         {activeTab === "documentos" && (
           <PageTransition id="documentos" className="space-y-6">
             
@@ -628,674 +748,561 @@ export default function PostulanteDashboard({
               </button>
             </div>
 
-            {/* Master Document list containing matching styling & actions of Screenshot 2 */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            {/* TOP ROW: 2 Cards side by side in 1 row (Progreso del Expediente + Instrucciones Importantes) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
               
-              {/* L: 4 Documents details cards column */}
-              <div className="lg:col-span-2 space-y-4">
-                
-                {/* File item 1: Copia de DNI */}
-                <div className="bg-white p-5 rounded-lg border border-slate-200/90 shadow-sm flex flex-col justify-between">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex gap-3 text-left">
-                      <span className="h-10 w-10 shrink-0 bg-[#9F062A]/5 text-[#9F062A] flex items-center justify-center rounded">
-                        <FileText className="w-5 h-5" />
-                      </span>
-                      <div>
-                        <span className="text-xs sm:text-sm font-extrabold text-slate-900 block leading-tight">Copia Legible de DNI</span>
-                        <span className="text-[10px] text-slate-400 font-semibold block mt-1">Anverso y reverso en una sola cara (Formato Imagen).</span>
-                      </div>
+              {/* Card 1: Progreso del Expediente */}
+              <div className="bg-[#8B0020] text-white p-6 rounded-2xl shadow-xl flex flex-col justify-between border-l-4 border-amber-400 text-left relative overflow-hidden">
+                <div className="absolute -right-8 -bottom-8 w-36 h-36 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+                <div>
+                  <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
+                    <h3 className="font-black text-white text-xs sm:text-sm uppercase tracking-wider block leading-none">Progreso del Expediente</h3>
+                    <span className="text-[10px] font-extrabold bg-white/10 text-amber-300 px-2.5 py-1 rounded-full uppercase tracking-wider border border-amber-400/20">
+                      {approvedCount} de {totalDocs} Aprobados
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-baseline mt-4">
+                    <span className="text-[10px] text-slate-200 font-bold uppercase tracking-widest block">ESTADO GLOBAL</span>
+                    <span className="text-3xl font-black text-amber-300 font-mono leading-none">{globalProgressPercentage}%</span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="w-full bg-slate-900/50 h-2.5 rounded-full overflow-hidden mt-3 mb-4 p-0.5 border border-white/10">
+                    <div 
+                      className="bg-gradient-to-r from-amber-400 to-amber-300 h-full rounded-full transition-all duration-500 shadow-sm" 
+                      style={{ width: `${globalProgressPercentage}%` }}
+                    />
+                  </div>
+
+                  <p className="text-slate-100 font-medium text-[11px] leading-relaxed mb-6">
+                    Ha completado <strong className="text-white font-extrabold">{approvedCount} de {totalDocs}</strong> documentos requeridos. Debe subsanar las observaciones para continuar con el proceso de asignación de vacante y matrícula de estudiante.
+                  </p>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    if (globalProgressPercentage < 100) {
+                      alert(`No se han completado los 4 requisitos necesarios. Asegúrese de cargar sus archivos y que todos estén bajo estado 'Validado' (Aprobado) por secretaría para formalizar.`);
+                    } else {
+                      alert(`¡Expediente enviado a revisión final! El comité académico de admisiones confirmará su plaza de estudios hoy mismo.`);
+                    }
+                  }}
+                  className="w-full bg-white hover:bg-amber-50 text-[#8B0020] font-black py-3 rounded-xl text-xs uppercase tracking-widest shadow-md hover:shadow-lg transition-all cursor-pointer text-center flex items-center justify-center gap-2 group"
+                >
+                  <span>Enviar a Revisión Final</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+
+              {/* Card 2: Instrucciones Importantes */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-sm text-left flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
+                    <div className="w-7 h-7 rounded-lg bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center shrink-0">
+                      <Info className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm uppercase tracking-wider">Instrucciones Importantes</h3>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex gap-3 text-xs bg-slate-50/80 p-3.5 rounded-xl border border-slate-100/90 hover:bg-slate-50 transition-colors">
+                      <span className="font-black text-[#8B0020] text-xs font-mono shrink-0 select-none bg-white w-6 h-6 rounded-lg flex items-center justify-center border border-slate-200 shadow-2xs">01</span>
+                      <p className="text-slate-700 font-bold leading-relaxed text-[11px]">Todos los documentos deben estar en formato de imagen (JPG, JPEG o PNG).</p>
                     </div>
 
+                    <div className="flex gap-3 text-xs bg-slate-50/80 p-3.5 rounded-xl border border-slate-100/90 hover:bg-slate-50 transition-colors">
+                      <span className="font-black text-[#8B0020] text-xs font-mono shrink-0 select-none bg-white w-6 h-6 rounded-lg flex items-center justify-center border border-slate-200 shadow-2xs">02</span>
+                      <p className="text-slate-700 font-bold leading-relaxed text-[11px]">Asegúrese de que la captura o escaneo fotográfico sea nítida, legible y con buena iluminación.</p>
+                    </div>
+
+                    <div className="flex gap-3 text-xs bg-slate-50/80 p-3.5 rounded-xl border border-slate-100/90 hover:bg-slate-50 transition-colors">
+                      <span className="font-black text-[#8B0020] text-xs font-mono shrink-0 select-none bg-white w-6 h-6 rounded-lg flex items-center justify-center border border-slate-200 shadow-2xs">03</span>
+                      <p className="text-slate-700 font-bold leading-relaxed text-[11px]">El peso máximo por cada imagen cargada debe ser menor a 5MB.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* MIDDLE SECTION: Documentos Requeridos en formato Desplegable (Accordion) */}
+            <div className="space-y-4 pt-2">
+              <div className="flex justify-between items-center px-1">
+                <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[#8B0020]" />
+                  Requisitos del Expediente ({approvedCount} de {totalDocs} Válidos)
+                </h3>
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider hidden sm:inline">Haga clic en un documento para desplegar las opciones</span>
+              </div>
+
+              {/* Document 1: Copia Legible de DNI */}
+              <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => toggleDoc("dniFile")}
+                  className={`w-full p-4 text-left transition-colors flex justify-between items-center gap-4 cursor-pointer ${
+                    openDocs.dniFile ? "bg-slate-50/90 border-b border-slate-200" : "hover:bg-slate-50/60"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 text-left">
+                    <span className="h-10 w-10 shrink-0 bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center rounded-lg font-bold">
+                      <FileText className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <span className="text-xs sm:text-sm font-extrabold text-slate-900 block leading-tight">Copia Legible de DNI</span>
+                      <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Anverso y reverso en una sola cara (Formato Imagen).</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
                     <span className={`text-[9px] font-black uppercase tracking-widest py-1 px-3.5 rounded-full ${
                       currentDocs.dniFile.status === "Validado" 
-                        ? "bg-emerald-100 text-emerald-800 font-bold text-[9px]" 
+                        ? "bg-emerald-100 text-emerald-800 font-bold" 
                         : currentDocs.dniFile.status === "Pendiente"
-                          ? "bg-amber-100 text-amber-800 font-bold animate-pulse text-[9px]"
+                          ? "bg-amber-100 text-amber-800 font-bold animate-pulse"
                           : currentDocs.dniFile.status === "Observado"
-                            ? "bg-red-100 text-red-800 font-bold text-[9px]"
-                            : "bg-slate-100 text-slate-500 font-bold text-[9px]"
+                            ? "bg-red-100 text-red-800 font-bold"
+                            : "bg-slate-100 text-slate-500 font-bold"
                     }`}>
                       {currentDocs.dniFile.status === "No Enviado" ? "No Enviado" : currentDocs.dniFile.status}
                     </span>
-                  </div>
 
-                  {/* Image Upload results info if validado/pendiente */}
-                  {(currentDocs.dniFile.status === "Validado" || currentDocs.dniFile.status === "Pendiente") && (
-                    <div className="mt-4 p-3.5 bg-slate-50 border rounded-lg space-y-2 animate-fade-in text-xs font-semibold text-slate-700 font-mono">
-                      <div className="flex justify-between items-center">
-                        <span className="truncate max-w-[130px] sm:max-w-xs">
-                          Archivo: {currentDocs.dniFile.fileName || `dni_captura.jpg`} 
-                          {currentDocs.dniFile.status === "Pendiente" && " (Revision Pendiente)"}
-                        </span>
-                        <div className="flex gap-1.5 shrink-0">
-                          <button 
-                            onClick={() => triggerPreview("Copia de DNI - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), currentDocs.dniFile.fileName || "dni_captura.jpg", "image", { fileDataUrl: currentDocs.dniFile.fileDataUrl })}
-                            className="p-1 px-2 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
-                          >
-                            Ver Imagen
-                          </button>
-                          {!stagedDniFile && (
+                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 transition-transform">
+                      {openDocs.dniFile ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </div>
+                  </div>
+                </button>
+
+                {openDocs.dniFile && (
+                  <div className="p-5 space-y-4 bg-white animate-fade-in">
+                    {/* Image Upload results info if validado/pendiente */}
+                    {(currentDocs.dniFile.status === "Validado" || currentDocs.dniFile.status === "Pendiente") && (
+                      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs font-semibold text-slate-700 font-mono">
+                        <div className="flex justify-between items-center">
+                          <span className="truncate max-w-[130px] sm:max-w-xs font-mono">
+                            Archivo: {currentDocs.dniFile.fileName || `dni_captura.jpg`} 
+                            {currentDocs.dniFile.status === "Pendiente" && " (Revision Pendiente)"}
+                          </span>
+                          <div className="flex gap-1.5 shrink-0">
+                            <button 
+                              type="button"
+                              onClick={() => triggerPreview("Copia de DNI - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), currentDocs.dniFile.fileName || "dni_captura.jpg", "image", { fileDataUrl: currentDocs.dniFile.fileDataUrl })}
+                              className="p-1.5 px-3 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded-lg cursor-pointer shrink-0 shadow-2xs"
+                            >
+                              Ver Imagen
+                            </button>
                             <button 
                               type="button"
                               onClick={() => document.getElementById("file-input-dni-replace")?.click()}
-                              className="p-1 px-2 bg-[#9F062A] hover:bg-[#800521] text-white text-[10px] font-sans font-bold uppercase rounded cursor-pointer transition-colors shrink-0"
+                              className="p-1.5 px-3 bg-[#8B0020] hover:bg-[#6e0019] text-white text-[10px] font-sans font-bold uppercase rounded-lg cursor-pointer transition-colors shrink-0 shadow-2xs"
                             >
                               Editar / Cambiar
                             </button>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                      <input 
-                        id="file-input-dni-replace"
-                        type="file" 
-                        accept="image/png, image/jpeg, image/jpg" 
-                        className="hidden" 
-                        onChange={(e) => handleFileChange(e, "dniFile")} 
-                      />
-                    </div>
-                  )}
-
-                  {/* If they are editing/replacing the image */}
-                  {stagedDniFile && (
-                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2 animate-fade-in text-xs">
-                      <div className="flex justify-between items-center font-semibold text-slate-700 font-mono">
-                        <span className="text-amber-800 truncate max-w-[155px] sm:max-w-xs font-mono">Reemplazo: {stagedDniFile}</span>
-                        <button 
-                          onClick={() => triggerPreview("Previsualización de Reemplazo", stagedDniFile, "image", { fileDataUrl: stagedDniPreview })}
-                          className="p-1 px-2 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
-                        >
-                          Previsualizar
-                        </button>
-                      </div>
-                      <div className="flex justify-end gap-1.5 pt-1 border-t border-amber-200/50">
-                        <button 
-                          onClick={() => {
-                            setStagedDniFile("");
-                            setStagedDniPreview("");
-                          }}
-                          className="px-2 py-1 text-[9px] font-sans font-bold uppercase border bg-white hover:bg-slate-100 rounded cursor-pointer text-slate-600"
-                        >
-                          Cancelar
-                        </button>
-                        <button 
-                          onClick={() => handleSaveDocument("dniFile")}
-                          className="px-2.5 py-1 text-[9px] font-sans font-bold uppercase bg-[#9F062A] hover:bg-[#800521] text-white rounded cursor-pointer"
-                        >
-                          Guardar Reemplazo
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {currentDocs.dniFile.status === "Observado" && (
-                    <div className="mt-4 p-3.5 bg-red-50/70 border border-red-200 text-red-800 rounded-lg text-xs font-bold leading-normal text-left">
-                      <strong>Observación:</strong> {currentDocs.dniFile.observations || "El documento enviado carga ilegibilidad. Por favor verifique el encuadre e iluminación en el escáner."}
-                    </div>
-                  )}
-
-                  {/* Interactive Upload Box area matching standard design */}
-                  {currentDocs.dniFile.status !== "Validado" && currentDocs.dniFile.status !== "Pendiente" && (
-                    <div className="mt-4 space-y-3">
-                      <label htmlFor="file-input-dni" className="border-2 border-dashed border-slate-200 hover:border-[#9F062A]/40 rounded-lg p-5 bg-slate-50/50 hover:bg-slate-50/80 transition-all flex flex-col justify-center items-center text-center cursor-pointer block">
                         <input 
-                          id="file-input-dni"
+                          id="file-input-dni-replace"
                           type="file" 
                           accept="image/png, image/jpeg, image/jpg" 
                           className="hidden" 
                           onChange={(e) => handleFileChange(e, "dniFile")} 
                         />
-                        <Upload className="w-6 h-6 text-slate-400 mb-1.5" />
-                        <span className="text-[11px] font-extrabold text-slate-700 block uppercase">
-                          {stagedDniFile ? "Imagen Seleccionada" : "Seleccionar Imagen JPG o PNG"}
-                        </span>
-                        <span className="text-[9px] text-[#9F062A] font-bold block mt-1">
-                          {stagedDniFile ? stagedDniFile : "Haga clic para elegir foto desde su dispositivo"}
-                        </span>
-                        <span className="text-[9px] text-slate-400 font-medium mt-0.5">Formatos: JPG, JPEG, PNG (Max 5MB)</span>
-                      </label>
-                      
-                      {stagedDniPreview && (
-                        <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg flex flex-col items-center">
-                          <span className="text-[9px] text-slate-400 font-semibold block mb-1">Vista Previa de Imagen:</span>
-                          <img src={stagedDniPreview} alt="Copia DNI preview" className="max-h-24 object-contain rounded border border-slate-200" />
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => handleSaveDocument("dniFile")}
-                        disabled={!stagedDniFile}
-                        className={`w-full py-2 px-4 rounded font-bold text-xs uppercase tracking-wider transition-all text-center ${
-                          stagedDniFile 
-                            ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm" 
-                            : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
-                        }`}
-                      >
-                        Guardar Copia de DNI
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* File item 2: Certificado de Secundaria */}
-                <div className="bg-white p-5 rounded-lg border border-slate-200/90 shadow-sm flex flex-col justify-between">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex gap-3 text-left">
-                      <span className="h-10 w-10 shrink-0 bg-[#9F062A]/5 text-[#9F062A] flex items-center justify-center rounded">
-                        <FileText className="w-5 h-5" />
-                      </span>
-                      <div>
-                        <span className="text-xs sm:text-sm font-extrabold text-slate-900 block leading-tight">Certificado de Secundaria</span>
-                        <span className="text-[10px] text-slate-400 font-semibold block mt-1">Certificado oficial visado por la UGEL (Formato Imagen).</span>
                       </div>
-                    </div>
+                    )}
 
+                    {currentDocs.dniFile.status === "Observado" && (
+                      <div className="p-3.5 bg-red-50/70 border border-red-200 text-red-800 rounded-xl text-xs font-bold leading-normal text-left">
+                        <strong>Observación:</strong> {currentDocs.dniFile.observations || "El documento enviado carga ilegibilidad. Por favor verifique el encuadre e iluminación en el escáner."}
+                      </div>
+                    )}
+
+                    {/* Interactive Upload Dropzone */}
+                    {currentDocs.dniFile.status !== "Validado" && currentDocs.dniFile.status !== "Pendiente" && (
+                      <div>
+                        <label htmlFor="file-input-dni" className="border-2 border-dashed border-slate-200 hover:border-[#8B0020]/40 rounded-xl p-6 bg-slate-50/50 hover:bg-slate-50 transition-all flex flex-col justify-center items-center text-center cursor-pointer block group">
+                          <input 
+                            id="file-input-dni"
+                            type="file" 
+                            accept="image/png, image/jpeg, image/jpg" 
+                            className="hidden" 
+                            onChange={(e) => handleFileChange(e, "dniFile")} 
+                          />
+                          <div className="w-12 h-12 rounded-full bg-[#8B0020]/5 group-hover:bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center mb-2 transition-colors">
+                            <Upload className="w-6 h-6" />
+                          </div>
+                          <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">
+                            Seleccionar Imagen JPG o PNG
+                          </span>
+                          <span className="text-[10px] text-[#8B0020] font-bold block mt-1">
+                            Haga clic para elegir foto desde su dispositivo
+                          </span>
+                          <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Formatos permitidos: JPG, JPEG, PNG (Máx 5MB)</span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Document 2: Certificado de Secundaria */}
+              <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => toggleDoc("certificadoFile")}
+                  className={`w-full p-4 text-left transition-colors flex justify-between items-center gap-4 cursor-pointer ${
+                    openDocs.certificadoFile ? "bg-slate-50/90 border-b border-slate-200" : "hover:bg-slate-50/60"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 text-left">
+                    <span className="h-10 w-10 shrink-0 bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center rounded-lg font-bold">
+                      <FileText className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <span className="text-xs sm:text-sm font-extrabold text-slate-900 block leading-tight">Certificado de Secundaria</span>
+                      <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Certificado oficial visado por la UGEL (Formato Imagen).</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
                     <span className={`text-[9px] font-black uppercase tracking-widest py-1 px-3.5 rounded-full ${
                       currentDocs.certificadoFile.status === "Validado" 
-                        ? "bg-emerald-100 text-emerald-800 font-bold text-[9px]" 
+                        ? "bg-emerald-100 text-emerald-800 font-bold" 
                         : currentDocs.certificadoFile.status === "Pendiente"
-                          ? "bg-amber-100 text-amber-800 font-bold animate-pulse text-[9px]"
+                          ? "bg-amber-100 text-amber-800 font-bold animate-pulse"
                           : currentDocs.certificadoFile.status === "Observado"
-                            ? "bg-red-100 text-red-800 font-bold text-[9px]"
-                            : "bg-slate-100 text-slate-500 font-bold text-[9px]"
+                            ? "bg-red-100 text-red-800 font-bold"
+                            : "bg-slate-100 text-slate-500 font-bold"
                     }`}>
                       {currentDocs.certificadoFile.status === "No Enviado" ? "No Enviado" : currentDocs.certificadoFile.status}
                     </span>
-                  </div>
 
-                  {/* Image Upload results info if validado/pendiente */}
-                  {(currentDocs.certificadoFile.status === "Validado" || currentDocs.certificadoFile.status === "Pendiente") && (
-                    <div className="mt-4 p-3.5 bg-slate-50 border rounded-lg space-y-2 animate-fade-in text-xs font-semibold text-slate-700 font-mono">
-                      <div className="flex justify-between items-center">
-                        <span className="truncate max-w-[130px] sm:max-w-xs">
-                          Archivo: {currentDocs.certificadoFile.fileName || `certificado_captura.jpg`} 
-                          {currentDocs.certificadoFile.status === "Pendiente" && " (Revision Pendiente)"}
-                        </span>
-                        <div className="flex gap-1.5 shrink-0">
-                          <button 
-                            onClick={() => triggerPreview("Certificado de Secundaria - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), currentDocs.certificadoFile.fileName || "certificado_captura.jpg", "image", { fileDataUrl: currentDocs.certificadoFile.fileDataUrl })}
-                            className="p-1 px-2 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
-                          >
-                            Ver Imagen
-                          </button>
-                          {!stagedCertFile && (
+                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 transition-transform">
+                      {openDocs.certificadoFile ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </div>
+                  </div>
+                </button>
+
+                {openDocs.certificadoFile && (
+                  <div className="p-5 space-y-4 bg-white animate-fade-in">
+                    {/* Image Upload results info if validado/pendiente */}
+                    {(currentDocs.certificadoFile.status === "Validado" || currentDocs.certificadoFile.status === "Pendiente") && (
+                      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs font-semibold text-slate-700 font-mono">
+                        <div className="flex justify-between items-center">
+                          <span className="truncate max-w-[130px] sm:max-w-xs font-mono">
+                            Archivo: {currentDocs.certificadoFile.fileName || `certificado_captura.jpg`} 
+                            {currentDocs.certificadoFile.status === "Pendiente" && " (Revision Pendiente)"}
+                          </span>
+                          <div className="flex gap-1.5 shrink-0">
+                            <button 
+                              type="button"
+                              onClick={() => triggerPreview("Certificado de Secundaria - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), currentDocs.certificadoFile.fileName || "certificado_captura.jpg", "image", { fileDataUrl: currentDocs.certificadoFile.fileDataUrl })}
+                              className="p-1.5 px-3 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded-lg cursor-pointer shrink-0 shadow-2xs"
+                            >
+                              Ver Imagen
+                            </button>
                             <button 
                               type="button"
                               onClick={() => document.getElementById("file-input-cert-replace")?.click()}
-                              className="p-1 px-2 bg-[#9F062A] hover:bg-[#800521] text-white text-[10px] font-sans font-bold uppercase rounded cursor-pointer transition-colors shrink-0"
+                              className="p-1.5 px-3 bg-[#8B0020] hover:bg-[#6e0019] text-white text-[10px] font-sans font-bold uppercase rounded-lg cursor-pointer transition-colors shrink-0 shadow-2xs"
                             >
                               Editar / Cambiar
                             </button>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                      <input 
-                        id="file-input-cert-replace"
-                        type="file" 
-                        accept="image/png, image/jpeg, image/jpg" 
-                        className="hidden" 
-                        onChange={(e) => handleFileChange(e, "certificadoFile")} 
-                      />
-                    </div>
-                  )}
-
-                  {/* If they are editing/replacing the image */}
-                  {stagedCertFile && (
-                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2 animate-fade-in text-xs">
-                      <div className="flex justify-between items-center font-semibold text-slate-700 font-mono">
-                        <span className="text-amber-800 truncate max-w-[155px] sm:max-w-xs font-mono">Reemplazo: {stagedCertFile}</span>
-                        <button 
-                          onClick={() => triggerPreview("Previsualización de Reemplazo", stagedCertFile, "image", { fileDataUrl: stagedCertPreview })}
-                          className="p-1 px-2 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
-                        >
-                          Previsualizar
-                        </button>
-                      </div>
-                      <div className="flex justify-end gap-1.5 pt-1 border-t border-amber-200/50">
-                        <button 
-                          onClick={() => {
-                            setStagedCertFile("");
-                            setStagedCertPreview("");
-                          }}
-                          className="px-2 py-1 text-[9px] font-sans font-bold uppercase border bg-white hover:bg-slate-100 rounded cursor-pointer text-slate-600"
-                        >
-                          Cancelar
-                        </button>
-                        <button 
-                          onClick={() => handleSaveDocument("certificadoFile")}
-                          className="px-2.5 py-1 text-[9px] font-sans font-bold uppercase bg-[#9F062A] hover:bg-[#800521] text-white rounded cursor-pointer"
-                        >
-                          Guardar Reemplazo
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {currentDocs.certificadoFile.status === "Observado" && (
-                    <div className="mt-4 p-3.5 bg-red-50/70 border border-red-200 text-red-800 rounded-lg text-xs font-bold leading-normal text-left">
-                      <strong>Observación:</strong> {currentDocs.certificadoFile.observations || "El certificado institucional se registra sin firma o sello visado oficial."}
-                    </div>
-                  )}
-
-                  {/* Interactive Upload Box area matching standard design */}
-                  {currentDocs.certificadoFile.status !== "Validado" && currentDocs.certificadoFile.status !== "Pendiente" && (
-                    <div className="mt-4 space-y-3">
-                      <label htmlFor="file-input-cert" className="border-2 border-dashed border-slate-200 hover:border-[#9F062A]/40 rounded-lg p-5 bg-slate-50/50 hover:bg-slate-50/80 transition-all flex flex-col justify-center items-center text-center cursor-pointer block">
                         <input 
-                          id="file-input-cert"
+                          id="file-input-cert-replace"
                           type="file" 
                           accept="image/png, image/jpeg, image/jpg" 
                           className="hidden" 
                           onChange={(e) => handleFileChange(e, "certificadoFile")} 
                         />
-                        <Upload className="w-6 h-6 text-slate-400 mb-1.5" />
-                        <span className="text-[11px] font-extrabold text-slate-700 block uppercase">
-                          {stagedCertFile ? "Imagen Seleccionada" : "Seleccionar Imagen JPG o PNG"}
-                        </span>
-                        <span className="text-[9px] text-[#9F062A] font-bold block mt-1">
-                          {stagedCertFile ? stagedCertFile : "Haga clic para elegir foto desde su dispositivo"}
-                        </span>
-                        <span className="text-[9px] text-slate-400 font-medium mt-0.5">Formatos: JPG, JPEG, PNG (Max 5MB)</span>
-                      </label>
-
-                      {stagedCertPreview && (
-                        <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg flex flex-col items-center">
-                          <span className="text-[9px] text-slate-400 font-semibold block mb-1">Vista Previa de Imagen:</span>
-                          <img src={stagedCertPreview} alt="Certificado preview" className="max-h-24 object-contain rounded border border-slate-200" />
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => handleSaveDocument("certificadoFile")}
-                        disabled={!stagedCertFile}
-                        className={`w-full py-2 px-4 rounded font-bold text-xs uppercase tracking-wider transition-all text-center ${
-                          stagedCertFile 
-                            ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm" 
-                            : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
-                        }`}
-                      >
-                        Guardar Certificado
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* File item 3: Partida de Nacimiento */}
-                <div className="bg-white p-5 rounded-lg border border-slate-200/90 shadow-sm flex flex-col justify-between">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex gap-3 text-left">
-                      <span className="h-10 w-10 shrink-0 bg-[#9F062A]/5 text-[#9F062A] flex items-center justify-center rounded">
-                        <FileText className="w-5 h-5" />
-                      </span>
-                      <div>
-                        <span className="text-xs sm:text-sm font-extrabold text-slate-900 block leading-tight">Partida de Nacimiento</span>
-                        <span className="text-[10px] text-slate-400 font-semibold block mt-1">Copia original legible y actualizada (Formato Imagen).</span>
                       </div>
-                    </div>
+                    )}
 
+                    {currentDocs.certificadoFile.status === "Observado" && (
+                      <div className="p-3.5 bg-red-50/70 border border-red-200 text-red-800 rounded-xl text-xs font-bold leading-normal text-left">
+                        <strong>Observación:</strong> {currentDocs.certificadoFile.observations || "El certificado institucional se registra sin firma o sello visado oficial."}
+                      </div>
+                    )}
+
+                    {/* Interactive Upload Dropzone */}
+                    {currentDocs.certificadoFile.status !== "Validado" && currentDocs.certificadoFile.status !== "Pendiente" && (
+                      <div>
+                        <label htmlFor="file-input-cert" className="border-2 border-dashed border-slate-200 hover:border-[#8B0020]/40 rounded-xl p-6 bg-slate-50/50 hover:bg-slate-50 transition-all flex flex-col justify-center items-center text-center cursor-pointer block group">
+                          <input 
+                            id="file-input-cert"
+                            type="file" 
+                            accept="image/png, image/jpeg, image/jpg" 
+                            className="hidden" 
+                            onChange={(e) => handleFileChange(e, "certificadoFile")} 
+                          />
+                          <div className="w-12 h-12 rounded-full bg-[#8B0020]/5 group-hover:bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center mb-2 transition-colors">
+                            <Upload className="w-6 h-6" />
+                          </div>
+                          <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">
+                            Seleccionar Imagen JPG o PNG
+                          </span>
+                          <span className="text-[10px] text-[#8B0020] font-bold block mt-1">
+                            Haga clic para elegir foto desde su dispositivo
+                          </span>
+                          <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Formatos permitidos: JPG, JPEG, PNG (Máx 5MB)</span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Document 3: Partida de Nacimiento */}
+              <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => toggleDoc("partidaFile")}
+                  className={`w-full p-4 text-left transition-colors flex justify-between items-center gap-4 cursor-pointer ${
+                    openDocs.partidaFile ? "bg-slate-50/90 border-b border-slate-200" : "hover:bg-slate-50/60"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 text-left">
+                    <span className="h-10 w-10 shrink-0 bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center rounded-lg font-bold">
+                      <FileText className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <span className="text-xs sm:text-sm font-extrabold text-slate-900 block leading-tight">Partida de Nacimiento</span>
+                      <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Copia original legible y actualizada (Formato Imagen).</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
                     <span className={`text-[9px] font-black uppercase tracking-widest py-1 px-3.5 rounded-full ${
                       currentDocs.partidaFile.status === "Validado" 
-                        ? "bg-emerald-100 text-emerald-800 font-bold text-[9px]" 
+                        ? "bg-emerald-100 text-emerald-800 font-bold" 
                         : currentDocs.partidaFile.status === "Pendiente"
-                          ? "bg-amber-100 text-amber-800 font-bold animate-pulse text-[9px]"
+                          ? "bg-amber-100 text-amber-800 font-bold animate-pulse"
                           : currentDocs.partidaFile.status === "Observado"
-                            ? "bg-red-100 text-red-800 font-bold text-[9px]"
-                            : "bg-slate-100 text-slate-500 font-bold text-[9px]"
+                            ? "bg-red-100 text-red-800 font-bold"
+                            : "bg-slate-100 text-slate-500 font-bold"
                     }`}>
                       {currentDocs.partidaFile.status === "No Enviado" ? "No Enviado" : currentDocs.partidaFile.status}
                     </span>
-                  </div>
 
-                  {/* Image Upload results info if validado/pendiente */}
-                  {(currentDocs.partidaFile.status === "Validado" || currentDocs.partidaFile.status === "Pendiente") && (
-                    <div className="mt-4 p-3.5 bg-slate-50 border rounded-lg space-y-2 animate-fade-in text-xs font-semibold text-slate-700 font-mono">
-                      <div className="flex justify-between items-center">
-                        <span className="truncate max-w-[130px] sm:max-w-xs">
-                          Archivo: {currentDocs.partidaFile.fileName || `partida_captura.jpg`} 
-                          {currentDocs.partidaFile.status === "Pendiente" && " (Revision Pendiente)"}
-                        </span>
-                        <div className="flex gap-1.5 shrink-0">
-                          <button 
-                            onClick={() => triggerPreview("Partida de Nacimiento - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), currentDocs.partidaFile.fileName || "partida_captura.jpg", "image", { fileDataUrl: currentDocs.partidaFile.fileDataUrl })}
-                            className="p-1 px-2 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
-                          >
-                            Ver Imagen
-                          </button>
-                          {!stagedPartidaFile && (
+                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 transition-transform">
+                      {openDocs.partidaFile ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </div>
+                  </div>
+                </button>
+
+                {openDocs.partidaFile && (
+                  <div className="p-5 space-y-4 bg-white animate-fade-in">
+                    {/* Image Upload results info if validado/pendiente */}
+                    {(currentDocs.partidaFile.status === "Validado" || currentDocs.partidaFile.status === "Pendiente") && (
+                      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs font-semibold text-slate-700 font-mono">
+                        <div className="flex justify-between items-center">
+                          <span className="truncate max-w-[130px] sm:max-w-xs font-mono">
+                            Archivo: {currentDocs.partidaFile.fileName || `partida_captura.jpg`} 
+                            {currentDocs.partidaFile.status === "Pendiente" && " (Revision Pendiente)"}
+                          </span>
+                          <div className="flex gap-1.5 shrink-0">
+                            <button 
+                              type="button"
+                              onClick={() => triggerPreview("Partida de Nacimiento - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), currentDocs.partidaFile.fileName || "partida_captura.jpg", "image", { fileDataUrl: currentDocs.partidaFile.fileDataUrl })}
+                              className="p-1.5 px-3 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded-lg cursor-pointer shrink-0 shadow-2xs"
+                            >
+                              Ver Imagen
+                            </button>
                             <button 
                               type="button"
                               onClick={() => document.getElementById("file-input-partida-replace")?.click()}
-                              className="p-1 px-2 bg-[#9F062A] hover:bg-[#800521] text-white text-[10px] font-sans font-bold uppercase rounded cursor-pointer transition-colors shrink-0"
+                              className="p-1.5 px-3 bg-[#8B0020] hover:bg-[#6e0019] text-white text-[10px] font-sans font-bold uppercase rounded-lg cursor-pointer transition-colors shrink-0 shadow-2xs"
                             >
                               Editar / Cambiar
                             </button>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                      <input 
-                        id="file-input-partida-replace"
-                        type="file" 
-                        accept="image/png, image/jpeg, image/jpg" 
-                        className="hidden" 
-                        onChange={(e) => handleFileChange(e, "partidaFile")} 
-                      />
-                    </div>
-                  )}
-
-                  {/* If they are editing/replacing the image */}
-                  {stagedPartidaFile && (
-                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2 animate-fade-in text-xs">
-                      <div className="flex justify-between items-center font-semibold text-slate-700 font-mono">
-                        <span className="text-amber-800 truncate max-w-[155px] sm:max-w-xs font-mono">Reemplazo: {stagedPartidaFile}</span>
-                        <button 
-                          onClick={() => triggerPreview("Previsualización de Reemplazo", stagedPartidaFile, "image", { fileDataUrl: stagedPartidaPreview })}
-                          className="p-1 px-2 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
-                        >
-                          Previsualizar
-                        </button>
-                      </div>
-                      <div className="flex justify-end gap-1.5 pt-1 border-t border-amber-200/50">
-                        <button 
-                          onClick={() => {
-                            setStagedPartidaFile("");
-                            setStagedPartidaPreview("");
-                          }}
-                          className="px-2 py-1 text-[9px] font-sans font-bold uppercase border bg-white hover:bg-slate-100 rounded cursor-pointer text-slate-600"
-                        >
-                          Cancelar
-                        </button>
-                        <button 
-                          onClick={() => handleSaveDocument("partidaFile")}
-                          className="px-2.5 py-1 text-[9px] font-sans font-bold uppercase bg-[#9F062A] hover:bg-[#800521] text-white rounded cursor-pointer"
-                        >
-                          Guardar Reemplazo
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {currentDocs.partidaFile.status === "Observado" && (
-                    <div className="mt-4 p-3.5 bg-red-50/75 border border-red-200 text-red-800 rounded-lg text-xs font-bold leading-normal text-left">
-                      <strong>Observación:</strong> {currentDocs.partidaFile.observations || "La imagen está borrosa en la zona de la firma del registrador. Por favor vuelva a escanear en alta resolución."}
-                    </div>
-                  )}
-
-                  {/* Interactive Upload Box area matching standard design */}
-                  {currentDocs.partidaFile.status !== "Validado" && currentDocs.partidaFile.status !== "Pendiente" && (
-                    <div className="mt-4 space-y-3">
-                      <label htmlFor="file-input-partida" className="border-2 border-dashed border-slate-200 hover:border-[#9F062A]/40 rounded-lg p-5 bg-slate-50 hover:bg-slate-50/80 transition-all flex flex-col justify-center items-center text-center cursor-pointer block">
                         <input 
-                          id="file-input-partida"
+                          id="file-input-partida-replace"
                           type="file" 
                           accept="image/png, image/jpeg, image/jpg" 
                           className="hidden" 
                           onChange={(e) => handleFileChange(e, "partidaFile")} 
                         />
-                        <Upload className="w-5 h-5 text-slate-400 mb-1.5" />
-                        <span className="text-[11px] font-extrabold text-slate-700 block uppercase">
-                          {stagedPartidaFile ? "Imagen Seleccionada" : "Seleccionar Imagen JPG o PNG"}
-                        </span>
-                        <span className="text-[9px] text-[#9F062A] font-bold block mt-1">
-                          {stagedPartidaFile ? stagedPartidaFile : "Haga clic para elegir foto desde su dispositivo"}
-                        </span>
-                        <span className="text-[9px] text-slate-400 font-medium mt-0.5">Formatos: JPG, JPEG, PNG (Max 5MB)</span>
-                      </label>
-
-                      {stagedPartidaPreview && (
-                        <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg flex flex-col items-center">
-                          <span className="text-[9px] text-slate-400 font-semibold block mb-1">Vista Previa de Imagen:</span>
-                          <img src={stagedPartidaPreview} alt="Partida preview" className="max-h-24 object-contain rounded border border-slate-200" />
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => handleSaveDocument("partidaFile")}
-                        disabled={!stagedPartidaFile}
-                        className={`w-full py-2 px-4 rounded font-bold text-xs uppercase tracking-wider transition-all text-center ${
-                          stagedPartidaFile 
-                            ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm" 
-                            : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
-                        }`}
-                      >
-                        Guardar Partida de Nacimiento
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* File item 4: Foto Tamaño Carné */}
-                <div className="bg-white p-5 rounded-lg border border-slate-200/90 shadow-sm flex flex-col justify-between">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex gap-3 text-left">
-                      <span className="h-10 w-10 shrink-0 bg-[#9F062A]/5 text-[#9F062A] flex items-center justify-center rounded">
-                        <FileText className="w-5 h-5" />
-                      </span>
-                      <div>
-                        <span className="text-xs sm:text-sm font-extrabold text-slate-900 block leading-tight">Foto Tamaño Carné</span>
-                        <span className="text-[10px] text-slate-400 font-semibold block mt-1">Fondo blanco, ropa formal, sin anteojos (Formato Imagen).</span>
                       </div>
-                    </div>
+                    )}
 
+                    {currentDocs.partidaFile.status === "Observado" && (
+                      <div className="p-3.5 bg-red-50/75 border border-red-200 text-red-800 rounded-xl text-xs font-bold leading-normal text-left">
+                        <strong>Observación:</strong> {currentDocs.partidaFile.observations || "La imagen está borrosa en la zona de la firma del registrador. Por favor vuelva a escanear en alta resolución."}
+                      </div>
+                    )}
+
+                    {/* Interactive Upload Dropzone */}
+                    {currentDocs.partidaFile.status !== "Validado" && currentDocs.partidaFile.status !== "Pendiente" && (
+                      <div>
+                        <label htmlFor="file-input-partida" className="border-2 border-dashed border-slate-200 hover:border-[#8B0020]/40 rounded-xl p-6 bg-slate-50/50 hover:bg-slate-50 transition-all flex flex-col justify-center items-center text-center cursor-pointer block group">
+                          <input 
+                            id="file-input-partida"
+                            type="file" 
+                            accept="image/png, image/jpeg, image/jpg" 
+                            className="hidden" 
+                            onChange={(e) => handleFileChange(e, "partidaFile")} 
+                          />
+                          <div className="w-12 h-12 rounded-full bg-[#8B0020]/5 group-hover:bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center mb-2 transition-colors">
+                            <Upload className="w-6 h-6" />
+                          </div>
+                          <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">
+                            Seleccionar Imagen JPG o PNG
+                          </span>
+                          <span className="text-[10px] text-[#8B0020] font-bold block mt-1">
+                            Haga clic para elegir foto desde su dispositivo
+                          </span>
+                          <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Formatos permitidos: JPG, JPEG, PNG (Máx 5MB)</span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Document 4: Foto Tamaño Carné */}
+              <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => toggleDoc("fotoFile")}
+                  className={`w-full p-4 text-left transition-colors flex justify-between items-center gap-4 cursor-pointer ${
+                    openDocs.fotoFile ? "bg-slate-50/90 border-b border-slate-200" : "hover:bg-slate-50/60"
+                  }`}
+                >
+                  <div className="flex items-center gap-3 text-left">
+                    <span className="h-10 w-10 shrink-0 bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center rounded-lg font-bold">
+                      <FileText className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <span className="text-xs sm:text-sm font-extrabold text-slate-900 block leading-tight">Foto Tamaño Carné</span>
+                      <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Fondo blanco, ropa formal, sin anteojos (Formato Imagen).</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
                     <span className={`text-[9px] font-black uppercase tracking-widest py-1 px-3.5 rounded-full ${
                       currentDocs.fotoFile.status === "Validado" 
-                        ? "bg-emerald-100 text-emerald-800 font-bold text-[9px]" 
+                        ? "bg-emerald-100 text-emerald-800 font-bold" 
                         : currentDocs.fotoFile.status === "Pendiente"
-                          ? "bg-amber-100 text-amber-800 font-bold animate-pulse text-[9px]"
+                          ? "bg-amber-100 text-amber-800 font-bold animate-pulse"
                           : currentDocs.fotoFile.status === "Observado"
-                            ? "bg-red-100 text-red-800 font-bold text-[9px]"
-                            : "bg-slate-100 text-slate-500 font-bold text-[9px]"
+                            ? "bg-red-100 text-red-800 font-bold"
+                            : "bg-slate-100 text-slate-500 font-bold"
                     }`}>
                       {currentDocs.fotoFile.status === "No Enviado" ? "No Enviado" : currentDocs.fotoFile.status}
                     </span>
-                  </div>
 
-                  {/* Image Upload results info if validado/pendiente */}
-                  {(currentDocs.fotoFile.status === "Validado" || currentDocs.fotoFile.status === "Pendiente") && (
-                    <div className="mt-4 p-3.5 bg-slate-50 border rounded-lg space-y-2 animate-fade-in text-xs font-semibold text-slate-700 font-mono">
-                      <div className="flex justify-between items-center">
-                        <span className="truncate max-w-[130px] sm:max-w-xs font-mono">
-                          Archivo: {currentDocs.fotoFile.fileName || `foto_estudio.jpg`} 
-                          {currentDocs.fotoFile.status === "Pendiente" && " (Revision Pendiente)"}
-                        </span>
-                        <div className="flex gap-1.5 shrink-0">
-                          <button 
-                            onClick={() => triggerPreview("Fotografia Personal - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), currentDocs.fotoFile.fileName || "foto_estudio.jpg", "image", { fileDataUrl: currentDocs.fotoFile.fileDataUrl })}
-                            className="p-1 px-2.5 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
-                          >
-                            Ver Imagen
-                          </button>
-                          {!stagedFotoFile && (
+                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 transition-transform">
+                      {openDocs.fotoFile ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </div>
+                  </div>
+                </button>
+
+                {openDocs.fotoFile && (
+                  <div className="p-5 space-y-4 bg-white animate-fade-in">
+                    {/* Image Upload results info if validado/pendiente */}
+                    {(currentDocs.fotoFile.status === "Validado" || currentDocs.fotoFile.status === "Pendiente") && (
+                      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs font-semibold text-slate-700 font-mono">
+                        <div className="flex justify-between items-center">
+                          <span className="truncate max-w-[130px] sm:max-w-xs font-mono">
+                            Archivo: {currentDocs.fotoFile.fileName || `foto_estudio.jpg`} 
+                            {currentDocs.fotoFile.status === "Pendiente" && " (Revision Pendiente)"}
+                          </span>
+                          <div className="flex gap-1.5 shrink-0">
+                            <button 
+                              type="button"
+                              onClick={() => triggerPreview("Fotografia Personal - " + applicant.name.toUpperCase() + " " + applicant.lastName.toUpperCase(), currentDocs.fotoFile.fileName || "foto_estudio.jpg", "image", { fileDataUrl: currentDocs.fotoFile.fileDataUrl })}
+                              className="p-1.5 px-3 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded-lg cursor-pointer shrink-0 shadow-2xs"
+                            >
+                              Ver Imagen
+                            </button>
                             <button 
                               type="button"
                               onClick={() => document.getElementById("file-input-foto-replace")?.click()}
-                              className="p-1 px-2.5 bg-[#9F062A] hover:bg-[#800521] text-white text-[10px] font-sans font-bold uppercase rounded cursor-pointer transition-colors shrink-0"
+                              className="p-1.5 px-3 bg-[#8B0020] hover:bg-[#6e0019] text-white text-[10px] font-sans font-bold uppercase rounded-lg cursor-pointer transition-colors shrink-0 shadow-2xs"
                             >
                               Editar / Cambiar
                             </button>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                      <input 
-                        id="file-input-foto-replace"
-                        type="file" 
-                        accept="image/png, image/jpeg, image/jpg" 
-                        className="hidden" 
-                        onChange={(e) => handleFileChange(e, "fotoFile")} 
-                      />
-                    </div>
-                  )}
-
-                  {/* If they are editing/replacing the image */}
-                  {stagedFotoFile && (
-                    <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2 animate-fade-in text-xs">
-                      <div className="flex justify-between items-center font-semibold text-slate-700 font-mono">
-                        <span className="text-amber-800 truncate max-w-[155px] sm:max-w-xs font-mono">Reemplazo: {stagedFotoFile}</span>
-                        <button 
-                          onClick={() => triggerPreview("Previsualización de Reemplazo", stagedFotoFile, "image", { fileDataUrl: stagedFotoPreview })}
-                          className="p-1 px-2.5 bg-white hover:bg-slate-200 border text-[10px] font-sans font-bold uppercase rounded cursor-pointer shrink-0"
-                        >
-                          Previsualizar
-                        </button>
-                      </div>
-                      <div className="flex justify-end gap-1.5 pt-1 border-t border-amber-200/50">
-                        <button 
-                          onClick={() => {
-                            setStagedFotoFile("");
-                            setStagedFotoPreview("");
-                          }}
-                          className="px-2 py-1 text-[9px] font-sans font-bold uppercase border bg-white hover:bg-slate-100 rounded cursor-pointer text-slate-600"
-                        >
-                          Cancelar
-                        </button>
-                        <button 
-                          onClick={() => handleSaveDocument("fotoFile")}
-                          className="px-2.5 py-1 text-[9px] font-sans font-bold uppercase bg-[#9F062A] hover:bg-[#800521] text-white rounded cursor-pointer"
-                        >
-                          Guardar Reemplazo
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {currentDocs.fotoFile.status === "Observado" && (
-                    <div className="mt-4 p-3.5 bg-red-50/70 border border-[#9F062A]/20 text-slate-700 rounded-lg text-xs font-semibold leading-normal text-left">
-                      <p className="text-[#9F062A] font-extrabold uppercase text-[10px] tracking-wide mb-1 leading-none">Motivo de Rechazo:</p>
-                      <span className="font-bold text-slate-600 block bg-white border border-[#9F062A]/10 p-2 rounded mt-1.5 text-[11px] leading-relaxed">
-                        {currentDocs.fotoFile.observations || "No cumple con el formato requerido. Se requiere foto formal con fondo blanco liso y rostro despejado."}
-                      </span>
-                    </div>
-                  )}
-
-                  {currentDocs.fotoFile.status !== "Validado" && currentDocs.fotoFile.status !== "Pendiente" && (
-                    <div className="mt-4 space-y-3">
-                      <label htmlFor="file-input-foto" className="border-2 border-dashed border-slate-200 hover:border-[#9F062A]/40 rounded-lg p-5 bg-slate-50/50 hover:bg-slate-50/80 transition-all flex flex-col justify-center items-center text-center cursor-pointer block">
                         <input 
-                          id="file-input-foto"
+                          id="file-input-foto-replace"
                           type="file" 
                           accept="image/png, image/jpeg, image/jpg" 
                           className="hidden" 
                           onChange={(e) => handleFileChange(e, "fotoFile")} 
                         />
-                        <Upload className="w-6 h-6 text-slate-400 mb-1.5" />
-                        <span className="text-[11px] font-extrabold text-slate-700 block uppercase">
-                          {stagedFotoFile ? "Imagen Seleccionada" : "Seleccionar Imagen JPG o PNG"}
+                      </div>
+                    )}
+
+                    {currentDocs.fotoFile.status === "Observado" && (
+                      <div className="p-3.5 bg-red-50/70 border border-[#8B0020]/20 text-slate-700 rounded-xl text-xs font-semibold leading-normal text-left">
+                        <p className="text-[#8B0020] font-extrabold uppercase text-[10px] tracking-wide mb-1 leading-none">Motivo de Rechazo:</p>
+                        <span className="font-bold text-slate-600 block bg-white border border-[#8B0020]/10 p-2 rounded-lg mt-1.5 text-[11px] leading-relaxed">
+                          {currentDocs.fotoFile.observations || "No cumple con el formato requerido. Se requiere foto formal con fondo blanco liso y rostro despejado."}
                         </span>
-                        <span className="text-[9px] text-[#9F062A] font-bold block mt-1">
-                          {stagedFotoFile ? stagedFotoFile : "Haga clic para elegir foto desde su dispositivo"}
-                        </span>
-                        <span className="text-[9px] text-slate-400 font-medium mt-0.5 font-semibold">Toma formal o carné (Max 5MB)</span>
-                      </label>
+                      </div>
+                    )}
 
-                      {stagedFotoPreview && (
-                        <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg flex flex-col items-center">
-                          <span className="text-[9px] text-slate-400 font-semibold block mb-1">Vista Previa de Imagen:</span>
-                          <img src={stagedFotoPreview} alt="Foto preview" className="max-h-24 object-contain rounded border border-slate-200" />
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => handleSaveDocument("fotoFile")}
-                        disabled={!stagedFotoFile}
-                        className={`w-full py-2 px-4 rounded font-bold text-xs uppercase tracking-wider transition-all text-center ${
-                          stagedFotoFile 
-                            ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-sm" 
-                            : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
-                        }`}
-                      >
-                        Guardar Foto Tamaño Carné
-                      </button>
-                    </div>
-                  )}
-                </div>
-
+                    {/* Interactive Upload Dropzone */}
+                    {currentDocs.fotoFile.status !== "Validado" && currentDocs.fotoFile.status !== "Pendiente" && (
+                      <div>
+                        <label htmlFor="file-input-foto" className="border-2 border-dashed border-slate-200 hover:border-[#8B0020]/40 rounded-xl p-6 bg-slate-50/50 hover:bg-slate-50 transition-all flex flex-col justify-center items-center text-center cursor-pointer block group">
+                          <input 
+                            id="file-input-foto"
+                            type="file" 
+                            accept="image/png, image/jpeg, image/jpg" 
+                            className="hidden" 
+                            onChange={(e) => handleFileChange(e, "fotoFile")} 
+                          />
+                          <div className="w-12 h-12 rounded-full bg-[#8B0020]/5 group-hover:bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center mb-2 transition-colors">
+                            <Upload className="w-6 h-6" />
+                          </div>
+                          <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">
+                            Seleccionar Imagen JPG o PNG
+                          </span>
+                          <span className="text-[10px] text-[#8B0020] font-bold block mt-1">
+                            Haga clic para elegir foto desde su dispositivo
+                          </span>
+                          <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Formatos permitidos: JPG, JPEG, PNG (Máx 5MB)</span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* R: SIDEBAR FOR PROGRESS GAUGE (REPLICATING SCREENSHOT 2 SIDEBAR WIDGETS) */}
-              <div className="space-y-6">
-                
-                {/* Visual Progress card on right matching deep solid red look of image 2 */}
-                <div className="bg-[#9F062A] text-white p-5 rounded-2xl shadow-xl flex flex-col justify-between border-l-4 border-amber-400 text-left">
-                  <div>
-                    <h3 className="font-black text-white text-xs sm:text-sm uppercase tracking-wider block leading-none">Progreso del Expediente</h3>
-                    
-                    <div className="mt-5 flex justify-between items-baseline">
-                      <span className="text-[10px] text-slate-200 font-bold uppercase tracking-widest block">ESTADO GLOBAL</span>
-                      <span className="text-2xl font-black text-amber-300 font-mono leading-none">{globalProgressPercentage}%</span>
-                    </div>
+            </div>
 
-                    {/* Progress bar */}
-                    <div className="w-full bg-slate-900/40 h-2 rounded-full overflow-hidden mt-3 mb-4">
-                      <div 
-                        className="bg-amber-400 h-full transition-all duration-300" 
-                        style={{ width: `${globalProgressPercentage}%` }}
-                      />
-                    </div>
-
-                    <p className="text-slate-100 font-medium text-[11px] leading-normal mb-5">
-                      Ha completado <strong className="text-white font-extrabold">{approvedCount} de {totalDocs}</strong> documentos requeridos. Debe subsanar las observaciones para continuar con el proceso de asignación de vacante y matrícula de estudiante.
-                    </p>
-                  </div>
-
-                  <button 
-                    onClick={() => {
-                      if (globalProgressPercentage < 100) {
-                        alert(`No se han completado los 4 requisitos necesarios. Asegúrese de cargar sus archivos y que todos estén bajo estado 'Validado' (Aprobado) por secretaría para formalizar.`);
-                      } else {
-                        alert(`¡Expediente enviado a revisión final! El comité académico de admisiones confirmará su plaza de estudios hoy mismo.`);
-                      }
-                    }}
-                    className="w-full bg-white hover:bg-slate-100 text-[#9F062A] hover:text-[#800521] py-3 rounded-xl font-bold text-xs uppercase tracking-widest shadow-md transition-all cursor-pointer text-center"
-                  >
-                    Enviar a Revisión Final
-                  </button>
+            {/* BOTTOM SECTION: ¿Necesita ayuda? Card styled with high-end dark borgoña banner */}
+            <div className="bg-gradient-to-r from-slate-900 via-[#5C0015] to-[#8B0020] text-white p-6 rounded-2xl shadow-xl border border-[#8B0020]/30 mt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-left relative overflow-hidden">
+              <div className="absolute right-0 top-0 w-64 h-64 bg-amber-400/5 rounded-full blur-3xl pointer-events-none" />
+              <div className="flex items-center gap-4 z-10">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-amber-300 shrink-0 shadow-inner">
+                  <Headset className="w-6 h-6" />
                 </div>
-
-                {/* Instructions card EXACTLY matching Layout requirements list detail on image 2 */}
-                <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-sm text-left">
-                  <span className="text-[10px] font-black text-[#9F062A] uppercase tracking-wider block border-b pb-2 mb-3 flex items-center gap-1.5">
-                    <Info className="w-4 h-4 text-[#9F062A]" />
-                    Instrucciones Importantes
-                  </span>
-                  
-                  <div className="space-y-4">
-                    <div className="flex gap-2.5 text-xs">
-                      <span className="font-black text-[#9F062A] text-[11px] font-mono select-none">01.</span>
-                      <p className="text-slate-600 font-bold leading-normal text-[11px]">Todos los documentos deben estar en formato de imagen (JPG, JPEG o PNG).</p>
-                    </div>
-
-                    <div className="flex gap-2.5 text-xs">
-                      <span className="font-black text-[#9F062A] text-[11px] font-mono select-none">02.</span>
-                      <p className="text-slate-600 font-bold leading-normal text-[11px]">Asegúrese de que la captura o escaneo fotográfico sea nítida, legible y con buena iluminación.</p>
-                    </div>
-
-                    <div className="flex gap-2.5 text-xs">
-                      <span className="font-black text-[#9F062A] text-[11px] font-mono select-none">03.</span>
-                      <p className="text-slate-600 font-bold leading-normal text-[11px]">El peso máximo por cada imagen cargada debe ser menor a 5MB.</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Need Help contact card matching image 2 */}
-                <div className="bg-slate-100/80 p-5 rounded-xl border border-slate-200 shadow-sm text-center">
-                  <HelpCircle className="w-6 h-6 text-[#9F062A] mx-auto mb-2" />
-                  <h4 className="font-black text-slate-800 text-xs sm:text-sm leading-tight">¿Necesita ayuda?</h4>
-                  <p className="text-[11px] text-slate-500 font-semibold mt-1.5 leading-normal max-w-sm mx-auto">
-                    Nuestro equipo de secretaría académica está disponible para guiarte en tu proceso de L-V de 8am a 6pm.
+                <div>
+                  <h4 className="font-black text-white text-base leading-tight flex items-center gap-2">
+                    ¿Necesita ayuda?
+                    <span className="text-[9px] bg-amber-400 text-slate-950 font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">Atención En Vivo</span>
+                  </h4>
+                  <p className="text-xs text-slate-200 font-medium mt-1 leading-relaxed max-w-xl">
+                    Nuestro equipo de secretaría académica está disponible para guiarte en tu proceso de <strong className="text-amber-300 font-extrabold">L-V de 8am a 6pm</strong>.
                   </p>
-                  <button 
-                    onClick={() => setActiveTab("soporte")}
-                    className="text-[10px] text-[#9F062A] hover:text-[#CFA020] font-black uppercase tracking-wider block mx-auto mt-3.5 border-b border-[#9F062A] hover:border-[#CFA020] cursor-pointer"
-                  >
-                    Contactar Soporte
-                  </button>
                 </div>
-
               </div>
 
+              <button 
+                onClick={() => setActiveTab("soporte")}
+                className="z-10 bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 text-slate-950 font-black py-3 px-6 rounded-xl text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0 flex items-center gap-2 group"
+              >
+                <MessageSquare className="w-4 h-4 text-slate-950" />
+                <span>Contactar Soporte</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              </button>
             </div>
 
           </PageTransition>
@@ -3108,6 +3115,123 @@ Proceso 2026-I • Chincha Alta, Perú.
           </div>
         </div>
       )}
+
+      {/* MODAL DE PREVISUALIZACIÓN Y CONFIRMACIÓN DE CARGA DE DOCUMENTO */}
+      <AnimatePresence>
+        {stagedUploadModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-2xl shadow-2xl border border-slate-200/80 max-w-lg w-full overflow-hidden text-left"
+            >
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-slate-900 via-[#5C0015] to-[#8B0020] text-white p-5 flex justify-between items-center relative">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-amber-300 shrink-0 shadow-inner">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm text-white leading-tight uppercase tracking-wider">
+                      Previsualizar y Confirmar Documento
+                    </h3>
+                    <p className="text-[10px] text-slate-200 font-medium">Verifique la nitidez antes de enviarlo a secretaría</p>
+                  </div>
+                </div>
+
+                <button 
+                  type="button"
+                  onClick={handleCancelUploadModal}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+                {/* File Metadata Card */}
+                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 flex justify-between items-center text-xs">
+                  <div>
+                    <span className="text-[10px] text-[#8B0020] font-black uppercase tracking-wider block">
+                      {stagedUploadModal.docTitle}
+                    </span>
+                    <span className="font-mono font-bold text-slate-700 block truncate max-w-[240px] mt-0.5">
+                      {stagedUploadModal.fileName}
+                    </span>
+                  </div>
+
+                  <span className="text-[9px] font-black bg-emerald-100 text-emerald-800 py-1 px-3 rounded-full uppercase tracking-wider shrink-0">
+                    Imagen Capturada
+                  </span>
+                </div>
+
+                {/* Large Crisp Image Preview Window */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">
+                    Vista Previa de Imagen:
+                  </span>
+                  <div className="bg-slate-900/5 border border-slate-200 rounded-xl p-3 flex justify-center items-center max-h-72 overflow-hidden shadow-inner">
+                    <img 
+                      src={stagedUploadModal.fileDataUrl} 
+                      alt="Previsualización de documento" 
+                      className="max-h-64 object-contain rounded-lg shadow-md border border-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-900 font-semibold flex items-start gap-2">
+                  <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span>
+                    Asegúrese de que el documento sea legible y sin reflejos. Al confirmar, quedará registrado para revisión del comité de admisiones.
+                  </span>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-2.5">
+                <button 
+                  type="button"
+                  onClick={handleCancelUploadModal}
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer text-center"
+                >
+                  Cancelar
+                </button>
+
+                <button 
+                  type="button"
+                  onClick={() => {
+                    const inputId = stagedUploadModal.docKey === "dniFile" 
+                      ? "file-input-dni" 
+                      : stagedUploadModal.docKey === "certificadoFile" 
+                        ? "file-input-cert" 
+                        : stagedUploadModal.docKey === "partidaFile" 
+                          ? "file-input-partida" 
+                          : "file-input-foto";
+                    handleCancelUploadModal();
+                    setTimeout(() => {
+                      document.getElementById(inputId)?.click();
+                    }, 100);
+                  }}
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-[#8B0020] font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer text-center"
+                >
+                  Elegir Otra Foto
+                </button>
+
+                <button 
+                  type="button"
+                  onClick={handleConfirmUploadModal}
+                  className="px-5 py-2.5 rounded-xl bg-[#8B0020] hover:bg-[#6e0019] text-white font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Confirmar y Guardar</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Render High Fidelity Image of Document Preview Component */}
       <ImagePreviewModal

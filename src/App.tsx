@@ -61,6 +61,12 @@ import {
 export default function App() {
   // Navigation / Auth State
   const [currentUser, setCurrentUser] = useState<{ role: Role; identifier: string }>(() => {
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      if (path === "/ingresar" || path === "/login" || window.location.search.includes("login")) {
+        return { role: "login", identifier: "" };
+      }
+    }
     const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
     for (const r of roles) {
       const saved = localStorage.getItem(`sfa_session_${r}`);
