@@ -3,7 +3,7 @@ import {
   FileText, CreditCard, Award, HelpCircle, Upload, LogOut, ArrowRight, CheckCircle2, 
   XCircle, Clock, ChevronRight, Download, RefreshCw, AlertTriangle, Play, HelpCircle as HelpIcon,
   ChevronLeft, ArrowLeft, Terminal, LayoutDashboard, Compass, Info, CheckSquare, Settings,
-  Landmark, Store, Smartphone, Printer, Check, Calendar, MapPin, Lightbulb, ChevronDown, ChevronUp, Headset, MessageSquare
+  Landmark, Store, Smartphone, Printer, Check, Calendar, MapPin, Lightbulb, ChevronDown, ChevronUp, Headset, MessageSquare, Send
 } from "lucide-react";
 import { Applicant, ProgramId, Enrollment } from "../types";
 import { ACADEMIC_PROGRAMS, REAL_MPA_COURSES } from "../mockData";
@@ -1308,7 +1308,7 @@ export default function PostulanteDashboard({
           </PageTransition>
         )}
 
-        {/* TAB 3: PAGOS DE ADMISIÓN (REPLICATING SCREENSHOT 4 PERFECTLY) */}
+        {/* TAB 3: PAGOS DE ADMISIÓN (DISEÑO INSTITUCIONAL RENOVADO) */}
         {activeTab === "pagos" && (
           <PageTransition id="pagos" className="space-y-6">
             
@@ -1317,105 +1317,189 @@ export default function PostulanteDashboard({
               Admisión 2026  &gt;  <span className="text-slate-600">Estado de Pago</span>
             </div>
 
-            {/* Title block */}
-            <div className="text-left">
-              <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight text-left">Estado de Pago</h2>
-              <p className="text-xs text-slate-500 font-bold leading-none mt-1">Completa el pago del derecho de examen para habilitar tu inscripción definitiva.</p>
+            {/* Header section */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="text-left">
+                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight text-left">Estado de Pago</h2>
+                <p className="text-xs text-slate-500 font-bold leading-none mt-1">Completa el pago del derecho de examen para habilitar tu inscripción definitiva.</p>
+              </div>
             </div>
 
-            {/* Layout divided in 2 panels matching image 4 */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            {/* TOP ROW: 2 Cards side by side (Estado de Pago + Instrucciones de Pago) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
               
-              {/* Left major column (Concept block + Voucher input simulator) */}
-              <div className="lg:col-span-2 space-y-5">
-                
-                <div className="bg-white p-6 rounded-xl border border-slate-200/90 shadow-sm text-left">
-                  <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
-                    <div>
-                      <span className="text-[9px] text-[#9F062A] font-black uppercase tracking-widest block leading-none">CONCEPTO DE PAGO</span>
-                      <h3 className="text-base font-black text-slate-900 mt-2">Derecho de Examen Admisión 2026</h3>
+              {/* Card 1: Estado de Pago de Derechos (Borgoña Theme) */}
+              <div className="bg-[#8B0020] text-white p-6 rounded-2xl shadow-xl flex flex-col justify-between border-l-4 border-amber-400 text-left relative overflow-hidden">
+                <div className="absolute -right-8 -bottom-8 w-36 h-36 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+                <div>
+                  <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
+                    <h3 className="font-black text-white text-xs sm:text-sm uppercase tracking-wider block leading-none">Concepto de Pago Principal</h3>
+                    <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider ${
+                      applicant.paymentStatus === "Validado" 
+                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/40"
+                        : applicant.paymentStatus === "Pendiente"
+                          ? "bg-amber-400/20 text-amber-300 border border-amber-400/40 animate-pulse"
+                          : applicant.paymentStatus === "Observado"
+                            ? "bg-red-500/30 text-red-200 border border-red-400/40 font-black"
+                            : "bg-white/10 text-amber-300 border border-amber-400/20"
+                    }`}>
+                      {applicant.paymentStatus === "Validado" ? "PAGO VALIDADO" : (applicant.paymentStatus || "NO PAGADO")}
+                    </span>
+                  </div>
+
+                  <span className="text-[10px] text-slate-200 font-bold uppercase tracking-widest block mt-2">DERECHO DE EXAMEN ADMISIÓN 2026</span>
+                  <div className="flex items-baseline gap-2 mt-1 mb-3">
+                    <span className="text-3xl sm:text-4xl font-black text-amber-300 font-mono tracking-tight leading-none">S/. 120.00</span>
+                    <span className="text-[10px] text-slate-200 font-bold uppercase">Monto Único Regular</span>
+                  </div>
+
+                  <p className="text-slate-100 font-medium text-[11px] leading-relaxed mb-6">
+                    {applicant.paymentStatus === "Validado"
+                      ? "Su pago por S/. 120.00 ha sido validado satisfactoriamente por tesorería. Ya cuenta con derecho habilitado para rendir el examen de admisión."
+                      : applicant.paymentStatus === "Pendiente"
+                        ? "Su comprobante se encuentra en proceso de validación bancaria por nuestra tesorería institucional."
+                        : applicant.paymentStatus === "Observado"
+                          ? "Su pago presenta una observación por parte de tesorería. Por favor vuelva a enviar el voucher o código corregido."
+                          : "Realice el pago de S/. 120.00 mediante transferencia, agente o Yape/Plin y registre el número de operación o la foto del comprobante a continuación."}
+                  </p>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    const formEl = document.getElementById("form-registro-pago");
+                    if (formEl) {
+                      formEl.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }}
+                  className="w-full bg-white hover:bg-amber-50 text-[#8B0020] font-black py-3 rounded-xl text-xs uppercase tracking-widest shadow-md hover:shadow-lg transition-all cursor-pointer text-center flex items-center justify-center gap-2 group"
+                >
+                  <span>{applicant.paymentStatus === "Validado" ? "Ver Detalles de Transacción" : "Registrar / Modificar Pago"}</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+
+              {/* Card 2: Instrucciones para Registro de Pago */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-sm text-left flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
+                    <div className="w-7 h-7 rounded-lg bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center shrink-0">
+                      <CreditCard className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm uppercase tracking-wider">Instrucciones de Pago</h3>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex gap-3 text-xs bg-slate-50/80 p-3.5 rounded-xl border border-slate-100/90 hover:bg-slate-50 transition-colors">
+                      <span className="font-black text-[#8B0020] text-xs font-mono shrink-0 select-none bg-white w-6 h-6 rounded-lg flex items-center justify-center border border-slate-200 shadow-2xs">01</span>
+                      <p className="text-slate-700 font-bold leading-relaxed text-[11px]">Realice el depósito de S/. 120.00 en Banco de la Nación, BCP, Agentes o Yape/Plin.</p>
                     </div>
 
-                    {/* Dynamic status pill matching state */}
-                    <span className={`text-[9px] font-black uppercase tracking-widest py-1 px-3.5 rounded-full inline-block ${
+                    <div className="flex gap-3 text-xs bg-slate-50/80 p-3.5 rounded-xl border border-slate-100/90 hover:bg-slate-50 transition-colors">
+                      <span className="font-black text-[#8B0020] text-xs font-mono shrink-0 select-none bg-white w-6 h-6 rounded-lg flex items-center justify-center border border-slate-200 shadow-2xs">02</span>
+                      <p className="text-slate-700 font-bold leading-relaxed text-[11px]">Ingrese el N° de Operación exacto o cargue una foto nítida de su voucher impreso.</p>
+                    </div>
+
+                    <div className="flex gap-3 text-xs bg-slate-50/80 p-3.5 rounded-xl border border-slate-100/90 hover:bg-slate-50 transition-colors">
+                      <span className="font-black text-[#8B0020] text-xs font-mono shrink-0 select-none bg-white w-6 h-6 rounded-lg flex items-center justify-center border border-slate-200 shadow-2xs">03</span>
+                      <p className="text-slate-700 font-bold leading-relaxed text-[11px]">Tesorería verificará su comprobante en un plazo máximo de 24 horas hábiles.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* MIDDLE SECTION: Split Layout (Voucher Registration Form + Methods & Channels) */}
+            <div id="form-registro-pago" className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start pt-2">
+              
+              {/* Left Column: Form & Current Status */}
+              <div className="lg:col-span-2 space-y-5">
+                
+                <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-sm text-left">
+                  <div className="flex justify-between items-center border-b pb-3 mb-5">
+                    <span className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-[#8B0020]" />
+                      Declaración y Registro de Pago
+                    </span>
+
+                    <span className={`text-[9px] font-black uppercase tracking-widest py-1 px-3.5 rounded-full ${
                       applicant.paymentStatus === "Validado" 
                         ? "bg-emerald-100 text-emerald-800"
                         : applicant.paymentStatus === "Pendiente"
                           ? "bg-amber-100 text-amber-800 animate-pulse"
                           : applicant.paymentStatus === "Observado"
                             ? "bg-red-50 text-red-700 font-extrabold border border-red-200"
-                            : applicant.paymentStatus === "Rechazado"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-slate-150 text-slate-500 font-semibold"
+                            : "bg-slate-100 text-slate-500 font-semibold"
                     }`}>
                       {applicant.paymentStatus}
                     </span>
                   </div>
 
-                  {/* Pricing amount visual exact match */}
-                  <div className="my-6 border-b pb-5">
-                    <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-mono font-black">
-                      S/. 120.00
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-bold block mt-1 uppercase">Monto Único Regular de Derechos</span>
-                  </div>
-
                   {/* Operational Status Display and Form Submission */}
                   {applicant.paymentStatus === "Validado" ? (
-                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-slate-750 text-xs text-left font-semibold">
-                      <p className="text-emerald-800 font-bold uppercase text-[10px] tracking-wide mb-1 leading-none">Pago Validado con Exito</p>
-                      Su pago de derecho de admisión por S/. 120.00 ha sido aprobado de manera oficial. ¡Puede pasar a la siguiente etapa de admisión!
+                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-slate-750 text-xs text-left font-semibold space-y-2">
+                      <p className="text-emerald-800 font-bold uppercase text-[11px] tracking-wide leading-none flex items-center gap-1.5">
+                        <Check className="w-4 h-4 text-emerald-600 stroke-[3]" /> Pago Validado con Éxito
+                      </p>
+                      <p className="text-slate-700 font-medium text-[11px] leading-relaxed">
+                        Su pago de derecho de admisión por S/. 120.00 ha sido aprobado de manera oficial por Tesorería. ¡Puede continuar con su expediente y asignación de aula de examen!
+                      </p>
                     </div>
                   ) : applicant.paymentStatus === "Pendiente" ? (
-                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-slate-700 text-xs text-left font-semibold space-y-3">
-                      <p className="text-amber-800 font-bold uppercase text-[10px] tracking-wide mb-1 leading-none">Validación de Pago en Curso</p>
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-slate-700 text-xs text-left font-semibold space-y-3">
+                      <p className="text-amber-800 font-bold uppercase text-[11px] tracking-wide leading-none flex items-center gap-1.5">
+                        <Clock className="w-4 h-4 text-amber-600" /> Validación de Pago en Curso
+                      </p>
                       {applicant.paymentType === "voucher" || applicant.paymentVoucherUrl ? (
                         <div className="space-y-2">
-                          <p>Comprobante adjuntado: <span className="font-mono font-black text-slate-900">{applicant.paymentVoucherFileName || "voucher_comprobante.jpg"}</span></p>
+                          <p className="text-[11px]">Comprobante adjuntado: <span className="font-mono font-black text-slate-900">{applicant.paymentVoucherFileName || "voucher_comprobante.jpg"}</span></p>
                           {applicant.paymentVoucherUrl && (
-                            <div className="p-2 bg-white rounded border border-slate-200 inline-block">
-                              <span className="text-[8px] text-slate-400 font-black block mb-1">Tu Voucher Enviado:</span>
+                            <div className="p-2 bg-white rounded-lg border border-slate-200 inline-block">
+                              <span className="text-[9px] text-slate-400 font-black block mb-1 uppercase">Voucher Enviado:</span>
                               <img 
                                 src={applicant.paymentVoucherUrl} 
                                 alt="Voucher depositado" 
-                                className="max-h-24 object-contain rounded border border-slate-100" 
+                                className="max-h-28 object-contain rounded-md border border-slate-100 cursor-pointer hover:opacity-90 transition-opacity" 
+                                onClick={() => triggerPreview("Voucher Registrado", applicant.paymentVoucherFileName || "voucher.jpg", "image", { fileDataUrl: applicant.paymentVoucherUrl })}
                               />
                             </div>
                           )}
                         </div>
                       ) : (
-                        <p>Su número de operación ingresado: <span className="font-mono font-bold text-slate-900">{applicant.paymentOperation || "No registrado"}</span></p>
+                        <p className="text-[11px]">Su número de operación ingresado: <span className="font-mono font-bold text-slate-900">{applicant.paymentOperation || "No registrado"}</span></p>
                       )}
-                      <p className="text-[11px] text-slate-600 font-medium leading-normal">La de oficina de Tesorería está verificando su comprobante. Por favor, espere a que su estado sea validado para registrarse al examen de admisión.</p>
+                      <p className="text-[11px] text-slate-600 font-medium leading-normal">
+                        La oficina de Tesorería está verificando su comprobante. Por favor espere a que su estado sea actualizado a 'Validado'.
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-4 font-bold text-xs text-slate-700">
                       {applicant.paymentStatus === "Observado" && (
-                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-slate-750 text-xs text-left font-semibold">
-                          <p className="text-red-750 font-extrabold uppercase text-[10px] tracking-wide mb-1 leading-none">Operación Observada por Administración</p>
-                          <span className="text-slate-600 block mt-1 leading-relaxed bg-white border border-red-100 p-2.5 rounded text-[11px]">
+                        <div className="p-4 bg-red-50/80 border border-red-200 rounded-xl text-slate-750 text-xs text-left font-semibold">
+                          <p className="text-red-750 font-extrabold uppercase text-[10px] tracking-wide mb-1 leading-none">Operación Observada por Tesorería</p>
+                          <span className="text-slate-600 block mt-1 leading-relaxed bg-white border border-red-100 p-2.5 rounded-lg text-[11px]">
                             Observación enviada: "{applicant.paymentObservations || "Su comprobante de depósito no coincide con nuestros registros."}"
                           </span>
                           <span className="text-[11px] block text-red-800 font-bold mt-2">
-                            Por favor complete nuevamente el comprobante o código de operación real para que sea evaluado de nuevo.
+                            Por favor vuelva a ingresar el comprobante o número de operación real para que sea evaluado de nuevo.
                           </span>
                         </div>
                       )}
 
-                      {/* Submission form area of Screenshot 4 */}
+                      {/* Submission form area */}
                       <form onSubmit={handleSubmitPaymentVoucher} className="space-y-4">
-                        <h4 className="text-[10px] font-black text-[#9F062A] uppercase tracking-wider block mb-1">
-                          Registrar Declaración de Pago
+                        <h4 className="text-[10px] font-black text-[#8B0020] uppercase tracking-wider block mb-1">
+                          Seleccione la Forma de Registro de Su Pago
                         </h4>
 
                         {/* Interactive Toggle tabs */}
-                        <div className="grid grid-cols-2 bg-slate-100 p-1 rounded-lg gap-1 border border-slate-200">
+                        <div className="grid grid-cols-2 bg-slate-100 p-1 rounded-xl gap-1 border border-slate-200">
                           <button
                             type="button"
                             onClick={() => setPaymentType("number")}
-                            className={`py-1.5 px-3 rounded-md text-[10px] uppercase font-black tracking-wider transition-all cursor-pointer text-center ${
+                            className={`py-2 px-3 rounded-lg text-[10px] uppercase font-black tracking-wider transition-all cursor-pointer text-center ${
                               paymentType === "number"
-                                ? "bg-white text-[#9F062A] shadow-xs border border-slate-200"
+                                ? "bg-white text-[#8B0020] shadow-xs border border-slate-200"
                                 : "text-slate-500 hover:text-slate-800"
                             }`}
                           >
@@ -1424,9 +1508,9 @@ export default function PostulanteDashboard({
                           <button
                             type="button"
                             onClick={() => setPaymentType("voucher")}
-                            className={`py-1.5 px-3 rounded-md text-[10px] uppercase font-black tracking-wider transition-all cursor-pointer text-center ${
+                            className={`py-2 px-3 rounded-lg text-[10px] uppercase font-black tracking-wider transition-all cursor-pointer text-center ${
                               paymentType === "voucher"
-                                ? "bg-white text-[#9F062A] shadow-xs border border-slate-200"
+                                ? "bg-white text-[#8B0020] shadow-xs border border-slate-200"
                                 : "text-slate-500 hover:text-slate-800"
                             }`}
                           >
@@ -1445,13 +1529,13 @@ export default function PostulanteDashboard({
                                 placeholder="Ej: BN-994102-S1"
                                 value={paymentVoucher}
                                 onChange={(e) => setPaymentVoucher(e.target.value)}
-                                className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-300 rounded text-xs sm:text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-[#9F062A]"
+                                className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-300 rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#8B0020]/20"
                               />
                             </div>
 
                             <button 
                               type="submit"
-                              className="bg-[#9F062A] hover:bg-[#800521] text-white px-6 py-2.5 rounded font-extrabold uppercase text-[10px] tracking-widest shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 w-full sm:w-auto h-[40px] mb-0.5"
+                              className="bg-[#8B0020] hover:bg-[#700018] text-white px-6 py-2.5 rounded-xl font-extrabold uppercase text-[10px] tracking-widest shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0 w-full sm:w-auto h-[42px] mb-0.5"
                             >
                               <CheckCircle2 className="w-4 h-4 text-amber-300" />
                               <span>Enviar Operación</span>
@@ -1460,12 +1544,12 @@ export default function PostulanteDashboard({
                         ) : (
                           /* Voucher upload interface */
                           <div className="space-y-4 pt-2">
-                            <div className="border-2 border-dashed border-slate-300 rounded-lg p-5 bg-slate-50/50 hover:bg-slate-50 hover:border-[#9F062A]/40 transition-all text-center relative cursor-pointer">
+                            <label htmlFor="payment-voucher-file" className="border-2 border-dashed border-slate-200 hover:border-[#8B0020]/40 rounded-xl p-6 bg-slate-50/50 hover:bg-slate-50 transition-all flex flex-col justify-center items-center text-center cursor-pointer block group">
                               <input
                                 id="payment-voucher-file"
                                 type="file"
                                 accept="image/jpeg,image/png,image/jpg"
-                                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                className="hidden"
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
                                   if (!file) return;
@@ -1475,23 +1559,26 @@ export default function PostulanteDashboard({
                                   });
                                 }}
                               />
-                              <div className="flex flex-col items-center justify-center gap-2">
-                                <Upload className="w-5 h-5 text-slate-400" />
-                                <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider">SELECCIONAR IMAGEN JPG O PNG</span>
-                                <span className="text-[9px] text-slate-405 font-bold max-w-xs leading-normal block">
-                                  {stagedVoucherFile ? `Seleccionado: ${stagedVoucherFile}` : "Haga clic o arrastre foto de su voucher de depósito aquí."}
-                                </span>
+                              <div className="w-12 h-12 rounded-full bg-[#8B0020]/5 group-hover:bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center mb-2 transition-colors">
+                                <Upload className="w-6 h-6" />
                               </div>
-                            </div>
+                              <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">
+                                Seleccionar Imagen JPG o PNG
+                              </span>
+                              <span className="text-[10px] text-[#8B0020] font-bold block mt-1">
+                                {stagedVoucherFile ? `Seleccionado: ${stagedVoucherFile}` : "Haga clic para elegir foto de su voucher"}
+                              </span>
+                              <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Formatos permitidos: JPG, JPEG, PNG (Máx 5MB)</span>
+                            </label>
 
                             {/* Live preview ONLY if actually loaded and present */}
                             {stagedVoucherPreview && (
-                              <div className="p-3 bg-slate-100 border border-slate-200 rounded-lg flex flex-col items-center animate-fade-in text-center">
-                                <span className="text-[9px] text-slate-500 font-black tracking-widest uppercase mb-2">Vista Previa de Voucher Seleccionado:</span>
+                              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col items-center animate-fade-in text-center">
+                                <span className="text-[9px] text-slate-500 font-black tracking-widest uppercase mb-2">Vista Previa del Voucher Seleccionado:</span>
                                 <img 
                                   src={stagedVoucherPreview} 
                                   alt="Preview voucher" 
-                                  className="max-h-36 object-contain rounded border border-slate-300 shadow-sm" 
+                                  className="max-h-40 object-contain rounded-lg border border-slate-300 shadow-xs" 
                                 />
                                 <button
                                   type="button"
@@ -1499,7 +1586,7 @@ export default function PostulanteDashboard({
                                     setStagedVoucherFile("");
                                     setStagedVoucherPreview("");
                                   }}
-                                  className="mt-1.5 text-[8px] font-black uppercase text-red-700 tracking-wider hover:underline"
+                                  className="mt-2 text-[9px] font-black uppercase text-red-700 tracking-wider hover:underline cursor-pointer"
                                 >
                                   Eliminar para Cambiar
                                 </button>
@@ -1509,9 +1596,9 @@ export default function PostulanteDashboard({
                             <button 
                               type="submit"
                               disabled={!stagedVoucherPreview}
-                              className={`w-full py-2.5 px-6 rounded font-extrabold uppercase text-[10px] tracking-widest shadow-md transition-all text-center flex items-center justify-center gap-1.5 h-[40px] cursor-pointer ${
+                              className={`w-full py-3 px-6 rounded-xl font-extrabold uppercase text-[10px] tracking-widest shadow-md transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer ${
                                 stagedVoucherPreview
-                                  ? "bg-[#9F062A] hover:bg-[#800521] text-white shadow-sm"
+                                  ? "bg-[#8B0020] hover:bg-[#700018] text-white shadow-sm"
                                   : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
                               }`}
                             >
@@ -1527,48 +1614,53 @@ export default function PostulanteDashboard({
 
               </div>
 
-              {/* R: SIDEBAR INFORMATION (REPLICATING SCREENSHOT 4 RIGHT SIDEBAR) */}
+              {/* Right Column: Methods & Channels */}
               <div className="space-y-6">
                 
-                {/* Methods block structure exact matching image 4 */}
-                <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-sm text-left">
-                  <span className="text-[10px] font-black text-[#9F062A] uppercase tracking-wider block border-b pb-2 mb-3">
-                    Métodos de Pago
+                <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-sm text-left">
+                  <span className="text-[10px] font-black text-[#8B0020] uppercase tracking-wider block border-b pb-2.5 mb-4">
+                    Métodos de Pago Autorizados
                   </span>
                   
-                  <div className="space-y-4 text-left">
+                  <div className="space-y-3.5 text-left">
                     {/* BCP BBVA detail */}
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded flex items-center gap-2.5">
-                      <Landmark className="w-5 h-5 text-[#9F062A] shrink-0" />
+                    <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center shrink-0">
+                        <Landmark className="w-4.5 h-4.5" />
+                      </div>
                       <div>
-                        <span className="text-[11px] font-extrabold text-slate-800 block leading-tight">Transferencia</span>
-                        <p className="text-[10px] text-slate-400 font-semibold block mt-1 leading-none">BCP, BBVA, Interbank y Scotiabank</p>
+                        <span className="text-[11px] font-extrabold text-slate-800 block leading-tight">Transferencia Bancaria</span>
+                        <p className="text-[10px] text-slate-400 font-semibold block mt-0.5">BCP, BBVA, Interbank y Scotiabank</p>
                       </div>
                     </div>
 
                     {/* Agentes detail */}
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded flex items-center gap-2.5">
-                      <Store className="w-5 h-5 text-[#9F062A] shrink-0" />
+                    <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center shrink-0">
+                        <Store className="w-4.5 h-4.5" />
+                      </div>
                       <div>
-                        <span className="text-[11px] font-extrabold text-slate-800 block leading-tight">Ventanilla</span>
-                        <p className="text-[10px] text-slate-400 font-semibold block mt-1 leading-none">Bancos y Agentes Autorizados</p>
+                        <span className="text-[11px] font-extrabold text-slate-800 block leading-tight">Ventanilla &amp; Agentes</span>
+                        <p className="text-[10px] text-slate-400 font-semibold block mt-0.5">Banco de la Nación y Agentes Autorizados</p>
                       </div>
                     </div>
 
                     {/* Yape Plin detail */}
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded flex items-center gap-2.5">
-                      <Smartphone className="w-5 h-5 text-[#9F062A] shrink-0" />
+                    <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center shrink-0">
+                        <Smartphone className="w-4.5 h-4.5" />
+                      </div>
                       <div>
-                        <span className="text-[11px] font-extrabold text-slate-800 block leading-tight">App Móvil</span>
-                        <p className="text-[10px] text-slate-400 font-semibold block mt-1 leading-none">Yape y Plin mediante código QR</p>
+                        <span className="text-[11px] font-extrabold text-slate-800 block leading-tight">App Móvil (QR)</span>
+                        <p className="text-[10px] text-slate-400 font-semibold block mt-0.5">Yape y Plin mediante código QR institucional</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Warning label warning block matching bottom note on image 4 */}
-                  <div className="mt-5 p-3.5 bg-amber-50 rounded text-slate-600 border border-amber-200 text-[10px] leading-relaxed text-left">
-                    <p className="text-[#9F062A] font-black uppercase tracking-wider text-[9px] leading-tight mb-1">Nota Importante:</p>
-                    <span className="font-semibold block text-slate-500">
+                  {/* Warning label note */}
+                  <div className="mt-5 p-3.5 bg-amber-50/80 rounded-xl text-slate-600 border border-amber-200 text-[10px] leading-relaxed text-left">
+                    <p className="text-[#8B0020] font-black uppercase tracking-wider text-[9px] leading-tight mb-1">Nota Importante:</p>
+                    <span className="font-semibold block text-slate-600">
                       Los pagos por transferencia interbancaria pueden demorar hasta 24 horas hábiles en ser validados por tesorería institucional académica.
                     </span>
                   </div>
@@ -1578,69 +1670,71 @@ export default function PostulanteDashboard({
 
             </div>
 
-            {/* BOTTOM TRANSACTION HISTORY LEDGER TABLE (REPLICATING SCREENSHOT 4 TABLE EXACTLY) */}
-            <div className="bg-white rounded-xl border border-slate-200/95 shadow-sm overflow-hidden text-left">
-              <div className="p-4 border-b bg-slate-50/50">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block leading-none">
-                  Historial de Transacciones del Postulante
-                </span>
-                <p className="text-[9px] text-slate-400 font-extrabold mt-1">
-                  * El pago inicial por Prospecto de Admisión se valida automáticamente por la Intranet Académica al registrar su cuenta virtual.
-                </p>
+            {/* BOTTOM TRANSACTION HISTORY LEDGER TABLE */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden text-left">
+              <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <div>
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider block leading-none">
+                    Historial de Transacciones del Postulante
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-bold mt-1">
+                    * El pago inicial por Prospecto de Admisión se valida automáticamente al registrar su cuenta virtual.
+                  </p>
+                </div>
               </div>
               
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px] font-semibold border-collapse text-left text-slate-600">
                   <thead>
-                    <tr className="bg-slate-100 text-slate-500 border-b text-[10px] font-extrabold uppercase">
-                      <th className="p-3">Fecha</th>
-                      <th className="p-3">Id Operación</th>
-                      <th className="p-3">Concepto</th>
-                      <th className="p-3">Monto</th>
-                      <th className="p-3">Estado</th>
-                      <th className="p-3">Acciones</th>
+                    <tr className="bg-slate-100/80 text-slate-500 border-b text-[10px] font-extrabold uppercase">
+                      <th className="p-3.5 pl-5">Fecha</th>
+                      <th className="p-3.5">Id Operación</th>
+                      <th className="p-3.5">Concepto</th>
+                      <th className="p-3.5">Monto</th>
+                      <th className="p-3.5">Estado</th>
+                      <th className="p-3.5 pr-5">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y text-[11px] bg-white divide-slate-100">
-                    {/* Row 1 matching image 4 */}
-                    <tr className="hover:bg-slate-50">
-                      <td className="p-3 text-slate-500">12/03/2026</td>
-                      <td className="p-3 font-mono font-bold text-slate-800">#TRX-9921</td>
-                      <td className="p-3 font-bold text-slate-900">Prospecto de Admision Regular</td>
-                      <td className="p-3 text-slate-900 font-extrabold">S/. 30.00</td>
-                      <td className="p-3">
-                        <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider">
+                    {/* Row 1 */}
+                    <tr className="hover:bg-slate-50/60 transition-colors">
+                      <td className="p-3.5 pl-5 text-slate-500">12/03/2026</td>
+                      <td className="p-3.5 font-mono font-bold text-slate-800">#TRX-9921</td>
+                      <td className="p-3.5 font-bold text-slate-900">Prospecto de Admisión Regular</td>
+                      <td className="p-3.5 text-slate-900 font-extrabold font-mono">S/. 30.00</td>
+                      <td className="p-3.5">
+                        <span className="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider">
                           Validado
                         </span>
                       </td>
-                      <td className="p-3">
+                      <td className="p-3.5 pr-5">
                         <span 
                           onClick={() => triggerPreview("Recibo de Prospecto", "TRX-9921", "receipt", { 
                             amount: "S/. 30.00", 
-                            concept: "Prospecto de Admision Regular", 
+                            concept: "Prospecto de Admisión Regular", 
                             date: "12/03/2026", 
                             transactionId: "TRX-9921",
                             dni: applicant.dni,
                             studentName: applicant.name,
                             studentLastName: applicant.lastName
                           })}
-                          className="text-[#9F062A] hover:underline font-bold cursor-pointer"
+                          className="text-[#8B0020] hover:underline font-extrabold cursor-pointer"
                         >
                           Ver Recibo
                         </span>
                       </td>
                     </tr>
 
-                    {/* Row 2 dynamic matching image 4 */}
-                    <tr className="hover:bg-slate-50">
-                      <td className="p-3 text-slate-500">{paymentDate}</td>
-                      <td className="p-3 font-mono font-bold text-slate-800">
+                    {/* Row 2 */}
+                    <tr className="hover:bg-slate-50/60 transition-colors">
+                      <td className="p-3.5 pl-5 text-slate-500">{paymentDate}</td>
+                      <td className="p-3.5 font-mono font-bold text-slate-800">
                         {applicant.paymentStatus === "No Pagado" ? "Sin registrar" : (applicant.paymentOperation || "No registrado")}
                       </td>
-                      <td className="p-3 font-bold text-slate-900">Derecho de Examen Ordinario 2026</td>
-                      <td className="p-3 text-slate-900 font-extrabold">S/. 120.00</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                      <td className="p-3.5 font-bold text-slate-900">Derecho de Examen Ordinario 2026</td>
+                      <td className="p-3.5 text-slate-900 font-extrabold font-mono">S/. 120.00</td>
+                      <td className="p-3.5">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
                           applicant.paymentStatus === "Validado"
                             ? "bg-emerald-100 text-emerald-800"
                             : applicant.paymentStatus === "Pendiente"
@@ -1654,10 +1748,10 @@ export default function PostulanteDashboard({
                           {applicant.paymentStatus === "No Pagado" ? "Sin Enviar" : applicant.paymentStatus}
                         </span>
                       </td>
-                      <td className="p-3">
+                      <td className="p-3.5 pr-5">
                         {applicant.paymentStatus === "Validado" ? (
                           <span 
-                            onClick={() => triggerPreview("Recibo de Examen de Admision", applicant.paymentOperation || "PRE-620323", "receipt", { 
+                            onClick={() => triggerPreview("Recibo de Examen de Admisión", applicant.paymentOperation || "PRE-620323", "receipt", { 
                               amount: "S/. 120.00", 
                               concept: "Derecho de Examen Ordinario 2026", 
                               date: paymentDate, 
@@ -1666,7 +1760,7 @@ export default function PostulanteDashboard({
                               studentName: applicant.name,
                               studentLastName: applicant.lastName
                             })}
-                            className="text-[#9F062A] hover:underline font-bold cursor-pointer"
+                            className="text-[#8B0020] hover:underline font-extrabold cursor-pointer"
                           >
                             Ver Recibo
                           </span>
@@ -1675,13 +1769,41 @@ export default function PostulanteDashboard({
                         ) : applicant.paymentStatus === "No Pagado" ? (
                           <span className="text-slate-400 font-bold">Pendiente</span>
                         ) : (
-                          <span className="text-slate-500 font-bold">En Revision</span>
+                          <span className="text-slate-500 font-bold">En Revisión</span>
                         )}
                       </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            {/* BOTTOM SECTION: ¿Necesita ayuda? Card */}
+            <div className="bg-gradient-to-r from-slate-900 via-[#5C0015] to-[#8B0020] text-white p-6 rounded-2xl shadow-xl border border-[#8B0020]/30 mt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-left relative overflow-hidden">
+              <div className="absolute right-0 top-0 w-64 h-64 bg-amber-400/5 rounded-full blur-3xl pointer-events-none" />
+              <div className="flex items-center gap-4 z-10">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-amber-300 shrink-0 shadow-inner">
+                  <Headset className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-black text-white text-base leading-tight flex items-center gap-2">
+                    ¿Necesita ayuda con su pago?
+                    <span className="text-[9px] bg-amber-400 text-slate-950 font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">Atención En Vivo</span>
+                  </h4>
+                  <p className="text-xs text-slate-200 font-medium mt-1 leading-relaxed max-w-xl">
+                    Nuestro equipo de secretaría académica está disponible para guiarte en tu proceso de <strong className="text-amber-300 font-extrabold">L-V de 8am a 6pm</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setActiveTab("soporte")}
+                className="z-10 bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 text-slate-950 font-black py-3 px-6 rounded-xl text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0 flex items-center gap-2 group"
+              >
+                <MessageSquare className="w-4 h-4 text-slate-950" />
+                <span>Contactar Soporte</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              </button>
             </div>
 
           </PageTransition>
@@ -2630,21 +2752,113 @@ export default function PostulanteDashboard({
           </PageTransition>
         )}
 
-        {/* TAB 5: SOPORTE DE ADMISIÓN */}
+        {/* TAB 5: SOPORTE DE ADMISIÓN (DISEÑO INSTITUCIONAL RENOVADO) */}
         {activeTab === "soporte" && (
-          <PageTransition id="soporte" className="max-w-6xl mx-auto space-y-6 text-left animate-fade-in">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-md">
-              <h2 className="text-lg font-black text-slate-900 border-b pb-2 mb-4 font-display flex items-center gap-2">
-                <Compass className="w-5 h-5 text-[#9F062A]" /> Centro de Soporte Técnico y Atención
-              </h2>
-              <p className="text-xs text-slate-500 font-bold mb-6">¿Tiene dudas o inconvenientes con su inscripción, pago o validación de requisitos? Envíe su consulta para recibir asistencia directa de la Secretaría Académica.</p>
+          <PageTransition id="soporte" className="space-y-6">
+            
+            {/* Breadcrumb path */}
+            <div className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">
+              Admisión 2026  &gt;  <span className="text-slate-600">Centro de Soporte y Atención</span>
+            </div>
 
-              {/* Grid 2 Columns for Form (Left) & Chat History (Right) */}
+            {/* Header section */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="text-left">
+                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight text-left">Centro de Soporte y Mesa de Partes</h2>
+                <p className="text-xs text-slate-500 font-bold leading-none mt-1">¿Tiene dudas o inconvenientes con su inscripción, pago o validación de requisitos? Envíe su consulta para recibir asistencia directa.</p>
+              </div>
+            </div>
+
+            {/* TOP ROW: 2 Cards side by side (Mesa de Atención Directa + Guía y Preguntas Frecuentes) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+              
+              {/* Card 1: Mesa de Atención Directa (Borgoña Theme) */}
+              <div className="bg-[#8B0020] text-white p-6 rounded-2xl shadow-xl flex flex-col justify-between border-l-4 border-amber-400 text-left relative overflow-hidden">
+                <div className="absolute -right-8 -bottom-8 w-36 h-36 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+                <div>
+                  <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
+                    <h3 className="font-black text-white text-xs sm:text-sm uppercase tracking-wider block leading-none">Mesa de Atención Directa</h3>
+                    <span className="text-[10px] font-extrabold bg-white/10 text-amber-300 px-2.5 py-1 rounded-full uppercase tracking-wider border border-amber-400/20">
+                      Atención En Vivo
+                    </span>
+                  </div>
+
+                  <p className="text-slate-100 font-medium text-[11px] leading-relaxed mb-4">
+                    Nuestro equipo de Secretaría Académica está disponible de <strong className="text-amber-300 font-extrabold">Lunes a Viernes de 8:00 am a 6:00 pm</strong> para absolver cualquier duda técnica de su trámite.
+                  </p>
+
+                  <div className="space-y-2 text-xs border-t border-white/10 pt-3">
+                    <div className="flex items-center gap-2 text-slate-200 text-[11px]">
+                      <span className="font-black text-amber-300">WhatsApp Oficial:</span> +51 956 123 456
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-200 text-[11px]">
+                      <span className="font-black text-amber-300">Central Telefónica:</span> (056) 261-234
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-200 text-[11px]">
+                      <span className="font-black text-amber-300">Campus Presencial:</span> Av. Mariscal Benavides 1320, Chincha Alta
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    const formEl = document.getElementById("form-soporte-consulta");
+                    if (formEl) {
+                      formEl.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }}
+                  className="w-full mt-6 bg-white hover:bg-amber-50 text-[#8B0020] font-black py-3 rounded-xl text-xs uppercase tracking-widest shadow-md hover:shadow-lg transition-all cursor-pointer text-center flex items-center justify-center gap-2 group"
+                >
+                  <span>Redactar Nueva Consulta</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+
+              {/* Card 2: Guía y Preguntas Frecuentes */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-sm text-left flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
+                    <div className="w-7 h-7 rounded-lg bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center shrink-0">
+                      <HelpCircle className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm uppercase tracking-wider">Preguntas Frecuentes</h3>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex gap-3 text-xs bg-slate-50/80 p-3.5 rounded-xl border border-slate-100/90 hover:bg-slate-50 transition-colors">
+                      <span className="font-black text-[#8B0020] text-xs font-mono shrink-0 select-none bg-white w-6 h-6 rounded-lg flex items-center justify-center border border-slate-200 shadow-2xs">01</span>
+                      <p className="text-slate-700 font-bold leading-relaxed text-[11px]">Validación de Vouchers: Las transferencias interbancarias se verifican en un plazo estimado de 24 horas hábiles.</p>
+                    </div>
+
+                    <div className="flex gap-3 text-xs bg-slate-50/80 p-3.5 rounded-xl border border-slate-100/90 hover:bg-slate-50 transition-colors">
+                      <span className="font-black text-[#8B0020] text-xs font-mono shrink-0 select-none bg-white w-6 h-6 rounded-lg flex items-center justify-center border border-slate-200 shadow-2xs">02</span>
+                      <p className="text-slate-700 font-bold leading-relaxed text-[11px]">Documentos Observados: Suba la captura fotográfica nítida de su requisito en formato JPG, JPEG o PNG (menor a 5MB).</p>
+                    </div>
+
+                    <div className="flex gap-3 text-xs bg-slate-50/80 p-3.5 rounded-xl border border-slate-100/90 hover:bg-slate-50 transition-colors">
+                      <span className="font-black text-[#8B0020] text-xs font-mono shrink-0 select-none bg-white w-6 h-6 rounded-lg flex items-center justify-center border border-slate-200 shadow-2xs">03</span>
+                      <p className="text-slate-700 font-bold leading-relaxed text-[11px]">Asignación de Aula: Su aula para el examen presencial se habilitará automáticamente tras ser validados sus requisitos.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* MIDDLE SECTION: Split Layout (Mesa de Partes Form + Conversational Chat) */}
+            <div id="form-soporte-consulta" className="bg-white p-6 rounded-2xl border border-slate-200/90 shadow-sm text-left">
+              <div className="flex justify-between items-center border-b pb-3 mb-6">
+                <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-[#8B0020]" />
+                  Mesa de Partes Virtual &amp; Asistencia Directa
+                </h3>
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 
-                {/* LEFT COL: Send Support Message Form */}
+                {/* LEFT COL: Formulario de Nueva Consulta */}
                 <div className="lg:col-span-5 space-y-4 border-b lg:border-b-0 lg:border-r pb-6 lg:pb-0 lg:pr-6 border-slate-100">
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Nueva Consulta</span>
+                  <span className="text-[10px] font-black uppercase text-[#8B0020] tracking-wider block">Redactar Nueva Consulta</span>
                   
                   <form 
                     onSubmit={(e) => { 
@@ -2668,47 +2882,48 @@ export default function PostulanteDashboard({
                   >
                     <div className="grid grid-cols-1 gap-3.5">
                       <div>
-                        <label className="block uppercase text-slate-400 text-[10px] mb-1">Nombre Completo</label>
-                        <input type="text" disabled value={`${applicant.name} ${applicant.lastName}`} className="w-full bg-slate-100 px-3 py-2 border rounded text-slate-500 font-bold" />
+                        <label className="block uppercase text-slate-400 text-[10px] mb-1 font-extrabold">Nombre Completo</label>
+                        <input type="text" disabled value={`${applicant.name} ${applicant.lastName}`} className="w-full bg-slate-100/80 px-3.5 py-2.5 border border-slate-200 rounded-xl text-slate-600 font-bold" />
                       </div>
                       <div>
-                        <label className="block uppercase text-slate-400 text-[10px] mb-1">Teléfono Móvil de Contacto</label>
-                        <input type="text" value={applicant.phone} disabled className="w-full bg-slate-100 px-3 py-2 border rounded text-slate-500 font-bold" />
+                        <label className="block uppercase text-slate-400 text-[10px] mb-1 font-extrabold">Teléfono Móvil de Contacto</label>
+                        <input type="text" value={applicant.phone} disabled className="w-full bg-slate-100/80 px-3.5 py-2.5 border border-slate-200 rounded-xl text-slate-600 font-bold" />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block uppercase text-slate-400 text-[10px] mb-1">Categoría del Reclamo Técnico</label>
+                      <label className="block uppercase text-slate-400 text-[10px] mb-1 font-extrabold">Categoría del Reclamo Técnico</label>
                       <select 
                         value={supportCategory}
                         onChange={(e) => setSupportCategory(e.target.value)}
-                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded font-semibold text-xs focus:outline-hidden"
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-[#8B0020]/20"
                       >
-                        <option>Dificultad con el formato o visualización del PDF</option>
+                        <option>Dificultad con el formato o carga de imagen (JPG/PNG)</option>
                         <option>El voucher físico no se registra en la base de datos bancaria</option>
-                        <option>Observación en mi Partida de Nacimiento sin justificación médica</option>
-                        <option>Otro trámite regular</option>
+                        <option>Observación en mis documentos de expediente</option>
+                        <option>Otro trámite o consulta regular</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block uppercase text-slate-400 text-[10px] mb-1">Detalle del Mensaje o Dificultad</label>
+                      <label className="block uppercase text-slate-400 text-[10px] mb-1 font-extrabold">Detalle del Mensaje o Dificultad</label>
                       <textarea 
                         required
                         rows={5} 
                         value={supportMessage}
                         onChange={(e) => setSupportMessage(e.target.value)}
-                        placeholder="Describa de manera detallada las dificultades técnicas de su trámite de admisión para recibir asistencia..." 
-                        className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded font-semibold text-xs focus:outline-hidden"
+                        placeholder="Describa de manera detallada sus dudas técnicas para recibir asistencia oficial..." 
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-xs focus:outline-none focus:ring-2 focus:ring-[#8B0020]/20"
                       ></textarea>
                     </div>
 
-                    <div className="pt-2 flex justify-end">
+                    <div className="pt-2">
                       <button 
                         type="submit"
-                        className="w-full bg-[#9F062A] hover:bg-[#800521] text-white py-2.5 px-6 rounded font-extrabold uppercase text-[10px] tracking-widest shadow-md transition-all cursor-pointer text-center"
+                        className="w-full bg-[#8B0020] hover:bg-[#700018] text-white py-3 px-6 rounded-xl font-extrabold uppercase text-[10px] tracking-widest shadow-md hover:shadow-lg transition-all cursor-pointer text-center flex items-center justify-center gap-2"
                       >
-                        Enviar Mensaje a Secretaría
+                        <Send className="w-4 h-4 text-amber-300" />
+                        <span>Enviar Mensaje a Secretaría</span>
                       </button>
                     </div>
                   </form>
@@ -2718,30 +2933,30 @@ export default function PostulanteDashboard({
                 <div className="lg:col-span-7 flex flex-col h-full space-y-3">
                   <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Historial de Conversación (Mesa de Partes)</span>
                   
-                  <div className="border border-slate-200 rounded-lg p-4 bg-slate-50 h-[380px] overflow-y-auto space-y-3 custom-scrollbar flex flex-col">
+                  <div className="border border-slate-200/90 rounded-xl p-4 bg-slate-50/70 h-[380px] overflow-y-auto space-y-3 custom-scrollbar flex flex-col">
                     {(!applicant.supportMessages || applicant.supportMessages.length === 0) ? (
                       <div className="text-center py-16 text-xs text-slate-400 font-semibold leading-relaxed my-auto flex flex-col items-center justify-center gap-2">
-                        <HelpIcon className="w-8 h-8 text-slate-300" />
-                        <span>No se han registrado mensajes previos. Use el formulario de la izquierda para enviar su consulta técnica a la institución.</span>
+                        <HelpCircle className="w-8 h-8 text-slate-300" />
+                        <span>No se han registrado mensajes previos. Use el formulario para enviar su primera consulta técnica.</span>
                       </div>
                     ) : (
                       applicant.supportMessages.map((msg: any) => (
                         <div key={msg.id} className={`flex flex-col mb-1.5 ${msg.sender === "postulante" ? "items-end" : "items-start"}`}>
-                          <div className={`p-3 rounded-lg max-w-sm sm:max-w-md text-xs font-semibold leading-normal shadow-xs text-left ${
+                          <div className={`p-3.5 rounded-2xl max-w-sm sm:max-w-md text-xs font-semibold leading-normal shadow-2xs text-left ${
                             msg.sender === "postulante" 
-                              ? "bg-[#9F062A] text-white rounded-br-none" 
-                              : "bg-white border border-slate-300 text-slate-800 rounded-bl-none"
+                              ? "bg-[#8B0020] text-white rounded-br-xs" 
+                              : "bg-white border border-slate-200 text-slate-800 rounded-bl-xs"
                           }`}>
                             {msg.category && (
-                              <span className={`block text-[8px] font-black uppercase tracking-wider mb-1 ${
-                                msg.sender === "postulante" ? "text-red-200" : "text-[#9F062A]"
+                              <span className={`block text-[8.5px] font-black uppercase tracking-wider mb-1 ${
+                                msg.sender === "postulante" ? "text-amber-300" : "text-[#8B0020]"
                               }`}>
                                 Categoría: {msg.category}
                               </span>
                             )}
-                            <p className="whitespace-pre-line">{msg.text}</p>
+                            <p className="whitespace-pre-line text-[11px]">{msg.text}</p>
                           </div>
-                          <span className="text-[8px] text-slate-400 font-black block mt-1 tracking-wide uppercase">
+                          <span className="text-[8px] text-slate-400 font-black block mt-1 tracking-wide uppercase px-1">
                             {msg.sender === "postulante" ? `Usted - ${msg.date}` : `Mesa de Partes - ${msg.date}`}
                           </span>
                         </div>
@@ -2752,6 +2967,26 @@ export default function PostulanteDashboard({
 
               </div>
             </div>
+
+            {/* BOTTOM SECTION: Ubicación y Horarios de Atención Presencial */}
+            <div className="bg-gradient-to-r from-slate-900 via-[#5C0015] to-[#8B0020] text-white p-6 rounded-2xl shadow-xl border border-[#8B0020]/30 mt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-left relative overflow-hidden">
+              <div className="absolute right-0 top-0 w-64 h-64 bg-amber-400/5 rounded-full blur-3xl pointer-events-none" />
+              <div className="flex items-center gap-4 z-10">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-amber-300 shrink-0 shadow-inner">
+                  <MapPin className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-black text-white text-base leading-tight flex items-center gap-2">
+                    Oficinas Administrativas de Secretaría
+                    <span className="text-[9px] bg-amber-400 text-slate-950 font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">Chincha Alta</span>
+                  </h4>
+                  <p className="text-xs text-slate-200 font-medium mt-1 leading-relaxed max-w-xl">
+                    Campus Principal: Av. Mariscal Benavides 1320, Chincha Alta, Ica. Horario presencial de atención: <strong className="text-amber-300 font-extrabold">L-V de 8am a 6pm</strong>.
+                  </p>
+                </div>
+              </div>
+            </div>
+
           </PageTransition>
         )}
 
