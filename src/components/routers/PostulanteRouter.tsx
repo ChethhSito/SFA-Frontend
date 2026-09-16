@@ -75,25 +75,30 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
   }
 
   // Merge persisted doc statuses from localStorage back into the resolved applicant.
-  // This fixes the "NO ENVIADO" bug after refresh: when the main localStorage/API
-  // doesn't carry the docs (due to base64 size issues), the dedicated doc status
-  // key (sfa_doc_status_{dni}) is used as the source of truth for status/fileName.
+  // PRIORITY: Live data (Firestore/API) ALWAYS wins — localStorage only fills "No Enviado" gaps.
+  // This prevents localStorage "Pendiente" from overwriting admin-validated "Validado".
   if (applicantToRender && currentDni) {
     try {
       const savedDocs = localStorage.getItem(`sfa_doc_status_${currentDni}`);
       if (savedDocs) {
         const parsed = JSON.parse(savedDocs);
         const existingDocs = (applicantToRender as any).docs || {};
+        const statusRank: Record<string, number> = {
+          "No Enviado": 0, "Pendiente": 1, "Observado": 2, "Validado": 3
+        };
         const mergedDocs: any = {};
         const allKeys = new Set([...Object.keys(parsed), ...Object.keys(existingDocs)]);
         for (const key of allKeys) {
           const persisted = parsed[key];
           const live = existingDocs[key];
-          // Use the persisted status if live shows "No Enviado" but persisted shows something else
-          if (persisted && persisted.status && persisted.status !== "No Enviado") {
-            mergedDocs[key] = { ...live, ...persisted };
-          } else {
+          const liveRank = statusRank[live?.status || "No Enviado"] ?? 0;
+          const persistedRank = statusRank[persisted?.status || "No Enviado"] ?? 0;
+          // Use whichever has the higher status rank (live takes priority on tie)
+          if (liveRank >= persistedRank) {
             mergedDocs[key] = live || { status: "No Enviado" };
+          } else {
+            // localStorage has a better status than live — use it (e.g. live shows No Enviado but localStorage has Pendiente)
+            mergedDocs[key] = { ...live, ...persisted };
           }
         }
         applicantToRender = { ...applicantToRender, docs: mergedDocs } as Applicant;

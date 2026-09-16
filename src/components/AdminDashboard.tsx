@@ -538,11 +538,14 @@ export default function AdminDashboard({
           const docKeys: Array<"dniFile" | "certificadoFile" | "partidaFile" | "fotoFile"> = ["dniFile", "certificadoFile", "partidaFile", "fotoFile"];
           docKeys.forEach((key) => {
             const currentDoc = updatedDocs[key] || { status: "No Enviado" };
-            updatedDocs[key] = {
-              ...currentDoc,
-              status: "Validado" as const,
-              fileName: currentDoc.fileName || `${key === "dniFile" ? "dni_archivo.jpg" : key === "certificadoFile" ? "certificado_secundaria.jpg" : key === "partidaFile" ? "partida_nacimiento.jpg" : "foto_carnet.jpg"}`
-            };
+            // Only auto-validate docs the postulante actually uploaded — never fake "No Enviado" docs
+            if (currentDoc.status !== "No Enviado" && currentDoc.fileName) {
+              updatedDocs[key] = {
+                ...currentDoc,
+                status: "Validado" as const
+              };
+            }
+            // Docs that were never uploaded remain "No Enviado" — no placeholder filenames
           });
         }
 
