@@ -3,20 +3,26 @@ import { AlertTriangle, Info, CheckCircle2, XCircle } from "lucide-react";
 
 interface AlertBoxProps {
   title: string;
-  description: string;
+  description?: string;
+  message?: string;
   variant?: "danger" | "warning" | "success" | "info" | "brand";
   actions?: React.ReactNode;
+  action?: React.ReactNode;
   className?: string;
 }
 
 export default function AlertBox({
   title,
   description,
+  message,
   variant = "warning",
   actions,
+  action,
   className = ""
 }: AlertBoxProps) {
-  
+  const bodyText = description || message || "";
+  const actionContent = actions || action;
+
   const icons = {
     danger: <XCircle className="w-5 h-5 text-rose-600 shrink-0" />,
     warning: <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />,
@@ -44,14 +50,14 @@ export default function AlertBox({
             {title}
           </h4>
           <p className="text-xs font-medium leading-relaxed opacity-90">
-            {description}
+            {bodyText}
           </p>
         </div>
       </div>
       
-      {actions && (
+      {actionContent && (
         <div className="w-full md:w-auto shrink-0 flex justify-end">
-          {actions}
+          {actionContent}
         </div>
       )}
     </div>

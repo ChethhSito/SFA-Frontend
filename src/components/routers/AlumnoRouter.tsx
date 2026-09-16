@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import AlumnoDashboard from "../AlumnoDashboard";
+import AlumnoDashboard from "../alumno/AlumnoDashboard";
 import { Enrollment, StudentPersonalData, Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, CycleStatus, Graduation } from "../../types";
 import { Lock, ArrowLeft } from "lucide-react";
 import Button from "../ui/Button";

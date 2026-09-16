@@ -3,30 +3,30 @@ import {
   Users, BookOpen, Clock, FileText, CheckCircle, 
   Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronRight, BarChart3, Settings, AlertCircle, RefreshCw, FileSpreadsheet, Megaphone
 } from "lucide-react";
-import { Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, StudentPersonalData } from "../types";
+import { Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, StudentPersonalData } from "../../types";
 
 // Reusable Custom Design System Components
-import Button from "./ui/Button";
-import Badge from "./ui/Badge";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./ui/Card";
-import PageHeader from "./ui/PageHeader";
-import PageTransition from "./ui/PageTransition";
-import AlertBox from "./ui/AlertBox";
+import Button from "../ui/Button";
+import Badge from "../ui/Badge";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../ui/Card";
+import PageHeader from "../ui/PageHeader";
+import PageTransition from "../ui/PageTransition";
+import AlertBox from "../ui/AlertBox";
 
 // Modular Docente Components
-import { ROSTER, getWeekTheme, WeeklyObservation } from "./docente/DocenteTypes";
-import SidebarPrincipal from "./docente/SidebarPrincipal";
-import SidebarCurso, { WeekOption, CourseSection } from "./docente/SidebarCurso";
+import { ROSTER, getWeekTheme, WeeklyObservation } from "./DocenteTypes";
+import SidebarPrincipal from "./SidebarPrincipal";
+import SidebarCurso, { WeekOption, CourseSection } from "./SidebarCurso";
 import { 
   ResumenCurso, MaterialManager, TareaManager, ObservacionManager, CierreCurso 
-} from "./docente/WeeklyViews";
+} from "./WeeklyViews";
 
-import AsistenciaManager from "./docente/AsistenciaManager";
-import EvidenciasManager from "./docente/EvidenciasManager";
-import EvaluacionesManager from "./docente/EvaluacionesManager";
-import ControlAsistenciaPrincipal from "./docente/ControlAsistenciaPrincipal";
-import EvaluacionesCursosPrincipal from "./docente/EvaluacionesCursosPrincipal";
-import AvisosReportesPrincipal from "./docente/AvisosReportesPrincipal";
+import AsistenciaManager from "./AsistenciaManager";
+import EvidenciasManager from "./EvidenciasManager";
+import EvaluacionesManager from "./EvaluacionesManager";
+import ControlAsistenciaPrincipal from "./ControlAsistenciaPrincipal";
+import EvaluacionesCursosPrincipal from "./EvaluacionesCursosPrincipal";
+import AvisosReportesPrincipal from "./AvisosReportesPrincipal";
 
 interface DocenteDashboardProps {
   teacherDni: string;

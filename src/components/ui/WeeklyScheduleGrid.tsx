@@ -6,7 +6,7 @@ import {
   MpaClassroom, 
   MpaAcademicGroup,
   MpaCareer
-} from "../types";
+} from "../../types";
 import { Printer, Download, MapPin, User, Calendar, MessageSquare, Clock } from "lucide-react";
 
 interface WeeklyScheduleGridProps {

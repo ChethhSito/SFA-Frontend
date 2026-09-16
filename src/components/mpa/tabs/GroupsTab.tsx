@@ -7,7 +7,7 @@ import {
 import { MpaCurriculumVersion } from "./CurriculumTab";
 import Button from "../../ui/Button";
 import { PageTransition } from "../PageTransition";
-import { WeeklyScheduleGrid } from "../../WeeklyScheduleGrid";
+import { WeeklyScheduleGrid } from "../../ui/WeeklyScheduleGrid";
 
 interface GroupsTabProps {
   groups: MpaAcademicGroup[];

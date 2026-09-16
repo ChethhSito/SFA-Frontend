@@ -5,8 +5,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Role, AdmissionPeriod } from "./types";
-import PortalHome from "./components/PortalHome";
-import LoginPortal from "./components/LoginPortal";
+import PortalHome from "./components/portal/PortalHome";
+import LoginPortal from "./components/portal/LoginPortal";
 import AdminRouter from "./components/routers/AdminRouter";
 import SuperAdminRouter from "./components/routers/SuperAdminRouter";
 import MpaRouter from "./components/routers/MpaRouter";

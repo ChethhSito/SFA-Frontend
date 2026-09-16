@@ -4,7 +4,7 @@ import {
   MpaClassroom, MpaProgramTask, MpaSchedule 
 } from "../../../types";
 import { PageTransition } from "../PageTransition";
-import { WeeklyScheduleGrid } from "../../WeeklyScheduleGrid";
+import { WeeklyScheduleGrid } from "../../ui/WeeklyScheduleGrid";
 
 interface CareerSchedulesViewProps {
   groups: MpaAcademicGroup[];
