@@ -7,3 +7,4 @@ export { default as PageTransition } from "./PageTransition";
 export { default as AlertBox } from "./AlertBox";
 export { default as ImagePreviewModal } from "./ImagePreviewModal";
 export { WeeklyScheduleGrid } from "./WeeklyScheduleGrid";
+export { default as NotFoundPage } from "./NotFoundPage";
