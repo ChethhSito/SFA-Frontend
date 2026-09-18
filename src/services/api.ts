@@ -64,7 +64,7 @@ export async function createApplicant(applicant: Partial<Applicant>): Promise<Ap
 
 export async function updateApplicant(dni: string, data: Partial<Applicant>): Promise<Applicant | null> {
   const item = await fetchJson<any>(`/applicants/${dni}`, {
-    method: "PATCH",
+    method: "PUT",
     body: JSON.stringify(data)
   });
   if (!item) return null;
@@ -82,7 +82,7 @@ export async function deleteApplicant(dni: string): Promise<boolean> {
 }
 
 /* ==========================================================================
-   2. ENROLLMENTS (Matrículas e Ingresantes)
+   2. ENROLLMENTS (Matrículas y Expedientes)
    ========================================================================== */
 
 export async function fetchEnrollments(): Promise<Enrollment[] | null> {
@@ -103,13 +103,13 @@ export async function createEnrollment(enrollment: Partial<Enrollment>): Promise
 
 export async function updateEnrollment(studentDni: string, data: Partial<Enrollment>): Promise<Enrollment | null> {
   return fetchJson<Enrollment>(`/enrollments/${studentDni}`, {
-    method: "PATCH",
+    method: "PUT",
     body: JSON.stringify(data)
   });
 }
 
 /* ==========================================================================
-   3. ADMISSION PERIODS (Planificación & Cronogramas)
+   3. ADMISSION PERIODS (Periodos de Admisión)
    ========================================================================== */
 
 export async function fetchAdmissionPeriods(): Promise<AdmissionPeriod[] | null> {
@@ -135,7 +135,7 @@ export async function createAdmissionPeriod(period: Partial<AdmissionPeriod>): P
 
 export async function updateAdmissionPeriod(id: string, data: Partial<AdmissionPeriod>): Promise<AdmissionPeriod | null> {
   const item = await fetchJson<any>(`/admission-periods/${id}`, {
-    method: "PATCH",
+    method: "PUT",
     body: JSON.stringify(data)
   });
   if (!item) return null;
@@ -146,7 +146,7 @@ export async function updateAdmissionPeriod(id: string, data: Partial<AdmissionP
 }
 
 /* ==========================================================================
-   4. COURSES & MPA (Cursos y Planificación Académica)
+   4. COURSES (Catálogo de Cursos)
    ========================================================================== */
 
 export async function fetchCourses(): Promise<Course[] | null> {
@@ -167,7 +167,7 @@ export async function createCourse(course: Partial<Course>): Promise<Course | nu
 
 export async function updateCourse(code: string, data: Partial<Course>): Promise<Course | null> {
   return fetchJson<Course>(`/courses/${code}`, {
-    method: "PATCH",
+    method: "PUT",
     body: JSON.stringify(data)
   });
 }
@@ -194,13 +194,13 @@ export async function createTeacher(teacher: Partial<Teacher>): Promise<Teacher 
 
 export async function updateTeacher(dni: string, data: Partial<Teacher>): Promise<Teacher | null> {
   return fetchJson<Teacher>(`/teachers/${dni}`, {
-    method: "PATCH",
+    method: "PUT",
     body: JSON.stringify(data)
   });
 }
 
 /* ==========================================================================
-   6. GRADUATIONS (Titulación y Egresados)
+   6. GRADUATIONS (Egresados)
    ========================================================================== */
 
 export async function fetchGraduations(): Promise<Graduation[] | null> {
@@ -216,23 +216,23 @@ export async function createGraduation(graduation: Partial<Graduation>): Promise
 
 export async function updateGraduation(studentDni: string, data: Partial<Graduation>): Promise<Graduation | null> {
   return fetchJson<Graduation>(`/graduations/${studentDni}`, {
-    method: "PATCH",
+    method: "PUT",
     body: JSON.stringify(data)
   });
 }
 
 /* ==========================================================================
-   7. TRANSACTIONAL EMAILS (Brevo API via NestJS MailService)
+   7. TRANSACTIONAL EMAILS
    ========================================================================== */
 
 export async function sendTransactionalWelcomeEmail(payload: {
   email: string;
-  applicantCode: string;
+  name?: string;
+  applicantCode?: string;
   password?: string;
   url?: string;
-  name?: string;
-  dni?: string;
   programName?: string;
+  dni?: string;
 }): Promise<boolean> {
   if (!payload.email || !payload.email.trim()) return false;
   return sendWelcomeEmailBrevo(payload.email.trim(), payload.name || "Postulante", {
@@ -284,6 +284,35 @@ export async function updateUser(id: string, data: Partial<SystemUser>): Promise
 
 export async function deleteUser(id: string): Promise<boolean> {
   const result = await fetchJson<{ success: boolean }>(`/users/${id}`, {
+    method: "DELETE"
+  });
+  return !!result;
+}
+
+/* ==========================================================================
+   9. PAYMENTS & FINANCE (Tesorería, Caja y Recaudación MAF)
+   ========================================================================== */
+
+export async function fetchPayments(): Promise<any[] | null> {
+  return fetchJson<any[]>("/payments");
+}
+
+export async function createPayment(payment: any): Promise<any | null> {
+  return fetchJson<any>("/payments", {
+    method: "POST",
+    body: JSON.stringify(payment)
+  });
+}
+
+export async function updatePayment(id: string, data: any): Promise<any | null> {
+  return fetchJson<any>(`/payments/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data)
+  });
+}
+
+export async function deletePayment(id: string): Promise<boolean> {
+  const result = await fetchJson<{ success: boolean }>(`/payments/${id}`, {
     method: "DELETE"
   });
   return !!result;

@@ -1,5 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Enrollment } from "../../types";
+import {
+  fetchPayments,
+  createPayment as apiCreatePayment,
+  updatePayment as apiUpdatePayment,
+  deletePayment as apiDeletePayment
+} from "../../services/api";
 
 export function useFinanceManager(
   enrollments: Enrollment[] = [],
@@ -20,6 +26,29 @@ export function useFinanceManager(
     ];
   });
 
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchPayments()
+      .then((apiPayments) => {
+        if (apiPayments && apiPayments.length > 0) {
+          const formatted = apiPayments.map((p) => ({
+            ...p,
+            id: p.paymentId || p.id || p._id
+          }));
+          setTransactions(formatted);
+          localStorage.setItem("sfa_finance_transactions", JSON.stringify(formatted));
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching payments from REST API:", err);
+        setError("Error al cargar comprobantes de tesorería.");
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   const saveTransactions = (nextList: any[]) => {
     setTransactions(nextList);
     try {
@@ -29,26 +58,47 @@ export function useFinanceManager(
     }
   };
 
-  const handleRegisterPayment = (studentDni: string, concept: string, amount: number) => {
-    const newTx = {
-      id: `tx-${Date.now()}`,
+  const handleRegisterPayment = async (studentDni: string, concept: string, amount: number, notes?: string) => {
+    const newTxPayload = {
+      paymentId: `tx-${Date.now()}`,
       studentDni,
       concept,
       amount,
       date: new Date().toISOString().split("T")[0],
-      status: "APROBADO"
+      status: "APROBADO",
+      notes
     };
-    const nextTxList = [newTx, ...transactions];
+
+    // 1. Enviar al backend NestJS REST API
+    const apiResult = await apiCreatePayment(newTxPayload);
+    const itemToSave = apiResult
+      ? { ...apiResult, id: apiResult.paymentId || apiResult.id || apiResult._id }
+      : newTxPayload;
+
+    // 2. Actualizar estado local
+    const nextTxList = [itemToSave, ...transactions];
     saveTransactions(nextTxList);
 
-    // Actualizar estado de pago en matrícula si aplica
+    // 3. Actualizar estado de pago en la matrícula del alumno si aplica
     if (onUpdateEnrollments && Array.isArray(enrollments)) {
       const updatedEnrollments = enrollments.map((e) =>
         e.studentDni === studentDni ? { ...e, paymentStatus: "Pagado" as const } : e
       );
       onUpdateEnrollments(updatedEnrollments);
     }
-    return newTx;
+    return itemToSave;
+  };
+
+  const handleUpdatePaymentStatus = async (paymentId: string, status: string) => {
+    await apiUpdatePayment(paymentId, { status });
+    const nextTxList = transactions.map((t) => (t.id === paymentId || t.paymentId === paymentId ? { ...t, status } : t));
+    saveTransactions(nextTxList);
+  };
+
+  const handleDeletePayment = async (paymentId: string) => {
+    await apiDeletePayment(paymentId);
+    const nextTxList = transactions.filter((t) => t.id !== paymentId && t.paymentId !== paymentId);
+    saveTransactions(nextTxList);
   };
 
   const getTotalRevenue = () => {
@@ -60,7 +110,11 @@ export function useFinanceManager(
   return {
     transactions,
     setTransactions,
+    financeLoading: loading,
+    financeError: error,
     handleRegisterPayment,
+    handleUpdatePaymentStatus,
+    handleDeletePayment,
     getTotalRevenue
   };
 }
