@@ -18,7 +18,7 @@ El sistema cuenta con soporte para **8 roles institucionales y portales dedicado
 - 📋 **Postulante (Admisión)**: Seguimiento de trámites, presentación de expedientes y estado de admisión.
 - 👨‍🎓 **Alumno**: Matrículas, horario semanal, récord de notas, avance de ciclos (I al VI) y constancias.
 - 👨‍🏫 **Docente**: Registro de asistencia, subida de tareas, sílabos y evaluación continua.
-- ⚙️ **Administración (MAM)**: Control de caja de admisión, validación de carpetas físicas y matriculación.
+- ⚙️ **MAMC**: Control de caja de admisión, validación de carpetas físicas y matriculación.
 - 🏛️ **MPA (Planificación Académica)**: Editor visual de mallas curriculares, créditos y horas pedagógicas.
 - 🎓 **MGE (Gestión Estudiantil & Egresados)**: Titulación, seguimiento de egresados y trámites de grado.
 - 💰 **MAF (Administración & Finanzas)**: Recaudación, recibos de caja, pensiones y estados de pago.
@@ -31,7 +31,7 @@ El sistema cuenta con soporte para **8 roles institucionales y portales dedicado
 ```text
 src/
 ├── components/           # Componentes organizados por dominio
-│   ├── admin/            # Paneles de Administración y Caja
+│   ├── admin/            # Paneles de MAMC (Caja, Admisión y Matrícula)
 │   ├── alumno/           # Intranet y récord del estudiante
 │   ├── docente/          # Registro de notas y asistencia
 │   ├── maf/              # Tesorería y recibos de caja
