@@ -492,38 +492,10 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
           </table>
         </div>
       </div>
-
-      {/* BOTTOM SECTION: ¿Necesita ayuda? Card */}
-      <div className="bg-gradient-to-r from-slate-900 via-[#5C0015] to-[#8B0020] text-white p-6 rounded-2xl shadow-xl border border-[#8B0020]/30 mt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-left relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-64 h-64 bg-amber-400/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="flex items-center gap-4 z-10">
-          <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-amber-300 shrink-0 shadow-inner">
-            <Headset className="w-6 h-6" />
-          </div>
-          <div>
-            <h4 className="font-black text-white text-base leading-tight flex items-center gap-2">
-              ¿Necesita ayuda con su pago?
-              <span className="text-[9px] bg-amber-400 text-slate-950 font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">Atención En Vivo</span>
-            </h4>
-            <p className="text-xs text-slate-200 font-medium mt-1 leading-relaxed max-w-xl">
-              Nuestro equipo de secretaría académica está disponible para guiarte en tu proceso de <strong className="text-amber-300 font-extrabold">L-V de 8am a 6pm</strong>.
-            </p>
-          </div>
-        </div>
-
-        <button 
-          onClick={() => setActiveTab("soporte")}
-          className="z-10 bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 text-slate-950 font-black py-3 px-6 rounded-xl text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0 flex items-center gap-2 group"
-        >
-          <MessageSquare className="w-4 h-4 text-slate-950" />
-          <span>Contactar Soporte</span>
-          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-        </button>
-      </div>
-
     </PageTransition>
   );
 });
 
 PagosTab.displayName = "PagosTab";
 export default PagosTab;
+
