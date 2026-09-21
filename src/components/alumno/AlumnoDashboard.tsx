@@ -96,6 +96,26 @@ export default function AlumnoDashboard({
     setProfileForm({ ...personalData });
   }, [personalData]);
 
+  useEffect(() => {
+    if (cycleStatuses && cycleStatuses.length > 0) {
+      setSimulatedGrades((prev) => {
+        const next = { ...prev };
+        cycleStatuses.forEach((cs) => {
+          if (cs.courses) {
+            cs.courses.forEach((c) => {
+              if (c.name && typeof c.grade === "number" && c.grade > 0) {
+                const key = c.name.toLowerCase();
+                next[key] = c.grade;
+              }
+            });
+          }
+        });
+        return next;
+      });
+    }
+  }, [cycleStatuses]);
+
+
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdatePersonal(profileForm);

@@ -343,3 +343,11 @@ export async function updateStudentCycleStatuses(dni: string, cycleStatuses: any
     body: JSON.stringify({ cycleStatuses })
   });
 }
+
+export async function updateStudentCourseGrade(dni: string, courseName: string, grade: number): Promise<any | null> {
+  return fetchJson<any>(`/students/${dni}/course-grade`, {
+    method: "PUT",
+    body: JSON.stringify({ courseName, grade })
+  });
+}
+

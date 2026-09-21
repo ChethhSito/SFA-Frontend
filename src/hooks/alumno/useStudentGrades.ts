@@ -7,7 +7,8 @@ import {
 import {
   fetchStudents,
   updateStudentPersonalData as apiUpdatePersonalData,
-  updateStudentCycleStatuses as apiUpdateCycleStatuses
+  updateStudentCycleStatuses as apiUpdateCycleStatuses,
+  updateStudentCourseGrade as apiUpdateCourseGrade
 } from "../../services/api";
 
 export function useStudentGrades() {
@@ -98,6 +99,17 @@ export function useStudentGrades() {
     await apiUpdatePersonalData(dni, details);
   };
 
+  const handleUpdateCourseGrade = async (dni: string, courseName: string, grade: number) => {
+    const updatedStudent = await apiUpdateCourseGrade(dni, courseName, grade);
+    if (updatedStudent && updatedStudent.cycleStatuses) {
+      setCycleStatuses((prev: any) => ({
+        ...prev,
+        [dni]: updatedStudent.cycleStatuses
+      }));
+    }
+    return updatedStudent;
+  };
+
   const handleUpdateGraduations = (updatedList: any[]) => {
     setGraduations(updatedList);
     try {
@@ -118,6 +130,8 @@ export function useStudentGrades() {
     studentsError,
     handleUpdateStudentsData,
     handleUpdatePersonalSingle,
+    handleUpdateCourseGrade,
     handleUpdateGraduations
   };
 }
+
