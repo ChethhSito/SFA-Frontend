@@ -1,6 +1,6 @@
-# 🏛️ Especificación Arquitectónica del Frontend (`SFA-Frontend`)
+# 🏛️ Estándar Oficial de Desarrollo Frontend (`SFA-Frontend`)
 
-Este documento define el **Estándar Arquitectónico Oficial** del frontend del **IESTP San Francisco de Asís**.
+Este documento define las **Normas y Estándares Oficiales de Arquitectura y Desarrollo** para el Frontend del **IESTP San Francisco de Asís**.
 
 ---
 
