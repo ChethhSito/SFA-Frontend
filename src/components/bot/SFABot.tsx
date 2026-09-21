@@ -18,6 +18,68 @@ interface Message {
   timestamp: Date;
 }
 
+const parseInlineMarkdown = (text: string) => {
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={i} className="font-black text-slate-900 bg-amber-100/60 px-1 py-0.5 rounded-2xs">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return part;
+  });
+};
+
+const renderFormattedBotText = (text: string) => {
+  if (!text) return null;
+  const paragraphs = text.split(/\n\n+/);
+  return (
+    <div className="space-y-2.5">
+      {paragraphs.map((paragraph, pIdx) => {
+        const trimmed = paragraph.trim();
+        if (trimmed.startsWith(">")) {
+          const content = trimmed.replace(/^>\s*/, "");
+          return (
+            <div key={pIdx} className="p-2.5 bg-amber-500/10 border-l-3 border-[#9F062A] rounded-r-xl text-slate-800 text-[11px] font-semibold leading-relaxed">
+              {parseInlineMarkdown(content)}
+            </div>
+          );
+        }
+        const lines = trimmed.split("\n");
+        if (lines.some(l => /^\s*([•\-*]|\d+[\.\)])\s+/.test(l.trim()))) {
+          return (
+            <div key={pIdx} className="space-y-1.5 my-1">
+              {lines.map((line, lIdx) => {
+                const lineTrim = line.trim();
+                if (!lineTrim) return null;
+                const matchList = lineTrim.match(/^\s*([•\-*]|\d+[\.\)])\s+(.*)/);
+                if (matchList) {
+                  const bullet = matchList[1];
+                  const body = matchList[2];
+                  return (
+                    <div key={lIdx} className="flex items-start gap-2 text-xs leading-snug">
+                      <span className="font-extrabold text-[#9F062A] shrink-0 mt-0.5">{bullet.length > 1 ? bullet : "•"}</span>
+                      <span className="flex-1 font-normal text-slate-700">{parseInlineMarkdown(body)}</span>
+                    </div>
+                  );
+                }
+                return <p key={lIdx} className="text-xs leading-relaxed">{parseInlineMarkdown(lineTrim)}</p>;
+              })}
+            </div>
+          );
+        }
+        return (
+          <p key={pIdx} className="text-xs leading-relaxed font-normal text-slate-700">
+            {parseInlineMarkdown(trimmed)}
+          </p>
+        );
+      })}
+    </div>
+  );
+};
+
 export default function SFABot() {
   const [isOpen, setIsOpen] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -34,27 +96,49 @@ export default function SFABot() {
   const [notification, setNotification] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastMessageRef = useRef<HTMLDivElement>(null);
 
-  // Scroll smoothly to latest message
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // Scroll smoothly to latest message (focus on top of new message so it never gets clipped)
+  const scrollToLatestMessage = () => {
+    setTimeout(() => {
+      if (lastMessageRef.current) {
+        lastMessageRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 100);
   };
 
   useEffect(() => {
-    scrollToBottom();
+    scrollToLatestMessage();
   }, [messages, isOpen, isLoading]);
 
   // Periodic floating tip notifications when closed
   useEffect(() => {
-    if (isOpen || notification) return;
+    if (isOpen) {
+      setNotification(null);
+      return;
+    }
+
+    // Show initial tip quickly (2.5 seconds after load)
+    const initialTimeout = setTimeout(() => {
+      const firstTip = SFA_INSTITUTIONAL_TIPS[Math.floor(Math.random() * SFA_INSTITUTIONAL_TIPS.length)];
+      setNotification(firstTip);
+      setTimeout(() => setNotification(null), 6000);
+    }, 2500);
+
+    // Rotate tips periodically every 12 seconds
     const intervalId = setInterval(() => {
       const randomTip = SFA_INSTITUTIONAL_TIPS[Math.floor(Math.random() * SFA_INSTITUTIONAL_TIPS.length)];
       setNotification(randomTip);
       setTimeout(() => setNotification(null), 6000);
-    }, 15000);
+    }, 12000);
 
-    return () => clearInterval(intervalId);
-  }, [isOpen, notification]);
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(intervalId);
+    };
+  }, [isOpen]);
 
   // Call Gemini AI or handle predefined answer
   const handleSendMessage = async (textOrObj?: string | SuggestedQuestion) => {
@@ -179,7 +263,7 @@ export default function SFABot() {
         <div
           className={`
             pointer-events-auto mb-3 
-            w-[90vw] sm:w-[380px] h-[490px] max-h-[75vh] rounded-3xl
+            w-[92vw] sm:w-[410px] h-[540px] max-h-[82vh] rounded-3xl
             shadow-2xl border border-slate-200 overflow-hidden flex flex-col
             transition-all duration-300 ease-out origin-bottom-right bg-white
             ${isOpen ? "opacity-100 scale-100 translate-y-0 visible" : "opacity-0 scale-95 translate-y-8 pointer-events-none invisible"}
@@ -234,9 +318,10 @@ export default function SFABot() {
 
           {/* Chat Messages Body */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-slate-100/70">
-            {messages.map((msg) => (
+            {messages.map((msg, idx) => (
               <div
                 key={msg.id}
+                ref={idx === messages.length - 1 ? lastMessageRef : undefined}
                 className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
               >
                 {msg.sender === "bot" ? (
@@ -254,8 +339,8 @@ export default function SFABot() {
                           {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
-                      <div className="text-xs leading-relaxed font-medium text-slate-700 whitespace-pre-line">
-                        {msg.text}
+                      <div className="text-xs leading-relaxed font-medium text-slate-700">
+                        {renderFormattedBotText(msg.text)}
                       </div>
                     </div>
                   </div>
@@ -341,14 +426,13 @@ export default function SFABot() {
             className="pointer-events-auto group relative flex items-center justify-center outline-none cursor-pointer select-none"
             aria-label={isOpen ? "Cerrar SFABot" : "Abrir SFABot"}
           >
-            <div className={`absolute inset-0 bg-[#9F062A] rounded-full animate-ping opacity-30 duration-1000 ${isOpen ? "hidden" : "block"}`}></div>
-            <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 bg-gradient-to-tr from-[#9F062A] to-[#800521] text-white border-3 border-white ring-2 ring-amber-400/40 z-10 ${isOpen ? "rotate-90 scale-95" : "hover:scale-110 active:scale-95"}`}>
+            <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 bg-gradient-to-tr from-[#9F062A] to-[#800521] text-white border-3 border-white ring-2 ring-amber-400/40 z-10 ${isOpen ? "rotate-90 scale-95" : "hover:scale-105 active:scale-95"}`}>
               {isOpen ? (
                 <X className="w-7 h-7" />
               ) : (
                 <div className="w-full h-full relative flex items-center justify-center rounded-full overflow-hidden bg-[#9F062A]">
-                  <GraduationCap className="w-7 h-7 text-amber-300 group-hover:scale-110 transition-transform" />
-                  <span className="absolute top-2 right-2 w-3 h-3 bg-emerald-400 border-2 border-white rounded-full animate-pulse shadow-xs"></span>
+                  <GraduationCap className="w-7 h-7 text-amber-300 transition-transform" />
+                  <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-emerald-400 border-2 border-white rounded-full shadow-xs"></span>
                 </div>
               )}
             </div>
