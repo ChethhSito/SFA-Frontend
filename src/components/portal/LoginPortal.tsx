@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { 
-  Lock, User, ShieldAlert, ArrowLeft, Loader2 
+  Lock, User, ShieldAlert, ArrowLeft, Loader2, Eye, EyeOff 
 } from "lucide-react";
 import { Role, SystemUser } from "../../types";
 import { motion } from "motion/react";
@@ -17,6 +17,7 @@ interface LoginPortalProps {
 export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -505,7 +506,7 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
                   <Lock className="w-4 h-4" />
                 </span>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   placeholder="••••••••"
                   value={password}
@@ -513,8 +514,21 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
                     setPassword(e.target.value);
                     setErrorMessage("");
                   }}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#9F062A] focus:border-[#9F062A] transition-all"
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#9F062A] focus:border-[#9F062A] transition-all [&::-ms-reveal]:hidden [&::-webkit-contacts-auto-fill-button]:hidden"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-[#9F062A] transition-colors cursor-pointer focus:outline-none"
+                  title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4 text-[#9F062A]" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-slate-400 hover:text-[#9F062A]" />
+                  )}
+                </button>
               </div>
             </div>
 

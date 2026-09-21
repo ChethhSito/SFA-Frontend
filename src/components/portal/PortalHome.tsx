@@ -32,12 +32,35 @@ export default function PortalHome({
   const displayPeriod = activePeriod || admissionPeriods[0];
 
   // Check if user has an active intranet session stored in localStorage
-  const activeSessionRole = (() => {
+  const { activeSessionRole, activeSessionName } = (() => {
     const roles = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
     for (const r of roles) {
-      if (localStorage.getItem(`sfa_session_${r}`)) return r;
+      const s = localStorage.getItem(`sfa_session_${r}`);
+      if (s) {
+        let name = "";
+        try {
+          if (r === "postulante") {
+            const apps = localStorage.getItem("sfa_applicants");
+            if (apps) {
+              const parsed = JSON.parse(apps);
+              const found = parsed.find((a: any) => a.dni === s || a.id === s || a.applicantCode === s);
+              if (found) name = `${found.name} ${found.lastName}`;
+            }
+          } else if (r === "alumno") {
+            const stds = localStorage.getItem("sfa_students");
+            if (stds) {
+              const parsed = JSON.parse(stds);
+              const found = parsed[s];
+              if (found) name = `${found.name} ${found.lastName}`;
+            }
+          }
+        } catch (e) {
+          console.warn(e);
+        }
+        return { activeSessionRole: r, activeSessionName: name || null };
+      }
     }
-    return null;
+    return { activeSessionRole: null, activeSessionName: null };
   })();
 
   const activeRoleLabel = activeSessionRole === "administrador" ? "Gestor MAMC" :
@@ -48,6 +71,7 @@ export default function PortalHome({
             activeSessionRole === "mpa" ? "Planificación (MPA)" :
               activeSessionRole === "mge" ? "Gestión Estudiantes (MGE)" :
                 activeSessionRole === "maf" ? "Finanzas (MAF)" : null;
+
 
   // Navigation State
   const [currentTab, setCurrentTab] = useState<PortalTab>("inicio");
@@ -210,6 +234,7 @@ export default function PortalHome({
         setSubmitSuccessMsg={setSubmitSuccessMsg}
         activeSessionRole={activeSessionRole}
         activeRoleLabel={activeRoleLabel}
+        activeSessionName={activeSessionName}
         onEnterIntranet={onEnterIntranet}
         onLogout={onLogout}
       />

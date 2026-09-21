@@ -14,9 +14,11 @@ interface PostulanteRouterProps {
   onUpdateApplicant: (updated: Applicant) => void;
   onUpdateEnrollment: (updatedEnr: Enrollment) => void;
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
-export default function PostulanteRouter({ applicants, enrollments, onUpdateApplicant, onUpdateEnrollment, onLogout }: PostulanteRouterProps) {
+export default function PostulanteRouter({ applicants, enrollments, onUpdateApplicant, onUpdateEnrollment, onLogout, onGoToPortal }: PostulanteRouterProps) {
+
   const [session, setSession] = useState<string | null>(null);
   const [liveApplicant, setLiveApplicant] = useState<Applicant | null>(null);
   const [loading, setLoading] = useState(true);
@@ -208,6 +210,8 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
       onUpdateApplicant={handleUpdateLiveApplicant}
       onUpdateEnrollment={onUpdateEnrollment}
       onLogout={onLogout}
+      onGoToPortal={onGoToPortal}
     />
   );
+
 }

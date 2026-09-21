@@ -53,10 +53,23 @@ export default function App() {
   } = useAppData();
 
   const handleEnterIntranet = () => {
+    const roles = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
+    for (const r of roles) {
+      const s = localStorage.getItem(`sfa_session_${r}`);
+      if (s) {
+        setCurrentUser({ role: r as any, identifier: s });
+        return;
+      }
+    }
     setCurrentUser({ role: "login", identifier: "" });
   };
 
+  const handleGoPortal = () => {
+    setCurrentUser({ role: "portal", identifier: "" });
+  };
+
   const handleUpdateApplicant = (updated: any) => {
+
     const exists = applicants.some((a) => a.dni === updated.dni);
     const nextList = exists 
       ? applicants.map((a) => (a.dni === updated.dni ? updated : a))
@@ -137,6 +150,7 @@ export default function App() {
       {currentUser.role === "portal" && (
         <PortalHome 
           onEnterIntranet={handleEnterIntranet} 
+          onLogout={handleLogout}
           admissionPeriods={admissionPeriods}
         />
       )}
@@ -157,8 +171,10 @@ export default function App() {
           onUpdateApplicant={handleUpdateApplicant}
           onUpdateEnrollment={handleUpdateEnrollment}
           onLogout={handleLogout}
+          onGoToPortal={handleGoPortal}
         />
       )}
+
 
       {/* 4. Student regular dashboard */}
       {currentUser.role === "alumno" && (

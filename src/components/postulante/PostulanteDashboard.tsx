@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { 
-  FileText, CreditCard, Award, Upload, LogOut, CheckCircle2, 
+  FileText, CreditCard, Award, Upload, CheckCircle2, 
   XCircle, LayoutDashboard, Landmark, Headset, Info
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -26,6 +26,7 @@ interface PostulanteDashboardProps {
   applicant: Applicant;
   onUpdateApplicant: (updated: Applicant) => void;
   onLogout: () => void;
+  onGoToPortal?: () => void;
   enrollments?: Enrollment[];
   onUpdateEnrollment?: (updated: Enrollment) => void;
 }
@@ -34,6 +35,7 @@ export default function PostulanteDashboard({
   applicant, 
   onUpdateApplicant, 
   onLogout,
+  onGoToPortal,
   enrollments = [],
   onUpdateEnrollment
 }: PostulanteDashboardProps) {
@@ -440,6 +442,7 @@ export default function PostulanteDashboard({
         activeId={activeTab}
         onSelect={(id) => setActiveTab(id as any)}
         onLogout={onLogout}
+        onGoToPortal={onGoToPortal}
         userProfile={{
           name: `${applicant.name} ${applicant.lastName}`,
           role: "Postulante 2026-I",
@@ -459,16 +462,8 @@ export default function PostulanteDashboard({
             activeTab === "soporte" ? "Mesa de Ayuda" : "Matrícula de Ingresante"
           }
           subtitle={`Bienvenido al portal institucional, ${applicant.name}`}
-          actions={
-            <button 
-              onClick={onLogout}
-              className="bg-white hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-300 font-extrabold uppercase text-[10px] py-2 px-3 rounded-lg tracking-wider transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Cerrar Sesión</span>
-            </button>
-          }
         />
+
 
         {/* ALERTS DISPLAY */}
         {applicant.admitted === true && (

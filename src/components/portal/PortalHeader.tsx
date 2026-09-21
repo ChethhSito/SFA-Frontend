@@ -27,6 +27,7 @@ export const PortalHeader: React.FC<PortalHeaderProps> = ({
   setSubmitSuccessMsg,
   activeSessionRole,
   activeRoleLabel,
+  activeSessionName,
   onEnterIntranet,
   onLogout
 }) => {
@@ -271,15 +272,20 @@ export const PortalHeader: React.FC<PortalHeaderProps> = ({
                     <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white animate-pulse" />
                   </div>
                   <div className="text-left leading-tight">
-                    <span className="block text-[11px] font-black tracking-tight text-slate-900 uppercase">
-                      {activeRoleLabel}
+                    <span className="block text-[11px] font-black tracking-tight text-slate-900 uppercase max-w-[140px] truncate">
+                      {activeSessionName || activeRoleLabel}
                     </span>
+                    {activeSessionName && (
+                      <span className="block text-[9px] font-bold text-slate-500 uppercase leading-none">
+                        {activeRoleLabel}
+                      </span>
+                    )}
                   </div>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#9F062A] group-hover:rotate-180 transition-all ml-0.5" />
                 </button>
 
                 {/* Hover Bridge & Dropdown Menu */}
-                <div className="absolute top-full right-0 w-60 pt-2 -mt-1 z-50 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200">
+                <div className="absolute top-full right-0 w-64 pt-2 -mt-1 z-50 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200">
                   <div className="bg-white border border-slate-200 shadow-2xl rounded-2xl p-2.5 space-y-1.5 text-left">
                     <div className="px-3.5 py-2.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-[#9F062A] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
@@ -290,8 +296,13 @@ export const PortalHeader: React.FC<PortalHeaderProps> = ({
                           Sesión Conectada
                         </span>
                         <span className="text-xs font-black text-slate-900 uppercase truncate block mt-0.5">
-                          {activeRoleLabel}
+                          {activeSessionName || activeRoleLabel}
                         </span>
+                        {activeSessionName && (
+                          <span className="text-[9.5px] font-bold text-slate-500 uppercase block mt-0.5">
+                            Rol: {activeRoleLabel}
+                          </span>
+                        )}
                       </div>
                     </div>
 

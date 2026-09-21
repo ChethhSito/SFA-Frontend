@@ -18,7 +18,7 @@ export default function PageHeader({
   return (
     <div
       id={id}
-      className="bg-white rounded-xl border border-slate-100 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm"
+      className="bg-white rounded-xl border border-slate-100 p-4 sm:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm mb-6"
     >
       <div className="flex items-center gap-4 text-left">
         {icon && (
