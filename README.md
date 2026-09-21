@@ -8,6 +8,8 @@
 
 Sistema de Gestión Académica, Admisión e Intranet Institucional del **IESTP San Francisco de Asís**. Diseñado con una arquitectura modular por dominios, interfaz moderna de alta gama y comunicación fluida con la REST API de `SFA-Backend`.
 
+📘 **[Ver Guía del Flujo Institucional End-to-End (FLUJO.md)](FLUJO.md)**
+
 ---
 
 ## 🌟 Módulos y Roles del Sistema
