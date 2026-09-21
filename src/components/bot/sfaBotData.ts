@@ -16,31 +16,31 @@ export const SFA_INSTITUTIONAL_TIPS = [
 export const SFA_DEFAULT_QUESTIONS: SuggestedQuestion[] = [
   {
     question: "🎓 ¿Qué carreras ofrece el IESTP San Francisco de Asís?",
-    answer: "Ofrecemos carreras profesionales técnicas de 3 años (6 ciclos) con Título a Nombre de la Nación: 1) Electricidad Industrial (montaje, PLC, subestaciones) y 2) Contabilidad (finanzas, NIIF, tributación). 🏛️"
+    answer: "Ofrecemos carreras profesionales técnicas de 3 años (6 ciclos) con Título a Nombre de la Nación:\n\n• ⚡ Electricidad Industrial: Instalaciones eléctricas, automatización PLC, subestaciones y tableros de potencia.\n\n• 📊 Contabilidad: Auditoría financiera, NIIF, tributación corporativa y software contable especializado."
   },
   {
     question: "📝 ¿Cuáles son los requisitos para la Admisión 2026-I?",
-    answer: "Los requisitos son: 1) Certificado de Educación Secundaria en PDF, 2) Copia legible de DNI, 3) Partida de Nacimiento, 4) Foto tamaño carné a color, y 5) Voucher de Pago por derecho de admisión. 📄"
+    answer: "Para la inscripción debes presentar los siguientes 5 requisitos obligatorios:\n\n1. Copia legible de DNI (PDF / Imagen)\n2. Certificado de Estudios Secundarios completo\n3. Partida de Nacimiento oficial\n4. Foto tamaño carné a color\n5. Voucher de Pago por derecho de admisión"
   },
   {
     question: "💳 ¿Cómo registro o valido mi pago de admisión?",
-    answer: "Ingresa a la Intranet con tu DNI, ve a la pestaña 'Estado de Pago' y registra el número de operación o sube el voucher emitido en caja/banco. El equipo MAF lo validará en menos de 24 horas. 💰"
+    answer: "Sigue estos sencillos pasos:\n\n1. Ingresa a la Intranet con tu DNI\n2. Ve a la pestaña 'Estado de Pago'\n3. Registra el N° de Operación o adjunta el voucher emitido por caja/banco\n\nEl equipo MAF lo validará en menos de 24 horas hábiles. 💰"
   },
   {
     question: "📄 ¿Cómo funciona el Expediente Digital de Admisión?",
-    answer: "Desde tu panel de Postulante en la pestaña 'Expediente Digital', puedes subir tus 4 documentos obligatorios. Secretaría Académica verificará y aprobará tus archivos en tiempo real. 📁"
+    answer: "Desde tu panel de Postulante en la pestaña 'Expediente Digital', puedes subir tus 4 documentos obligatorios (DNI, Certificado, Partida y Foto).\n\nSecretaría Académica verificará y aprobará tus archivos con indicador de estado en tiempo real. 📁"
   },
   {
     question: "📊 ¿Cuáles son los requisitos para la Titulación Profesional?",
-    answer: "Debes haber aprobado los 6 ciclos lectivos, acreditar 450 horas de Prácticas Pre-Profesionales en empresas del sector, idioma inglés básico y sustentación del proyecto técnico final. 🏆"
+    answer: "Para obtener el Título Profesional a Nombre de la Nación debes cumplir:\n\n• Aprobar los 6 ciclos académicos (100% de créditos)\n• Acreditar 450 horas de Prácticas Pre-Profesionales (EFSRT)\n• Constancia de idioma extranjero (Inglés Básico)\n• Sustentación aprobatoria del Proyecto Técnico Final 🏆"
   },
   {
     question: "🏛️ ¿Dónde queda ubicado el instituto y cuál es el horario?",
-    answer: "Nuestro campus está ubicado en Av. San Francisco 450, Lima. Atención presencial y virtual: Lunes a Viernes de 8:00 am a 6:00 pm. Teléfono: (01) 456-7890. 📍"
+    answer: "📍 Dirección: Av. San Francisco 450, Lima, Perú.\n\n⏰ Horario de Atención (Presencial y Virtual):\nLunes a Viernes de 8:00 AM a 6:00 PM\n\n📞 Central Telefónica: (01) 456-7890\n✉️ Correo: contacto@iestpsfa.edu.pe"
   },
   {
     question: "🔑 ¿Cómo accedo a la Intranet Académica?",
-    answer: "Haz clic en 'Intranet Académica' en la barra superior del portal. Ingresa tu DNI o código institucional y tu contraseña. Si eres postulante nuevo, tu clave por defecto es 'clave123'. 🔐"
+    answer: "1. Haz clic en el botón 'Intranet Académica' en la barra superior del portal.\n2. Ingresa tu DNI o código institucional y tu clave.\n3. Si eres postulante nuevo registrado en el portal, tu clave inicial por defecto es 'clave123'. 🔐"
   }
 ];
 

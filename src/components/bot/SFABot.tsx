@@ -233,39 +233,53 @@ export default function SFABot() {
           />
 
           {/* Chat Messages Body */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 custom-scrollbar bg-slate-50/60">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-slate-100/70">
             {messages.map((msg) => (
               <div
                 key={msg.id}
                 className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
               >
-                <div
-                  className={`
-                    max-w-[88%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed shadow-2xs
-                    ${
-                      msg.sender === "user"
-                        ? "bg-[#9F062A] text-white rounded-tr-none font-semibold"
-                        : "bg-white text-slate-800 border border-slate-200/80 rounded-tl-none font-medium"
-                    }
-                  `}
-                >
-                  {msg.text}
-                  <div
-                    className={`text-[9px] mt-1 flex justify-end font-mono ${
-                      msg.sender === "user" ? "text-amber-200/90" : "text-slate-400"
-                    }`}
-                  >
-                    {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                {msg.sender === "bot" ? (
+                  <div className="flex items-start gap-2 max-w-[90%]">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#9F062A] to-[#800521] text-amber-300 flex items-center justify-center shrink-0 shadow-xs border border-amber-400/40 mt-1">
+                      <GraduationCap className="w-4 h-4" />
+                    </div>
+                    <div className="bg-gradient-to-br from-white via-slate-50 to-rose-50/20 text-slate-800 border border-slate-200/90 rounded-2xl rounded-tl-2xs p-3.5 shadow-2xs space-y-1.5">
+                      <div className="flex items-center justify-between text-[9.5px] font-black uppercase text-[#9F062A] tracking-wider border-b border-slate-100/80 pb-1 mb-1">
+                        <span className="flex items-center gap-1">
+                          <span>SFABot</span>
+                          <Sparkles className="w-3 h-3 text-amber-500" />
+                        </span>
+                        <span className="text-slate-400 font-normal font-mono text-[9px]">
+                          {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      <div className="text-xs leading-relaxed font-medium text-slate-700 whitespace-pre-line">
+                        {msg.text}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-start justify-end gap-2 max-w-[85%]">
+                    <div className="bg-gradient-to-r from-[#9F062A] to-[#800521] text-white rounded-2xl rounded-tr-2xs px-4 py-2.5 shadow-md border border-rose-900/30">
+                      <p className="text-xs font-semibold leading-relaxed">{msg.text}</p>
+                      <div className="text-[9px] text-amber-200/90 font-mono mt-1 text-right">
+                        {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
 
             {isLoading && (
-              <div className="flex justify-start">
-                <div className="rounded-2xl px-4 py-2.5 bg-white border border-slate-200/80 shadow-2xs flex items-center gap-2 text-xs font-semibold text-[#9F062A]">
+              <div className="flex items-start gap-2 max-w-[90%]">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#9F062A] to-[#800521] text-amber-300 flex items-center justify-center shrink-0 shadow-xs border border-amber-400/40 mt-1">
+                  <GraduationCap className="w-4 h-4" />
+                </div>
+                <div className="rounded-2xl rounded-tl-2xs px-4 py-2.5 bg-white border border-slate-200/90 shadow-2xs flex items-center gap-2 text-xs font-bold text-[#9F062A]">
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-[#9F062A]" />
-                  <span>SFABot está respondiendo...</span>
+                  <span>SFABot está redactando una respuesta...</span>
                 </div>
               </div>
             )}
