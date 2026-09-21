@@ -16,6 +16,7 @@ import MafRouter from "./components/routers/MafRouter";
 import PostulanteRouter from "./components/routers/PostulanteRouter";
 import AlumnoRouter from "./components/routers/AlumnoRouter";
 import DocenteRouter from "./components/routers/DocenteRouter";
+import SFABot from "./components/bot/SFABot";
 
 export default function App() {
   const {
@@ -315,6 +316,9 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Floating Virtual Assistant SFABot */}
+      <SFABot />
     </div>
   );
 }
