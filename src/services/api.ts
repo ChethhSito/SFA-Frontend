@@ -317,3 +317,29 @@ export async function deletePayment(id: string): Promise<boolean> {
   });
   return !!result;
 }
+
+/* ==========================================================================
+   10. STUDENTS & INTRANET ALUMNO (Legajo, Récord y Datos del Alumno)
+   ========================================================================== */
+
+export async function fetchStudents(): Promise<any[] | null> {
+  return fetchJson<any[]>("/students");
+}
+
+export async function fetchStudentByDni(dni: string): Promise<any | null> {
+  return fetchJson<any>(`/students/${dni}`);
+}
+
+export async function updateStudentPersonalData(dni: string, data: any): Promise<any | null> {
+  return fetchJson<any>(`/students/${dni}/personal-data`, {
+    method: "PUT",
+    body: JSON.stringify(data)
+  });
+}
+
+export async function updateStudentCycleStatuses(dni: string, cycleStatuses: any[]): Promise<any | null> {
+  return fetchJson<any>(`/students/${dni}/cycle-status`, {
+    method: "PUT",
+    body: JSON.stringify({ cycleStatuses })
+  });
+}
