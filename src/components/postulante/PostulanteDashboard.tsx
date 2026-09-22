@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Applicant, Enrollment } from "../../types";
-import { ACADEMIC_PROGRAMS } from "../../mockData";
+import { useAcademicCatalog } from "../../context/AcademicCatalogContext";
 
 // Design System UI Components
 import Sidebar from "../ui/Sidebar";
@@ -39,6 +39,7 @@ export default function PostulanteDashboard({
   enrollments = [],
   onUpdateEnrollment
 }: PostulanteDashboardProps) {
+  const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   // Active Navigation Tab State
   const [activeTab, setActiveTab] = useState<"dashboard" | "documentos" | "pagos" | "resultados" | "soporte" | "matricula">("dashboard");
 

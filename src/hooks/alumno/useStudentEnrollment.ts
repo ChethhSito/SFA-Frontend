@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { INITIAL_ENROLLMENTS } from "../../data/mockData";
 import {
   fetchEnrollments,
   createEnrollment as apiCreateEnrollment,
@@ -11,30 +10,12 @@ export function useStudentEnrollment() {
     const savedEnrolls = localStorage.getItem("sfa_enrollments");
     if (savedEnrolls) {
       try {
-        let parsedEnrolls = JSON.parse(savedEnrolls);
-        if (!localStorage.getItem("sfa_luis_matriculado_migrated")) {
-          parsedEnrolls = parsedEnrolls.map((e: any) => {
-            if (e.studentDni === "12345678") {
-              return {
-                ...e,
-                academicStatus: "ADMITIDO",
-                shift: undefined,
-                groupId: undefined
-              };
-            }
-            return e;
-          });
-          localStorage.setItem("sfa_enrollments", JSON.stringify(parsedEnrolls));
-          localStorage.setItem("sfa_luis_matriculado_migrated", "true");
-        }
-        return parsedEnrolls;
+        return JSON.parse(savedEnrolls);
       } catch (e) {
         console.error(e);
       }
-    } else {
-      localStorage.setItem("sfa_enrollments", JSON.stringify(INITIAL_ENROLLMENTS));
     }
-    return INITIAL_ENROLLMENTS;
+    return [];
   });
 
   const [loading, setLoading] = useState<boolean>(false);
@@ -44,10 +25,9 @@ export function useStudentEnrollment() {
     setLoading(true);
     fetchEnrollments()
       .then((apiEnrolls) => {
-        if (apiEnrolls && apiEnrolls.length > 0) {
-          setEnrollments(apiEnrolls);
-          localStorage.setItem("sfa_enrollments", JSON.stringify(apiEnrolls));
-        }
+        if (!apiEnrolls) throw new Error("No se pudo consultar matrículas");
+        setEnrollments(apiEnrolls);
+        localStorage.setItem("sfa_enrollments", JSON.stringify(apiEnrolls));
       })
       .catch((err) => {
         console.error("Error fetching enrollments from REST API:", err);

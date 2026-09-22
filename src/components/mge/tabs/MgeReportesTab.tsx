@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { BarChart2, CheckSquare, CreditCard, Download, UserCheck, Users } from "lucide-react";
-import { ACADEMIC_PROGRAMS } from "../../../mockData";
+import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { Card } from "../../ui/Card";
 import { Enrollment, ProgramId } from "../../../types";
 
@@ -10,6 +10,7 @@ interface Props {
 }
 
 export default function MgeReportesTab({ enrollments, onDownload }: Props) {
+  const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   const statsOverview = useMemo(() => {
     const totalMatriculados = enrollments.filter((e) => e.academicStatus === "MATRICULADO").length;
     const totalAdmitidos = enrollments.filter((e) => e.academicStatus === "ADMITIDO").length;

@@ -1,9 +1,4 @@
 import { useState } from "react";
-import {
-  INITIAL_MATERIALS,
-  INITIAL_ASSIGNMENTS,
-  INITIAL_EVALUATIONS
-} from "../../data/mockData";
 
 export function useMaterialUpload() {
   const [materials, setMaterials] = useState<any[]>(() => {
@@ -15,7 +10,7 @@ export function useMaterialUpload() {
         console.error(e);
       }
     }
-    return INITIAL_MATERIALS;
+    return [];
   });
 
   const [assignments, setAssignments] = useState<any[]>(() => {
@@ -27,10 +22,10 @@ export function useMaterialUpload() {
         console.error(e);
       }
     }
-    return INITIAL_ASSIGNMENTS;
+    return [];
   });
 
-  const [evaluations] = useState<any[]>(INITIAL_EVALUATIONS);
+  const [evaluations] = useState<any[]>([]);
 
   const handleUpdateMaterials = (updatedList: any[]) => {
     setMaterials(updatedList);

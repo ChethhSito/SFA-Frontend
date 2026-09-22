@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Course } from "../../types";
-import { INITIAL_COURSES } from "../../data/mockData";
 import {
   fetchCourses,
   createCourse as apiCreateCourse,
@@ -17,7 +16,7 @@ export function useAcademicPlanning() {
         console.error("Error reading sfa_courses:", e);
       }
     }
-    return INITIAL_COURSES;
+    return [];
   });
 
   const [loading, setLoading] = useState<boolean>(false);
@@ -27,10 +26,9 @@ export function useAcademicPlanning() {
     setLoading(true);
     fetchCourses()
       .then((apiCourses) => {
-        if (apiCourses && apiCourses.length > 0) {
-          setCourses(apiCourses);
-          localStorage.setItem("sfa_courses", JSON.stringify(apiCourses));
-        }
+        if (!apiCourses) throw new Error("No se pudo consultar cursos");
+        setCourses(apiCourses);
+        localStorage.setItem("sfa_courses", JSON.stringify(apiCourses));
       })
       .catch((err) => {
         console.error("Error fetching courses from REST API:", err);

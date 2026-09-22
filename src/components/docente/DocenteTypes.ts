@@ -7,7 +7,6 @@ export interface WeeklyObservation {
   type: "General" | "Incidencia" | "Acuerdo";
 }
 
-import { INITIAL_STUDENTS_DATA } from "../../mockData";
 
 export interface StudentRosterItem {
   dni: string;
@@ -31,8 +30,6 @@ const getDynamicRoster = (): StudentRosterItem[] => {
     } catch (e) {
       console.error(e);
     }
-  } else {
-    list = Object.values(INITIAL_STUDENTS_DATA);
   }
   return list.map((st: any) => ({
     dni: st.dni || String(st.id || ""),

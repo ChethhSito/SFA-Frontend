@@ -6,7 +6,7 @@ import PageTransition from "../../ui/PageTransition";
 import Button from "../../ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../../ui/Card";
 import { Applicant, Enrollment } from "../../../types";
-import { REAL_MPA_COURSES } from "../../../mockData";
+import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 
 interface MatriculaTabProps {
   applicant: Applicant;
@@ -45,6 +45,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = React.memo(({
   handleSubmitMatriculaVoucher,
   compressAndResizeImage,
 }) => {
+  const { courses: REAL_MPA_COURSES } = useAcademicCatalog();
   let myEnrollment = enrollments.find(enr => enr.studentDni === applicant.dni);
   if (!myEnrollment) {
     myEnrollment = {

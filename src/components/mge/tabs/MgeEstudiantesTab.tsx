@@ -1,6 +1,6 @@
 import React from "react";
 import { Search, Plus, Edit2, Trash2, CircleDot } from "lucide-react";
-import { ACADEMIC_PROGRAMS } from "../../../mockData";
+import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import Button from "../../ui/Button";
 import { ProcessedStudent } from "../mgeTypes";
 
@@ -21,6 +21,7 @@ export default function MgeEstudiantesTab({
   onEditClick,
   onDeleteStudent,
 }: Props) {
+  const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

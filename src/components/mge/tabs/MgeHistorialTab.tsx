@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Printer } from "lucide-react";
-import { ACADEMIC_PROGRAMS } from "../../../mockData";
+import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { Course, CourseAssignment } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
 
@@ -21,6 +21,7 @@ export default function MgeHistorialTab({
   onSelectDni,
   onPrint,
 }: Props) {
+  const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   const activeHistoryStudent = useMemo(
     () => processedStudents.find((s) => s.dni === selectedHistoryDni) || null,
     [processedStudents, selectedHistoryDni]

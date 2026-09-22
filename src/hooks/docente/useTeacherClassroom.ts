@@ -1,10 +1,6 @@
-import { useState } from "react";
-import {
-  GENERAL_CLASSROOMS,
-  GENERAL_TEACHERS,
-  INITIAL_COURSES,
-  INITIAL_ATTENDANCE
-} from "../../data/mockData";
+import { useEffect, useState } from "react";
+import { fetchCourses, fetchTeachers } from "../../services/api";
+import { fetchMpaCollection } from "../../services/mpaApi";
 
 export function useTeacherClassroom() {
   const [classrooms, setClassrooms] = useState<any[]>(() => {
@@ -16,7 +12,7 @@ export function useTeacherClassroom() {
         console.error(e);
       }
     }
-    return GENERAL_CLASSROOMS;
+    return [];
   });
 
   const [teachers, setTeachers] = useState<any[]>(() => {
@@ -28,7 +24,7 @@ export function useTeacherClassroom() {
         console.error(e);
       }
     }
-    return GENERAL_TEACHERS;
+    return [];
   });
 
   const [courses, setCourses] = useState<any[]>(() => {
@@ -40,7 +36,7 @@ export function useTeacherClassroom() {
         console.error(e);
       }
     }
-    return INITIAL_COURSES;
+    return [];
   });
 
   const [attendance, setAttendance] = useState<any[]>(() => {
@@ -52,8 +48,27 @@ export function useTeacherClassroom() {
         console.error(e);
       }
     }
-    return INITIAL_ATTENDANCE;
+    return [];
   });
+
+  useEffect(() => {
+    fetchMpaCollection<any>("classrooms").then((items) => {
+      setClassrooms(items);
+      localStorage.setItem("sfa_classrooms", JSON.stringify(items));
+    }).catch((err) => console.error("Error fetching classrooms:", err));
+    fetchTeachers().then((items) => {
+      if (items) {
+        setTeachers(items);
+        localStorage.setItem("sfa_teachers", JSON.stringify(items));
+      }
+    }).catch((err) => console.error("Error fetching teachers:", err));
+    fetchCourses().then((items) => {
+      if (items) {
+        setCourses(items);
+        localStorage.setItem("sfa_courses", JSON.stringify(items));
+      }
+    }).catch((err) => console.error("Error fetching courses:", err));
+  }, []);
 
   const handleUpdateClassrooms = (updatedList: any[]) => {
     setClassrooms(updatedList);

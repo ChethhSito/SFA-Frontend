@@ -1,6 +1,6 @@
 import React from "react";
 import { X, Users } from "lucide-react";
-import { ACADEMIC_PROGRAMS } from "../../../mockData";
+import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { ProgramId } from "../../../types";
 import { StudentFormState } from "../mgeTypes";
 
@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function MgeAddStudentModal({ studentForm, onFormChange, onSubmit, onClose }: Props) {
+  const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   const set = (partial: Partial<StudentFormState>) => onFormChange({ ...studentForm, ...partial });
 
   return (

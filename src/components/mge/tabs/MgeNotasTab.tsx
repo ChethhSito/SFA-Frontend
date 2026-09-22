@@ -1,5 +1,5 @@
 import React from "react";
-import { ACADEMIC_PROGRAMS } from "../../../mockData";
+import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import Button from "../../ui/Button";
 import { Course, CourseAssignment } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
@@ -29,6 +29,7 @@ export default function MgeNotasTab({
   onGradeChange,
   onSaveGrades,
 }: Props) {
+  const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   const activeCourseObj = courses.find((c) => c.id === selectedCourseId);
 
   const studentsInActiveCourse = activeCourseObj

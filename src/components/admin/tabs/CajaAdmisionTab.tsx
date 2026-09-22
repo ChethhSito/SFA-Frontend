@@ -1,7 +1,7 @@
 import React from "react";
 import { CreditCard, CheckCircle2, AlertTriangle, XCircle, Clock, Eye, RefreshCw } from "lucide-react";
 import { Applicant } from "../../../types";
-import { ACADEMIC_PROGRAMS } from "../../../mockData";
+import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
 import PageTransition from "../../ui/PageTransition";
@@ -26,6 +26,7 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
   openObservePaymentModal,
   handleResetApplicantPayment,
 }) => {
+  const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   return (
     <PageTransition id="caja_admision" className="space-y-6">
       <PageHeader

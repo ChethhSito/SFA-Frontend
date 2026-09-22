@@ -3,7 +3,7 @@ import {
   User, FileText, Calendar, BookOpen, Clock, Award, HelpCircle, Building, ClipboardList
 } from "lucide-react";
 import { Enrollment, StudentPersonalData, Course, CourseMaterial, CourseAssignment, CycleStatus, AttendanceRecord, Graduation, CourseEvaluation } from "../../types";
-import { ACADEMIC_PROGRAMS } from "../../mockData";
+import { useAcademicCatalog } from "../../context/AcademicCatalogContext";
 import { motion, AnimatePresence } from "motion/react";
 import Sidebar from "../ui/Sidebar";
 
@@ -48,6 +48,7 @@ export default function AlumnoDashboard({
   onUpdateAssignments,
   onLogout
 }: AlumnoDashboardProps) {
+  const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   const [activeTab, setActiveTab] = useState<"welcome" | "profile" | "classes" | "schedule" | "attendance" | "closure" | "notas">("welcome");
   
   // Profile edit form fields

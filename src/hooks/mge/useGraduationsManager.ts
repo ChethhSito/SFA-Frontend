@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Graduation } from "../../types";
-import { INITIAL_GRADUATIONS } from "../../data/mockData";
 import {
   fetchGraduations,
   createGraduation as apiCreateGraduation,
@@ -17,7 +16,7 @@ export function useGraduationsManager() {
         console.error("Error reading sfa_graduations:", e);
       }
     }
-    return INITIAL_GRADUATIONS;
+    return [];
   });
 
   const [loading, setLoading] = useState<boolean>(false);
@@ -27,10 +26,9 @@ export function useGraduationsManager() {
     setLoading(true);
     fetchGraduations()
       .then((apiGrads) => {
-        if (apiGrads && apiGrads.length > 0) {
-          setGraduations(apiGrads);
-          localStorage.setItem("sfa_graduations", JSON.stringify(apiGrads));
-        }
+        if (!apiGrads) throw new Error("No se pudo consultar graduaciones");
+        setGraduations(apiGrads);
+        localStorage.setItem("sfa_graduations", JSON.stringify(apiGrads));
       })
       .catch((err) => {
         console.error("Error fetching graduations:", err);

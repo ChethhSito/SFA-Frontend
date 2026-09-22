@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react";
 import {
-  INITIAL_STUDENTS_DATA,
-  INITIAL_CYCLE_STATUSES,
-  INITIAL_GRADUATIONS
-} from "../../data/mockData";
-import {
   fetchStudents,
+  fetchGraduations,
   updateStudentPersonalData as apiUpdatePersonalData,
   updateStudentCycleStatuses as apiUpdateCycleStatuses,
   updateStudentCourseGrade as apiUpdateCourseGrade
@@ -21,10 +17,10 @@ export function useStudentGrades() {
         console.error(e);
       }
     }
-    return INITIAL_STUDENTS_DATA;
+    return {};
   });
 
-  const [cycleStatuses, setCycleStatuses] = useState<any>(INITIAL_CYCLE_STATUSES);
+  const [cycleStatuses, setCycleStatuses] = useState<any>({});
 
   const [graduations, setGraduations] = useState<any[]>(() => {
     const saved = localStorage.getItem("sfa_graduations");
@@ -35,7 +31,7 @@ export function useStudentGrades() {
         console.error(e);
       }
     }
-    return INITIAL_GRADUATIONS;
+    return [];
   });
 
   const [studentsLoading, setStudentsLoading] = useState<boolean>(false);
@@ -45,13 +41,14 @@ export function useStudentGrades() {
     setStudentsLoading(true);
     fetchStudents()
       .then((apiStudents) => {
-        if (apiStudents && Array.isArray(apiStudents) && apiStudents.length > 0) {
-          const studentMap: any = { ...studentsData };
-          const cyclesMap: any = { ...cycleStatuses };
+        if (!apiStudents) throw new Error("No se pudo consultar estudiantes");
+        if (Array.isArray(apiStudents)) {
+          const studentMap: any = {};
+          const cyclesMap: any = {};
 
           apiStudents.forEach((st) => {
             if (st.dni) {
-              studentMap[st.dni] = { ...studentMap[st.dni], ...st };
+              studentMap[st.dni] = st;
               if (st.cycleStatuses && Array.isArray(st.cycleStatuses) && st.cycleStatuses.length > 0) {
                 cyclesMap[st.dni] = st.cycleStatuses;
               }
@@ -68,6 +65,17 @@ export function useStudentGrades() {
         setStudentsError("Error al cargar datos de estudiantes.");
       })
       .finally(() => setStudentsLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetchGraduations()
+      .then((items) => {
+        if (items) {
+          setGraduations(items);
+          localStorage.setItem("sfa_graduations", JSON.stringify(items));
+        }
+      })
+      .catch((err) => console.error("Error fetching graduations:", err));
   }, []);
 
   const handleUpdateStudentsData = async (updatedMap: any) => {

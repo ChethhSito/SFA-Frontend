@@ -1,6 +1,6 @@
 import React from "react";
 import { AlertTriangle } from "lucide-react";
-import { ACADEMIC_PROGRAMS } from "../../../mockData";
+import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import Button from "../../ui/Button";
 import Badge from "../../ui/Badge";
 import { ProgramId } from "../../../types";
@@ -19,6 +19,7 @@ export default function MgeMatriculaTab({
   onShiftChange,
   onCareerChange,
 }: Props) {
+  const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   return (
     <div className="space-y-6">
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 text-xs leading-relaxed text-amber-800">

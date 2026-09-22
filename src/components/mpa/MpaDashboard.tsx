@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Calendar, BookOpen, User, Users, Clipboard, MapPin, Clock, BarChart3, HelpCircle, GraduationCap, Layers
 } from "lucide-react";
@@ -7,8 +7,8 @@ import {
   MpaPeriod, MpaCareer, MpaCourse, MpaCurriculumItem, MpaShift, 
   MpaSchedule, MpaClassroom, MpaAcademicGroup, MpaProgramTask 
 } from "../../types";
-import { REAL_MPA_CAREERS, REAL_MPA_COURSES } from "../../mockData";
 import Sidebar from "../ui/Sidebar";
+import { MPA_KEYS, MpaKey, fetchMpaCollections, saveMpaCollection } from "../../services/mpaApi";
 
 // Tab Subcomponents
 import { PeriodsTab } from "./tabs/PeriodsTab";
@@ -22,19 +22,6 @@ import { GroupsTab } from "./tabs/GroupsTab";
 import { ProgramTab } from "./tabs/ProgramTab";
 import { ReportsTab } from "./tabs/ReportsTab";
 import { SupportTab } from "./tabs/SupportTab";
-
-// Default initial data for Módulo de Planificación Académica (MPA)
-const DEFAULT_PERIODS: MpaPeriod[] = [];
-const DEFAULT_CAREERS: MpaCareer[] = [];
-const DEFAULT_COURSES: MpaCourse[] = [];
-const DEFAULT_CURRICULUM_VERSIONS: MpaCurriculumVersion[] = [];
-const DEFAULT_CURRICULUM: MpaCurriculumItem[] = [];
-const DEFAULT_SHIFTS: MpaShift[] = [];
-const DEFAULT_SCHEDULES: MpaSchedule[] = [];
-const DEFAULT_CLASSROOMS: MpaClassroom[] = [];
-const DEFAULT_GROUPS: MpaAcademicGroup[] = [];
-const DEFAULT_TEACHERS: any[] = [];
-const DEFAULT_TASKS: MpaProgramTask[] = [];
 
 interface MpaDashboardProps {
   onLogout: () => void;
@@ -59,278 +46,51 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
   const [groups, setGroups] = useState<MpaAcademicGroup[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
   const [tasks, setTasks] = useState<MpaProgramTask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [syncError, setSyncError] = useState("");
+  const pendingSaves = useRef<Partial<Record<MpaKey, Promise<unknown>>>>({});
 
-  // Load and Save to localStorage
+  // Load the existing academic data from the backend.
   useEffect(() => {
-    // Overwrite/initialize with real curriculums if not migrated
-    const migrationKey = "mpa_db_migrated_v12";
-    if (localStorage.getItem(migrationKey) !== "true") {
-      // 1. Careers
-      localStorage.setItem("mpa_db_careers", JSON.stringify(REAL_MPA_CAREERS));
-      
-      // 2. Courses
-      localStorage.setItem("mpa_db_courses", JSON.stringify(REAL_MPA_COURSES));
-      
-      // 3. Curriculum Versions
-      const versions = [
-        { id: "v_electronica_2026", name: "Diseño Curricular 2026", careerId: "electronica", isActive: true, status: "Activa" },
-        { id: "v_contabilidad_2026", name: "Diseño Curricular 2026", careerId: "contabilidad", isActive: true, status: "Activa" }
-      ];
-      localStorage.setItem("mpa_db_curriculum_versions", JSON.stringify(versions));
-      
-      // 4. Curriculum (links Courses to Versions)
-      const curriculumItems = REAL_MPA_COURSES.map(crs => ({
-        id: `curr_${crs.id}`,
-        careerId: crs.careerId,
-        courseId: crs.id,
-        cycle: crs.referenceCycle,
-        versionId: crs.careerId === "contabilidad" ? "v_contabilidad_2026" : "v_electronica_2026"
-      }));
-      localStorage.setItem("mpa_db_curriculum", JSON.stringify(curriculumItems));
-      
-      // 5. Default Period
-      const defaultPeriods = [
-        { id: "per_2026_1", name: "Periodo Académico 2026-I", startDate: "2026-04-06", endDate: "2026-07-24", isActive: true, status: "Activo" }
-      ];
-      localStorage.setItem("mpa_db_periods", JSON.stringify(defaultPeriods));
 
-      // 6. Default Shifts
-      const defaultShifts = [
-        { id: "sh_m", name: "Mañana", startTime: "08:00 AM", endTime: "01:00 PM" },
-        { id: "sh_t", name: "Tarde", startTime: "01:30 PM", endTime: "06:30 PM" },
-        { id: "sh_n", name: "Noche", startTime: "06:45 PM", endTime: "10:30 PM" }
-      ];
-      localStorage.setItem("mpa_db_shifts", JSON.stringify(defaultShifts));
-
-      // 7. Default Classrooms
-      const defaultClassrooms = [
-        { id: "cr_101", name: "Aula 101 - Teoría", type: "Teoría", location: "Pabellón A", capacity: 40, careerId: "comun" },
-        { id: "cr_102", name: "Aula 102 - Teoría", type: "Teoría", location: "Pabellón A", capacity: 40, careerId: "comun" },
-        { id: "cr_lab_e", name: "Laboratorio Electricidad I", type: "Laboratorio", location: "Pabellón B", capacity: 25, careerId: "electronica" },
-        { id: "cr_lab_c", name: "Laboratorio Cómputo / Contable", type: "Laboratorio", location: "Pabellón B", capacity: 30, careerId: "contabilidad" }
-      ];
-      localStorage.setItem("mpa_db_classrooms", JSON.stringify(defaultClassrooms));
-
-      // 8. Default Teachers
-      const defaultTeachers = [
-        { dni: "10101010", name: "Carlos", lastName: "Sánchez Mendoza", email: "carlos.sanchez@sfa.edu.pe", specialty: "Contabilidad General y Tributación", status: "Disponible", careerId: "contabilidad" },
-        { dni: "20202020", name: "Enrique", lastName: "Gómez Salas", email: "enrique.gomez@sfa.edu.pe", specialty: "Electricidad y Sistemas de Potencia", status: "Disponible", careerId: "electronica" },
-        { dni: "30303030", name: "Patricia", lastName: "Ruiz Vargas", email: "patricia.ruiz@sfa.edu.pe", specialty: "Comunicación y Relaciones Laborales", status: "Disponible", careerId: "comun" }
-      ];
-      localStorage.setItem("mpa_db_teachers", JSON.stringify(defaultTeachers));
-
-      // 9. Default Groups (First Cycle)
-      const defaultGroups = [
-        { id: "gp_con_p1", name: "CONTABILIDAD-I-A", periodId: "per_2026_1", careerId: "contabilidad", cycle: 1, shiftId: "sh_m", capacity: 30, curriculumVersionId: "v_contabilidad_2026" },
-        { id: "gp_ele_p1", name: "ELECTRICIDAD-I-A", periodId: "per_2026_1", careerId: "electronica", cycle: 1, shiftId: "sh_n", capacity: 30, curriculumVersionId: "v_electronica_2026" }
-      ];
-      localStorage.setItem("mpa_db_groups", JSON.stringify(defaultGroups));
-
-      // 10. Predefined Schedules
-      const defaultSchedules = [
-        { id: "sch_m1", dayOfWeek: "Lunes", startTime: "08:00 AM", endTime: "01:00 PM", timeSlot: "08:00 AM - 01:00 PM", shiftId: "sh_m" },
-        { id: "sch_m2", dayOfWeek: "Martes", startTime: "08:00 AM", endTime: "01:00 PM", timeSlot: "08:00 AM - 01:00 PM", shiftId: "sh_m" },
-        { id: "sch_m3", dayOfWeek: "Miércoles", startTime: "08:00 AM", endTime: "01:00 PM", timeSlot: "08:00 AM - 01:00 PM", shiftId: "sh_m" },
-        { id: "sch_m4", dayOfWeek: "Jueves", startTime: "08:00 AM", endTime: "01:00 PM", timeSlot: "08:00 AM - 01:00 PM", shiftId: "sh_m" },
-        { id: "sch_m5", dayOfWeek: "Viernes", startTime: "08:00 AM", endTime: "01:00 PM", timeSlot: "08:00 AM - 01:00 PM", shiftId: "sh_m" },
-        
-        { id: "sch_n1", dayOfWeek: "Lunes", startTime: "06:45 PM", endTime: "10:30 PM", timeSlot: "06:45 PM - 10:30 PM", shiftId: "sh_n" },
-        { id: "sch_n2", dayOfWeek: "Martes", startTime: "06:45 PM", endTime: "10:30 PM", timeSlot: "06:45 PM - 10:30 PM", shiftId: "sh_n" },
-        { id: "sch_n3", dayOfWeek: "Miércoles", startTime: "06:45 PM", endTime: "10:30 PM", timeSlot: "06:45 PM - 10:30 PM", shiftId: "sh_n" },
-        { id: "sch_n4", dayOfWeek: "Jueves", startTime: "06:45 PM", endTime: "10:30 PM", timeSlot: "06:45 PM - 10:30 PM", shiftId: "sh_n" },
-        { id: "sch_n5", dayOfWeek: "Viernes", startTime: "06:45 PM", endTime: "10:30 PM", timeSlot: "06:45 PM - 10:30 PM", shiftId: "sh_n" }
-      ];
-      localStorage.setItem("mpa_db_schedules", JSON.stringify(defaultSchedules));
-
-      // 11. Preloaded Academic Programming Tasks
-      const defaultTasks = [
-        {
-          id: "task_con_1",
-          groupId: "gp_con_p1",
-          courseId: "con_p1_5",
-          teacherDni: "10101010",
-          classroomId: "cr_101",
-          scheduleId: "sch_m1",
-          sessionType: "Teoría",
-          sessionClassType: "Teo",
-          dayOfWeek: "Lunes",
-          startTime: "08:00 AM",
-          endTime: "01:00 PM",
-          shiftId: "sh_m",
-          pedagogicalHours: 6
-        },
-        {
-          id: "task_con_2",
-          groupId: "gp_con_p1",
-          courseId: "con_p1_6",
-          teacherDni: "10101010",
-          classroomId: "cr_102",
-          scheduleId: "sch_m2",
-          sessionType: "Teoría",
-          sessionClassType: "Teo",
-          dayOfWeek: "Martes",
-          startTime: "08:00 AM",
-          endTime: "01:00 PM",
-          shiftId: "sh_m",
-          pedagogicalHours: 6
-        },
-        {
-          id: "task_con_3",
-          groupId: "gp_con_p1",
-          courseId: "con_p1_1",
-          teacherDni: "30303030",
-          classroomId: "cr_101",
-          scheduleId: "sch_m3",
-          sessionType: "Teoría",
-          sessionClassType: "Teo",
-          dayOfWeek: "Miércoles",
-          startTime: "08:00 AM",
-          endTime: "01:00 PM",
-          shiftId: "sh_m",
-          pedagogicalHours: 6
-        },
-        {
-          id: "task_con_4",
-          groupId: "gp_con_p1",
-          courseId: "con_p1_7",
-          teacherDni: "10101010",
-          classroomId: "cr_lab_c",
-          scheduleId: "sch_m4",
-          sessionType: "Laboratorio",
-          sessionClassType: "Lab",
-          dayOfWeek: "Jueves",
-          startTime: "08:00 AM",
-          endTime: "01:00 PM",
-          shiftId: "sh_m",
-          pedagogicalHours: 6
-        },
-        {
-          id: "task_con_5",
-          groupId: "gp_con_p1",
-          courseId: "con_p1_4",
-          teacherDni: "30303030",
-          classroomId: "cr_lab_c",
-          scheduleId: "sch_m5",
-          sessionType: "Laboratorio",
-          sessionClassType: "Lab",
-          dayOfWeek: "Viernes",
-          startTime: "08:00 AM",
-          endTime: "01:00 PM",
-          shiftId: "sh_m",
-          pedagogicalHours: 6
-        },
-        {
-          id: "task_ele_1",
-          groupId: "gp_ele_p1",
-          courseId: "ele_p1_1",
-          teacherDni: "20202020",
-          classroomId: "cr_lab_e",
-          scheduleId: "sch_n1",
-          sessionType: "Laboratorio",
-          sessionClassType: "Lab",
-          dayOfWeek: "Lunes",
-          startTime: "06:45 PM",
-          endTime: "10:30 PM",
-          shiftId: "sh_n",
-          pedagogicalHours: 5
-        },
-        {
-          id: "task_ele_2",
-          groupId: "gp_ele_p1",
-          courseId: "ele_p1_2",
-          teacherDni: "20202020",
-          classroomId: "cr_lab_e",
-          scheduleId: "sch_n2",
-          sessionType: "Laboratorio",
-          sessionClassType: "Lab",
-          dayOfWeek: "Martes",
-          startTime: "06:45 PM",
-          endTime: "10:30 PM",
-          shiftId: "sh_n",
-          pedagogicalHours: 5
-        },
-        {
-          id: "task_ele_3",
-          groupId: "gp_ele_p1",
-          courseId: "ele_p1_6",
-          teacherDni: "30303030",
-          classroomId: "cr_101",
-          scheduleId: "sch_n3",
-          sessionType: "Teoría",
-          sessionClassType: "Teo",
-          dayOfWeek: "Miércoles",
-          startTime: "06:45 PM",
-          endTime: "10:30 PM",
-          shiftId: "sh_n",
-          pedagogicalHours: 5
-        },
-        {
-          id: "task_ele_4",
-          groupId: "gp_ele_p1",
-          courseId: "ele_p1_3",
-          teacherDni: "20202020",
-          classroomId: "cr_lab_e",
-          scheduleId: "sch_n4",
-          sessionType: "Laboratorio",
-          sessionClassType: "Lab",
-          dayOfWeek: "Jueves",
-          startTime: "06:45 PM",
-          endTime: "10:30 PM",
-          shiftId: "sh_n",
-          pedagogicalHours: 5
-        },
-        {
-          id: "task_ele_5",
-          groupId: "gp_ele_p1",
-          courseId: "ele_p1_7",
-          teacherDni: "30303030",
-          classroomId: "cr_lab_c",
-          scheduleId: "sch_n5",
-          sessionType: "Laboratorio",
-          sessionClassType: "Lab",
-          dayOfWeek: "Viernes",
-          startTime: "06:45 PM",
-          endTime: "10:30 PM",
-          shiftId: "sh_n",
-          pedagogicalHours: 5
-        }
-      ];
-      localStorage.setItem("mpa_db_tasks", JSON.stringify(defaultTasks));
-
-      localStorage.setItem(migrationKey, "true");
-    }
-
-    const getSaved = (key: string, defaults: any) => {
-      const saved = localStorage.getItem(`mpa_db_${key}`);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            return parsed;
-          }
-        } catch (e) {
-          console.error(`Error loading state for key ${key}:`, e);
-        }
-      }
-      return defaults;
+    const setters: Record<MpaKey, Function> = {
+      periods: setPeriods, careers: setCareers, courses: setCourses,
+      curriculum: setCurriculum, curriculum_versions: setCurriculumVersions,
+      shifts: setShifts, schedules: setSchedules, classrooms: setClassrooms,
+      groups: setGroups, teachers: setTeachers, tasks: setTasks,
     };
-
-    setPeriods(getSaved("periods", DEFAULT_PERIODS));
-    setCareers(getSaved("careers", DEFAULT_CAREERS));
-    setCourses(getSaved("courses", DEFAULT_COURSES));
-    setCurriculum(getSaved("curriculum", DEFAULT_CURRICULUM));
-    setCurriculumVersions(getSaved("curriculum_versions", DEFAULT_CURRICULUM_VERSIONS));
-    setShifts(getSaved("shifts", DEFAULT_SHIFTS));
-    setSchedules(getSaved("schedules", DEFAULT_SCHEDULES));
-    setClassrooms(getSaved("classrooms", DEFAULT_CLASSROOMS));
-    setGroups(getSaved("groups", DEFAULT_GROUPS));
-    setTeachers(getSaved("teachers", DEFAULT_TEACHERS));
-    setTasks(getSaved("tasks", DEFAULT_TASKS));
+    let active = true;
+    async function loadMpa() {
+      try {
+        const collections = await fetchMpaCollections();
+        if (!active) return;
+        MPA_KEYS.forEach(key => {
+          setters[key](collections[key]);
+          localStorage.setItem(`mpa_db_${key}`, JSON.stringify(collections[key]));
+        });
+        setSyncError("");
+      } catch (error) {
+        if (!active) return;
+        setSyncError(`Sin conexión con el backend MPA: ${error instanceof Error ? error.message : "error desconocido"}. No se cargaron los datos académicos.`);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    void loadMpa();
+    return () => { active = false; };
   }, []);
 
   const saveDb = (key: string, value: any, setter: Function) => {
     setter(value);
     localStorage.setItem(`mpa_db_${key}`, JSON.stringify(value));
+    if (!MPA_KEYS.includes(key as MpaKey)) return;
+    const mpaKey = key as MpaKey;
+    const previous = pendingSaves.current[mpaKey] || Promise.resolve();
+    const next = previous.catch(() => undefined).then(() => saveMpaCollection(mpaKey, value));
+    pendingSaves.current[mpaKey] = next;
+    void next.then(() => setSyncError(""), error => {
+      setSyncError(`No se guardó ${mpaKey} en el backend: ${error instanceof Error ? error.message : "error desconocido"}. La copia local sigue disponible.`);
+    });
   };
 
   // Institutional states
@@ -381,7 +141,8 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
         onLogout={onLogout}
       />
 
-      <main className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 min-w-0">
+      <main className="flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50 min-w-0">
+        {syncError && <div role="alert" className="bg-amber-50 text-amber-900 px-6 py-2 text-xs font-semibold border-b border-amber-200">{syncError}</div>}
         <header className="bg-white border-b border-slate-200/80 px-6 py-4 flex items-center justify-between shrink-0">
           <div className="text-left">
             <h1 className="text-base font-black text-slate-900 tracking-tight leading-none uppercase">
@@ -406,7 +167,8 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
           </span>
         </header>
 
-        <div className="flex-1 overflow-hidden relative">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain relative">
+          {loading ? <div className="p-8 text-sm text-slate-600">Cargando planificación académica...</div> : (
           <AnimatePresence mode="wait">
             {activeTab === "periods" && (
               <PeriodsTab 
@@ -533,6 +295,7 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
               <SupportTab />
             )}
           </AnimatePresence>
+          )}
         </div>
       </main>
     </div>
