@@ -408,4 +408,12 @@ export async function saveClassroomsApi(classrooms: any[]): Promise<any | null> 
   });
 }
 
+export async function closeCourseGradesApi(courseCode: string, teacherDni: string): Promise<any | null> {
+  return fetchJson<any>(`/courses/${courseCode}/close-grades`, {
+    method: "POST",
+    body: JSON.stringify({ teacherDni })
+  });
+}
+
+
 
