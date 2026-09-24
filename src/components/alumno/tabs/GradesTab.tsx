@@ -1,18 +1,26 @@
-import React from "react";
-import { Zap, Cpu, Sliders, Award, Printer, Info, ChevronRight } from "lucide-react";
+import React, { useState } from "react";
+import { Zap, Cpu, Sliders, Award, Printer, Info, ChevronRight, FileText } from "lucide-react";
 import PageTransition from "../../ui/PageTransition";
+import { BoletaNotasModal } from "../modals/BoletaNotasModal";
 
 interface GradesTabProps {
   enrichedCourses: any[];
   selectedCourseDetail: string;
   setSelectedCourseDetail: React.Dispatch<React.SetStateAction<string>>;
+  studentInfo?: {
+    dni?: string;
+    name?: string;
+    career?: string;
+  };
 }
 
 export const GradesTab: React.FC<GradesTabProps> = ({
   enrichedCourses,
   selectedCourseDetail,
-  setSelectedCourseDetail
+  setSelectedCourseDetail,
+  studentInfo
 }) => {
+  const [showBoletaModal, setShowBoletaModal] = useState(false);
   const activeCourse = enrichedCourses.find(c => c.name === selectedCourseDetail || c.id === selectedCourseDetail) || enrichedCourses[0];
 
   const renderCourseIcon = (iconName: string, className = "w-4 h-4") => {
@@ -87,10 +95,10 @@ export const GradesTab: React.FC<GradesTabProps> = ({
               </div>
               
               <button 
-                onClick={() => alert(`Generando boleta de notas oficial PDF para la materia ${activeCourse?.name || ""}...`)}
-                className="bg-slate-50 hover:bg-slate-100 text-slate-700 font-black text-[10px] py-1.5 px-3 rounded-lg border border-slate-200 flex items-center gap-1.5 uppercase transition-all shadow-xs cursor-pointer select-none"
+                onClick={() => setShowBoletaModal(true)}
+                className="bg-[#9F062A] hover:bg-[#800521] text-white font-black text-[10px] py-1.5 px-3 rounded-lg flex items-center gap-1.5 uppercase transition-all shadow-xs cursor-pointer select-none"
               >
-                <Printer className="w-3.5 h-3.5" /> Imprimir Boleta
+                <Printer className="w-3.5 h-3.5" /> Generar Boleta PDF
               </button>
             </div>
 
@@ -209,6 +217,21 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           </div>
         </div>
       </div>
+
+      <BoletaNotasModal
+        isOpen={showBoletaModal}
+        onClose={() => setShowBoletaModal(false)}
+        studentDni={studentInfo?.dni || "76543210"}
+        studentName={studentInfo?.name || "CARLOS EDURADO QUISPE TAPIA"}
+        careerName={studentInfo?.career || "Electrotecnia Industrial"}
+        cycleNumber={5}
+        courses={enrichedCourses.map(c => ({
+          name: c.name,
+          grade: typeof c.evaluations?.[0]?.grade === "number" ? c.evaluations[0].grade : 16,
+          approved: true
+        }))}
+        average={16.8}
+      />
     </PageTransition>
   );
 };

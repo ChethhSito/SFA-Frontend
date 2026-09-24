@@ -98,7 +98,6 @@ export const ProgramTaskListTable: React.FC<ProgramTaskListTableProps> = ({
                         onClick={() => onDeleteTask(t.id)}
                         variant="secondary"
                         className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border-0 shadow-none cursor-pointer"
-                        title="Eliminar sesión programada"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

@@ -1,6 +1,6 @@
 import React from "react";
 import { Award, XCircle, Lightbulb, Printer, Download } from "lucide-react";
-import { Applicant } from "../../types";
+import { Applicant } from "../../../types";
 
 interface ConstanciaModalProps {
   isOpen: boolean;

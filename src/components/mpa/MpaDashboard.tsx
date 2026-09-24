@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
-  Calendar, BookOpen, User, Users, Clipboard, MapPin, Clock, BarChart3, HelpCircle, GraduationCap, Layers
+  Calendar, BookOpen, User, Users, Clipboard, MapPin, Clock, BarChart3, HelpCircle, GraduationCap, Layers, AlertTriangle
 } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { 
@@ -9,6 +9,7 @@ import {
 } from "../../types";
 import Sidebar from "../ui/Sidebar";
 import { MPA_KEYS, MpaKey, fetchMpaCollections, saveMpaCollection } from "../../services/mpaApi";
+import { useConflictDetector } from "../../hooks/mpa/useConflictDetector";
 
 // Tab Subcomponents
 import { PeriodsTab } from "./tabs/PeriodsTab";
@@ -49,6 +50,8 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [syncError, setSyncError] = useState("");
   const pendingSaves = useRef<Partial<Record<MpaKey, Promise<unknown>>>>({});
+
+  const { conflicts, hasConflicts, conflictCount } = useConflictDetector(tasks, courses);
 
   // Load the existing academic data from the backend.
   useEffect(() => {
@@ -143,6 +146,19 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
 
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50 min-w-0">
         {syncError && <div role="alert" className="bg-amber-50 text-amber-900 px-6 py-2 text-xs font-semibold border-b border-amber-200">{syncError}</div>}
+        {hasConflicts && (
+          <div role="alert" className="bg-rose-500/10 border-b border-rose-300 px-6 py-2.5 flex items-center justify-between text-xs font-bold text-rose-900">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>⚠️ Se han detectado <strong>{conflictCount} conflicto(s) de sobreposición</strong> de aula o docente en la programación actual.</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] bg-rose-600 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                Cruces Detectados: {conflictCount}
+              </span>
+            </div>
+          </div>
+        )}
         <header className="bg-white border-b border-slate-200/80 px-6 py-4 flex items-center justify-between shrink-0">
           <div className="text-left">
             <h1 className="text-base font-black text-slate-900 tracking-tight leading-none uppercase">

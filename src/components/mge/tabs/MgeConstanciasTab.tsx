@@ -1,7 +1,9 @@
-import React from "react";
-import { Check, ShieldCheck } from "lucide-react";
+import React, { useState } from "react";
+import { Check, ShieldCheck, Printer, Award, FileCheck } from "lucide-react";
 import { Graduation, StudentPersonalData } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
+import { CertificadoEstudiosModal } from "../modals/CertificadoEstudiosModal";
+import { ResolucionTitulacionModal } from "../modals/ResolucionTitulacionModal";
 
 interface Props {
   graduations: Graduation[];
@@ -18,6 +20,8 @@ export default function MgeConstanciasTab({
   onIssuerUpdate,
   onCreateGraduationProcess,
 }: Props) {
+  const [selectedCertStudent, setSelectedCertStudent] = useState<any>(null);
+  const [selectedResStudent, setSelectedResStudent] = useState<any>(null);
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 border border-slate-200 rounded-xl bg-slate-50">
@@ -108,19 +112,42 @@ export default function MgeConstanciasTab({
                         )}
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <div className="flex justify-end gap-1.5">
+                        <div className="flex justify-end gap-1.5 flex-wrap">
+                          <button
+                            onClick={() => setSelectedCertStudent({
+                              studentDni: g.studentDni,
+                              studentName: studentObj ? `${studentObj.lastName}, ${studentObj.name}` : "Estudiante Egresado",
+                              careerName: "Electrotecnia Industrial"
+                            })}
+                            className="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-[8.5px] uppercase tracking-wider rounded transition-all cursor-pointer flex items-center gap-1"
+                            title="Certificado de Estudios SGE/MINEDU"
+                          >
+                            <Award className="w-3 h-3" /> Certificado
+                          </button>
+                          <button
+                            onClick={() => setSelectedResStudent({
+                              resolutionNumber: `RD-2026-0${Math.floor(Math.random() * 90 + 10)}-IESTP-SFA`,
+                              studentDni: g.studentDni,
+                              studentName: studentObj ? `${studentObj.lastName}, ${studentObj.name}` : "Estudiante Egresado",
+                              careerName: "Electrotecnia Industrial"
+                            })}
+                            className="px-2 py-1 bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-[8.5px] uppercase tracking-wider rounded transition-all cursor-pointer flex items-center gap-1"
+                            title="Resolución Directoral de Titulación"
+                          >
+                            <FileCheck className="w-3 h-3 text-amber-300" /> R.D. Titulación
+                          </button>
                           <button
                             onClick={() => onIssuerUpdate(g.studentDni, true)}
-                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[9px] uppercase tracking-wider rounded transition-all cursor-pointer flex items-center gap-1"
+                            className="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[8.5px] uppercase tracking-wider rounded transition-all cursor-pointer flex items-center gap-1"
                           >
-                            <Check className="w-3.5 h-3.5" /> Emitir
+                            <Check className="w-3 h-3" /> Emitir
                           </button>
                           <button
                             onClick={() => onIssuerUpdate(g.studentDni, false)}
-                            className="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white font-black text-[9px] uppercase tracking-wider rounded transition-all cursor-pointer"
+                            className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white font-black text-[8.5px] uppercase tracking-wider rounded transition-all cursor-pointer"
                             title="Observar"
                           >
-                            Observar
+                            Obs.
                           </button>
                         </div>
                       </td>
@@ -132,6 +159,25 @@ export default function MgeConstanciasTab({
           </table>
         </div>
       </div>
+
+      <CertificadoEstudiosModal
+        isOpen={Boolean(selectedCertStudent)}
+        onClose={() => setSelectedCertStudent(null)}
+        studentDni={selectedCertStudent?.studentDni || ""}
+        studentName={selectedCertStudent?.studentName || ""}
+        careerName={selectedCertStudent?.careerName || "Electrotecnia Industrial"}
+        modulesCompleted={3}
+        totalCredits={120}
+      />
+
+      <ResolucionTitulacionModal
+        isOpen={Boolean(selectedResStudent)}
+        onClose={() => setSelectedResStudent(null)}
+        resolutionNumber={selectedResStudent?.resolutionNumber || "RD-2026-048-IESTP-SFA"}
+        studentDni={selectedResStudent?.studentDni || ""}
+        studentName={selectedResStudent?.studentName || ""}
+        careerName={selectedResStudent?.careerName || "Electrotecnia Industrial"}
+      />
     </div>
   );
 }

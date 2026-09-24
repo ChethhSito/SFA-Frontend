@@ -103,6 +103,14 @@ export interface StudentPersonalData {
   emergencyRelation: string;
 }
 
+export interface AcademicProgram {
+  id: string;
+  name: string;
+  code?: string;
+  description?: string;
+  durationYears?: number;
+}
+
 export interface Enrollment {
   studentDni: string;
   programId: ProgramId;
@@ -113,7 +121,7 @@ export interface Enrollment {
     partidaFile: StudentDoc;
     fotoFile: StudentDoc;
   };
-  paymentStatus: "No Pagado" | "Pendiente" | "Validado" | "Observado";
+  paymentStatus: "No Pagado" | "Pendiente" | "Validado" | "Observado" | "Pagado";
   paymentOperation?: string;
   paymentType?: "number" | "voucher";
   paymentVoucherUrl?: string;
