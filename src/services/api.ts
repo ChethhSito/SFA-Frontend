@@ -351,3 +351,61 @@ export async function updateStudentCourseGrade(dni: string, courseName: string, 
   });
 }
 
+/* ==========================================================================
+   11. ATTENDANCE, MATERIALS, ASSIGNMENTS & CLASSROOMS (Docentes & Alumnos)
+   ========================================================================== */
+
+export async function fetchCourseAttendance(courseId: string): Promise<any[] | null> {
+  return fetchJson<any[]>(`/courses/attendance/${courseId}`);
+}
+
+export async function saveCourseAttendance(courseId: string, date: string, statusMap: Record<string, string>): Promise<any | null> {
+  return fetchJson<any>(`/courses/attendance/${courseId}`, {
+    method: "POST",
+    body: JSON.stringify({ date, statusMap })
+  });
+}
+
+export async function fetchCourseMaterials(courseId?: string): Promise<any[] | null> {
+  const query = courseId ? `?courseId=${courseId}` : "";
+  return fetchJson<any[]>(`/courses/materials/list${query}`);
+}
+
+export async function uploadCourseMaterial(material: { courseId: string; title: string; fileName: string; date: string }): Promise<any | null> {
+  return fetchJson<any>("/courses/materials/upload", {
+    method: "POST",
+    body: JSON.stringify(material)
+  });
+}
+
+export async function fetchCourseAssignments(courseId?: string): Promise<any[] | null> {
+  const query = courseId ? `?courseId=${courseId}` : "";
+  return fetchJson<any[]>(`/courses/assignments/list${query}`);
+}
+
+export async function createCourseAssignment(assignment: { courseId: string; title: string; description: string; dueDate: string }): Promise<any | null> {
+  return fetchJson<any>("/courses/assignments/create", {
+    method: "POST",
+    body: JSON.stringify(assignment)
+  });
+}
+
+export async function submitCourseAssignment(assignmentId: string, submission: { studentDni: string; studentName: string; fileName: string; submitDate: string; grade?: number }): Promise<any | null> {
+  return fetchJson<any>(`/courses/assignments/${assignmentId}/submit`, {
+    method: "POST",
+    body: JSON.stringify(submission)
+  });
+}
+
+export async function fetchClassroomsApi(): Promise<any[] | null> {
+  return fetchJson<any[]>("/mpa/classrooms");
+}
+
+export async function saveClassroomsApi(classrooms: any[]): Promise<any | null> {
+  return fetchJson<any>("/mpa/classrooms", {
+    method: "PUT",
+    body: JSON.stringify({ items: classrooms })
+  });
+}
+
+
