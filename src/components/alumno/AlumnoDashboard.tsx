@@ -55,10 +55,17 @@ export default function AlumnoDashboard({
   const [profileForm, setProfileForm] = useState<StudentPersonalData>({ ...personalData });
   const [profileSavedMsg, setProfileSavedMsg] = useState("");
   
-  // Outstanding billing simulation state
-  const [isPaidInvoice, setIsPaidInvoice] = useState(false);
-  const [paymentOp, setPaymentOp] = useState(enrollment.paymentOperation || "");
+  // Outstanding billing simulation state (el alumno matriculado tiene su matrícula pagada y sin deuda)
+  const isEnrolledAndPaid = enrollment.academicStatus === "MATRICULADO" || (enrollment.paymentStatus as string) === "Validado" || (enrollment.paymentStatus as string) === "Pagado" || (enrollment.paymentStatus as string) === "PAGADO";
+  const [isPaidInvoice, setIsPaidInvoice] = useState(isEnrolledAndPaid);
+  const [paymentOp, setPaymentOp] = useState(enrollment.paymentOperation || "OP-MATR-2026-0043");
   const [paySuccessMsg, setPaySuccessMsg] = useState("");
+
+  useEffect(() => {
+    if (enrollment.academicStatus === "MATRICULADO" || (enrollment.paymentStatus as string) === "Validado" || (enrollment.paymentStatus as string) === "Pagado" || (enrollment.paymentStatus as string) === "PAGADO") {
+      setIsPaidInvoice(true);
+    }
+  }, [enrollment]);
 
   // Sub-tab selection inside Profile View (Carga de Documentos / Historial de Pagos / Datos Académicos)
   const [profileInnerTab, setProfileInnerTab] = useState<"docs" | "payments" | "academic">("docs");
@@ -119,13 +126,17 @@ export default function AlumnoDashboard({
   };
 
   const simulateDocUpload = (docKey: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile", name: string) => {
+    const isEnr = enrollment.academicStatus === "MATRICULADO";
     const updatedDocs = { ...enrollment.docs };
     updatedDocs[docKey] = {
-      status: "Pendiente" as const,
+      status: isEnr ? ("Validado" as const) : ("Pendiente" as const),
       fileName: name
     };
     const updated = { ...enrollment, docs: updatedDocs };
     onUpdateEnrollment(updated);
+    try {
+      localStorage.setItem(`sfa_doc_status_${studentDni}`, JSON.stringify(updatedDocs));
+    } catch (e) {}
   };
 
   const handlePayInvoice = () => {

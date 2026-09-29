@@ -79,17 +79,20 @@ export default function App() {
     if (updated.admitted === true || updated.admitted === "ADMITIDO") {
       const existsEnroll = enrollments.some((e) => e.studentDni === updated.dni);
       if (!existsEnroll) {
+        const appDocs = updated.docs || {};
+        const isApproved = updated.folderStatus === "Approved" || updated.folderStatus === "Enrolled" || updated.admitted === "ADMITIDO" || updated.admitted === true;
+        const defaultStatus = isApproved ? ("Validado" as const) : ("Pendiente" as const);
         const newEnrollmentRow = {
           studentDni: updated.dni,
           programId: updated.programId,
           academicStatus: "ADMITIDO" as const,
           docs: {
-            dniFile: { status: "No Enviado" as const },
-            certificadoFile: { status: "No Enviado" as const },
-            partidaFile: { status: "No Enviado" as const },
-            fotoFile: { status: "No Enviado" as const }
+            dniFile: appDocs.dniFile || { status: defaultStatus, fileName: `dni_${updated.dni}.pdf` },
+            certificadoFile: appDocs.certificadoFile || { status: defaultStatus, fileName: `certificado_${updated.dni}.pdf` },
+            partidaFile: appDocs.partidaFile || { status: defaultStatus, fileName: `partida_${updated.dni}.pdf` },
+            fotoFile: appDocs.fotoFile || { status: defaultStatus, fileName: `foto_${updated.dni}.jpg` }
           },
-          paymentStatus: "No Pagado" as const
+          paymentStatus: (updated.paymentStatus === "Validado" || updated.paymentStatus === "PAGADO") ? ("Validado" as const) : ("No Pagado" as const)
         };
         handleUpdateEnrollments([...enrollments, newEnrollmentRow]);
 

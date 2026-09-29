@@ -316,15 +316,18 @@ export default function AdminDashboard({
         });
       } else {
         const app = applicants.find((a) => a.dni === approvePaymentDni);
+        const appDocs: any = app?.docs || {};
+        const isApproved = app?.folderStatus === "Approved" || app?.folderStatus === "Enrolled" || app?.admitted === "ADMITIDO" || app?.admitted === true;
+        const defaultStatus = isApproved ? ("Validado" as const) : ("Pendiente" as const);
         const newEnrollmentRow = {
           studentDni: approvePaymentDni,
           programId: app?.programId || "electronica",
           academicStatus: "ADMITIDO" as const,
           docs: {
-            dniFile: { status: "No Enviado" as const },
-            certificadoFile: { status: "No Enviado" as const },
-            partidaFile: { status: "No Enviado" as const },
-            fotoFile: { status: "No Enviado" as const }
+            dniFile: appDocs.dniFile || { status: defaultStatus, fileName: `dni_${approvePaymentDni}.pdf` },
+            certificadoFile: appDocs.certificadoFile || { status: defaultStatus, fileName: `certificado_${approvePaymentDni}.pdf` },
+            partidaFile: appDocs.partidaFile || { status: defaultStatus, fileName: `partida_${approvePaymentDni}.pdf` },
+            fotoFile: appDocs.fotoFile || { status: defaultStatus, fileName: `foto_${approvePaymentDni}.jpg` }
           },
           paymentStatus: "Validado" as const,
           paymentOperation: "VENTANILLA-CAJA"
@@ -461,6 +464,15 @@ export default function AdminDashboard({
       return;
     }
 
+    const app = applicants.find(a => a.dni === studentDni);
+    const appDocs: any = app?.docs || {};
+    const validatedDocs = {
+      dniFile: { status: "Validado" as const, fileName: appDocs.dniFile?.fileName || existing?.docs?.dniFile?.fileName || `dni_${studentDni}.pdf` },
+      certificadoFile: { status: "Validado" as const, fileName: appDocs.certificadoFile?.fileName || existing?.docs?.certificadoFile?.fileName || `certificado_${studentDni}.pdf` },
+      partidaFile: { status: "Validado" as const, fileName: appDocs.partidaFile?.fileName || existing?.docs?.partidaFile?.fileName || `partida_${studentDni}.pdf` },
+      fotoFile: { status: "Validado" as const, fileName: appDocs.fotoFile?.fileName || existing?.docs?.fotoFile?.fileName || `foto_${studentDni}.jpg` }
+    };
+
     let updatedEnrList: Enrollment[];
     if (existing) {
       updatedEnrList = enrollments.map(enr => {
@@ -470,8 +482,9 @@ export default function AdminDashboard({
             programId: programId,
             academicStatus: "MATRICULADO" as const,
             shift: shift,
-            paymentStatus: enr.paymentStatus || "No Pagado",
-            groupId: effectiveGroupId
+            paymentStatus: enr.paymentStatus || "Validado",
+            groupId: effectiveGroupId,
+            docs: validatedDocs
           };
         }
         return enr;
@@ -483,13 +496,8 @@ export default function AdminDashboard({
           studentDni: studentDni,
           programId: programId,
           academicStatus: "MATRICULADO" as const,
-          docs: {
-            dniFile: { status: "Validado" },
-            certificadoFile: { status: "Validado" },
-            partidaFile: { status: "Validado" },
-            fotoFile: { status: "Validado" }
-          },
-          paymentStatus: "No Pagado",
+          docs: validatedDocs,
+          paymentStatus: "Validado",
           shift: shift,
           groupId: effectiveGroupId
         }
