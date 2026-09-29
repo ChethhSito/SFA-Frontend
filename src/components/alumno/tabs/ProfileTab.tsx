@@ -42,47 +42,136 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   onUpdateEnrollment,
   graduation
 }) => {
-  const [previewDoc, setPreviewDoc] = useState<{ title: string; fileName: string } | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{
+    title: string;
+    fileName: string;
+    key: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile";
+    fileDataUrl?: string;
+  } | null>(null);
+
+  const handleFileUpload = (docKey: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile", file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (dataUrl) {
+        try {
+          localStorage.setItem(`sfa_file_data_${personalData.dni}_${docKey}`, dataUrl);
+        } catch (err) {
+          console.warn("Storage quota exceeded", err);
+        }
+      }
+      simulateDocUpload(docKey, file.name);
+      setPreviewDoc((prev) => 
+        prev && prev.key === docKey 
+          ? { ...prev, fileName: file.name, fileDataUrl: dataUrl } 
+          : prev
+      );
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
     <PageTransition id="profile" className="space-y-6">
-      {/* Modal de Vista Previa de Documento Requisitorial */}
+      {/* Modal de Vista Previa de Documento Requisitorial - Responsivo y Sin Cortes */}
       {previewDoc && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-[#800521] text-white px-6 py-4 flex items-center justify-between">
+        <div 
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPreviewDoc(null);
+          }}
+        >
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[85vh] overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-[#800521] text-white px-5 py-3.5 flex items-center justify-between shrink-0 shadow-xs">
               <div className="flex items-center gap-2.5">
                 <FileText className="w-5 h-5 text-amber-300" />
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-wider">Visor Oficial de Expediente Digital</h3>
-                  <p className="text-[10px] text-rose-200 font-medium">{previewDoc.title}</p>
+                  <p className="text-[10px] text-rose-200 font-medium truncate max-w-[280px]">{previewDoc.title}</p>
                 </div>
               </div>
               <button 
                 onClick={() => setPreviewDoc(null)}
-                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                className="text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 flex flex-col items-center justify-center text-center space-y-3">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center shadow-xs">
-                  <ShieldCheck className="w-9 h-9" />
-                </div>
-                <div>
-                  <span className="font-mono text-xs font-extrabold text-slate-800 block">{previewDoc.fileName}</span>
-                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/70 px-2 py-0.5 rounded-full mt-1 inline-block uppercase">
-                    Documento Validado y Conforme
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500 max-w-xs leading-relaxed">
-                  Archivo digital custodiado en el repositorio oficial de Secretaría Académica para el ciclo lectivo 2026-I.
-                </p>
+            {/* Scrollable Body */}
+            <div className="p-5 overflow-y-auto flex-1 space-y-4 custom-scrollbar bg-slate-50/50">
+              <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center shadow-xs">
+                {previewDoc.fileDataUrl ? (
+                  /* RENDERIZADO DE IMAGEN REAL SUBIDA */
+                  <div className="w-full flex flex-col items-center justify-center space-y-2">
+                    <div className="max-h-[300px] w-full flex items-center justify-center overflow-hidden bg-slate-900/5 rounded-lg p-2 border border-slate-200">
+                      <img 
+                        src={previewDoc.fileDataUrl} 
+                        alt={previewDoc.title}
+                        className="max-h-[280px] max-w-full object-contain rounded shadow-sm border border-slate-300"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-slate-600 font-mono font-bold mt-1">
+                      <FileText className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{previewDoc.fileName}</span>
+                    </div>
+                    <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full uppercase">
+                      Archivo cargado y verificado
+                    </span>
+                  </div>
+                ) : previewDoc.key === "fotoFile" || previewDoc.fileName.toLowerCase().match(/\.(png|jpg|jpeg|webp)$/) ? (
+                  /* VISUALIZACIÓN DE FOTO CARNET OFICIAL */
+                  <div className="w-full flex flex-col items-center justify-center py-3 space-y-3">
+                    <div className="w-36 h-48 bg-white rounded-lg border-2 border-slate-300 shadow-md p-2 flex flex-col items-center justify-between relative overflow-hidden">
+                      <div className="w-full flex justify-between items-center text-[7px] font-black uppercase text-slate-400 border-b pb-1">
+                        <span>IESTP SFA</span>
+                        <span>2026-I</span>
+                      </div>
+                      <div className="w-24 h-32 rounded bg-gradient-to-b from-slate-100 to-slate-200 border border-slate-300 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
+                        <div className="w-14 h-14 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center font-extrabold text-lg shadow-xs border-2 border-white">
+                          {personalData.name.charAt(0)}{personalData.lastName.charAt(0)}
+                        </div>
+                        <span className="text-[7px] font-bold text-slate-500 mt-1 uppercase tracking-tight">Fondo Blanco</span>
+                        <div className="absolute bottom-0 inset-x-0 bg-[#800521] text-white text-[7px] font-black uppercase text-center py-0.5">
+                          CARNET DIGITAL
+                        </div>
+                      </div>
+                      <span className="text-[8px] font-bold text-slate-700 uppercase tracking-tight truncate max-w-full">{personalData.name} {personalData.lastName}</span>
+                    </div>
+                    <div className="text-center space-y-1">
+                      <span className="font-mono text-xs font-extrabold text-slate-800 block">{previewDoc.fileName}</span>
+                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/70 px-2.5 py-0.5 rounded-full inline-block uppercase">
+                        Fotografía Registrada y Foliada
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  /* VISUALIZACIÓN DE EXPEDIENTE DOCUMENTARIO FOLIADO */
+                  <div className="w-full flex flex-col items-center justify-center py-3 space-y-3">
+                    <div className="w-full max-w-xs bg-slate-50 rounded-lg border border-slate-300 shadow-xs p-4 space-y-2.5 relative border-t-4 border-t-[#800521]">
+                      <div className="flex justify-between items-center border-b border-slate-200 pb-1.5 text-[8px] font-bold text-slate-400 uppercase">
+                        <span>SECRETARÍA ACADÉMICA</span>
+                        <span>2026-I</span>
+                      </div>
+                      <div className="text-center py-2 space-y-1">
+                        <ShieldCheck className="w-8 h-8 text-emerald-600 mx-auto" />
+                        <span className="text-[11px] font-black text-slate-800 uppercase block">{previewDoc.title}</span>
+                        <span className="text-[9px] font-mono text-slate-500 font-bold block">{previewDoc.fileName}</span>
+                      </div>
+                      <div className="border-t border-dashed border-slate-200 pt-1.5 text-[8px] text-slate-500 flex justify-between font-mono">
+                        <span>DNI: {personalData.dni}</span>
+                        <span className="text-emerald-700 font-bold uppercase">CONFORME</span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/70 px-2.5 py-0.5 rounded-full inline-block uppercase">
+                      Expediente Digital Foliado y Conforme
+                    </span>
+                  </div>
+                )}
               </div>
 
-              <div className="text-[11px] text-slate-600 bg-amber-50/60 border border-amber-200/70 p-3 rounded-lg space-y-1">
+              {/* Ficha descriptiva del titular */}
+              <div className="text-[11px] text-slate-600 bg-amber-50/60 border border-amber-200/70 p-3 rounded-xl space-y-1.5 shadow-2xs">
                 <div className="flex justify-between">
                   <span className="text-slate-500 font-semibold">Titular del Documento:</span>
                   <span className="font-bold text-slate-800 uppercase">{personalData.name} {personalData.lastName}</span>
@@ -92,16 +181,36 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                   <span className="font-mono font-bold text-slate-800">{personalData.dni}</span>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-slate-500 font-semibold">Programa de Estudios:</span>
+                  <span className="font-bold text-slate-800 uppercase">{currentProgram?.name || "Electricidad Industrial"}</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-slate-500 font-semibold">Estado en Secretaría:</span>
-                  <span className="font-extrabold text-emerald-700 uppercase">Aprobado y Foliado</span>
+                  <span className="font-extrabold text-emerald-700 uppercase flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Aprobado y Foliado
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-50 px-6 py-3 border-t border-slate-100 flex justify-end">
+            {/* Footer con acciones */}
+            <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-between shrink-0">
+              <label className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer uppercase tracking-wider inline-flex items-center gap-1.5 shadow-2xs">
+                <Upload className="w-3.5 h-3.5 text-amber-500" /> Cambiar Archivo
+                <input 
+                  type="file" 
+                  accept="image/*,.pdf" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    if (previewDoc && e.target.files?.[0]) {
+                      handleFileUpload(previewDoc.key, e.target.files[0]);
+                    }
+                  }}
+                />
+              </label>
               <button
                 onClick={() => setPreviewDoc(null)}
-                className="bg-[#800521] hover:bg-[#9F062A] text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors cursor-pointer uppercase tracking-wider"
+                className="bg-[#800521] hover:bg-[#9F062A] text-white text-xs font-bold px-5 py-1.5 rounded-lg transition-colors cursor-pointer uppercase tracking-wider shadow-xs"
               >
                 Cerrar Visor
               </button>
@@ -243,10 +352,18 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     const isPending = d?.status === "Pendiente" || (d?.fileName && !isValidated);
                     const status = isValidated ? "Validado" : isObserved ? "Observado" : isPending ? "Pendiente" : (d?.status || (isEnrolled ? "Validado" : "Pendiente"));
                     const fileName = d?.fileName || (status === "Validado" || isEnrolled ? cfg.defaultFile : undefined);
+                    let fileDataUrl = d?.fileDataUrl;
+                    if (!fileDataUrl) {
+                      try {
+                        fileDataUrl = localStorage.getItem(`sfa_file_data_${personalData.dni}_${cfg.key}`) || undefined;
+                      } catch (e) {}
+                    }
+
                     return {
                       ...cfg,
                       status,
-                      fileName
+                      fileName,
+                      fileDataUrl
                     };
                   });
 
@@ -306,7 +423,12 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                               <div className="flex items-center gap-1.5">
                                 {doc.fileName && (
                                   <button
-                                    onClick={() => setPreviewDoc({ title: doc.title, fileName: doc.fileName || "" })}
+                                    onClick={() => setPreviewDoc({
+                                      title: doc.title,
+                                      fileName: doc.fileName || "",
+                                      key: doc.key,
+                                      fileDataUrl: doc.fileDataUrl
+                                    })}
                                     className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] uppercase font-bold py-1 px-2.5 rounded transition-all inline-flex items-center gap-1 cursor-pointer select-none"
                                     title="Ver documento adjunto"
                                   >
@@ -314,17 +436,19 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                   </button>
                                 )}
 
-                                <button 
-                                  onClick={() => {
-                                    const name = prompt("Escriba el nombre del archivo actualizado que desea adjuntar:", `expediente_${doc.key}_${personalData.dni}.pdf`);
-                                    if (name) {
-                                      simulateDocUpload(doc.key, name);
-                                    }
-                                  }}
-                                  className="bg-[#800521] hover:bg-[#9F062A] text-white text-[10px] uppercase font-bold py-1 px-3 rounded transition-all inline-flex items-center gap-1 cursor-pointer select-none"
-                                >
+                                <label className="bg-[#800521] hover:bg-[#9F062A] text-white text-[10px] uppercase font-bold py-1 px-3 rounded transition-all inline-flex items-center gap-1 cursor-pointer select-none">
                                   <Upload className="w-3 h-3 text-amber-300" /> {isValidated ? "Actualizar" : "Subir archivo"}
-                                </button>
+                                  <input 
+                                    type="file" 
+                                    accept="image/*,.pdf" 
+                                    className="hidden" 
+                                    onChange={(e) => {
+                                      if (e.target.files?.[0]) {
+                                        handleFileUpload(doc.key, e.target.files[0]);
+                                      }
+                                    }}
+                                  />
+                                </label>
                               </div>
                             </div>
                           </div>

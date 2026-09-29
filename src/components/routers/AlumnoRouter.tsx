@@ -128,6 +128,11 @@ export default function AlumnoRouter({
 
     let fileName = local?.fileName || fromApp?.fileName || fromEnr?.fileName;
     let fileDataUrl = local?.fileDataUrl || fromApp?.fileDataUrl || fromEnr?.fileDataUrl;
+    if (!fileDataUrl) {
+      try {
+        fileDataUrl = localStorage.getItem(`sfa_file_data_${currentDni}_${k}`) || undefined;
+      } catch (e) {}
+    }
     
     // Si fue admitido/matriculado o validado en secretaría, el documento es Validado
     const isValid = local?.status === "Validado" || fromApp?.status === "Validado" || fromEnr?.status === "Validado" || isApproved;
