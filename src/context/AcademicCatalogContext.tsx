@@ -12,9 +12,28 @@ interface AcademicCatalogState {
 
 const AcademicCatalogContext = createContext<AcademicCatalogState | null>(null);
 
+const CACHE_PROGRAMS_KEY = "sfa_academic_catalog_programs";
+const CACHE_COURSES_KEY = "sfa_academic_catalog_courses";
+
 export function AcademicCatalogProvider({ children }: { children: React.ReactNode }) {
-  const [programs, setPrograms] = useState<Program[]>([]);
-  const [courses, setCourses] = useState<MpaCourse[]>([]);
+  const [programs, setPrograms] = useState<Program[]>(() => {
+    try {
+      const cached = localStorage.getItem(CACHE_PROGRAMS_KEY);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [courses, setCourses] = useState<MpaCourse[]>(() => {
+    try {
+      const cached = localStorage.getItem(CACHE_COURSES_KEY);
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,17 +43,26 @@ export function AcademicCatalogProvider({ children }: { children: React.ReactNod
         fetchMpaCollection<MpaCareer>("careers"),
         fetchMpaCollection<MpaCourse>("courses"),
       ]);
-      setCourses(academicCourses);
-      setPrograms(careers.map((career) => ({
+
+      const mappedPrograms: Program[] = careers.map((career) => ({
         id: career.id as ProgramId,
         name: career.name,
         description: career.description || "",
         duration: `${Math.ceil(career.durationSemesters / 2)} años (${career.durationSemesters} ciclos)`,
         courses: academicCourses.filter((course) => course.careerId === career.id).map((course) => course.name),
-      })));
+      }));
+
+      setCourses(academicCourses);
+      setPrograms(mappedPrograms);
       setError(null);
+
+      try {
+        localStorage.setItem(CACHE_PROGRAMS_KEY, JSON.stringify(mappedPrograms));
+        localStorage.setItem(CACHE_COURSES_KEY, JSON.stringify(academicCourses));
+      } catch {}
     } catch (cause) {
-      setError(`No se pudo cargar el catálogo académico: ${cause instanceof Error ? cause.message : "error desconocido"}`);
+      console.warn("No se pudo sincronizar el catálogo académico con el backend:", cause);
+      setError(cause instanceof Error ? cause.message : "error de conexión");
     } finally {
       setLoading(false);
     }
@@ -49,7 +77,6 @@ export function AcademicCatalogProvider({ children }: { children: React.ReactNod
 
   return (
     <AcademicCatalogContext.Provider value={{ programs, courses, loading, error, refresh }}>
-      {error && <div role="alert" className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs font-semibold text-amber-900">{error}</div>}
       {children}
     </AcademicCatalogContext.Provider>
   );
@@ -60,3 +87,4 @@ export function useAcademicCatalog() {
   if (!context) throw new Error("AcademicCatalogProvider is missing");
   return context;
 }
+
