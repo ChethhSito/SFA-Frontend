@@ -159,22 +159,27 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
           <div>
             {profileInnerTab === "docs" && (
               <div className="space-y-4">
-                <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100 text-[11px] font-semibold text-slate-6y shrink-0 mb-4">
-                  <span className="text-slate-500">Carpeta Requisitorial del Alumno</span>
-                  <span className="font-bold text-slate-800">3 de 5 documentos validados</span>
-                </div>
+                {(() => {
+                  const docList = [
+                    { title: "Copia de Documento Nacional de Identidad (DNI)", key: "dniFile" as const, mandatory: true, status: enrollment.docs.dniFile?.status || "Validado" },
+                    { title: "Certificado de Estudios de Educación Secundaria Completa", key: "certificadoFile" as const, mandatory: true, status: enrollment.docs.certificadoFile?.status || "Validado" },
+                    { title: "Partida de Nacimiento Original", key: "partidaFile" as const, mandatory: true, status: enrollment.docs.partidaFile?.status || "Validado" },
+                    { title: "Fotografía Tamaño Carnet a Color con Fondo Blanco", key: "fotoFile" as const, mandatory: true, status: enrollment.docs.fotoFile?.status || "Validado" }
+                  ];
+                  const validatedCount = docList.filter(d => d.status === "Validado").length;
 
-                {[
-                  { title: "Copia legalizada de DNI (Anverso y Reverso)", key: "dniFile" as const, mandatory: true, mockStatus: "Validado" },
-                  { title: "Certificado de Estudios de Educación Secundaria Completa", key: "certificadoFile" as const, mandatory: true, mockStatus: enrollment.docs.certificadoFile?.status || "Pendiente" },
-                  { title: "Certificado Médico de Salud e Invalidez", key: "partidaFile" as const, mandatory: false, mockStatus: enrollment.docs.partidaFile?.status || "Pendiente" },
-                  { title: "Constancia de Certificación de No Antecedentes Penales", key: "constancia" as const, mandatory: true, mockStatus: "Missing" },
-                  { title: "Fotos Tamaño Carnet a color en alta resolución", key: "fotoFile" as const, mandatory: true, mockStatus: "Validado" }
-                ].map((doc, idx) => {
-                  const isMissing = doc.mockStatus === "Missing";
-                  const isPending = doc.mockStatus === "Pendiente";
-                  const isValidated = doc.mockStatus === "Validado";
-                  const isObserved = doc.mockStatus === "Observado";
+                  return (
+                    <>
+                      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100 text-[11px] font-semibold text-slate-600 shrink-0 mb-4">
+                        <span className="text-slate-500">Carpeta Requisitorial del Alumno</span>
+                        <span className="font-bold text-slate-800">{validatedCount} de {docList.length} documentos validados</span>
+                      </div>
+
+                      {docList.map((doc, idx) => {
+                        const isPending = doc.status === "Pendiente" || doc.status === "No Enviado";
+                        const isValidated = doc.status === "Validado";
+                        const isObserved = doc.status === "Observado";
+                        const isMissing = false;
 
                   return (
                     <div key={idx} className="p-4 border border-slate-100 bg-slate-50/50 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -214,23 +219,24 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                           <button 
                             onClick={() => {
                               const name = prompt("Escriba el nombre del archivo requisitorial que desea subir para validación:", `requisito_${doc.key || "doc"}_${personalData.dni}.pdf`);
-                              if (name && doc.key !== "constancia") {
+                              if (name) {
                                 simulateDocUpload(doc.key, name);
-                              } else if (name) {
-                                alert("¡Documento subido! Se guardó como plantilla pendiente de revisión técnica de secretaría.");
                               }
                             }}
                             className="bg-[#800521] hover:bg-[#9F062A] text-white text-[10px] uppercase font-bold py-1 px-3.5 rounded transition-all inline-flex items-center gap-1 cursor-pointer select-none"
                           >
-                            <Upload className="w-3 L-3 text-amber-300" /> Subir archivo
+                            <Upload className="w-3 h-3 text-amber-300" /> Subir archivo
                           </button>
                         )}
                       </div>
                     </div>
                   );
                 })}
-              </div>
-            )}
+              </>
+            );
+          })()}
+        </div>
+      )}
 
             {profileInnerTab === "payments" && (
               <div className="space-y-4">

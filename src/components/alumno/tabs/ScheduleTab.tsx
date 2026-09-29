@@ -22,16 +22,16 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-900 font-display">
-            Hola, {personalData.name}, bienvenido, hoy es miércoles 27 de mayo de 2026
+            Hola, {personalData.name}, bienvenido al periodo académico 2026-I
           </h2>
-          <p className="text-xs text-slate-500 font-semibold">{currentProgram?.name || "Electricidad Industrial"} - Ciclo V</p>
+          <p className="text-xs text-slate-500 font-semibold">{currentProgram?.name || "Electricidad Industrial"} - Ciclo I</p>
         </div>
         <div className="flex gap-2">
           <button 
             onClick={() => window.print()}
             className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-lg text-xs font-bold inline-flex items-center gap-2 shadow-xs cursor-pointer"
           >
-            <Printer className="w-4 h-4 text-slate-500" /> Print
+            <Printer className="w-4 h-4 text-slate-500" /> Imprimir
           </button>
           <button 
             onClick={() => alert("Descargando su horario de clases consolidado del semestre 2026-I en PDF...")}
@@ -103,141 +103,35 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
           </div>
         </div>
       ) : (
-        /* Calendar hourly grid layout (Reference 3 style) - FALLBACK */
-        <div className="bg-white border border-slate-100 rounded-xl overflow-hidden shadow-xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs font-semibold border-collapse text-left min-w-[700px]">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] uppercase">
-                  <th className="p-4 border-r border-slate-100 w-32">Time</th>
-                  <th className="p-4 border-r border-slate-100">Lunes</th>
-                  <th className="p-4 border-r border-slate-100">Martes</th>
-                  <th className="p-4 border-r border-slate-100">Miércoles</th>
-                  <th className="p-4 border-r border-slate-100">Jueves</th>
-                  <th className="p-4">Viernes</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                <tr>
-                  <td className="p-4 bg-slate-50 border-r border-slate-100 font-mono font-bold text-slate-500">08:00 - 09:00</td>
-                  <td className="p-3 border-r border-slate-100" rowSpan={2}>
-                    <div className="bg-sky-50 text-sky-800 border-l-4 border-sky-500 p-2.5 rounded shadow-xs h-full flex flex-col justify-between">
-                      <span className="font-extrabold block text-[11px] leading-tight text-sky-950">TEORÍA DE CIRCUITOS II</span>
-                      <span className="text-[9px] text-sky-600 block mt-2">Aula A-102 • Ing. Vizcarra</span>
-                    </div>
-                  </td>
-                  <td className="p-3 border-r border-slate-100">-</td>
-                  <td className="p-3 border-r border-slate-100" rowSpan={2}>
-                    <div className="bg-sky-50 text-sky-800 border-l-4 border-sky-500 p-2.5 rounded shadow-xs h-full flex flex-col justify-between">
-                      <span className="font-extrabold block text-[11px] leading-tight text-sky-950">TEORÍA DE CIRCUITOS II</span>
-                      <span className="text-[9px] text-sky-600 block mt-2">Aula A-102 • Ing. Vizcarra</span>
-                    </div>
-                  </td>
-                  <td className="p-3 border-r border-slate-100">-</td>
-                  <td className="p-3">-</td>
-                </tr>
+        /* Estado informativo limpio para estudiante de primer ciclo */
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-8 shadow-xs text-center space-y-4 max-w-2xl mx-auto">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto text-2xl">
+            📅
+          </div>
+          <div className="space-y-2 text-center">
+            <h3 className="text-base font-black text-slate-900 font-display uppercase tracking-wide">
+              Horario del Ciclo I en Proceso de Programación
+            </h3>
+            <p className="text-xs text-slate-600 font-medium leading-relaxed max-w-lg mx-auto">
+              La <strong>Secretaría General</strong> y la <strong>Coordinación de Planificación Académica (MPA)</strong> están distribuyendo las aulas y turnos docentes correspondientes a su especialidad. En cuanto la asignación horaria quede consolidada, sus bloques de clase se sincronizarán y mostrarán automáticamente en este panel.
+            </p>
+          </div>
 
-                <tr>
-                  <td className="p-4 bg-slate-50 border-r border-slate-100 font-mono font-bold text-slate-500">09:00 - 10:00</td>
-                  <td className="p-3 border-r border-slate-100" rowSpan={3}>
-                    <div className="bg-emerald-50 text-emerald-800 border-l-4 border-emerald-500 p-2.5 rounded shadow-xs h-full flex flex-col justify-between">
-                      <span className="font-extrabold block text-[11px] leading-tight text-emerald-950">LAB. ELECTRICIDAD</span>
-                      <span className="text-[9px] text-emerald-600 block mt-2">Taller L-1 • Ing. Ramos</span>
-                    </div>
-                  </td>
-                  <td className="p-3 border-r border-slate-100" rowSpan={3}>
-                    <div className="bg-emerald-50 text-emerald-800 border-l-4 border-emerald-500 p-2.5 rounded shadow-xs h-full flex flex-col justify-between">
-                      <span className="font-extrabold block text-[11px] leading-tight text-emerald-950">ELECTRÓNICA POT.</span>
-                      <span className="text-[9px] text-emerald-600 block mt-2">Taller L-3 • Prof. Díaz</span>
-                    </div>
-                  </td>
-                  <td className="p-3">-</td>
-                </tr>
-
-                <tr>
-                  <td className="p-4 bg-slate-50 border-r border-slate-100 font-mono font-bold text-slate-500">10:00 - 11:00</td>
-                  <td className="p-3 border-r border-slate-100">-</td>
-                  <td className="p-3 border-r border-slate-100" rowSpan={2}>
-                    <div className="bg-sky-50 text-sky-800 border-l-4 border-sky-500 p-2.5 rounded shadow-xs h-full flex flex-col justify-between">
-                      <span className="font-extrabold block text-[11px] leading-tight text-sky-950">MATEMÁTICA V</span>
-                      <span className="text-[9px] text-sky-600 block mt-2">Aula A-202 • Prof. Santos</span>
-                    </div>
-                  </td>
-                  <td className="p-3">-</td>
-                </tr>
-
-                <tr>
-                  <td className="p-4 bg-slate-50 border-r border-slate-100 font-mono font-bold text-slate-500">11:00 - 12:00</td>
-                  <td className="p-3 border-r border-slate-100">-</td>
-                  <td className="p-3 border-r border-slate-100" rowSpan={2}>
-                    <div className="bg-orange-50 text-orange-850 border-l-4 border-orange-500 p-2.5 rounded shadow-xs h-full flex flex-col justify-between">
-                      <span className="font-extrabold block text-[11px] leading-tight text-orange-955">ÉTICA PROFESIONAL</span>
-                      <span className="text-[9px] text-orange-600 block mt-2">Virtual Sync • Tutoria</span>
-                    </div>
-                  </td>
-                  <td className="p-3">-</td>
-                </tr>
-
-                <tr className="bg-slate-100 text-slate-500 font-bold overflow-hidden">
-                  <td className="p-4 bg-slate-50 border-r border-slate-100 font-mono font-black text-slate-500">12:00 - 13:00</td>
-                  <td className="p-2 border-r border-slate-100 text-center tracking-widest font-extrabold uppercase bg-slate-100 text-slate-400" colSpan={5}>
-                    RECESO ALMUERZO
-                  </td>
-                </tr>
-
-                <tr>
-                  <td className="p-4 bg-slate-50 border-r border-slate-100 font-mono font-bold text-slate-500">13:00 - 14:00</td>
-                  <td className="p-3 border-r border-slate-100" rowSpan={2}>
-                    <div className="bg-indigo-50 text-indigo-805 border-l-4 border-indigo-500 p-2.5 rounded shadow-xs h-full flex flex-col justify-between">
-                      <span className="font-extrabold block text-[11px] leading-tight text-indigo-950">SISTEMAS DE CONTROL II</span>
-                      <span className="text-[9px] text-indigo-600 block mt-2">Aula A-105 • Prof. Ramos</span>
-                    </div>
-                  </td>
-                  <td className="p-3 border-r border-slate-100">-</td>
-                  <td className="p-3 border-r border-slate-100" rowSpan={2}>
-                    <div className="bg-indigo-50 text-indigo-805 border-l-4 border-indigo-500 p-2.5 rounded shadow-xs h-full flex flex-col justify-between">
-                      <span className="font-extrabold block text-[11px] leading-tight text-indigo-950">SISTEMAS DE CONTROL II</span>
-                      <span className="text-[9px] text-indigo-600 block mt-2">Aula A-105 • Prof. Ramos</span>
-                    </div>
-                  </td>
-                  <td className="p-3 border-r border-slate-100" rowSpan={2}>
-                    <div className="bg-sky-50 text-sky-800 border-l-4 border-sky-500 p-2.5 rounded shadow-xs h-full flex flex-col justify-between">
-                      <span className="font-extrabold block text-[11px] leading-tight text-sky-950">MANTENIMIENTO IND.</span>
-                      <span className="text-[9px] text-sky-600 block mt-2">Aula A-201 • Ing. Ramos</span>
-                    </div>
-                  </td>
-                  <td className="p-3">-</td>
-                </tr>
-
-                <tr>
-                  <td className="p-4 bg-slate-50 border-r border-slate-100 font-mono font-bold text-slate-500">14:00 - 15:00</td>
-                  <td className="p-3 border-r border-slate-100">-</td>
-                  <td className="p-3">-</td>
-                </tr>
-
-                <tr>
-                  <td className="p-4 bg-slate-50 border-r border-slate-100 font-mono font-bold text-slate-500">15:00 - 16:00</td>
-                  <td className="p-3 border-r border-slate-100">-</td>
-                  <td className="p-3 border-r border-slate-100">-</td>
-                  <td className="p-3 border-r border-slate-100">-</td>
-                  <td className="p-3 border-r border-slate-100">-</td>
-                  <td className="p-3" rowSpan={2}>
-                    <div className="bg-emerald-50 text-emerald-800 border-l-4 border-emerald-500 p-2.5 rounded shadow-xs h-full flex flex-col justify-between">
-                      <span className="font-extrabold block text-[11px] leading-tight text-emerald-950">INSTALACIONES II</span>
-                      <span className="text-[9px] text-emerald-600 block mt-2">Taller L-2 • Ing. Salazar</span>
-                    </div>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td className="p-4 bg-slate-50 border-r border-slate-100 font-mono font-bold text-slate-500">16:00 - 17:00</td>
-                  <td className="p-2 border-r border-slate-100">-</td>
-                  <td className="p-2 border-r border-slate-100">-</td>
-                  <td className="p-2 border-r border-slate-100">-</td>
-                  <td className="p-2 border-r border-slate-100">-</td>
-                </tr>
-              </tbody>
-            </table>
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-left text-xs max-w-md mx-auto space-y-2">
+            <div className="flex justify-between border-b pb-1.5">
+              <span className="text-slate-500 font-bold">Programa Académico:</span>
+              <span className="font-extrabold text-[#800521] uppercase">{currentProgram?.name || "Electricidad Industrial"}</span>
+            </div>
+            <div className="flex justify-between border-b pb-1.5">
+              <span className="text-slate-500 font-bold">Nivel Formativo:</span>
+              <span className="font-extrabold text-slate-800">Ciclo I (Primer Semestre)</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500 font-bold">Estado de Matrícula:</span>
+              <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px] uppercase">
+                Matriculado Oficial
+              </span>
+            </div>
           </div>
         </div>
       )}
