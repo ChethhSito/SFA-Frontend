@@ -1,6 +1,6 @@
 import React from "react";
 import { 
-  ChevronDown, Printer, AlertTriangle, FileText, Info, Calendar, CreditCard, Award, User, Clock, MapPin 
+  ChevronDown, Printer, AlertTriangle, FileText, Calendar, CreditCard, Award, User, Clock, MapPin, CheckCircle2 
 } from "lucide-react";
 import { Enrollment } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
@@ -12,6 +12,10 @@ interface AttendanceTabProps {
   expandedAttendanceCourse: string | null;
   setExpandedAttendanceCourse: React.Dispatch<React.SetStateAction<string | null>>;
   setActiveTab: (tab: any) => void;
+  studentCourses?: any[];
+  studentTasks?: any[];
+  mpaPlanningData?: any;
+  studentGroup?: any;
 }
 
 export const AttendanceTab: React.FC<AttendanceTabProps> = ({
@@ -20,388 +24,159 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
   setSelectedAttendanceSemester,
   expandedAttendanceCourse,
   setExpandedAttendanceCourse,
-  setActiveTab
+  setActiveTab,
+  studentCourses = [],
+  studentTasks = [],
+  mpaPlanningData,
+  studentGroup
 }) => {
-  const getAttendanceCourses = () => {
-    const prog = enrollment.programId; // "electronica" | "contabilidad"
-    const sem = selectedAttendanceSemester; // "2026-I" | "2025-II" | "2025-I"
-    
-    if (prog === "electronica") {
-      if (sem === "2026-I") {
-        return [
-          {
-            id: "circuitos-ii",
-            code: "EE-501",
-            name: "Teoría de Circuitos II",
-            group: "EE-51",
-            attendanceRate: 98,
-            statusText: "98% Asistencia",
-            statusDesc: "ESTADO: EXCELENTE",
-            statusType: "excellent",
-            sesRealizadas: "14 / 14",
-            puntualidad: "100%",
-            faltas: "00",
-            creditos: "04",
-            sessions: [
-              { num: 14, date: "24 Mayo 2026", time: "08:00 AM", label: "P", labelName: "Presente", style: "bg-emerald-50 text-emerald-700 border-emerald-100" },
-              { num: 13, date: "17 Mayo 2026", time: "08:02 AM", label: "P", labelName: "Presente", style: "bg-emerald-50 text-emerald-700 border-emerald-100" },
-              { num: 12, date: "10 Mayo 2026", time: "08:00 AM", label: "P", labelName: "Presente", style: "bg-emerald-50 text-emerald-700 border-emerald-100" }
-            ]
-          },
-          {
-            id: "maquinas",
-            code: "EE-502",
-            name: "Lab. Maquinarias de Potencia",
-            group: "EE-51",
-            attendanceRate: 94,
-            statusText: "94% Asistencia",
-            statusDesc: "ESTADO: EXCELENTE",
-            statusType: "excellent",
-            sesRealizadas: "14 / 14",
-            puntualidad: "93%",
-            faltas: "00",
-            creditos: "04",
-            sessions: [
-              { num: 14, date: "25 Mayo 2026", time: "08:12 AM", label: "T", labelName: "Tardanza", style: "bg-amber-50 text-amber-700 border-amber-100" },
-              { num: 13, date: "18 Mayo 2026", time: "08:02 AM", label: "P", labelName: "Presente", style: "bg-emerald-50 text-emerald-700 border-emerald-100" }
-            ]
-          },
-          {
-            id: "control-ii",
-            code: "EE-503",
-            name: "Sistemas de Control Automático II",
-            group: "EE-52",
-            attendanceRate: 75,
-            statusText: "75% Asistencia",
-            statusDesc: "RIESGO DE DESAPROBACIÓN",
-            statusType: "danger",
-            sesRealizadas: "10 / 14",
-            puntualidad: "80%",
-            faltas: "03",
-            creditos: "03",
-            sessions: [
-              { num: 14, date: "26 Mayo 2026", time: "--:--", label: "F", labelName: "Falta", style: "bg-rose-50 text-rose-700 border-rose-100" },
-              { num: 13, date: "19 Mayo 2026", time: "10:05 AM", label: "T", labelName: "Tardanza", style: "bg-amber-50 text-amber-700 border-amber-100" },
-              { num: 12, date: "12 Mayo 2026", time: "--:--", label: "F", labelName: "Falta", style: "bg-rose-50 text-rose-700 border-rose-100" }
-            ]
-          }
-        ];
-      } else if (sem === "2025-II") {
-        return [
-          {
-            id: "maquinas-cc",
-            code: "EE-401",
-            name: "Máquinas de Corriente Continua",
-            group: "EE-41",
-            attendanceRate: 96,
-            statusText: "96% Asistencia",
-            statusDesc: "ESTADO: EXCELENTE",
-            statusType: "excellent",
-            sesRealizadas: "16 / 16",
-            puntualidad: "98%",
-            faltas: "00",
-            creditos: "04",
-            sessions: [
-              { num: 16, date: "12 Nov 2025", time: "08:01 AM", label: "P", labelName: "Presente", style: "bg-emerald-50 text-emerald-700 border-emerald-100" },
-              { num: 15, date: "05 Nov 2025", time: "08:00 AM", label: "P", labelName: "Presente", style: "bg-emerald-50 text-emerald-700 border-emerald-100" }
-            ]
-          },
-          {
-            id: "neumatica",
-            code: "EE-402",
-            name: "Sistemas Neumáticos e Hidráulicos",
-            group: "EE-41",
-            attendanceRate: 71,
-            statusText: "71% Asistencia",
-            statusDesc: "RIESGO DE DESAPROBACIÓN",
-            statusType: "danger",
-            sesRealizadas: "11 / 15",
-            puntualidad: "78%",
-            faltas: "04",
-            creditos: "04",
-            sessions: [
-              { num: 15, date: "14 Nov 2025", time: "--:--", label: "F", labelName: "Falta", style: "bg-rose-50 text-rose-700 border-rose-100" },
-              { num: 14, date: "07 Nov 2025", time: "--:--", label: "F", labelName: "Falta", style: "bg-rose-50 text-rose-700 border-rose-100" },
-              { num: 13, date: "31 Oct 2025", time: "08:14 AM", label: "T", labelName: "Tardanza", style: "bg-amber-50 text-amber-700 border-amber-100" }
-            ]
-          }
-        ];
-      } else {
-        return [
-          {
-            id: "circuitos-ca",
-            code: "EE-301",
-            name: "Circuitos de Corriente Alterna",
-            group: "EE-31",
-            attendanceRate: 95,
-            statusText: "95% Asistencia",
-            statusDesc: "ESTADO: EXCELENTE",
-            statusType: "excellent",
-            sesRealizadas: "16 / 16",
-            puntualidad: "94%",
-            faltas: "01",
-            creditos: "04",
-            sessions: [
-              { num: 16, date: "21 Jun 2025", time: "08:04 AM", label: "T", labelName: "Tardanza", style: "bg-amber-50 text-amber-700 border-amber-100" },
-              { num: 15, date: "14 Jun 2025", time: "08:00 AM", label: "P", labelName: "Presente", style: "bg-emerald-50 text-emerald-700 border-emerald-100" }
-            ]
-          },
-          {
-            id: "analogica",
-            code: "EE-302",
-            name: "Electrónica Analógica Aplicada",
-            group: "EE-31",
-            attendanceRate: 100,
-            statusText: "100% Asistencia",
-            statusDesc: "ESTADO: EXCELENTE",
-            statusType: "excellent",
-            sesRealizadas: "16 / 16",
-            puntualidad: "100%",
-            faltas: "00",
-            creditos: "04",
-            sessions: [
-              { num: 16, date: "19 Jun 2025", time: "08:01 AM", label: "P", labelName: "Presente", style: "bg-emerald-50 text-emerald-700 border-emerald-100" }
-            ]
-          }
-        ];
-      }
-    } else {
-      // Contabilidad
-      if (sem === "2026-I") {
-        return [
-          {
-            id: "c-gubernamental",
-            code: "CO-501",
-            name: "Contabilidad Gubernamental",
-            group: "CO-51",
-            attendanceRate: 96,
-            statusText: "96% Asistencia",
-            statusDesc: "ESTADO: EXCELENTE",
-            statusType: "excellent",
-            sesRealizadas: "14 / 14",
-            puntualidad: "95%",
-            faltas: "00",
-            creditos: "04",
-            sessions: [
-              { num: 14, date: "24 Mayo 2026", time: "08:01 AM", label: "P", labelName: "Presente", style: "bg-emerald-50 text-emerald-700 border-emerald-100" },
-              { num: 13, date: "17 Mayo 2026", time: "08:02 AM", label: "P", labelName: "Presente", style: "bg-emerald-50 text-emerald-700 border-emerald-100" }
-            ]
-          },
-          {
-            id: "c-eeff",
-            code: "CO-502",
-            name: "Formulación de Estados Financieros",
-            group: "CO-51",
-            attendanceRate: 98,
-            statusText: "98% Asistencia",
-            statusDesc: "ESTADO: EXCELENTE",
-            statusType: "excellent",
-            sesRealizadas: "14 / 14",
-            puntualidad: "98%",
-            faltas: "00",
-            creditos: "04",
-            sessions: [
-              { num: 14, date: "25 Mayo 2026", time: "08:00 AM", label: "P", labelName: "Presente", style: "bg-emerald-50 text-emerald-700 border-emerald-100" }
-            ]
-          },
-          {
-            id: "c-auditoria",
-            code: "CO-503",
-            name: "Auditoría Financiera Integral",
-            group: "CO-52",
-            attendanceRate: 78,
-            statusText: "78% Asistencia",
-            statusDesc: "RIESGO DE DESAPROBACIÓN",
-            statusType: "danger",
-            sesRealizadas: "11 / 14",
-            puntualidad: "82%",
-            faltas: "02",
-            creditos: "03",
-            sessions: [
-              { num: 14, date: "26 Mayo 2026", time: "--:--", label: "F", labelName: "Falta", style: "bg-rose-50 text-rose-700 border-rose-100" },
-              { num: 13, date: "19 Mayo 2026", time: "10:11 AM", label: "T", labelName: "Tardanza", style: "bg-amber-50 text-amber-700 border-amber-100" }
-            ]
-          }
-        ];
-      } else if (sem === "2025-II") {
-        return [
-          {
-            id: "c-costos",
-            code: "CO-401",
-            name: "Contabilidad de Costos Financieros",
-            group: "CO-41",
-            attendanceRate: 93,
-            statusText: "93% Asistencia",
-            statusDesc: "ESTADO: EXCELENTE",
-            statusType: "excellent",
-            sesRealizadas: "15 / 15",
-            puntualidad: "94%",
-            faltas: "01",
-            creditos: "04",
-            sessions: [
-              { num: 15, date: "12 Nov 2025", time: "08:10 AM", label: "T", labelName: "Tardanza", style: "bg-amber-50 text-amber-700 border-amber-100" }
-            ]
-          },
-          {
-            id: "c-trib",
-            code: "CO-402",
-            name: "Auditoría Tributaria Corporativa",
-            group: "CO-41",
-            attendanceRate: 74,
-            statusText: "74% Asistencia",
-            statusDesc: "RIESGO DE DESAPROBACIÓN",
-            statusType: "danger",
-            sesRealizadas: "11 / 15",
-            puntualidad: "80%",
-            faltas: "04",
-            creditos: "04",
-            sessions: [
-              { num: 15, date: "14 Nov 2025", time: "--:--", label: "F", labelName: "Falta", style: "bg-rose-50 text-rose-700 border-rose-100" },
-              { num: 14, date: "07 Nov 2025", time: "--:--", label: "F", labelName: "Falta", style: "bg-rose-50 text-rose-700 border-rose-100" }
-            ]
-          }
-        ];
-      } else {
-        return [
-          {
-            id: "c-ind",
-            code: "CO-301",
-            name: "Contabilidad de Costos Industriales",
-            group: "CO-31",
-            attendanceRate: 97,
-            statusText: "97% Asistencia",
-            statusDesc: "ESTADO: EXCELENTE",
-            statusType: "excellent",
-            sesRealizadas: "16 / 16",
-            puntualidad: "98%",
-            faltas: "00",
-            creditos: "04",
-            sessions: [
-              { num: 16, date: "21 Jun 2025", time: "08:00 AM", label: "P", labelName: "Presente", style: "bg-emerald-50 text-emerald-700 border-emerald-100" }
-            ]
-          }
-        ];
-      }
-    }
-  };
+  // Real enrolled courses for Ciclo I
+  const currentAttendanceCourses = studentCourses.map((c) => ({
+    id: c.id,
+    code: c.code,
+    name: c.name,
+    group: studentGroup?.name || "Ciclo I - Sección A",
+    attendanceRate: 100,
+    statusText: "100% Asistencia",
+    statusDesc: "REGULAR • AL DÍA",
+    statusType: "excellent",
+    sesRealizadas: "0 / 16",
+    puntualidad: "100%",
+    faltas: "00",
+    creditos: (c.credits || 4).toString().padStart(2, "0"),
+    schedule: c.schedule || "Horario Regular",
+    classroom: c.classroom || "Aula Principal",
+    teacher: c.teacherName || "Docente Titular"
+  }));
 
-  const currentAttendanceCourses = getAttendanceCourses();
-  const globalAttendanceRate = Math.round(currentAttendanceCourses.reduce((sum, c) => sum + c.attendanceRate, 0) / (currentAttendanceCourses.length || 1));
-  const totalInasistencias = currentAttendanceCourses.reduce((sum, c) => sum + parseInt(c.faltas || "0", 10), 0);
-  const riskyCourses = currentAttendanceCourses.filter(c => c.attendanceRate < 80);
-  const totalAlertsCount = riskyCourses.length;
-  const alertMsg = totalAlertsCount > 0 
-    ? `${riskyCourses[0].name}: ${100 - riskyCourses[0].attendanceRate}% inasistencias`
-    : "Sin alertas críticas este semestre";
+  const totalInasistencias = 0;
+  const totalAlertsCount = 0;
+  const alertMsg = "Sin faltas registradas. El alumno asiste con regularidad.";
 
   return (
     <PageTransition id="attendance" className="space-y-6">
-      {/* Header Section */}
-      <div className="bg-white rounded-xl border border-slate-100 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-sm">
+      {/* High Fidelity Header */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shadow-xs">
         <div>
-          <h2 id="asis-title" className="text-xl font-black text-slate-900 tracking-tight font-display mb-1">Control de Asistencia</h2>
-          <p className="text-xs text-slate-500 font-bold">Monitorea tu puntualidad y estado académico por curso.</p>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              Control Escolar y Asistencia • Semestre 2026-I
+            </span>
+          </div>
+          <h2 id="asis-view-main" className="text-xl font-black text-slate-900 tracking-tight mt-1">
+            Control de Asistencia del Estudiante
+          </h2>
+          <p className="text-xs text-slate-500 font-medium">
+            Seguimiento de puntualidad, asistencias en taller y justificaciones reglamentarias
+          </p>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <select 
-              id="semestre-asis-select"
-              value={selectedAttendanceSemester}
-              onChange={(e) => setSelectedAttendanceSemester(e.target.value)}
-              className="bg-white border border-slate-200 text-slate-800 text-xs font-black py-1.5 pl-3 pr-8 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#800521] shadow-xs"
-            >
-              <option value="2026-I">Periodo 2026-I (Actual)</option>
-              <option value="2025-II">Periodo 2025-II</option>
-              <option value="2025-I">Periodo 2025-I</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-2.5 pointer-events-none" />
+
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <div className="text-left bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl select-none">
+            <span className="text-[9px] text-[#800521] font-extrabold block uppercase tracking-wider">Semestre Lectivo</span>
+            <span className="text-xs font-black text-slate-800">2026-I (Ciclo I)</span>
           </div>
 
-          <button 
-            onClick={() => alert(`Imprimiendo reporte consolidado de inasistencias para el Periodo ${selectedAttendanceSemester}...`)}
-            className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs py-1.5 px-3 rounded-lg flex items-center gap-2 cursor-pointer transition-all"
+          <button
+            onClick={() => window.print()}
+            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-2 select-none cursor-pointer transition-all shadow-xs"
           >
-            <Printer className="w-4 h-4 text-slate-400" /> Imprimir
+            <Printer className="w-3.5 h-3.5 text-slate-500" />
+            <span>Imprimir Récord</span>
           </button>
         </div>
       </div>
 
-      {/* 3 Metric cards row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm text-left relative overflow-hidden flex flex-col justify-between min-h-[110px]">
+      {/* Metric Cards Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs text-left flex flex-col justify-between min-h-[110px]">
           <div>
-            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Asistencia Global</span>
+            <span className="text-slate-400 text-[10px] font-black uppercase tracking-wider block">Asistencia General</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-black text-slate-950">{globalAttendanceRate}%</span>
-              <span className="text-emerald-600 text-xs font-bold flex items-center gap-0.5 bg-emerald-50 px-1.5 py-0.5 rounded">
-                ↑ {globalAttendanceRate >= 90 ? "+3%" : "+1%"}
-              </span>
+              <span className="text-2xl font-black text-emerald-600">100%</span>
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Al Día</span>
             </div>
           </div>
-          <div className="w-full bg-slate-100 h-2 rounded mt-3 relative">
-            <div className="bg-[#800521] h-full rounded" style={{ width: `${globalAttendanceRate}%` }} />
-          </div>
+          <span className="text-[10px] font-bold text-slate-400 block mt-2">Semestre 2026-I en curso</span>
         </div>
 
-        <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm text-left flex flex-col justify-between min-h-[110px]">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs text-left flex flex-col justify-between min-h-[110px]">
           <div>
-            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Inasistencias Totales</span>
+            <span className="text-slate-400 text-[10px] font-black uppercase tracking-wider block">Asignaturas en Formación</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-black text-slate-950">{totalInasistencias.toString().padStart(2, "0")} <span className="text-xs font-bold text-slate-400">Sesiones</span></span>
+              <span className="text-2xl font-black text-slate-900">{currentAttendanceCourses.length.toString().padStart(2, "0")}</span>
+              <span className="text-xs font-bold text-slate-400">Cursos Oficiales</span>
             </div>
           </div>
-          <span className="text-[10px] font-bold text-slate-400 block mt-2">Límite permitido: 12 por curso</span>
+          <span className="text-[10px] font-bold text-slate-400 block mt-2">Ciclo I • Malla Curricular</span>
         </div>
 
-        <div className={`${totalAlertsCount > 0 ? "bg-rose-50 border-rose-100" : "bg-white border-slate-100"} border rounded-xl p-5 shadow-sm text-left flex flex-col justify-between min-h-[110px]`}>
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs text-left flex flex-col justify-between min-h-[110px]">
+          <div>
+            <span className="text-slate-400 text-[10px] font-black uppercase tracking-wider block">Inasistencias Totales</span>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl font-black text-slate-900">00</span>
+              <span className="text-xs font-bold text-slate-400">Sesiones</span>
+            </div>
+          </div>
+          <span className="text-[10px] font-bold text-slate-400 block mt-2">Límite permitido: 30% por curso</span>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs text-left flex flex-col justify-between min-h-[110px]">
           <div>
             <div className="flex justify-between items-center">
-              <span className={`${totalAlertsCount > 0 ? "text-rose-700" : "text-slate-400"} text-[10px] font-black uppercase tracking-wider block`}>Alertas de Riesgo</span>
-              <AlertTriangle className={`w-4 h-4 ${totalAlertsCount > 0 ? "text-rose-600 animate-pulse" : "text-slate-300"} shrink-0`} />
+              <span className="text-slate-400 text-[10px] font-black uppercase tracking-wider block">Alertas de Riesgo</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
             </div>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className={`text-2xl font-black ${totalAlertsCount > 0 ? "text-rose-700 animate-pulse" : "text-slate-900"}`}>{totalAlertsCount.toString().padStart(2, "0")}</span>
+              <span className="text-2xl font-black text-emerald-600">00</span>
             </div>
           </div>
-          <span className={`${totalAlertsCount > 0 ? "text-rose-700" : "text-slate-500"} text-[10px] font-bold leading-tight`}>{alertMsg}</span>
+          <span className="text-emerald-700 text-[10px] font-bold leading-tight">{alertMsg}</span>
         </div>
       </div>
 
-      {/* Main panel: LISTADO DE CURSOS + Right Sidebar options */}
+      {/* Main panel: LISTADO DE CURSOS + Right Sidebar */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         <div id="asis-courses" className="xl:col-span-8 space-y-4">
-          <div className="bg-white rounded-xl border border-slate-100 p-6 shadow-sm space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
             <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-tight">Listado de Cursos</h3>
-              <span className="text-[10px] text-slate-400 font-bold uppercase">{selectedAttendanceSemester === "2026-I" ? "Mayo 2026" : selectedAttendanceSemester === "2025-II" ? "Noviembre 2025" : "Junio 2025"}</span>
+              <h3 className="text-xs font-black text-slate-800 uppercase tracking-tight">
+                Listado de Asignaturas Matriculadas (Ciclo I)
+              </h3>
+              <span className="text-[10px] text-slate-500 font-extrabold uppercase">
+                Periodo 2026-I
+              </span>
             </div>
 
             <div className="space-y-3">
-              {currentAttendanceCourses.map((c, idx) => {
-                const isOpen = expandedAttendanceCourse === c.id || (expandedAttendanceCourse === "redes" && idx === 0);
+              {currentAttendanceCourses.map((c) => {
+                const isOpen = expandedAttendanceCourse === c.id;
                 return (
-                  <div key={c.id} className="border border-slate-100 rounded-lg overflow-hidden transition-all duration-200">
+                  <div key={c.id} className="border border-slate-200 rounded-xl overflow-hidden transition-all duration-200">
                     <div 
                       onClick={() => setExpandedAttendanceCourse(isOpen ? null : c.id)}
-                      className="p-4 bg-white hover:bg-slate-50 flex items-center justify-between cursor-pointer select-none border-b border-transparent transition-all"
+                      className="p-4 bg-white hover:bg-slate-50/70 flex items-center justify-between cursor-pointer select-none transition-all"
                     >
                       <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-slate-400" />
+                        <div className="w-8 h-8 rounded-lg bg-red-50 text-[#800521] flex items-center justify-center font-bold text-xs">
+                          <FileText className="w-4 h-4" />
+                        </div>
                         <div className="text-left">
-                          <span className="text-slate-805 font-bold text-xs block">{c.name}</span>
-                          <span className="text-[10px] text-slate-400 font-bold block">Grupo: {c.group}</span>
+                          <span className="text-slate-900 font-extrabold text-xs block">{c.name}</span>
+                          <span className="text-[10px] text-slate-400 font-bold block font-mono">
+                            {c.code} • Grupo: {c.group} • {c.creditos} Créditos
+                          </span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-4 text-right">
                         <div className="text-right">
-                          <span className={`text-xs font-black block ${c.attendanceRate < 80 ? "text-rose-600 animate-pulse" : "text-slate-800"}`}>
+                          <span className="text-xs font-black block text-emerald-600">
                             {c.statusText}
                           </span>
-                          <span className={`text-[9px] font-bold block uppercase tracking-wider ${
-                            c.statusType === "danger" ? "text-rose-600" : c.statusType === "excellent" ? "text-emerald-600" : "text-slate-400"
-                          }`}>
+                          <span className="text-[9px] font-bold block uppercase tracking-wider text-emerald-700">
                             {c.statusDesc}
                           </span>
                         </div>
@@ -410,60 +185,39 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                     </div>
 
                     {isOpen && (
-                      <div className="bg-slate-50 border-t border-slate-100/70 p-4 space-y-4 text-left">
+                      <div className="bg-slate-50 border-t border-slate-100 p-4 space-y-3 text-left">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
-                          <div className="bg-white p-3 rounded-lg border border-slate-100">
-                            <span className="text-[9px] text-slate-400 uppercase font-black block leading-none">Sesiones Realizadas</span>
+                          <div className="bg-white p-3 rounded-lg border border-slate-200/80">
+                            <span className="text-[9px] text-slate-400 uppercase font-black block leading-none">Sesiones Dictadas</span>
                             <span className="text-xs font-black text-slate-800 block mt-2">{c.sesRealizadas}</span>
                           </div>
-                          <div className="bg-white p-3 rounded-lg border border-slate-100">
+                          <div className="bg-white p-3 rounded-lg border border-slate-200/80">
                             <span className="text-[9px] text-slate-400 uppercase font-black block leading-none">Puntualidad</span>
                             <span className="text-xs font-black text-slate-800 block mt-2">{c.puntualidad}</span>
                           </div>
-                          <div className="bg-white p-3 rounded-lg border border-slate-100">
+                          <div className="bg-white p-3 rounded-lg border border-slate-200/80">
                             <span className="text-[9px] text-slate-400 uppercase font-black block leading-none">Faltas Injustificadas</span>
                             <span className="text-xs font-black text-slate-800 block mt-2">{c.faltas}</span>
                           </div>
-                          <div className="bg-white p-3 rounded-lg border border-slate-100">
+                          <div className="bg-white p-3 rounded-lg border border-slate-200/80">
                             <span className="text-[9px] text-slate-400 uppercase font-black block leading-none">Créditos</span>
-                            <span className="text-xs font-black text-slate-800 block mt-2">{c.creditos}</span>
+                            <span className="text-xs font-black text-slate-800 block mt-2">{c.creditos} Cr.</span>
                           </div>
                         </div>
 
-                        <div className="overflow-x-auto bg-white rounded-lg border border-slate-100">
-                          <table className="w-full text-xs text-left border-collapse font-sans font-semibold">
-                            <thead>
-                              <tr className="bg-slate-50 border-b border-slate-200 text-[9px] uppercase font-bold text-slate-400">
-                                <th className="p-3">Sesión</th>
-                                <th className="p-3">Fecha</th>
-                                <th className="p-3">Hora Marcación</th>
-                                <th className="p-3">Estado</th>
-                                <th className="p-3 text-right">Acción</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 text-slate-600">
-                              {c.sessions.map((ses, sIdx) => (
-                                <tr key={sIdx} className="hover:bg-slate-50/40">
-                                  <td className="p-3 text-slate-800 font-extrabold text-[12.5px]">Sesión {ses.num}</td>
-                                  <td className="p-3 font-semibold">{ses.date}</td>
-                                  <td className="p-3 font-mono font-bold">{ses.time}</td>
-                                  <td className="p-3">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border inline-block select-none ${ses.style}`}>
-                                      {ses.labelName}
-                                    </span>
-                                  </td>
-                                  <td className="p-3 text-right">
-                                    <button 
-                                      onClick={() => alert(`Consulta Detalle: Sesión ${ses.num} del curso ${c.name}. Registrada en intranet oficial.`)}
-                                      className="text-slate-400 hover:text-[#800521] p-1 rounded transition-all"
-                                    >
-                                      <Info className="w-4 h-4 inline-block" />
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                        <div className="bg-white p-3.5 rounded-lg border border-slate-200/80 text-xs space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-slate-500 font-bold">Docente Titular:</span>
+                            <span className="font-extrabold text-slate-800">{c.teacher}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-500 font-bold">Aula Asignada:</span>
+                            <span className="font-extrabold text-slate-800">{c.classroom}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-500 font-bold">Horario:</span>
+                            <span className="font-mono font-bold text-[#800521]">{c.schedule}</span>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -472,101 +226,89 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
               })}
             </div>
           </div>
-
-          <div className="border-t border-slate-100 pt-3 flex flex-wrap gap-4 items-center text-[10px] font-bold text-slate-500">
-            <span className="text-slate-400 uppercase tracking-widest text-[9px] block">Leyenda:</span>
-            <span className="flex items-center gap-1.5"><span className="h-4 w-4 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center font-black text-[9px]">P</span> Presencial (Presente)</span>
-            <span className="flex items-center gap-1.5"><span className="h-4 w-4 rounded-full bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center font-black text-[9px]">T</span> Tardanza</span>
-            <span className="flex items-center gap-1.5"><span className="h-4 w-4 rounded-full bg-sky-50 text-sky-700 border border-sky-200 flex items-center justify-center font-black text-[9px]">J</span> Justificado</span>
-            <span className="flex items-center gap-1.5"><span className="h-4 w-4 rounded-full bg-rose-50 text-rose-700 border border-rose-200 flex items-center justify-center font-black text-[9px]">F</span> Falta</span>
-          </div>
         </div>
 
-        <aside className="xl:col-span-4 space-y-6">
-          <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm space-y-4">
-            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Atajos Académicos</span>
-            
-            <div className="grid grid-cols-2 gap-3">
+        {/* Right Sidebar options */}
+        <aside className="xl:col-span-4 space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block text-left">Atajos Académicos</span>
+
+            <div className="grid grid-cols-2 gap-2.5">
               <button 
                 onClick={() => setActiveTab("schedule")}
-                className="p-3 rounded-lg border border-slate-100 hover:border-slate-200 bg-slate-50 hover:bg-slate-100/70 text-center flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:scale-[1.02]"
+                className="p-3 rounded-xl border border-slate-200 hover:border-[#800521] bg-slate-50 hover:bg-slate-100/70 text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all"
               >
-                <Calendar className="w-5 h-5 text-slate-500" />
-                <span className="text-[10px] font-black text-slate-700">Horario</span>
-              </button>
-              
-              <button 
-                onClick={() => setActiveTab("profile")}
-                className="p-3 rounded-lg border border-slate-100 hover:border-slate-200 bg-slate-50 hover:bg-slate-100/70 text-center flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:scale-[1.02]"
-              >
-                <CreditCard className="w-5 h-5 text-slate-500" />
-                <span className="text-[10px] font-black text-slate-700">Pagos</span>
-              </button>
-              
-              <button 
-                onClick={() => setActiveTab("closure")}
-                className="p-3 rounded-lg border border-slate-100 hover:border-slate-200 bg-slate-50 hover:bg-slate-100/70 text-center flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:scale-[1.02]"
-              >
-                <Award className="w-5 h-5 text-slate-500" />
-                <span className="text-[10px] font-black text-slate-700">Notas</span>
+                <Calendar className="w-5 h-5 text-slate-600" />
+                <span className="text-[10px] font-black text-slate-800">Mi Horario</span>
               </button>
 
               <button 
-                onClick={() => alert("Simulación: Abriendo matrícula online para pre-registro modular...")}
-                className="p-3 rounded-lg border border-slate-100 hover:border-slate-200 bg-slate-50 hover:bg-slate-100/70 text-center flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:scale-[1.02]"
+                onClick={() => setActiveTab("classes")}
+                className="p-3 rounded-xl border border-slate-200 hover:border-[#800521] bg-slate-50 hover:bg-slate-100/70 text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all"
               >
-                <User className="w-5 h-5 text-slate-500" />
-                <span className="text-[10px] font-black text-slate-700">Matrícula</span>
+                <CreditCard className="w-5 h-5 text-slate-600" />
+                <span className="text-[10px] font-black text-slate-800">Mis Cursos</span>
+              </button>
+
+              <button 
+                onClick={() => setActiveTab("notas")}
+                className="p-3 rounded-xl border border-slate-200 hover:border-[#800521] bg-slate-50 hover:bg-slate-100/70 text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all"
+              >
+                <Award className="w-5 h-5 text-slate-600" />
+                <span className="text-[10px] font-black text-slate-800">Notas</span>
+              </button>
+
+              <button 
+                onClick={() => { setActiveTab("profile"); }}
+                className="p-3 rounded-xl border border-slate-200 hover:border-[#800521] bg-slate-50 hover:bg-slate-100/70 text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all"
+              >
+                <User className="w-5 h-5 text-slate-600" />
+                <span className="text-[10px] font-black text-slate-800">Matrícula</span>
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm space-y-4">
-            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block text-left">Próximas Sesiones</span>
+          {/* Próximas Sesiones reales desde studentTasks */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block text-left">Próximas Sesiones Programadas</span>
             
             <div className="space-y-3">
-              <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/45 flex items-start gap-3">
-                <div className="bg-amber-100 border border-amber-200 text-amber-800 font-black text-[10px] py-1.5 px-2 rounded-lg text-center leading-none tracking-tight shrink-0 flex flex-col justify-center items-center min-w-[50px]">
-                  <span className="uppercase text-[8px] font-bold block mb-0.5">OCT</span>
-                  <span className="text-sm block">25</span>
-                </div>
-                <div className="min-w-0 text-left">
-                  <span className="text-[11.5px] font-black text-slate-800 block truncate">Inteligencia de Negocios</span>
-                  <div className="flex items-center gap-1.5 text-[9px] text-slate-400 mt-1 font-semibold">
-                    <Clock className="w-3 h-3 text-slate-400" /> 14:00 - 18:00
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[9px] text-slate-400 mt-0.5 font-semibold">
-                    <MapPin className="w-3 h-3 text-slate-400" /> Lab 402-B
-                  </div>
-                </div>
-              </div>
+              {studentTasks.slice(0, 3).map((task: any, tIdx: number) => {
+                const courseObj = mpaPlanningData?.courses?.find((c: any) => c.id === task.courseId);
+                const classroomObj = mpaPlanningData?.classrooms?.find((c: any) => c.id === task.classroomId);
 
-              <div className="p-3 rounded-lg border border-slate-100 bg-slate-50/45 flex items-start gap-3">
-                <div className="bg-amber-100 border border-amber-200 text-amber-800 font-black text-[10px] py-1.5 px-2 rounded-lg text-center leading-none tracking-tight shrink-0 flex flex-col justify-center items-center min-w-[50px]">
-                  <span className="uppercase text-[8px] font-bold block mb-0.5">OCT</span>
-                  <span className="text-sm block">26</span>
-                </div>
-                <div className="min-w-0 text-left">
-                  <span className="text-[11.5px] font-black text-slate-800 block truncate">Redes y Comunicación II</span>
-                  <div className="flex items-center gap-1.5 text-[9px] text-slate-400 mt-1 font-semibold">
-                    <Clock className="w-3 h-3 text-slate-400" /> 08:00 - 10:00
+                return (
+                  <div key={task.id || tIdx} className="p-3 rounded-xl border border-slate-200/80 bg-slate-50/50 flex items-start gap-3">
+                    <div className="bg-red-50 border border-red-200 text-[#800521] font-black text-[10px] py-1 px-2 rounded-lg text-center leading-none tracking-tight shrink-0 flex flex-col justify-center items-center min-w-[48px]">
+                      <span className="uppercase text-[8px] font-bold block mb-0.5">DÍA</span>
+                      <span className="text-xs block font-bold">{task.dayOfWeek?.substring(0, 3).toUpperCase()}</span>
+                    </div>
+                    <div className="min-w-0 text-left">
+                      <span className="text-xs font-black text-slate-900 block truncate">
+                        {courseObj ? courseObj.name : "Sesión Lectiva"}
+                      </span>
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-1 font-semibold">
+                        <Clock className="w-3 h-3 text-slate-400" /> {task.startTime} - {task.endTime}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-0.5 font-semibold">
+                        <MapPin className="w-3 h-3 text-indigo-600" /> {classroomObj ? classroomObj.name : "Aula Asignada"}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[9px] text-slate-400 mt-0.5 font-semibold">
-                    <MapPin className="w-3 h-3 text-slate-400" /> Aula 201
-                  </div>
-                </div>
-              </div>
+                );
+              })}
             </div>
           </div>
 
-          <div className="bg-[#800521] text-white rounded-xl p-5 shadow-sm border-b-4 border-amber-400 flex flex-col items-center text-center space-y-2">
+          {/* Estado Académico Real */}
+          <div className="bg-[#800521] text-white rounded-2xl p-5 shadow-xs border-b-4 border-amber-400 flex flex-col items-center text-center space-y-2">
             <span className="text-[10px] text-amber-300 font-extrabold uppercase tracking-wider block">Estado Académico</span>
             <div className="pt-2">
-              <span className="text-[10px] text-slate-200 block uppercase font-bold">Promedio General</span>
-              <span className="text-3xl font-black block mt-0.5 font-mono">16.4</span>
+              <span className="text-[10px] text-slate-200 block uppercase font-bold">Condición de Matrícula</span>
+              <span className="text-xl font-black block mt-0.5">MATRICULADO OFICIAL</span>
             </div>
-            <span className="inline-block bg-white/15 text-white border border-white/20 rounded px-2.5 py-1 text-[9px] uppercase font-extrabold mt-2 tracking-wide select-none">
-              Ranking: Tercio Superior
+            <span className="inline-block bg-white/15 text-white border border-white/20 rounded-md px-2.5 py-1 text-[9px] uppercase font-extrabold mt-2 tracking-wide select-none">
+              Ciclo I • Semestre 2026-I
             </span>
           </div>
         </aside>

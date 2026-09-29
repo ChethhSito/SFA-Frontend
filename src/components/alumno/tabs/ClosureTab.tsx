@@ -118,10 +118,16 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   };
 
   const activePlanKey = enrollment.programId === "electronica" ? "20" : "52";
-  const activeSemesterKey = selectedQueryCycle;
-  const activeCoursesList = CORE_PLAN_COURSES[activePlanKey]?.[activeSemesterKey] || CORE_PLAN_COURSES["20"]["V"];
+  const activeSemesterKey = selectedQueryCycle || "I";
+  const rawCoursesList = CORE_PLAN_COURSES[activePlanKey]?.[activeSemesterKey] || CORE_PLAN_COURSES["20"]["I"];
+  
+  // Real academic progress status: For Ciclo I student, cycle I is "Matriculado (En Curso)", cycles II-V are "Pendiente"
+  const activeCoursesList = rawCoursesList.map((c) => ({
+    ...c,
+    status: activeSemesterKey === "I" ? "Matriculado (En Curso)" : "Pendiente de Matrícula"
+  }));
   const cycleCreditsSum = activeCoursesList.reduce((sum, c) => sum + c.credits, 0);
-  const weightedGpa = activePlanKey === "20" ? 16.42 : 15.95;
+  const weightedGpa = 0.0;
 
   return (
     <PageTransition id="closure" className="space-y-6">
@@ -158,28 +164,28 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between text-left min-h-[110px]">
           <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Ciclo Académico Actual</span>
-          <span className="text-lg font-black text-[#800521] mt-1 uppercase tracking-tight">V SEMESTRE</span>
-          <div className="flex items-center gap-1.5 mt-2 bg-red-50 text-[#800521] px-2 py-0.5 rounded text-[9.5px] font-black w-max">
-            <Award className="w-3 h-3 text-[#800521]" /> REGULAR
+          <span className="text-lg font-black text-[#800521] mt-1 uppercase tracking-tight">I SEMESTRE</span>
+          <div className="flex items-center gap-1.5 mt-2 bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded text-[9.5px] font-black w-max">
+            <Award className="w-3 h-3 text-emerald-600" /> REGULAR
           </div>
         </div>
 
         <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between text-left min-h-[110px]">
           <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Créditos de Carrera</span>
-          <span className="text-xl font-black text-[#2D3748] mt-1 font-mono">112.0 / 120.0</span>
-          <span className="text-[10px] text-emerald-600 font-bold block mt-1 font-semibold">Créditos Aprobados: 93.3%</span>
+          <span className="text-xl font-black text-[#2D3748] mt-1 font-mono">{cycleCreditsSum}.0 / 120.0</span>
+          <span className="text-[10px] text-emerald-600 font-bold block mt-1 font-semibold">Créditos Inscritos: 100% Ciclo I</span>
         </div>
 
         <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between text-left min-h-[110px]">
           <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Promedio Ponderado</span>
-          <span className="text-xl font-black text-[#2D3748] mt-1 font-mono">16.42</span>
-          <span className="text-[10px] text-[#800521] font-bold block mt-1 font-semibold">Ubicación: Tercio Superior</span>
+          <span className="text-xl font-black text-[#2D3748] mt-1 font-mono">0.00</span>
+          <span className="text-[10px] text-slate-500 font-bold block mt-1 font-semibold">Semestre 2026-I en curso</span>
         </div>
 
         <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between text-left min-h-[110px]">
           <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Estado de Matrícula</span>
           <span className="text-xs font-black text-slate-800 uppercase tracking-wide mt-1">MATRICULADO</span>
-          <span className="text-[9px] text-slate-400 font-bold block mt-1 font-semibold">Periodo Regular Activo</span>
+          <span className="text-[9px] text-emerald-600 font-bold block mt-1 font-semibold">Periodo 2026-I Activo</span>
         </div>
       </div>
 

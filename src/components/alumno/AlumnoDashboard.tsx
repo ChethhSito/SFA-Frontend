@@ -404,6 +404,10 @@ export default function AlumnoDashboard({
                 enrollment={enrollment}
                 setActiveTab={setActiveTab}
                 setProfileInnerTab={setProfileInnerTab}
+                studentTasks={studentTasks}
+                mpaPlanningData={mpaPlanningData}
+                studentGroup={studentGroup}
+                studentCourses={studentCourses}
               />
             )}
 
@@ -460,6 +464,8 @@ export default function AlumnoDashboard({
                 currentProgram={currentProgram}
                 studentTasks={studentTasks}
                 mpaPlanningData={mpaPlanningData}
+                enrollment={enrollment}
+                studentGroup={studentGroup}
               />
             )}
 
@@ -471,6 +477,10 @@ export default function AlumnoDashboard({
                 expandedAttendanceCourse={expandedAttendanceCourse}
                 setExpandedAttendanceCourse={setExpandedAttendanceCourse}
                 setActiveTab={setActiveTab}
+                studentCourses={studentCourses}
+                studentTasks={studentTasks}
+                mpaPlanningData={mpaPlanningData}
+                studentGroup={studentGroup}
               />
             )}
 
