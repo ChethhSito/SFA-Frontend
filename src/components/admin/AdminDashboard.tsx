@@ -133,11 +133,16 @@ export default function AdminDashboard({
           ) : (
             <>
               <option value="all">TODOS LOS PERIODOS ({applicants.length})</option>
-              {admissionPeriods.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} {p.status === "APERTURADO" ? "(ACTIVO)" : ""}
-                </option>
-              ))}
+              {admissionPeriods.map((p) => {
+                const cleanName = (p.name || "")
+                  .replace(/Acad[\uFFFD\?a-zA-Z]*mico/gi, "Académico")
+                  .replace(/Acadmico/gi, "Académico");
+                return (
+                  <option key={p.id} value={p.id}>
+                    {cleanName} {p.status === "APERTURADO" ? "(ACTIVO)" : ""}
+                  </option>
+                );
+              })}
             </>
           )}
         </select>
@@ -269,19 +274,49 @@ export default function AdminDashboard({
         }
         return app;
       });
+      try {
+        localStorage.setItem(`sfa_payment_status_${approvePaymentDni}`, "Validado");
+      } catch (e) {
+        console.warn(e);
+      }
       onUpdateApplicants(updated);
       alert("Pago de admision del Postulante APROBADO con exito, confirmado y cerrado.");
     } else {
-      const updated = enrollments.map((enr) => {
-        if (enr.studentDni === approvePaymentDni) {
-          return { 
-            ...enr, 
-            paymentStatus: "Validado" as any,
-            academicStatus: "ADMITIDO" as any 
-          };
-        }
-        return enr;
-      });
+      const exists = enrollments.some((enr) => enr.studentDni === approvePaymentDni);
+      let updated: any[];
+      if (exists) {
+        updated = enrollments.map((enr) => {
+          if (enr.studentDni === approvePaymentDni) {
+            return { 
+              ...enr, 
+              paymentStatus: "Validado" as any,
+              academicStatus: (enr.academicStatus === "MATRICULADO" ? "MATRICULADO" : "ADMITIDO") as any 
+            };
+          }
+          return enr;
+        });
+      } else {
+        const app = applicants.find((a) => a.dni === approvePaymentDni);
+        const newEnrollmentRow = {
+          studentDni: approvePaymentDni,
+          programId: app?.programId || "electronica",
+          academicStatus: "ADMITIDO" as const,
+          docs: {
+            dniFile: { status: "No Enviado" as const },
+            certificadoFile: { status: "No Enviado" as const },
+            partidaFile: { status: "No Enviado" as const },
+            fotoFile: { status: "No Enviado" as const }
+          },
+          paymentStatus: "Validado" as const,
+          paymentOperation: "VENTANILLA-CAJA"
+        };
+        updated = [...enrollments, newEnrollmentRow];
+      }
+      try {
+        localStorage.setItem("sfa_enrollments", JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
       onUpdateEnrollments(updated);
       alert("¡Pago de Matrícula APROBADO con éxito! El estudiante se encuentra ahora con pago validado y PENDIENTE DE MATRÍCULA.");
     }
@@ -497,6 +532,12 @@ export default function AdminDashboard({
           (!updatedDocs.partidaFile || updatedDocs.partidaFile.status === "Validado" || updatedDocs.partidaFile.status === "No Enviado") && 
           updatedDocs.fotoFile.status === "Validado";
 
+        try {
+          localStorage.setItem(`sfa_doc_status_${applicantDni}`, JSON.stringify(updatedDocs));
+        } catch (e) {
+          console.warn(e);
+        }
+
         return {
           ...app,
           folderStatus: allDocsValidated ? ("Approved" as const) : ("Pending" as const),
@@ -521,7 +562,7 @@ export default function AdminDashboard({
 
     const updated = applicants.map((app) => {
       if (app.dni === applicantDni) {
-        const isAdmitted = status === "Approved" || status === "Enrolled";
+        const isAdmitted = status === "Enrolled" || ((app.admitted === "ADMITIDO" || app.admitted === true) && !!app.examClassroom);
         
         const updatedDocs = {
           dniFile: app.docs?.dniFile || { status: "No Enviado" as const },
@@ -534,20 +575,24 @@ export default function AdminDashboard({
           const docKeys: Array<"dniFile" | "certificadoFile" | "partidaFile" | "fotoFile"> = ["dniFile", "certificadoFile", "partidaFile", "fotoFile"];
           docKeys.forEach((key) => {
             const currentDoc = updatedDocs[key] || { status: "No Enviado" };
-            if (currentDoc.status !== "No Enviado" && currentDoc.fileName) {
-              updatedDocs[key] = {
-                ...currentDoc,
-                status: "Validado" as const
-              };
-            }
+            updatedDocs[key] = {
+              ...currentDoc,
+              status: "Validado" as const
+            };
           });
+        }
+
+        try {
+          localStorage.setItem(`sfa_doc_status_${applicantDni}`, JSON.stringify(updatedDocs));
+        } catch (e) {
+          console.warn(e);
         }
 
         return {
           ...app,
           folderStatus: status,
           folderObservations: status === "Observed" ? obsText : app.folderObservations,
-          admitted: (isAdmitted ? "ADMITIDO" : ((app.admitted === "ADMITIDO" || app.admitted === true) ? "ADMITIDO" : (app.admitted === "NO ADMITIDO" ? "NO ADMITIDO" : "PENDIENTE"))) as "PENDIENTE" | "ADMITIDO" | "NO ADMITIDO" | boolean,
+          admitted: (isAdmitted ? "ADMITIDO" : (app.admitted === "NO ADMITIDO" ? "NO ADMITIDO" : "PENDIENTE")) as "PENDIENTE" | "ADMITIDO" | "NO ADMITIDO",
           docs: updatedDocs,
           folderApprovedAt: (status === "Approved" || status === "Enrolled") ? new Date().toISOString().split("T")[0] : app.folderApprovedAt
         };
@@ -786,13 +831,13 @@ export default function AdminDashboard({
                 ]
               },
               {
-                label: "Postulantes (Examen)",
+                label: "Postulantes",
                 icon: <Users className="w-4 h-4" />,
                 route: "postulantes",
                 active: activeTab === "postulantes"
               },
               {
-                label: "Ingresantes (Matrícula)",
+                label: "Ingresantes y Matrícula",
                 icon: <GraduationCap className="w-4 h-4" />,
                 route: "matricula",
                 active: activeTab === "matricula"
@@ -918,6 +963,8 @@ export default function AdminDashboard({
             handleConfirmMatricula={handleConfirmMatricula}
             handleResetMatricula={handleResetMatricula}
             renderPeriodSelector={renderPeriodSelector}
+            onNavigateToCajaMatriculas={() => setActiveTab("caja_regular")}
+            onUpdateEnrollments={onUpdateEnrollments}
           />
         )}
 

@@ -64,21 +64,50 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
 
   // Local fallback resolve
   const currentDni = session || "";
-  let applicantToRender = liveApplicant;
-  if (!liveApplicant) {
-    // Use local list as safe fallback
-    applicantToRender = applicants.find((a) => 
-      a.id === currentDni || 
-      a.uid === currentDni || 
-      a.applicantCode === currentDni || 
-      a.dni === currentDni ||
-      (a as any)._id === currentDni
-    ) || null;
+  let localApp = applicants.find((a) => 
+    a.id === currentDni || 
+    a.uid === currentDni || 
+    a.applicantCode === currentDni || 
+    a.dni === currentDni ||
+    (a as any)._id === currentDni
+  );
+
+  if (!localApp) {
+    try {
+      const savedApps = localStorage.getItem("sfa_applicants");
+      if (savedApps) {
+        const parsed = JSON.parse(savedApps);
+        localApp = parsed.find((a: any) => a.dni === currentDni || a.applicantCode === currentDni);
+      }
+    } catch (e) {}
   }
 
-  // Merge persisted doc statuses from localStorage back into the resolved applicant.
-  // PRIORITY: Live data (Firestore/API) ALWAYS wins — localStorage only fills "No Enviado" gaps.
-  // This prevents localStorage "Pendiente" from overwriting admin-validated "Validado".
+  let applicantToRender: Applicant | null = liveApplicant ? { ...localApp, ...liveApplicant } as Applicant : (localApp || null);
+
+  // Merge admin-validated values so stale API responses don't wipe out approvals
+  if (localApp && applicantToRender) {
+    if (localApp.paymentStatus === "Validado") {
+      applicantToRender.paymentStatus = "Validado";
+    }
+    if (localApp.folderStatus === "Approved" || localApp.folderStatus === "Enrolled") {
+      applicantToRender.folderStatus = localApp.folderStatus;
+    }
+    if (localApp.admitted) {
+      applicantToRender.admitted = true;
+    }
+    if (localApp.docs) {
+      const mergedDocs = { ...(applicantToRender.docs || {}) };
+      for (const [key, val] of Object.entries(localApp.docs)) {
+        const d = val as any;
+        if (d?.status === "Validado" || d?.status === "Observado") {
+          mergedDocs[key as keyof typeof mergedDocs] = { ...(mergedDocs[key as keyof typeof mergedDocs] || {}), ...d };
+        }
+      }
+      applicantToRender.docs = mergedDocs as any;
+    }
+  }
+
+  // Merge dedicated sfa_doc_status_${currentDni}
   if (applicantToRender && currentDni) {
     try {
       const savedDocs = localStorage.getItem(`sfa_doc_status_${currentDni}`);
@@ -88,22 +117,17 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
         const statusRank: Record<string, number> = {
           "No Enviado": 0, "Pendiente": 1, "Observado": 2, "Validado": 3
         };
-        const mergedDocs: any = {};
-        const allKeys = new Set([...Object.keys(parsed), ...Object.keys(existingDocs)]);
-        for (const key of allKeys) {
-          const persisted = parsed[key];
+        const mergedDocs: any = { ...existingDocs };
+        for (const [key, persisted] of Object.entries(parsed)) {
           const live = existingDocs[key];
           const liveRank = statusRank[live?.status || "No Enviado"] ?? 0;
-          const persistedRank = statusRank[persisted?.status || "No Enviado"] ?? 0;
-          // Use whichever has the higher status rank (live takes priority on tie)
-          if (liveRank >= persistedRank) {
-            mergedDocs[key] = live || { status: "No Enviado" };
-          } else {
-            // localStorage has a better status than live — use it (e.g. live shows No Enviado but localStorage has Pendiente)
-            mergedDocs[key] = { ...live, ...persisted };
+          const persistedRank = statusRank[(persisted as any)?.status || "No Enviado"] ?? 0;
+          // Priority to whichever has higher validation rank (Validado > Observado > Pendiente)
+          if (persistedRank > liveRank) {
+            mergedDocs[key] = { ...live, ...(persisted as any) };
           }
         }
-        applicantToRender = { ...applicantToRender, docs: mergedDocs } as Applicant;
+        applicantToRender = { ...applicantToRender, docs: mergedDocs as any } as Applicant;
       }
     } catch (e) {
       console.warn("Could not read doc status from localStorage:", e);

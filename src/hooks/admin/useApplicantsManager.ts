@@ -50,12 +50,52 @@ export function useApplicantsManager(
             apiApps.forEach((a) => {
               const index = merged.findIndex((m) => m.dni === a.dni || m.applicantCode === a.applicantCode);
               if (index >= 0) {
-                merged[index] = { ...merged[index], ...a };
+                const localItem = merged[index];
+                let localDocStatus: any = null;
+                try {
+                  const raw = localStorage.getItem(`sfa_doc_status_${localItem.dni}`);
+                  if (raw) localDocStatus = JSON.parse(raw);
+                } catch (e) {}
+
+                let localPayStatus: string | null = null;
+                try {
+                  localPayStatus = localStorage.getItem(`sfa_payment_status_${localItem.dni}`);
+                } catch (e) {}
+
+                const paymentStatus = (localItem.paymentStatus === "Validado" || localPayStatus === "Validado" || a.paymentStatus === "Validado") 
+                  ? "Validado" 
+                  : (a.paymentStatus || localItem.paymentStatus || "Pendiente");
+                const folderStatus = (localItem.folderStatus === "Approved" || a.folderStatus === "Approved" || localItem.folderStatus === "Enrolled" || a.folderStatus === "Enrolled")
+                  ? (localItem.folderStatus === "Enrolled" || a.folderStatus === "Enrolled" ? "Enrolled" : "Approved")
+                  : (a.folderStatus || localItem.folderStatus || "Pending");
+                const admitted = localItem.admitted === true || localItem.admitted === "ADMITIDO" || a.admitted === true || a.admitted === "ADMITIDO";
+                
+                const localDocs = { ...(localItem.docs || {}), ...(localDocStatus || {}) };
+                const apiDocs = a.docs || {};
+                const mergedDocs = { ...apiDocs, ...localDocs };
+                for (const key of ["dniFile", "certificadoFile", "partidaFile", "fotoFile"]) {
+                  if (localDocs[key]?.status === "Validado" || apiDocs[key]?.status === "Validado") {
+                    mergedDocs[key] = {
+                      ...(apiDocs[key] || {}),
+                      ...(localDocs[key] || {}),
+                      status: "Validado"
+                    };
+                  }
+                }
+
+                merged[index] = { 
+                  ...a, 
+                  ...localItem, 
+                  paymentStatus, 
+                  folderStatus, 
+                  admitted: admitted ? "ADMITIDO" : (a.admitted || localItem.admitted),
+                  docs: mergedDocs 
+                };
               } else {
                 merged.push(a);
               }
             });
-            localStorage.setItem("sfa_applicants", JSON.stringify(merged));
+            localStorage.setItem("sfa_applicants", JSON.stringify(stripFileDataUrls(merged)));
             return merged;
           });
         }
@@ -83,7 +123,63 @@ export function useApplicantsManager(
                 fireApps.forEach((fa) => {
                   const idx = merged.findIndex((m) => m.dni === fa.dni || m.applicantCode === fa.applicantCode);
                   if (idx >= 0) {
-                    merged[idx] = { ...merged[idx], ...fa };
+                    const localItem = merged[idx];
+                    let localDocStatus: any = null;
+                    try {
+                      const raw = localStorage.getItem(`sfa_doc_status_${localItem.dni}`);
+                      if (raw) localDocStatus = JSON.parse(raw);
+                    } catch (e) {}
+
+                    let localPayStatus: string | null = null;
+                    try {
+                      localPayStatus = localStorage.getItem(`sfa_payment_status_${localItem.dni}`);
+                    } catch (e) {}
+
+                    const isPayValid = 
+                      localItem.paymentStatus === "Validado" || 
+                      localPayStatus === "Validado" || 
+                      fa.paymentStatus === "Validado";
+
+                    const paymentStatus = isPayValid ? "Validado" : (fa.paymentStatus || localItem.paymentStatus || "Pendiente");
+
+                    const isFolderApproved = 
+                      localItem.folderStatus === "Approved" || 
+                      localItem.folderStatus === "Enrolled" || 
+                      fa.folderStatus === "Approved" || 
+                      fa.folderStatus === "Enrolled";
+
+                    const folderStatus = isFolderApproved 
+                      ? (localItem.folderStatus === "Enrolled" || fa.folderStatus === "Enrolled" ? "Enrolled" : "Approved")
+                      : (fa.folderStatus || localItem.folderStatus || "Pending");
+
+                    const admitted = 
+                      localItem.admitted === "ADMITIDO" || 
+                      localItem.admitted === true || 
+                      fa.admitted === "ADMITIDO" || 
+                      fa.admitted === true;
+
+                    const localDocs = { ...(localItem.docs || {}), ...(localDocStatus || {}) };
+                    const faDocs = fa.docs || {};
+                    const mergedDocs = { ...faDocs, ...localDocs };
+
+                    for (const key of ["dniFile", "certificadoFile", "partidaFile", "fotoFile"]) {
+                      if (localDocs[key]?.status === "Validado" || faDocs[key]?.status === "Validado") {
+                        mergedDocs[key] = {
+                          ...(faDocs[key] || {}),
+                          ...(localDocs[key] || {}),
+                          status: "Validado"
+                        };
+                      }
+                    }
+
+                    merged[idx] = { 
+                      ...fa, 
+                      ...localItem, 
+                      paymentStatus, 
+                      folderStatus, 
+                      admitted: admitted ? "ADMITIDO" : (fa.admitted || localItem.admitted),
+                      docs: mergedDocs 
+                    };
                   } else {
                     merged.push(fa);
                   }
@@ -121,11 +217,22 @@ export function useApplicantsManager(
       onAdmissionTrigger(updatedList);
     }
 
-    if (isFirebaseEnabled) {
-      for (const app of updatedList) {
+    // Persist to REST API backend and Firestore concurrently
+    for (const app of updatedList) {
+      const cleanDoc = stripFileDataUrls([app])[0];
+      try {
+        apiUpdateApplicant(app.dni, cleanDoc);
+      } catch (err) {
+        console.warn(`[Backend API] Could not persist applicant ${app.dni}:`, err);
+      }
+
+      if (isFirebaseEnabled) {
         try {
-          const cleanDoc = stripFileDataUrls([app])[0];
-          await saveDocumentGeneric("applicants", cleanDoc, app.dni);
+          const targetId = app.id || app.dni;
+          saveDocumentGeneric("applicants", targetId, cleanDoc);
+          if (app.dni && app.dni !== targetId) {
+            saveDocumentGeneric("applicants", app.dni, cleanDoc);
+          }
         } catch (err) {
           console.error("Error saving updated applicant to Firestore:", err);
         }

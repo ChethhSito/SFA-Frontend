@@ -63,10 +63,16 @@ export async function createApplicant(applicant: Partial<Applicant>): Promise<Ap
 }
 
 export async function updateApplicant(dni: string, data: Partial<Applicant>): Promise<Applicant | null> {
-  const item = await fetchJson<any>(`/applicants/${dni}`, {
+  let item = await fetchJson<any>(`/applicants/${dni}`, {
     method: "PUT",
     body: JSON.stringify(data)
   });
+  if (!item) {
+    item = await fetchJson<any>(`/applicants/${dni}`, {
+      method: "PATCH",
+      body: JSON.stringify(data)
+    });
+  }
   if (!item) return null;
   return {
     ...item,

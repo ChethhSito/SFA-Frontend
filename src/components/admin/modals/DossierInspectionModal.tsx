@@ -41,12 +41,40 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
   const app = applicants.find((a) => a.dni === selectedDossierAppDni);
   if (!app) return null;
 
-  const appDocs = app.docs || {
+  let localDocStatus: any = null;
+  try {
+    const raw = localStorage.getItem(`sfa_doc_status_${app.dni}`);
+    if (raw) localDocStatus = JSON.parse(raw);
+  } catch (e) {}
+
+  let localPayStatus: string | null = null;
+  try {
+    localPayStatus = localStorage.getItem(`sfa_payment_status_${app.dni}`);
+  } catch (e) {}
+
+  const effectivePaymentStatus = (localPayStatus === "Validado" || app.paymentStatus === "Validado")
+    ? "Validado"
+    : (app.paymentStatus || "Pendiente");
+
+  const appDocs = {
     dniFile: { status: "No Enviado" as const },
     certificadoFile: { status: "No Enviado" as const },
     partidaFile: { status: "No Enviado" as const },
     fotoFile: { status: "No Enviado" as const },
+    ...(app.docs || {}),
+    ...(localDocStatus || {})
   };
+
+  const isAllValid = 
+    appDocs.dniFile?.status === "Validado" && 
+    appDocs.certificadoFile?.status === "Validado" && 
+    appDocs.fotoFile?.status === "Validado";
+
+  const effectiveFolderStatus = (app.folderStatus === "Enrolled")
+    ? "Enrolled"
+    : (app.folderStatus === "Approved" || isAllValid)
+    ? "Approved"
+    : (app.folderStatus || "Pending");
 
   const docsConfig = [
     { label: "Copia de DNI", key: "dniFile" as const },
@@ -265,19 +293,19 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                     Estado del Pago (Tasa S/. 120):
                   </span>
                   <div className="pt-0.5">
-                    {app.paymentStatus === "Validado" ? (
+                    {effectivePaymentStatus === "Validado" ? (
                       <span className="text-xs font-black text-emerald-800 bg-emerald-100/80 border border-emerald-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Pago Validado
                       </span>
-                    ) : app.paymentStatus === "Observado" ? (
+                    ) : effectivePaymentStatus === "Observado" ? (
                       <span className="text-xs font-black text-rose-800 bg-rose-100/80 border border-rose-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
                         <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Pago Observado
                       </span>
-                    ) : app.paymentStatus === "Rechazado" ? (
+                    ) : effectivePaymentStatus === "Rechazado" ? (
                       <span className="text-xs font-black text-rose-800 bg-rose-100/80 border border-rose-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
                         <XCircle className="w-3.5 h-3.5 text-rose-600" /> Pago Rechazado
                       </span>
-                    ) : app.paymentStatus === "Pendiente" ? (
+                    ) : effectivePaymentStatus === "Pendiente" ? (
                       <span className="text-xs font-black text-amber-800 bg-amber-100/80 border border-amber-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-amber-600" /> En Evaluación
                       </span>
@@ -311,15 +339,15 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                     Estado de Carpeta Registrado:
                   </span>
                   <div className="pt-0.5">
-                    {app.folderStatus === "Enrolled" ? (
+                    {effectiveFolderStatus === "Enrolled" ? (
                       <span className="text-xs font-black text-emerald-800 bg-emerald-100/80 border border-emerald-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Aprobada (Matriculado)
                       </span>
-                    ) : app.folderStatus === "Approved" ? (
+                    ) : effectiveFolderStatus === "Approved" ? (
                       <span className="text-xs font-black text-emerald-800 bg-emerald-100/80 border border-emerald-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Aprobada
                       </span>
-                    ) : app.folderStatus === "Observed" ? (
+                    ) : effectiveFolderStatus === "Observed" ? (
                       <span className="text-xs font-black text-rose-800 bg-rose-100/80 border border-rose-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
                         <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Observada
                       </span>

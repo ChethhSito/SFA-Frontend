@@ -20,7 +20,14 @@ export const VistasTab: React.FC<VistasTabProps> = ({
   onUpdateApplicants,
   renderPeriodSelector,
 }) => {
-  const activeApps = applicants.filter((app) => app.periodId === selectedPeriodId);
+  const activeApps = applicants.filter((app) => 
+    !selectedPeriodId || 
+    selectedPeriodId === "all" || 
+    app.periodId === selectedPeriodId ||
+    !app.periodId ||
+    app.periodId === "1" ||
+    app.periodId === "p1"
+  );
   const totalAppsCount = activeApps.length;
   const completedDossiers = activeApps.filter((app) => {
     const isDni = app.docs?.dniFile?.status === "Validado";
@@ -33,7 +40,16 @@ export const VistasTab: React.FC<VistasTabProps> = ({
 
   const admittedList = activeApps.filter((a) => a.admitted === "ADMITIDO" || a.admitted === true);
   const enrolledList = enrollments.filter((enr) => {
-    const isApp = applicants.find((a) => a.dni === enr.studentDni && a.periodId === selectedPeriodId);
+    const isApp = applicants.find((a) => {
+      const matchesPeriod =
+        !selectedPeriodId ||
+        selectedPeriodId === "all" ||
+        a.periodId === selectedPeriodId ||
+        !a.periodId ||
+        a.periodId === "1" ||
+        a.periodId === "p1";
+      return a.dni === enr.studentDni && matchesPeriod;
+    });
     return enr.academicStatus === "MATRICULADO" && isApp;
   });
 

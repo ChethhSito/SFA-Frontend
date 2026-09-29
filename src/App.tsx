@@ -317,8 +317,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Floating Virtual Assistant SFABot */}
-      <SFABot />
+      {/* Floating Virtual Assistant SFABot - Solo activo en el landing */}
+      {currentUser.role === "portal" && <SFABot />}
     </div>
   );
 }

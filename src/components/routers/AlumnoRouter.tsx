@@ -53,7 +53,18 @@ export default function AlumnoRouter({
   }
 
   const currentDni = session || "";
-  const personal = studentsData[currentDni];
+  let personal = studentsData[currentDni];
+  if (!personal && currentDni) {
+    try {
+      const saved = localStorage.getItem("sfa_students");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        personal = parsed[currentDni];
+      }
+    } catch (e) {
+      console.error("Error retrieving student fallback from localStorage:", e);
+    }
+  }
 
   if (!session || !personal) {
     return (
@@ -93,7 +104,18 @@ export default function AlumnoRouter({
     },
     paymentStatus: "No Pagado" as const
   };
-  const historyList = cycleStatuses[currentDni] || [];
+  let historyList = cycleStatuses[currentDni] || [];
+  if (historyList.length === 0 && currentDni) {
+    try {
+      const savedCycles = localStorage.getItem("sfa_cycle_statuses") || localStorage.getItem("sfa_cycles");
+      if (savedCycles) {
+        const parsedCycles = JSON.parse(savedCycles);
+        if (parsedCycles[currentDni]) {
+          historyList = parsedCycles[currentDni];
+        }
+      }
+    } catch (e) {}
+  }
   const gradDoc = graduations.find((g) => g.studentDni === currentDni);
 
   return (
