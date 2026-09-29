@@ -5,6 +5,7 @@ import {
   createCourse as apiCreateCourse,
   updateCourse as apiUpdateCourse
 } from "../../services/api";
+import { MPA_KEYS, fetchMpaCollections } from "../../services/mpaApi";
 
 export function useAcademicPlanning() {
   const [courses, setCourses] = useState<Course[]>(() => {
@@ -35,6 +36,22 @@ export function useAcademicPlanning() {
         setError("Error al cargar los cursos de planificación académica.");
       })
       .finally(() => setLoading(false));
+
+    // Synchronize comprehensive MPA academic planning collections (groups, tasks, schedules, etc.)
+    fetchMpaCollections()
+      .then((collections) => {
+        if (collections) {
+          MPA_KEYS.forEach((key) => {
+            if (collections[key]) {
+              localStorage.setItem(`mpa_db_${key}`, JSON.stringify(collections[key]));
+            }
+          });
+          window.dispatchEvent(new Event("mpa:collections-synced"));
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not sync MPA collections in useAcademicPlanning:", err);
+      });
   }, []);
 
   const handleUpdateCourses = (updatedList: Course[]) => {

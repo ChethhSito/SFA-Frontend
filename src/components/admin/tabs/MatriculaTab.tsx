@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { 
   GraduationCap, 
   CheckCircle2, 
@@ -75,6 +75,18 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
   const [statusFilter, setStatusFilter] = useState<"all" | "matriculados" | "aptos" | "pendientes">("all");
   const [actionSuccessMsg, setActionSuccessMsg] = useState("");
 
+  const [mpaSyncVersion, setMpaSyncVersion] = useState(0);
+
+  useEffect(() => {
+    const handleSync = () => setMpaSyncVersion((v) => v + 1);
+    window.addEventListener("mpa:collections-synced", handleSync);
+    window.addEventListener("mpa:catalog-changed", handleSync);
+    return () => {
+      window.removeEventListener("mpa:collections-synced", handleSync);
+      window.removeEventListener("mpa:catalog-changed", handleSync);
+    };
+  }, []);
+
   // 1. Get dynamic careers from MPA
   const activeMpaCareers = useMemo(() => {
     try {
@@ -89,7 +101,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
       console.error("Error loading mpa_db_careers", e);
     }
     return [];
-  }, []);
+  }, [mpaSyncVersion]);
 
   // 2. Get active curriculum version for this active career
   const mpaCurriculumVersions = useMemo(() => {
@@ -100,7 +112,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
       console.error("Error loading mpa_db_curriculum_versions", e);
     }
     return [];
-  }, []);
+  }, [mpaSyncVersion]);
 
   // 3. Get curriculum mapping (malla mapping)
   const mpaCurriculumMapping = useMemo(() => {
@@ -111,7 +123,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
       console.error("Error loading mpa_db_curriculum", e);
     }
     return [];
-  }, []);
+  }, [mpaSyncVersion]);
 
   // 4. Get courses list
   const mpaCoursesList = useMemo(() => {
@@ -122,7 +134,29 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
       console.error("Error loading mpa_db_courses", e);
     }
     return [];
-  }, []);
+  }, [mpaSyncVersion]);
+
+  // 5. Get groups list
+  const mpaGroupsList = useMemo(() => {
+    try {
+      const saved = localStorage.getItem("mpa_db_groups");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Error loading mpa_db_groups", e);
+    }
+    return [];
+  }, [mpaSyncVersion]);
+
+  // 6. Get tasks list
+  const mpaTasksList = useMemo(() => {
+    try {
+      const saved = localStorage.getItem("mpa_db_tasks");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Error loading mpa_db_tasks", e);
+    }
+    return [];
+  }, [mpaSyncVersion]);
 
   // Filter admitted candidates by period (flexible matching like SecretariaTab)
   const admittedCandidates = useMemo(() => {
@@ -205,6 +239,22 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
   const defaultCareerId = activeMpaCareers.length > 0 ? activeMpaCareers[0].id : "electronica";
   const activeCareer =
     matriculaCareers[targetDni || ""] || existingEnrollment?.programId || targetCandidate?.programId || defaultCareerId;
+
+  const shiftMapped = activeShift === "Mañana" ? "sh_m" : activeShift === "Tarde" ? "sh_t" : "sh_n";
+  const defaultMatchingGroup = useMemo(() => {
+    return (
+      mpaGroupsList.find((g: any) => g.careerId === activeCareer && g.shiftId === shiftMapped && g.cycle === 1) ||
+      mpaGroupsList.find((g: any) => g.careerId === activeCareer && g.cycle === 1) ||
+      mpaGroupsList[0] ||
+      null
+    );
+  }, [mpaGroupsList, activeCareer, shiftMapped]);
+
+  const currentSelectedGroupId =
+    matriculaGroups[targetDni || ""] ||
+    existingEnrollment?.groupId ||
+    defaultMatchingGroup?.id ||
+    "";
 
   // Find active curriculum version for active career
   const activeVersion = mpaCurriculumVersions.find(
@@ -856,7 +906,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
                       </div>
 
                       <select
-                        value={matriculaGroups[targetDni!] || existingEnrollment?.groupId || ""}
+                        value={currentSelectedGroupId}
                         onChange={(e) => {
                           setMatriculaGroups({
                             ...matriculaGroups,
@@ -867,35 +917,24 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
                       >
                         <option value="">-- SELECCIONE GRUPO ACADÉMICO DEL CICLO I --</option>
                         {(() => {
-                          let mpaGroups: any[] = [];
-                          try {
-                            const rawGroups = localStorage.getItem("mpa_db_groups");
-                            if (rawGroups) mpaGroups = JSON.parse(rawGroups);
-                          } catch (e) {
-                            console.error(e);
-                          }
+                          const careerGroups = mpaGroupsList.filter(
+                            (grp: any) => grp.careerId === activeCareer && grp.cycle === 1
+                          );
+                          const groupsToShow = careerGroups.length > 0 ? careerGroups : mpaGroupsList;
 
-                          if (mpaGroups.length === 0) {
+                          if (groupsToShow.length === 0) {
                             return (
-                              <>
-                                <option value="GRP-ELEC-1A">Sección 1-A (Mañana - Ciclo I)</option>
-                                <option value="GRP-ELEC-1B">Sección 1-B (Noche - Ciclo I)</option>
-                              </>
+                              <option value="">Cargando programación y grupos del MPA...</option>
                             );
                           }
 
-                          return mpaGroups.map((grp: any) => {
-                            let mpaTasks: any[] = [];
-                            try {
-                              const rawTasks = localStorage.getItem("mpa_db_tasks");
-                              if (rawTasks) mpaTasks = JSON.parse(rawTasks);
-                            } catch (e) {
-                              console.error(e);
-                            }
-                            const isScheduled = mpaTasks.some((tk: any) => tk.groupId === grp.id);
+                          return groupsToShow.map((grp: any) => {
+                            const scheduledTasks = mpaTasksList.filter((tk: any) => tk.groupId === grp.id);
+                            const isScheduled = scheduledTasks.length > 0;
+                            const isShiftMatch = grp.shiftId === shiftMapped;
                             return (
                               <option key={grp.id} value={grp.id}>
-                                {grp.name} (Ciclo {grp.cycle}) {isScheduled ? "• Horario Planificado" : "• Sin Programación"}
+                                {grp.name} {isShiftMatch ? `★ (Recomendado Turno ${activeShift})` : ""} • {isScheduled ? `${scheduledTasks.length} sesiones planificadas` : "Sin Programación"}
                               </option>
                             );
                           });
@@ -975,7 +1014,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
                           targetDni!,
                           activeShift,
                           activeCareer,
-                          matriculaGroups[targetDni!] || existingEnrollment?.groupId || ""
+                          currentSelectedGroupId
                         )
                       }
                       className="w-full sm:w-auto px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 transition-all flex items-center justify-center gap-2 shadow-sm shadow-emerald-700/20 active:scale-95 cursor-pointer"

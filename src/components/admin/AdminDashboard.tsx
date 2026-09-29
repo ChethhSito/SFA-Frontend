@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Calendar, CreditCard, Users, GraduationCap, CheckSquare, Compass, FileText
 } from "lucide-react";
 import { Applicant, Enrollment, StudentPersonalData, Classroom, Teacher, Graduation, AdmissionPeriod, Course, CourseAssignment, AttendanceRecord, MpaPeriod } from "../../types";
 import { createAdmissionPeriod, updateAdmissionPeriod } from "../../services/api";
+import { MPA_KEYS, fetchMpaCollections } from "../../services/mpaApi";
 
 // Reusable Custom Design System Components
 import Sidebar from "../ui/Sidebar";
@@ -111,6 +112,24 @@ export default function AdminDashboard({
     return active ? active.id : (admissionPeriods[0]?.id || "1");
   });
   const [applicantFilterType, setApplicantFilterType] = useState<"all" | "pending" | "observed" | "approved" | "enrolled">("all");
+
+  // Synchronize comprehensive MPA collections in AdminDashboard
+  useEffect(() => {
+    fetchMpaCollections()
+      .then((collections) => {
+        if (collections) {
+          MPA_KEYS.forEach((key) => {
+            if (collections[key]) {
+              localStorage.setItem(`mpa_db_${key}`, JSON.stringify(collections[key]));
+            }
+          });
+          window.dispatchEvent(new Event("mpa:collections-synced"));
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not sync MPA collections in AdminDashboard:", err);
+      });
+  }, []);
 
   const renderPeriodSelector = () => {
     return (
@@ -396,7 +415,23 @@ export default function AdminDashboard({
   };
 
   const handleConfirmMatricula = (studentDni: string, shift: "Mañana" | "Tarde" | "Noche", programId: any, groupId?: string) => {
-    if (!groupId) {
+    let effectiveGroupId = groupId;
+    if (!effectiveGroupId) {
+      try {
+        const rawGroups = localStorage.getItem("mpa_db_groups");
+        if (rawGroups) {
+          const groups = JSON.parse(rawGroups);
+          const shiftMapped = shift === "Mañana" ? "sh_m" : shift === "Tarde" ? "sh_t" : "sh_n";
+          const match = groups.find((g: any) => g.careerId === programId && g.shiftId === shiftMapped && g.cycle === 1) ||
+                        groups.find((g: any) => g.careerId === programId && g.cycle === 1);
+          if (match) effectiveGroupId = match.id;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    if (!effectiveGroupId) {
       alert("Por favor, seleccione un Grupo Académico para el estudiante antes de procesar la matrícula.");
       return;
     }
@@ -411,7 +446,7 @@ export default function AdminDashboard({
       console.error(e);
     }
 
-    const hasProgramming = mpaTasks.some((t: any) => t.groupId === groupId);
+    const hasProgramming = mpaTasks.length === 0 || mpaTasks.some((t: any) => t.groupId === effectiveGroupId);
     if (!hasProgramming) {
       alert("El Grupo Académico seleccionado aún no posee una programación académica completa. Finalice la programación antes de utilizar este grupo.");
       return;
@@ -436,7 +471,7 @@ export default function AdminDashboard({
             academicStatus: "MATRICULADO" as const,
             shift: shift,
             paymentStatus: enr.paymentStatus || "No Pagado",
-            groupId: groupId
+            groupId: effectiveGroupId
           };
         }
         return enr;
@@ -456,7 +491,7 @@ export default function AdminDashboard({
           },
           paymentStatus: "No Pagado",
           shift: shift,
-          groupId: groupId
+          groupId: effectiveGroupId
         }
       ];
     }

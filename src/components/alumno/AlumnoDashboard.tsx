@@ -161,6 +161,10 @@ export default function AlumnoDashboard({
 
   // Map student shift and career to find their registered group in MPA
   const studentGroup = useMemo(() => {
+    if (enrollment.groupId) {
+      const found = mpaPlanningData.groups.find((g: any) => g.id === enrollment.groupId);
+      if (found) return found;
+    }
     const shiftMapped = enrollment.shift === "Mañana" ? "sh_m" : enrollment.shift === "Tarde" ? "sh_t" : "sh_n";
     return mpaPlanningData.groups.find(
       (g: any) => g.careerId === enrollment.programId && g.shiftId === shiftMapped && g.cycle === 1
