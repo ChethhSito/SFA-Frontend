@@ -86,7 +86,7 @@ export default function SFABot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
-      text: "¡Hola! 👋 Soy SFABot, tu Asistente Virtual Oficial del IESTP San Francisco de Asís 🎓. ¿En qué te puedo ayudar hoy? Selecciona una pregunta frecuente o escribe tu consulta.",
+      text: "¡Hola! Soy SFABot, tu Asistente Virtual Oficial del IESTP San Francisco de Asís. ¿En qué te puedo ayudar hoy? Selecciona una pregunta frecuente o escribe tu consulta.",
       sender: "bot",
       timestamp: new Date()
     }

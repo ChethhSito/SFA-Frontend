@@ -82,6 +82,9 @@ export default function PortalHome({
     lastName: string;
     email: string;
     programName: string;
+    applicantCode?: string;
+    dni?: string;
+    password?: string;
   } | null>(null);
 
   // Loading modal state during pre-enrollment submission
@@ -95,6 +98,7 @@ export default function PortalHome({
   const [phoneInput, setPhoneInput] = useState("");
   const [programSelection, setProgramSelection] = useState("electronica");
   const [submitSuccessMsg, setSubmitSuccessMsg] = useState("");
+  const [formError, setFormError] = useState("");
 
   // Contact form state
   const [contactName, setContactName] = useState("");
@@ -110,9 +114,25 @@ export default function PortalHome({
   const handlePreEnrollmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitSuccessMsg("");
+    setFormError("");
 
     if (!/^\d{8}$/.test(dniInput)) {
-      alert("El DNI debe contener exactamente 8 dígitos numéricos.");
+      setFormError("El DNI debe contener exactamente 8 dígitos numéricos.");
+      return;
+    }
+
+    if (!nameInput.trim() || !lastNameInput.trim()) {
+      setFormError("Por favor ingrese sus nombres y apellidos completos.");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim())) {
+      setFormError("Por favor ingrese un correo electrónico válido (ej. usuario@gmail.com).");
+      return;
+    }
+
+    if (!/^\d{9}$/.test(phoneInput)) {
+      setFormError("El número de teléfono/celular debe contener exactamente 9 dígitos numéricos.");
       return;
     }
 
@@ -121,8 +141,8 @@ export default function PortalHome({
     try {
       const existing = await fetchApplicantByDni(dniInput);
       if (existing) {
-        setSubmitSuccessMsg(
-          `El DNI ${dniInput} ya se encuentra registrado en la base de datos de Admisión. Utilice su DNI o Código como usuario en el portal de Intranet.`
+        setFormError(
+          `El DNI ${dniInput} ya se encuentra registrado en el sistema de Admisión. Inicie sesión en la Intranet Académica con su DNI o Código de Postulante.`
         );
         setIsSubmittingForm(false);
         return;
@@ -132,10 +152,10 @@ export default function PortalHome({
 
       const newApplicantPayload = {
         dni: dniInput,
-        name: nameInput,
-        lastName: lastNameInput,
-        email: emailInput,
-        phone: phoneInput,
+        name: nameInput.trim(),
+        lastName: lastNameInput.trim(),
+        email: emailInput.trim(),
+        phone: phoneInput.trim(),
         programId: programSelection,
         paymentStatus: "No Pagado" as const,
         paymentOperation: "",
@@ -169,7 +189,10 @@ export default function PortalHome({
         name: nameInput,
         lastName: lastNameInput,
         email: emailInput,
-        programName: progName
+        programName: progName,
+        applicantCode: generatedApplicantCode,
+        dni: dniInput,
+        password: tempPass
       });
 
       setSubmitSuccessMsg(
@@ -181,10 +204,10 @@ export default function PortalHome({
           id: created?.id || `APP-${Date.now()}`,
           applicantCode: generatedApplicantCode,
           dni: dniInput,
-          name: nameInput,
-          lastName: lastNameInput,
-          email: emailInput,
-          phone: phoneInput,
+          name: nameInput.trim(),
+          lastName: lastNameInput.trim(),
+          email: emailInput.trim(),
+          phone: phoneInput.trim(),
           programId: programSelection,
           programName: progName,
           password: tempPass,
@@ -206,9 +229,10 @@ export default function PortalHome({
       setLastNameInput("");
       setEmailInput("");
       setPhoneInput("");
+      setFormError("");
     } catch (err) {
       console.error(err);
-      alert("Error al procesar el registro de pre-inscripción.");
+      setFormError("Error al procesar el registro de pre-inscripción en el servidor. Verifique su conexión e intente nuevamente.");
     } finally {
       setIsSubmittingForm(false);
     }
@@ -286,8 +310,11 @@ export default function PortalHome({
                 setProgramSelection={setProgramSelection}
                 submitSuccessMsg={submitSuccessMsg}
                 setSubmitSuccessMsg={setSubmitSuccessMsg}
+                formError={formError}
+                setFormError={setFormError}
                 isSubmittingForm={isSubmittingForm}
                 handlePreEnrollmentSubmit={handlePreEnrollmentSubmit}
+                onEnterIntranet={onEnterIntranet}
               />
             )}
 
@@ -323,6 +350,7 @@ export default function PortalHome({
       <PortalSuccessModal
         data={successModalData}
         onClose={() => setSuccessModalData(null)}
+        onEnterIntranet={onEnterIntranet}
       />
 
     </div>

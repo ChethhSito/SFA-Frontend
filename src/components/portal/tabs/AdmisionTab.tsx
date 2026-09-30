@@ -1,5 +1,5 @@
 import React from "react";
-import { Landmark, FileCheck, Check, CheckCircle2, Loader2, Send } from "lucide-react";
+import { Landmark, FileCheck, Check, CheckCircle2, AlertCircle, Loader2, Send, ArrowRight } from "lucide-react";
 
 interface AdmisionTabProps {
   dniInput: string;
@@ -16,8 +16,11 @@ interface AdmisionTabProps {
   setProgramSelection: (val: string) => void;
   submitSuccessMsg: string;
   setSubmitSuccessMsg: (val: string) => void;
+  formError?: string;
+  setFormError?: (val: string) => void;
   isSubmittingForm: boolean;
   handlePreEnrollmentSubmit: (e: React.FormEvent) => void;
+  onEnterIntranet?: () => void;
 }
 
 export const AdmisionTab: React.FC<AdmisionTabProps> = ({
@@ -35,8 +38,11 @@ export const AdmisionTab: React.FC<AdmisionTabProps> = ({
   setProgramSelection,
   submitSuccessMsg,
   setSubmitSuccessMsg,
+  formError,
+  setFormError,
   isSubmittingForm,
-  handlePreEnrollmentSubmit
+  handlePreEnrollmentSubmit,
+  onEnterIntranet
 }) => {
   return (
     <div className="bg-slate-50 py-16 px-4 min-h-screen">
@@ -126,6 +132,25 @@ export const AdmisionTab: React.FC<AdmisionTabProps> = ({
                 </span>
               </div>
 
+              {formError && (
+                <div className="mb-4 bg-amber-50 border border-amber-300 text-amber-950 p-4 rounded-xl text-xs flex items-start gap-3 animate-in fade-in duration-200">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="flex-1 space-y-1">
+                    <p className="font-bold">{formError}</p>
+                    {onEnterIntranet && formError.toLowerCase().includes("registrado") && (
+                      <button
+                        type="button"
+                        onClick={onEnterIntranet}
+                        className="inline-flex items-center gap-1 mt-1 text-xs font-black text-[#9F062A] hover:text-[#800521] underline cursor-pointer"
+                      >
+                        <span>Acceder a la Intranet Académica</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {submitSuccessMsg ? (
                 <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-6 rounded-xl text-xs space-y-4">
                   <div className="flex items-start gap-3">
@@ -133,8 +158,11 @@ export const AdmisionTab: React.FC<AdmisionTabProps> = ({
                     <p className="font-semibold text-sm leading-relaxed">{submitSuccessMsg}</p>
                   </div>
                   <button
-                    onClick={() => setSubmitSuccessMsg("")}
-                    className="w-full py-3 bg-emerald-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider"
+                    onClick={() => {
+                      setSubmitSuccessMsg("");
+                      if (setFormError) setFormError("");
+                    }}
+                    className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-lg text-xs uppercase tracking-wider cursor-pointer"
                   >
                     Realizar Otra Inscripción
                   </button>
@@ -152,7 +180,10 @@ export const AdmisionTab: React.FC<AdmisionTabProps> = ({
                         required
                         placeholder="Ingrese 8 dígitos de su DNI"
                         value={dniInput}
-                        onChange={(e) => setDniInput(e.target.value.replace(/\D/g, ""))}
+                        onChange={(e) => {
+                          if (setFormError) setFormError("");
+                          setDniInput(e.target.value.replace(/\D/g, "").slice(0, 8));
+                        }}
                         className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
                       />
                     </div>
@@ -211,10 +242,11 @@ export const AdmisionTab: React.FC<AdmisionTabProps> = ({
                       <label className="text-xs font-bold uppercase text-slate-700 block mb-1">Teléfono / Celular *</label>
                       <input
                         type="tel"
+                        maxLength={9}
                         required
                         placeholder="987654321"
                         value={phoneInput}
-                        onChange={(e) => setPhoneInput(e.target.value)}
+                        onChange={(e) => setPhoneInput(e.target.value.replace(/\D/g, "").slice(0, 9))}
                         className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
                       />
                     </div>
