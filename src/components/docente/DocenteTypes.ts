@@ -7,6 +7,7 @@ export interface WeeklyObservation {
   type: "General" | "Incidencia" | "Acuerdo";
 }
 
+
 export interface StudentRosterItem {
   dni: string;
   name: string;
@@ -15,13 +16,61 @@ export interface StudentRosterItem {
   phone: string;
 }
 
-export const ROSTER: StudentRosterItem[] = [
-  { dni: "12345678", name: "Luis Fernando", lastName: "Castillo Rivera", email: "luis.castillo@iestpsfa.edu.pe", phone: "987654322" },
-  { dni: "22334455", name: "María de los Ángeles", lastName: "Mendoza Prado", email: "maria.mendoza@iestpsfa.edu.pe", phone: "911223344" },
-  { dni: "44556677", name: "Diego Valentín", lastName: "Ruiz Espinoza", email: "diego.ruiz@iestpsfa.edu.pe", phone: "944556677" },
-  { dni: "88776655", name: "Sofía Alejandra", lastName: "Torres Cáceres", email: "sofia.torres@iestpsfa.edu.pe", phone: "988776655" },
-  { dni: "55667788", name: "Jean Pierre", lastName: "Gamarra Flores", email: "jean.gamarra@iestpsfa.edu.pe", phone: "955667788" }
-];
+const getDynamicRoster = (): StudentRosterItem[] => {
+  const saved = localStorage.getItem("sfa_students");
+  let list: any[] = [];
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        list = parsed;
+      } else if (typeof parsed === "object" && parsed !== null) {
+        list = Object.values(parsed);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  return list.map((st: any) => ({
+    dni: st.dni || String(st.id || ""),
+    name: st.name || "",
+    lastName: st.lastName || "",
+    email: st.email || `${st.name?.toLowerCase().replace(/\s+/g, "") || "estudiante"}@iestpsfa.edu.pe`,
+    phone: st.phone || "99999999"
+  }));
+};
+
+export const ROSTER: StudentRosterItem[] = new Proxy([] as StudentRosterItem[], {
+  get(target, prop) {
+    const list = getDynamicRoster();
+    if (prop === "length") {
+      return list.length;
+    }
+    if (prop === "map") {
+      return (cb: any) => list.map(cb);
+    }
+    if (prop === "filter") {
+      return (cb: any) => list.filter(cb);
+    }
+    if (prop === "find") {
+      return (cb: any) => list.find(cb);
+    }
+    if (prop === "reduce") {
+      return (cb: any, init: any) => list.reduce(cb, init);
+    }
+    if (prop === "forEach") {
+      return (cb: any) => list.forEach(cb);
+    }
+    if (prop === Symbol.iterator) {
+      return list[Symbol.iterator].bind(list);
+    }
+    const idx = Number(prop as string);
+    if (!isNaN(idx)) {
+      return list[idx];
+    }
+    return (list as any)[prop];
+  }
+});
 
 export const WEEKLY_THEMES: { [code: string]: { topic: string; desc: string }[] } = {
   "EE-101": [

@@ -3,8 +3,8 @@ import {
   Users, BookOpen, Clock, FileText, CheckCircle, 
   Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronDown, ChevronRight, Settings, BarChart3, Megaphone, FileSpreadsheet
 } from "lucide-react";
-import { Course } from "@/types";
-import Badge from "../ui-custom/Badge";
+import { Course } from "../../types";
+import Badge from "../ui/Badge";
 
 export interface SidebarPrincipalProps {
   teacherDni: string;
@@ -148,4 +148,3 @@ export default function SidebarPrincipal({
     </aside>
   );
 }
-

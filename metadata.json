@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Remix: Intranet IESTP San Francisco de Asís",
+  "description": "Plataforma de intranet integral para postulantes, alumnos, docentes y administrativos del IESTP San Francisco de Asís. Incluye procesos de admisión, matrícula, dictado de clases, asistencia y cierre de ciclo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

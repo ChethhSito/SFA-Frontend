@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Upload, FileText, Image, Trash2, Info, CheckCircle } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui-custom/Card";
-import Button from "../ui-custom/Button";
-import PageHeader from "../ui-custom/PageHeader";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/Card";
+import Button from "../ui/Button";
+import PageHeader from "../ui/PageHeader";
 
 interface EvidenciaItem {
   id: string;
@@ -272,4 +272,3 @@ export default function EvidenciasManager({ courseId, week }: EvidenciasManagerP
     </div>
   );
 }
-

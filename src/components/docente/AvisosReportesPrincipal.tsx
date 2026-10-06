@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Info, Mail, Megaphone, FileText, Download, Plus, Trash2, Shield, Calendar, User } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui-custom/Card";
-import Button from "../ui-custom/Button";
-import PageHeader from "../ui-custom/PageHeader";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/Card";
+import Button from "../ui/Button";
+import PageHeader from "../ui/PageHeader";
 
 interface AvisosReportesPrincipalProps {
   initialSubTab?: "avisos" | "comunicados" | "reportes";
@@ -382,4 +382,3 @@ export default function AvisosReportesPrincipal({ initialSubTab = "avisos" }: Av
     </div>
   );
 }
-

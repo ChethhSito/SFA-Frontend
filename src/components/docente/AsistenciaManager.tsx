@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Users, Save, CheckCircle, AlertCircle, Clock, Calendar } from "lucide-react";
-import { AttendanceRecord } from "@/types";
+import { AttendanceRecord } from "../../types";
 import { ROSTER, StudentRosterItem } from "./DocenteTypes";
-import Button from "../ui-custom/Button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui-custom/Card";
-import PageHeader from "../ui-custom/PageHeader";
+import Button from "../ui/Button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/Card";
+import PageHeader from "../ui/PageHeader";
 
 interface AsistenciaManagerProps {
   courseId: string;
@@ -372,4 +372,3 @@ export default function AsistenciaManager({
     </div>
   );
 }
-

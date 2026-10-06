@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Save, Trash2, Award, FileSpreadsheet, Check } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui-custom/Card";
-import Button from "../ui-custom/Button";
-import PageHeader from "../ui-custom/PageHeader";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/Card";
+import Button from "../ui/Button";
+import PageHeader from "../ui/PageHeader";
 import { ROSTER } from "./DocenteTypes";
 
 interface EvaluationItem {
@@ -417,4 +417,3 @@ export default function EvaluacionesManager({
     </div>
   );
 }
-

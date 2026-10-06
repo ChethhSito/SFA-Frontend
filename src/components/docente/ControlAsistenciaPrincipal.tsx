@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { BookOpen, Calendar, Filter, Users, Search, HelpCircle, BarChart3, TrendingUp, AlertTriangle } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui-custom/Card";
-import Badge from "../ui-custom/Badge";
-import PageHeader from "../ui-custom/PageHeader";
-import { Course, AttendanceRecord } from "@/types";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/Card";
+import Badge from "../ui/Badge";
+import PageHeader from "../ui/PageHeader";
+import { Course, AttendanceRecord } from "../../types";
 import { ROSTER } from "./DocenteTypes";
 
 interface ControlAsistenciaPrincipalProps {
@@ -308,4 +308,3 @@ export default function ControlAsistenciaPrincipal({
     </div>
   );
 }
-
