@@ -287,9 +287,9 @@ export default function MgeRiesgoIaTab() {
             className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer shadow-3xs"
           >
             <option value="all">Todos los Niveles de Riesgo</option>
-            <option value="CRITICO">🔴 Riesgo Crítico</option>
-            <option value="MODERADO">🟡 Riesgo Moderado</option>
-            <option value="BAJO">🟢 Bajo Riesgo</option>
+            <option value="CRITICO">Riesgo Crítico (Score ≥ 70)</option>
+            <option value="MODERADO">Riesgo Moderado (Score 40-69)</option>
+            <option value="BAJO">Bajo Riesgo (Score &lt; 40)</option>
           </select>
         </div>
       </div>

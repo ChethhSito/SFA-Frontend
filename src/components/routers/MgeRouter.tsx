@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import MgeDashboard from "../mge";
 import { Applicant, Enrollment, StudentPersonalData, Course, CourseAssignment, AttendanceRecord, Graduation, AdmissionPeriod } from "../../types";
-import { Lock, ArrowLeft, Calendar } from "lucide-react";
+import { Lock, ArrowLeft } from "lucide-react";
 import Button from "../ui/Button";
 
 interface MgeRouterProps {
@@ -74,72 +74,23 @@ export default function MgeRouter(props: MgeRouterProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Top Banner and Quick Admission Period Selector */}
-      <header className="bg-white border-b border-slate-200 py-3.5 px-4 md:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 sticky top-0 z-10 shadow-xs">
-        <div className="flex items-center gap-3">
-          <svg className="w-8 h-8 drop-shadow-sm shrink-0" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M50 5 L85 22 C85 58 68 85 50 95 C32 85 15 58 15 22 Z" fill="#9F062A" />
-            <polygon points="50,22 53,30 61,30 55,35 57,43 50,38 43,43 45,35 39,30 47,30" fill="#E3BD26" />
-          </svg>
-          <div>
-            <h2 className="text-slate-900 font-extrabold text-xs uppercase tracking-wider">
-              IESTP San Francisco de Asís
-            </h2>
-            <p className="text-[10px] text-[#9F062A] font-black uppercase tracking-widest">
-              Consola de Gestión Académica (MGE)
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <label className="text-[10px] font-black uppercase text-slate-500 tracking-wide">
-              Periodo:
-            </label>
-            <select
-              value={selectedPeriodId}
-              onChange={(e) => setSelectedPeriodId(e.target.value)}
-              className="p-1.5 border border-slate-250 bg-white font-bold rounded-lg text-xs"
-            >
-              <option value="all">Ver Todos</option>
-              {props.admissionPeriods.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.status})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            onClick={props.onLogout}
-            className="px-4 py-2 hover:bg-slate-100 text-slate-600 hover:text-slate-900 font-black text-[10px] uppercase tracking-wider rounded-lg transition-all border border-slate-200 flex items-center gap-2 cursor-pointer"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Cerrar MGE
-          </button>
-        </div>
-      </header>
-
-      <main className="flex-1 p-4 md:p-8 h-full overflow-y-auto">
-        <MgeDashboard
-          applicants={props.applicants}
-          enrollments={props.enrollments}
-          studentsList={props.studentsList}
-          courses={props.courses}
-          assignments={props.assignments}
-          attendance={props.attendance}
-          graduations={props.graduations}
-          onUpdateEnrollments={props.onUpdateEnrollments}
-          onUpdateStudentsList={props.onUpdateStudentsList}
-          onUpdateCourses={props.onUpdateCourses}
-          onUpdateAssignments={props.onUpdateAssignments}
-          onUpdateAttendance={props.onUpdateAttendance}
-          onUpdateGraduations={props.onUpdateGraduations}
-          selectedPeriodId={selectedPeriodId}
-          onLogout={props.onLogout}
-        />
-      </main>
-    </div>
+    <MgeDashboard
+      applicants={props.applicants}
+      enrollments={props.enrollments}
+      studentsList={props.studentsList}
+      courses={props.courses}
+      assignments={props.assignments}
+      attendance={props.attendance}
+      graduations={props.graduations}
+      admissionPeriods={props.admissionPeriods}
+      selectedPeriodId={selectedPeriodId}
+      onUpdateEnrollments={props.onUpdateEnrollments}
+      onUpdateStudentsList={props.onUpdateStudentsList}
+      onUpdateCourses={props.onUpdateCourses}
+      onUpdateAssignments={props.onUpdateAssignments}
+      onUpdateAttendance={props.onUpdateAttendance}
+      onUpdateGraduations={props.onUpdateGraduations}
+      onLogout={props.onLogout}
+    />
   );
 }

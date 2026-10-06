@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import {
   Users, FileText, CreditCard, Award, GraduationCap, CheckSquare,
-  TrendingUp, BookOpen, BrainCircuit
+  TrendingUp, BookOpen, BrainCircuit, Calendar
 } from "lucide-react";
 import {
   Applicant,
@@ -11,9 +11,10 @@ import {
   CourseAssignment,
   AttendanceRecord,
   Graduation,
+  AdmissionPeriod,
   ProgramId
 } from "../../types";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/Card";
+import Sidebar from "../ui/Sidebar";
 
 // Modular tabs
 import MgeEstudiantesTab from "./tabs/MgeEstudiantesTab";
@@ -41,14 +42,16 @@ interface MgeDashboardProps {
   assignments: CourseAssignment[];
   attendance: AttendanceRecord[];
   graduations: Graduation[];
+  admissionPeriods?: AdmissionPeriod[];
   onUpdateEnrollments: (enrolls: Enrollment[]) => void;
   onUpdateStudentsList: (students: { [dni: string]: StudentPersonalData }) => void;
   onUpdateCourses: (courses: Course[]) => void;
   onUpdateAssignments: (asgs: CourseAssignment[]) => void;
   onUpdateAttendance: (att: AttendanceRecord[]) => void;
   onUpdateGraduations: (grads: Graduation[]) => void;
-  selectedPeriodId: string;
+  selectedPeriodId?: string;
   onLogout?: () => void;
+  onGoToPortal?: () => void;
 }
 
 export default function MgeDashboard({
@@ -59,6 +62,7 @@ export default function MgeDashboard({
   assignments,
   attendance,
   graduations,
+  admissionPeriods = [],
   onUpdateEnrollments,
   onUpdateStudentsList,
   onUpdateCourses,
@@ -67,6 +71,7 @@ export default function MgeDashboard({
   onUpdateGraduations,
   selectedPeriodId,
   onLogout,
+  onGoToPortal,
 }: MgeDashboardProps) {
   // Navigation
   const [activeSubTab, setActiveSubTab] = useState<MgeSubTab>("estudiantes");
@@ -238,7 +243,7 @@ export default function MgeDashboard({
       const currentPayStatus = existing?.paymentStatus || "No Pagado";
       if (currentPayStatus !== "Validado") {
         alert(
-          `❌ CONTROL DE RECAUDACIÓN Y PAGOS (MAMC):\n\nNo se puede registrar la matrícula de este alumno porque su pago único de S/. 250.00 de matrícula aún no ha sido VALIDADO por la Oficina de Caja (Estado actual: ${
+          `[ALERTA] CONTROL DE RECAUDACIÓN Y PAGOS (MAMC):\n\nNo se puede registrar la matrícula de este alumno porque su pago único de S/. 250.00 de matrícula aún no ha sido VALIDADO por la Oficina de Caja (Estado actual: ${
             currentPayStatus === "Pendiente" ? "PENDIENTE DE VALIDACIÓN" :
             currentPayStatus === "Observado" ? "PAGO OBSERVADO / RECHAZADO" : "PENDIENTE DE PAGO"
           }).\n\nPor favor, diríjase a la sección de Caja de Matrícula para validar el pago primero.`
@@ -422,174 +427,230 @@ export default function MgeDashboard({
     triggerNotification("Se aperturó el expediente de Constancia de Egresado y Certificado de Estudios modulado.");
   };
 
-  // ── Tab navigation helper ─────────────────────────────────────────────────
-  const tabClass = (tab: MgeSubTab) =>
-    `px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
-      activeSubTab === tab
-        ? "bg-[#9F062A] text-white shadow-md shadow-[#9F062A]/20"
-        : "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200"
-    }`;
-
   return (
-    <Card className="border border-slate-200 shadow-sm overflow-hidden bg-white">
-      <CardHeader className="bg-slate-900 text-white p-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 bg-[#9F062A] text-[10px] font-black uppercase rounded tracking-wider text-white">
-                MGE Backend Activo
-              </span>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                Intranet SFA
+    <div
+      id="mge-dashboard"
+      className="h-screen w-full overflow-hidden bg-slate-50 font-sans text-slate-800 flex flex-col md:flex-row pb-0"
+    >
+      {/* Sidebar navigation */}
+      <Sidebar
+        institution={{
+          name: "MGE SFA",
+          subtitle: "Gestión Estudiantil"
+        }}
+        user={{
+          name: "Coordinación MGE",
+          role: "Gestor Académico",
+          status: "GESTOR / MGE"
+        }}
+        sections={[
+          {
+            title: "GESTIÓN Y MATRÍCULA",
+            items: [
+              {
+                label: "1. Padrón Estudiantes",
+                icon: <Users className="w-4 h-4" />,
+                route: "estudiantes",
+                active: activeSubTab === "estudiantes"
+              },
+              {
+                label: "2. Matrícula General",
+                icon: <GraduationCap className="w-4 h-4" />,
+                route: "matricula_gral",
+                active: activeSubTab === "matricula_gral"
+              },
+              {
+                label: "3. Pagos de Matrícula",
+                icon: <CreditCard className="w-4 h-4" />,
+                route: "pagos",
+                active: activeSubTab === "pagos"
+              }
+            ]
+          },
+          {
+            title: "EVALUACIÓN Y ASISTENCIA",
+            items: [
+              {
+                label: "4. Gestión de Notas",
+                icon: <Award className="w-4 h-4" />,
+                route: "notas",
+                active: activeSubTab === "notas"
+              },
+              {
+                label: "5. Asistencias Diarias",
+                icon: <CheckSquare className="w-4 h-4" />,
+                route: "asistencias",
+                active: activeSubTab === "asistencias"
+              },
+              {
+                label: "6. Historial Académico",
+                icon: <FileText className="w-4 h-4" />,
+                route: "historial",
+                active: activeSubTab === "historial"
+              }
+            ]
+          },
+          {
+            title: "INTELIGENCIA Y REPORTES",
+            items: [
+              {
+                label: "7. Constancias y Certificados",
+                icon: <Award className="w-4 h-4" />,
+                route: "constancias",
+                active: activeSubTab === "constancias"
+              },
+              {
+                label: "8. Reportes Estadísticos",
+                icon: <TrendingUp className="w-4 h-4" />,
+                route: "reportes",
+                active: activeSubTab === "reportes"
+              },
+              {
+                label: "9. Riesgo Académico IA",
+                icon: <BrainCircuit className="w-4 h-4" />,
+                route: "riesgo_ia",
+                active: activeSubTab === "riesgo_ia"
+              }
+            ]
+          }
+        ]}
+        onItemClick={(route) => {
+          setActiveSubTab(route as MgeSubTab);
+          setSearchQuery("");
+          if (route === "historial" && processedStudents.length > 0 && !selectedHistoryDni) {
+            setSelectedHistoryDni(processedStudents[0].dni);
+          }
+        }}
+        onLogout={onLogout}
+        onGoToPortal={onGoToPortal}
+      />
+
+      {/* Main viewport */}
+      <main className="flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50 min-w-0">
+        <header className="bg-white border-b border-slate-200/80 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
+          <div className="text-left">
+            <h1 className="text-base font-black text-slate-900 tracking-tight leading-none uppercase">
+              {activeSubTab === "estudiantes" && "1. Padrón General de Estudiantes"}
+              {activeSubTab === "matricula_gral" && "2. Matrícula General y Asignación de Turnos"}
+              {activeSubTab === "pagos" && "3. Auditoría de Pagos de Matrícula"}
+              {activeSubTab === "notas" && "4. Registro y Calificación de Notas"}
+              {activeSubTab === "asistencias" && "5. Control de Asistencias Diarias"}
+              {activeSubTab === "historial" && "6. Historial Académico y Récord de Notas"}
+              {activeSubTab === "constancias" && "7. Expedición de Constancias y Certificados"}
+              {activeSubTab === "reportes" && "8. Reportes Estadísticos Consolidados"}
+              {activeSubTab === "riesgo_ia" && "9. Riesgo Académico IA • Detección Temprana y Deserción"}
+            </h1>
+            <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-1">
+              IESTP San Francisco de Asís • Cuenta Gestión de Estudiantes (MGE)
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Ciclo Activo:</span>
+              <span className="text-xs font-black text-slate-800">
+                {admissionPeriods.find((p) => p.id === selectedPeriodId)?.name || "Periodo 2026-I"}
               </span>
             </div>
-            <CardTitle className="text-xl md:text-2xl font-black uppercase tracking-tight flex items-center gap-2.5">
-              <BookOpen className="w-6 h-6 text-[#9F062A]" />
-              Módulo: Gestión de Estudiantes (MGE)
-            </CardTitle>
-            <CardDescription className="text-slate-400 text-xs font-semibold leading-relaxed max-w-2xl">
-              Consola unificada de registros académicos, boleta de notas, matrícula general, asistencia ordinaria, caja modular de tesorería y emisión descentralizada de certificados oficiales.
-            </CardDescription>
+            <span className="text-[11px] font-black text-[#9F062A] bg-[#9F062A]/10 px-3 py-1.5 rounded-lg border border-[#9F062A]/20 font-mono tracking-widest hidden sm:inline-block">
+              ROL: MGE
+            </span>
           </div>
-          <div className="flex bg-slate-800 p-1 rounded-xl border border-slate-700">
-            <div className="px-3 py-1.5 text-center">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Ciclo Activo</p>
-              <p className="text-xs font-black text-white">Periodo 2026-I</p>
-            </div>
-          </div>
+        </header>
+
+        {/* Content area */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 custom-scrollbar">
+          {activeSubTab === "estudiantes" && (
+            <MgeEstudiantesTab
+              filteredStudents={filteredStudents}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onOpenAddModal={() => setShowAddStudentModal(true)}
+              onEditClick={handleEditClick}
+              onDeleteStudent={handleDeleteStudent}
+            />
+          )}
+
+          {activeSubTab === "matricula_gral" && (
+            <MgeMatriculaTab
+              processedStudents={processedStudents}
+              onToggleAcademicStatus={handleToggleAcademicStatus}
+              onShiftChange={handleEnrollmentShiftChange}
+              onCareerChange={handleEnrollmentCareerChange}
+            />
+          )}
+
+          {activeSubTab === "pagos" && (
+            <MgePagosTab
+              processedStudents={processedStudents}
+              enrollments={enrollments}
+              onUpdatePaymentStatus={handleUpdatePaymentStatus}
+            />
+          )}
+
+          {activeSubTab === "notas" && (
+            <MgeNotasTab
+              courses={courses}
+              assignments={assignments}
+              processedStudents={processedStudents}
+              selectedCourseId={selectedCourseId}
+              selectedTaskTitle={selectedTaskTitle}
+              temporaryGrades={temporaryGrades}
+              onCourseChange={(id) => { setSelectedCourseId(id); setTemporaryGrades({}); }}
+              onTaskChange={(t) => { setSelectedTaskTitle(t); setTemporaryGrades({}); }}
+              onGradeChange={handleGradeChange}
+              onSaveGrades={handleSaveGrades}
+            />
+          )}
+
+          {activeSubTab === "asistencias" && (
+            <MgeAsistenciasTab
+              courses={courses}
+              processedStudents={processedStudents}
+              attendance={attendance}
+              selectedAttendanceCourseId={selectedAttendanceCourseId}
+              selectedAttendanceDate={selectedAttendanceDate}
+              onCourseChange={setSelectedAttendanceCourseId}
+              onDateChange={setSelectedAttendanceDate}
+              onUpdateStudentAttendance={handleUpdateStudentAttendance}
+              onFillAttendanceAll={handleFillAttendanceAll}
+            />
+          )}
+
+          {activeSubTab === "historial" && (
+            <MgeHistorialTab
+              processedStudents={processedStudents}
+              courses={courses}
+              assignments={assignments}
+              selectedHistoryDni={selectedHistoryDni}
+              onSelectDni={setSelectedHistoryDni}
+              onPrint={(name) => triggerNotification(`Simulación de descarga del Récord de Notas en PDF para el alumno ${name}. Documento digital firmado.`)}
+            />
+          )}
+
+          {activeSubTab === "constancias" && (
+            <MgeConstanciasTab
+              graduations={graduations}
+              studentsList={studentsList}
+              processedStudents={processedStudents}
+              onIssuerUpdate={handleIssuerUpdate}
+              onCreateGraduationProcess={handleCreateGraduationProcess}
+            />
+          )}
+
+          {activeSubTab === "reportes" && (
+            <MgeReportesTab
+              enrollments={enrollments}
+              onDownload={() => triggerNotification("Generando Reporte Estadístico Integrado Semestral en Excel para su exportación a la UGEL...")}
+            />
+          )}
+
+          {activeSubTab === "riesgo_ia" && (
+            <MgeRiesgoIaTab />
+          )}
         </div>
-      </CardHeader>
-
-      {/* Sub-navigation */}
-      <div className="bg-slate-100 p-2 border-b border-slate-200 overflow-x-auto flex items-center gap-1.5 custom-scrollbar">
-        <button onClick={() => { setActiveSubTab("estudiantes"); setSearchQuery(""); }} className={tabClass("estudiantes")}>
-          <Users className="w-3.5 h-3.5" /> 1. Gestión Estudiantes
-        </button>
-        <button onClick={() => { setActiveSubTab("matricula_gral"); setSearchQuery(""); }} className={tabClass("matricula_gral")}>
-          <GraduationCap className="w-3.5 h-3.5" /> 2. Matrícula General
-        </button>
-        <button onClick={() => { setActiveSubTab("pagos"); setSearchQuery(""); }} className={tabClass("pagos")}>
-          <CreditCard className="w-3.5 h-3.5" /> 3. Pagos de Matrícula
-        </button>
-        <button onClick={() => { setActiveSubTab("notas"); setSearchQuery(""); }} className={tabClass("notas")}>
-          <Award className="w-3.5 h-3.5" /> 4. Gestión de Notas
-        </button>
-        <button onClick={() => { setActiveSubTab("asistencias"); setSearchQuery(""); }} className={tabClass("asistencias")}>
-          <CheckSquare className="w-3.5 h-3.5" /> 5. Asistencias
-        </button>
-        <button
-          onClick={() => {
-            setActiveSubTab("historial");
-            setSearchQuery("");
-            if (processedStudents.length > 0 && !selectedHistoryDni) {
-              setSelectedHistoryDni(processedStudents[0].dni);
-            }
-          }}
-          className={tabClass("historial")}
-        >
-          <FileText className="w-3.5 h-3.5" /> 6. Historial Académico
-        </button>
-        <button onClick={() => { setActiveSubTab("constancias"); setSearchQuery(""); }} className={tabClass("constancias")}>
-          <Award className="w-3.5 h-3.5" /> 7. Constancias y Certificados
-        </button>
-        <button onClick={() => { setActiveSubTab("reportes"); setSearchQuery(""); }} className={tabClass("reportes")}>
-          <TrendingUp className="w-3.5 h-3.5" /> 8. Reportes Estadísticos
-        </button>
-        <button onClick={() => { setActiveSubTab("riesgo_ia"); setSearchQuery(""); }} className={tabClass("riesgo_ia")}>
-          <BrainCircuit className="w-3.5 h-3.5 text-amber-300" /> 9. Riesgo Académico IA
-        </button>
-      </div>
-
-      <CardContent className="p-6">
-        {activeSubTab === "estudiantes" && (
-          <MgeEstudiantesTab
-            filteredStudents={filteredStudents}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            onOpenAddModal={() => setShowAddStudentModal(true)}
-            onEditClick={handleEditClick}
-            onDeleteStudent={handleDeleteStudent}
-          />
-        )}
-
-        {activeSubTab === "matricula_gral" && (
-          <MgeMatriculaTab
-            processedStudents={processedStudents}
-            onToggleAcademicStatus={handleToggleAcademicStatus}
-            onShiftChange={handleEnrollmentShiftChange}
-            onCareerChange={handleEnrollmentCareerChange}
-          />
-        )}
-
-        {activeSubTab === "pagos" && (
-          <MgePagosTab
-            processedStudents={processedStudents}
-            enrollments={enrollments}
-            onUpdatePaymentStatus={handleUpdatePaymentStatus}
-          />
-        )}
-
-        {activeSubTab === "notas" && (
-          <MgeNotasTab
-            courses={courses}
-            assignments={assignments}
-            processedStudents={processedStudents}
-            selectedCourseId={selectedCourseId}
-            selectedTaskTitle={selectedTaskTitle}
-            temporaryGrades={temporaryGrades}
-            onCourseChange={(id) => { setSelectedCourseId(id); setTemporaryGrades({}); }}
-            onTaskChange={(t) => { setSelectedTaskTitle(t); setTemporaryGrades({}); }}
-            onGradeChange={handleGradeChange}
-            onSaveGrades={handleSaveGrades}
-          />
-        )}
-
-        {activeSubTab === "asistencias" && (
-          <MgeAsistenciasTab
-            courses={courses}
-            processedStudents={processedStudents}
-            attendance={attendance}
-            selectedAttendanceCourseId={selectedAttendanceCourseId}
-            selectedAttendanceDate={selectedAttendanceDate}
-            onCourseChange={setSelectedAttendanceCourseId}
-            onDateChange={setSelectedAttendanceDate}
-            onUpdateStudentAttendance={handleUpdateStudentAttendance}
-            onFillAttendanceAll={handleFillAttendanceAll}
-          />
-        )}
-
-        {activeSubTab === "historial" && (
-          <MgeHistorialTab
-            processedStudents={processedStudents}
-            courses={courses}
-            assignments={assignments}
-            selectedHistoryDni={selectedHistoryDni}
-            onSelectDni={setSelectedHistoryDni}
-            onPrint={(name) => triggerNotification(`Simulación de descarga del Récord de Notas en PDF para el alumno ${name}. Documento digital firmado.`)}
-          />
-        )}
-
-        {activeSubTab === "constancias" && (
-          <MgeConstanciasTab
-            graduations={graduations}
-            studentsList={studentsList}
-            processedStudents={processedStudents}
-            onIssuerUpdate={handleIssuerUpdate}
-            onCreateGraduationProcess={handleCreateGraduationProcess}
-          />
-        )}
-
-        {activeSubTab === "reportes" && (
-          <MgeReportesTab
-            enrollments={enrollments}
-            onDownload={() => triggerNotification("Generando Reporte Estadístico Integrado Semestral en Excel para su exportación a la UGEL...")}
-          />
-        )}
-
-        {activeSubTab === "riesgo_ia" && (
-          <MgeRiesgoIaTab />
-        )}
-      </CardContent>
+      </main>
 
       {/* Modals */}
       {showAddStudentModal && (
@@ -610,6 +671,6 @@ export default function MgeDashboard({
           onClose={() => { setShowEditStudentModal(false); setEditingStudentDni(null); }}
         />
       )}
-    </Card>
+    </div>
   );
 }
