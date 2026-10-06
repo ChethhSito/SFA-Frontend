@@ -4,6 +4,7 @@ import Button from "../../ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import PageTransition from "../../ui/PageTransition";
 import { MafObligation } from "../mafTypes";
+import { BankReconciliationPanel } from "../BankReconciliationPanel";
 
 interface ValidacionPagosTabProps {
   obligations: MafObligation[];
@@ -12,6 +13,7 @@ interface ValidacionPagosTabProps {
   vouchersPorValidar: number;
   handleOpenObservePayment: (oblId: string) => void;
   handleApprovePayment: (oblId: string) => void;
+  onBankConfirmed: (ids: string[], fileName: string) => void;
 }
 
 export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
@@ -20,7 +22,8 @@ export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
   setStatusFilter,
   vouchersPorValidar,
   handleOpenObservePayment,
-  handleApprovePayment
+  handleApprovePayment,
+  onBankConfirmed
 }) => {
   const filteredList = obligations.filter(ob =>
     statusFilter === "todos" ? ob.voucherRegistered : ob.status === statusFilter
@@ -28,6 +31,7 @@ export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
 
   return (
     <PageTransition id="validacion_pagos" className="space-y-6">
+      <BankReconciliationPanel obligations={obligations} onConfirmed={onBankConfirmed} />
       <Card>
         <CardHeader className="border-b border-slate-100 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
