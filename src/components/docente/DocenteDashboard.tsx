@@ -71,16 +71,41 @@ export default function DocenteDashboard({
   // Mobile navigation views toggling
   const [showMobileSidebarCurso, setShowMobileSidebarCurso] = useState(false);
 
-  // Resolve current logged-in teacher
-  const currentTeacher = teachers.find((t) => t.dni === teacherDni) ||
-    (teacherDni === "docente" ? (teachers.find((t) => t.careerId === "electronica") || teachers[0] || null) : null);
+  // Resolve courses and teachers safely with storage cache fallback
+  const allCourses = courses.length > 0 ? courses : (() => {
+    try {
+      const saved = localStorage.getItem("sfa_courses");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  })();
+
+  const allTeachers = teachers.length > 0 ? teachers : (() => {
+    try {
+      const saved = localStorage.getItem("sfa_teachers");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  })();
+
+  // Resolve current logged-in teacher by DNI, email, id, or Mongo _id
+  const currentTeacher = allTeachers.find((t) => 
+    t.dni === teacherDni || 
+    t.email?.toLowerCase() === teacherDni?.toLowerCase() || 
+    (t as any)._id === teacherDni || 
+    t.id === teacherDni
+  ) || (teacherDni === "docente" || !teacherDni ? (allTeachers.find((t) => t.careerId === "electronica") || allTeachers[0] || null) : null);
+
+  const effectiveTeacherDni = currentTeacher?.dni || teacherDni;
 
   // Filter courses assigned to this specific teacher (supporting multiple professors per course)
-  const teacherCourses = courses.filter((c) => {
-    if (c.teacherDni === teacherDni) return true;
-    if (c.teacherDnis && c.teacherDnis.includes(teacherDni)) return true;
-    if (c.teachers && c.teachers.some((t: any) => t.dni === teacherDni)) return true;
-    if (teacherDni === "docente") {
+  const teacherCourses = allCourses.filter((c) => {
+    if (c.teacherDni === effectiveTeacherDni) return true;
+    if (c.teacherDnis && c.teacherDnis.includes(effectiveTeacherDni)) return true;
+    if (c.teachers && c.teachers.some((t: any) => t.dni === effectiveTeacherDni)) return true;
+    if (teacherDni === "docente" || !teacherDni) {
       if (currentTeacher) {
         return (
           c.teacherDni === currentTeacher.dni ||
@@ -93,7 +118,7 @@ export default function DocenteDashboard({
     }
     return false;
   });
-  const selectedCourse = courses.find((c) => c.id === selectedCourseId) || null;
+  const selectedCourse = allCourses.find((c) => c.id === selectedCourseId) || null;
 
   useEffect(() => {
     if (selectedCourse) {

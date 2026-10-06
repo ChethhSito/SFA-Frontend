@@ -270,9 +270,9 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
 
     if (matchedSysUser) {
       const expectedPass = matchedSysUser.password || "123";
-      if (pTrim === expectedPass || pTrim === "123" || pTrim === "clave123") {
+      if (pTrim === expectedPass || pTrim === "123" || pTrim === "clave123" || pTrim === "docente123") {
         detectedRole = matchedSysUser.role as Role;
-        detectedIdentifier = matchedSysUser.id || matchedSysUser.dni || matchedSysUser.email;
+        detectedIdentifier = matchedSysUser.dni || matchedSysUser.email || matchedSysUser.id;
         sysUserPasswordMatched = true;
       } else {
         setIsSubmitting(false);
@@ -307,9 +307,9 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
       detectedIdentifier = "mge";
     }
     // 2. Check Docente
-    else if (!detectedRole && (uTrim === "docente" || uTrim === "mramos@iestpsfa.edu.pe" || uTrim === "99887766")) {
+    else if (!detectedRole && (uTrim === "docente" || uTrim === "mramos@iestpsfa.edu.pe" || uTrim === "99887766" || uTrim === "enrique.gomez@iestpsfa.edu.pe" || uTrim === "20202020" || uTrim === "rosa.paredes@iestpsfa.edu.pe" || uTrim === "44567891")) {
       detectedRole = "docente";
-      detectedIdentifier = uTrim === "99887766" ? "99887766" : "docente";
+      detectedIdentifier = (uTrim === "docente") ? "99887766" : (uTrim.includes("@") ? (uTrim.includes("rosa") ? "44567891" : uTrim.includes("enrique") ? "20202020" : "99887766") : uTrim);
     }
     // 3. Check Alumno (dynamic lookup in localStudents - ONLY IF MATRICULADO)
     else if (isInputStudentMatriculado && (uTrim === "alumno" || uTrim === "luis.castillo@iestpsfa.edu.pe" || localStudents[uTrim] || Object.values(localStudents).some((st: any) => st.dni === uTrim || st.email?.toLowerCase() === uTrim))) {
@@ -336,8 +336,19 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     }
     // 5. Check if it's an 8-digit DNI or code
     else if (/^\d{8,12}$/.test(uTrim)) {
-      // First check in students if they are matriculado
-      if (isDniMatriculado(uTrim)) {
+      // First check in teachers
+      const localTeachers = (() => {
+        try {
+          const s = localStorage.getItem("sfa_teachers");
+          return s ? JSON.parse(s) : [];
+        } catch(e) { return []; }
+      })();
+      const matchedTeach = localTeachers.find((t: any) => t.dni === uTrim);
+      if (matchedTeach) {
+        detectedRole = "docente";
+        detectedIdentifier = matchedTeach.dni;
+      } else if (isDniMatriculado(uTrim)) {
+        // Then check in students if they are matriculado
         const studentList = Object.values(localStudents);
         const matchedSt: any = studentList.find((st: any) => st.dni === uTrim);
         if (matchedSt) {
@@ -354,7 +365,7 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
           detectedIdentifier = app.id || app.uid || app.applicantCode || app.dni;
         } else {
           setIsSubmitting(false);
-          setErrorMessage("El Código/DNI ingresado no se encuentra registrado en el sistema de admisión.");
+          setErrorMessage("El Código/DNI ingresado no se encuentra registrado en el sistema institucional.");
           return;
         }
       }
