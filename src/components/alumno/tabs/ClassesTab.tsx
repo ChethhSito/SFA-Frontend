@@ -1,7 +1,7 @@
 import React from "react";
 import { 
   Zap, Cpu, Sliders, Award, ChevronRight, ChevronDown, BookOpen, Clock, CheckCircle2, 
-  Users, Upload, Plus, AlertCircle, FileText, CheckCircle
+  Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark
 } from "lucide-react";
 import { CourseMaterial, CourseAssignment, CourseEvaluation, AcademicProgram, StudentPersonalData } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
@@ -642,8 +642,9 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
                 {selectedClassWeekOption === "asistencia" && (
                   <div className="space-y-3 font-sans">
-                    <div className="bg-emerald-50 text-emerald-900 border border-emerald-100 p-3 rounded-lg text-[11px] font-bold">
-                      ✔ Control de Asistencia Semanal Procesada Correctamente.
+                    <div className="bg-emerald-50 text-emerald-900 border border-emerald-100 p-3 rounded-lg text-[11px] font-bold flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Control de Asistencia Semanal Procesada Correctamente.</span>
                     </div>
                     <div className="border border-slate-150 rounded-lg p-4 space-y-3.5">
                       <div className="flex justify-between items-center border-b pb-2">
@@ -672,8 +673,9 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   const mats = filteredDBMaterials.length > 0 ? filteredDBMaterials : getFallbackMaterialsForWeek(selectedClassWeek, activeCourse.name, activeCourse.code);
                   return (
                     <div className="space-y-3">
-                      <div className="bg-amber-50 text-amber-900 border border-amber-100 p-3 rounded-lg text-[11px] font-bold">
-                        📚 Recursos académicos oficiales para la sesión académica de la <strong>Semana {selectedClassWeek}</strong>.
+                      <div className="bg-amber-50 text-amber-900 border border-amber-100 p-3 rounded-lg text-[11px] font-bold flex items-center gap-2">
+                        <BookOpen className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                        <span>Recursos académicos oficiales para la sesión académica de la <strong>Semana {selectedClassWeek}</strong>.</span>
                       </div>
                       {mats.map((m: any) => {
                         const fileExtension = m.fileName.split('.').pop()?.toUpperCase() || "PDF";
@@ -722,10 +724,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                               <p className="text-[11px] text-slate-550 font-medium leading-relaxed font-sans">{asg.description}</p>
                             </div>
 
-                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-[10px] font-bold text-slate-600 space-y-1 font-sans">
-                              <div>📅 <span className="text-slate-400">Fecha Límite:</span> <span className="text-slate-800 font-extrabold">{asg.dueDate}</span></div>
-                              {asg.rubric && <div>💯 <span className="text-slate-400">Rúbrica de Evaluación:</span> <span className="text-slate-800 font-black">{asg.rubric}</span></div>}
-                              {asg.attachment && <div>📁 <span className="text-slate-400">Guía de Apoyo:</span> <span className="text-blue-600 underline font-mono">{asg.attachment}</span></div>}
+                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-[10px] font-bold text-slate-600 space-y-1.5 font-sans">
+                              <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" /> <span className="text-slate-400">Fecha Límite:</span> <span className="text-slate-800 font-extrabold">{asg.dueDate}</span></div>
+                              {asg.rubric && <div className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5 text-amber-500 shrink-0" /> <span className="text-slate-400">Rúbrica de Evaluación:</span> <span className="text-slate-800 font-black">{asg.rubric}</span></div>}
+                              {asg.attachment && <div className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" /> <span className="text-slate-400">Guía de Apoyo:</span> <span className="text-blue-600 underline font-mono">{asg.attachment}</span></div>}
                             </div>
 
                             <div className="pt-2 border-t border-slate-100 space-y-3">
@@ -856,8 +858,9 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                               )}
                             </div>
                           ) : (
-                            <div className="text-center p-3 text-slate-450 font-semibold italic text-[11px]">
-                              ⚠️ Aún no registra entrega de trabajo para esta semana.
+                            <div className="text-center p-3 text-slate-450 font-semibold italic text-[11px] flex items-center justify-center gap-1.5">
+                              <AlertCircle className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Aún no registra entrega de trabajo para esta semana.</span>
                             </div>
                           )}
                         </div>
@@ -868,8 +871,9 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
                 {selectedClassWeekOption === "observaciones" && (
                   <div className="space-y-3 font-sans">
-                    <div className="bg-sky-50 text-sky-900 border border-sky-100 p-3 rounded-lg text-[11px] font-bold">
-                      📌 Bitácora de seguimiento escolar. Anotaciones registradas por el docente encargado de aula para la <strong>Semana {selectedClassWeek}</strong>.
+                    <div className="bg-sky-50 text-sky-900 border border-sky-100 p-3 rounded-lg text-[11px] font-bold flex items-center gap-2">
+                      <Bookmark className="w-4 h-4 text-sky-600 shrink-0" />
+                      <span>Bitácora de seguimiento escolar. Anotaciones registradas por el docente encargado de aula para la <strong>Semana {selectedClassWeek}</strong>.</span>
                     </div>
                     <p className="text-xs text-slate-500 italic p-4 text-center border rounded-lg bg-slate-50/50">
                       No se registran observaciones disciplinarias ni de rendimiento para esta semana en su ficha del alumno.

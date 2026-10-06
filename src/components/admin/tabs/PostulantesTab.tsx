@@ -30,15 +30,34 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
   onUpdateApplicants,
   renderPeriodSelector,
 }) => {
-  const activeApps = applicants.filter((app) => app.periodId === selectedPeriodId);
+  const activeApps = applicants.filter((app) => 
+    !selectedPeriodId || 
+    selectedPeriodId === "all" || 
+    app.periodId === selectedPeriodId ||
+    !app.periodId ||
+    app.periodId === "1" ||
+    app.periodId === "p1"
+  );
 
   // A candidate is a ready "Postulante" once all 4 documents are validated AND payment is validated.
   const readyPostulantes = activeApps.filter((app) => {
-    const isDni = app.docs?.dniFile?.status === "Validado";
-    const isCert = app.docs?.certificadoFile?.status === "Validado";
-    const isPartida = app.docs?.partidaFile ? app.docs.partidaFile.status === "Validado" : true;
-    const isFoto = app.docs?.fotoFile?.status === "Validado";
-    const isPayment = app.paymentStatus === "Validado";
+    let localDocStatus: any = null;
+    try {
+      const raw = localStorage.getItem(`sfa_doc_status_${app.dni}`);
+      if (raw) localDocStatus = JSON.parse(raw);
+    } catch (e) {}
+
+    let localPayStatus: string | null = null;
+    try {
+      localPayStatus = localStorage.getItem(`sfa_payment_status_${app.dni}`);
+    } catch (e) {}
+
+    const appDocs = { ...(app.docs || {}), ...(localDocStatus || {}) };
+    const isDni = appDocs?.dniFile?.status === "Validado";
+    const isCert = appDocs?.certificadoFile?.status === "Validado";
+    const isPartida = appDocs?.partidaFile ? (appDocs.partidaFile.status === "Validado" || appDocs.partidaFile.status === "No Enviado") : true;
+    const isFoto = appDocs?.fotoFile?.status === "Validado";
+    const isPayment = localPayStatus === "Validado" || app.paymentStatus === "Validado";
     return isDni && isCert && isPartida && isFoto && isPayment;
   });
 
@@ -276,6 +295,10 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
                               }
                               onChange={(e) => {
                                 const val = e.target.value;
+                                if (val === "admitido" && !app.examClassroom) {
+                                  alert("¡Validación requerida! No se puede admitir al postulante sin antes haberle asignado un aula para que rinda su examen de admisión.");
+                                  return;
+                                }
                                 const updatedList = applicants.map((a) => {
                                   if (a.dni === app.dni) {
                                     let admittedValue: "PENDIENTE" | "ADMITIDO" | "NO ADMITIDO" = "PENDIENTE";

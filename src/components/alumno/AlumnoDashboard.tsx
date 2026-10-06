@@ -48,30 +48,31 @@ export default function AlumnoDashboard({
   onUpdateAssignments,
   onLogout
 }: AlumnoDashboardProps) {
-  const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
+  const { programs: ACADEMIC_PROGRAMS, courses: catalogCourses } = useAcademicCatalog();
   const [activeTab, setActiveTab] = useState<"welcome" | "profile" | "classes" | "schedule" | "attendance" | "closure" | "notas">("welcome");
   
   // Profile edit form fields
   const [profileForm, setProfileForm] = useState<StudentPersonalData>({ ...personalData });
   const [profileSavedMsg, setProfileSavedMsg] = useState("");
   
-  // Outstanding billing simulation state
-  const [isPaidInvoice, setIsPaidInvoice] = useState(false);
-  const [paymentOp, setPaymentOp] = useState(enrollment.paymentOperation || "");
+  // Outstanding billing simulation state (el alumno matriculado tiene su matrícula pagada y sin deuda)
+  const isEnrolledAndPaid = enrollment.academicStatus === "MATRICULADO" || (enrollment.paymentStatus as string) === "Validado" || (enrollment.paymentStatus as string) === "Pagado" || (enrollment.paymentStatus as string) === "PAGADO";
+  const [isPaidInvoice, setIsPaidInvoice] = useState(isEnrolledAndPaid);
+  const [paymentOp, setPaymentOp] = useState(enrollment.paymentOperation || "OP-MATR-2026-0043");
   const [paySuccessMsg, setPaySuccessMsg] = useState("");
+
+  useEffect(() => {
+    if (enrollment.academicStatus === "MATRICULADO" || (enrollment.paymentStatus as string) === "Validado" || (enrollment.paymentStatus as string) === "Pagado" || (enrollment.paymentStatus as string) === "PAGADO") {
+      setIsPaidInvoice(true);
+    }
+  }, [enrollment]);
 
   // Sub-tab selection inside Profile View (Carga de Documentos / Historial de Pagos / Datos Académicos)
   const [profileInnerTab, setProfileInnerTab] = useState<"docs" | "payments" | "academic">("docs");
 
   // State members for interactive Consulta Académica multi-sidebar view
-  const [selectedQueryCycle, setSelectedQueryCycle] = useState<"I" | "II" | "III" | "IV" | "V">("V");
-  const [simulatedGrades, setSimulatedGrades] = useState<Record<string, number>>({
-    circuits: 18,
-    machines: 16,
-    automatic: 15,
-    installations: 17,
-    management: 16,
-  });
+  const [selectedQueryCycle, setSelectedQueryCycle] = useState<"I" | "II" | "III" | "IV" | "V">("I");
+  const [simulatedGrades, setSimulatedGrades] = useState<Record<string, number>>({});
   
   // Custom states for Image 1 and Image 2 High Fidelity replication
   const [expandedAttendanceCourse, setExpandedAttendanceCourse] = useState<string | null>("redes");
@@ -125,13 +126,17 @@ export default function AlumnoDashboard({
   };
 
   const simulateDocUpload = (docKey: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile", name: string) => {
+    const isEnr = enrollment.academicStatus === "MATRICULADO";
     const updatedDocs = { ...enrollment.docs };
     updatedDocs[docKey] = {
-      status: "Pendiente" as const,
+      status: isEnr ? ("Validado" as const) : ("Pendiente" as const),
       fileName: name
     };
     const updated = { ...enrollment, docs: updatedDocs };
     onUpdateEnrollment(updated);
+    try {
+      localStorage.setItem(`sfa_doc_status_${studentDni}`, JSON.stringify(updatedDocs));
+    } catch (e) {}
   };
 
   const handlePayInvoice = () => {
@@ -167,6 +172,10 @@ export default function AlumnoDashboard({
 
   // Map student shift and career to find their registered group in MPA
   const studentGroup = useMemo(() => {
+    if (enrollment.groupId) {
+      const found = mpaPlanningData.groups.find((g: any) => g.id === enrollment.groupId);
+      if (found) return found;
+    }
     const shiftMapped = enrollment.shift === "Mañana" ? "sh_m" : enrollment.shift === "Tarde" ? "sh_t" : "sh_n";
     return mpaPlanningData.groups.find(
       (g: any) => g.careerId === enrollment.programId && g.shiftId === shiftMapped && g.cycle === 1
@@ -224,15 +233,33 @@ export default function AlumnoDashboard({
     });
   }, [studentTasks, mpaPlanningData, enrollment, studentGroup]);
 
-  const enrolledCourses = courses.filter((c) => {
-    if (enrollment.programId === "electronica") {
-      return c.career === "Electricidad Industrial" || c.code.toLowerCase().startsWith("ee");
-    } else {
-      return c.career === "Contabilidad" || c.code.toLowerCase().startsWith("co") || c.code.toLowerCase().startsWith("cf");
-    }
-  });
+  // Real courses for Ciclo I of the student's career
+  const ciclo1Courses = useMemo(() => {
+    return catalogCourses
+      .filter((c: any) => c.careerId === enrollment.programId && (c.referenceCycle === 1 || c.cycle === 1))
+      .map((c: any) => ({
+        id: `cur-${c.id}`,
+        name: c.name,
+        code: c.code,
+        credits: c.credits || 4,
+        classroom: "Aula Asignada",
+        schedule: enrollment.shift ? `Turno ${enrollment.shift}` : "Horario Regular",
+        teacherDni: "",
+        teacherName: "Docente por Asignar",
+        career: enrollment.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad",
+        group: studentGroup?.name || "Grupo A",
+        cycle: "Ciclo I",
+        startDate: "2026-08-18",
+        endDate: "2026-12-15",
+        studentCount: studentGroup?.capacity || 30,
+        description: `Unidad didáctica del Ciclo I correspondiente al plan de estudios oficial de ${enrollment.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad"}.`,
+        formula: "NF = (EP1 * 0.20) + (TR1 * 0.15) + (EC1 * 0.15) + (PF1 * 0.50)"
+      }));
+  }, [catalogCourses, enrollment.programId, enrollment.shift, studentGroup]);
 
-  const studentCourses = dynamicMpaCourses.length > 0 ? dynamicMpaCourses : (enrolledCourses.length > 0 ? enrolledCourses : courses);
+  const studentCourses = dynamicMpaCourses.length > 0 
+    ? dynamicMpaCourses 
+    : (ciclo1Courses.length > 0 ? ciclo1Courses : courses.filter((c: any) => c.careerId === enrollment.programId || c.career === currentProgram?.name));
 
   const enrichedCourses = studentCourses.map((c) => {
     let iconType = "BarChart3";
@@ -247,46 +274,26 @@ export default function AlumnoDashboard({
     let description = c.description || `Unidad didáctica del plan curricular para la carrera de ${currentProgram?.name || "Electricidad Industrial"}. Enfocada en desarrollar competencias profesionales esenciales del sector tecnológico nacional.`;
 
     let formula = "NF = (EP1 * 0.20) + (TR1 * 0.15) + (EC1 * 0.15) + (PF1 * 0.50)";
-    if (c.id === "cur-elec-2" || c.code.includes("403")) {
-      formula = "NF = (ED1 * 0.30) + (TR1 * 0.20) + (EC1 * 0.10) + (EF1 * 0.40)";
-    } else if (c.id === "cur-elec-3" || c.code.includes("502")) {
-      formula = "NF = (EP1 * 0.25) + (LB1 * 0.25) + (AC1 * 0.10) + (PF1 * 0.40)";
-    }
 
-    let evaluationsList = [
-      { name: "Examen Parcial", sub: "Realizado en Octubre", prefix: "EP1", weight: "20%", grade: "15" },
-      { name: "Trabajo Continuo I", sub: "Informe Técnico / Monografías", prefix: "TR1", weight: "15%", grade: "18" },
-      { name: "Evaluación Diaria", sub: "Desempeño y quizzes de taller", prefix: "EC1", weight: "15%", grade: "16" },
+    // Clean initial evaluations without fake mock grades
+    const evaluationsList = [
+      { name: "Examen Parcial", sub: "Programado en semestre", prefix: "EP1", weight: "20%", grade: "NR" },
+      { name: "Trabajo Continuo I", sub: "Informe Técnico / Monografías", prefix: "TR1", weight: "15%", grade: "NR" },
+      { name: "Evaluación Diaria", sub: "Desempeño y talleres", prefix: "EC1", weight: "15%", grade: "NR" },
       { name: "Proyecto Final", sub: "Entrega prevista semana final", prefix: "PF1", weight: "50%", grade: "NR" }
     ];
-
-    if (c.id === "cur-elec-2" || c.code.includes("403")) {
-      evaluationsList = [
-        { name: "Evaluación Diagnóstica", sub: "Realizado en Octubre", prefix: "ED1", weight: "30%", grade: "16" },
-        { name: "Trabajo de Campo I", sub: "Conexiones de Transferencia", prefix: "TR1", weight: "20%", grade: "14" },
-        { name: "Desempeño Continuo", sub: "Evaluación presencial", prefix: "EC1", weight: "10%", grade: "15" },
-        { name: "Examen Final Teórico-Práctico", sub: "Ejecución presencial de circuito", prefix: "EF1", weight: "40%", grade: "NR" }
-      ];
-    } else if (c.id === "cur-elec-3" || c.code.includes("502")) {
-      evaluationsList = [
-        { name: "Examen Parcial Escrito", sub: "Realizado en Octubre", prefix: "EP1", weight: "25%", grade: "13" },
-        { name: "Informes de Laboratorio", sub: "Suma de guías completadas", prefix: "LB1", weight: "25%", grade: "15" },
-        { name: "Asistencia y Participación", sub: "Evaluación continua del docente", prefix: "AC1", weight: "10%", grade: "17" },
-        { name: "Proyecto Armado de Robot", sub: "Sustentación en semana final", prefix: "PF1", weight: "40%", grade: "NR" }
-      ];
-    }
 
     return {
       id: c.id,
       name: c.name,
       code: c.code,
-      cycle: c.cycle || "Ciclo V",
+      cycle: c.cycle || "Ciclo I",
       classroom: c.classroom || "Aula Virtual",
       credits: c.credits,
       schedule: c.schedule,
-      group: c.group || "Grupo A",
+      group: c.group || studentGroup?.name || "Grupo A",
       curriculum: c.curriculum || "Diseño Curricular 2026",
-      studentCount: c.studentCount || 5,
+      studentCount: c.studentCount || 30,
       iconType,
       description,
       formula,
@@ -408,6 +415,10 @@ export default function AlumnoDashboard({
                 enrollment={enrollment}
                 setActiveTab={setActiveTab}
                 setProfileInnerTab={setProfileInnerTab}
+                studentTasks={studentTasks}
+                mpaPlanningData={mpaPlanningData}
+                studentGroup={studentGroup}
+                studentCourses={studentCourses}
               />
             )}
 
@@ -464,6 +475,8 @@ export default function AlumnoDashboard({
                 currentProgram={currentProgram}
                 studentTasks={studentTasks}
                 mpaPlanningData={mpaPlanningData}
+                enrollment={enrollment}
+                studentGroup={studentGroup}
               />
             )}
 
@@ -475,6 +488,10 @@ export default function AlumnoDashboard({
                 expandedAttendanceCourse={expandedAttendanceCourse}
                 setExpandedAttendanceCourse={setExpandedAttendanceCourse}
                 setActiveTab={setActiveTab}
+                studentCourses={studentCourses}
+                studentTasks={studentTasks}
+                mpaPlanningData={mpaPlanningData}
+                studentGroup={studentGroup}
               />
             )}
 

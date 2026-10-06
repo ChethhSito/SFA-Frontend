@@ -6,14 +6,18 @@ interface SuccessModalData {
   lastName: string;
   email: string;
   programName: string;
+  applicantCode?: string;
+  dni?: string;
+  password?: string;
 }
 
 interface PortalSuccessModalProps {
   data: SuccessModalData | null;
   onClose: () => void;
+  onEnterIntranet?: () => void;
 }
 
-export const PortalSuccessModal: React.FC<PortalSuccessModalProps> = ({ data, onClose }) => {
+export const PortalSuccessModal: React.FC<PortalSuccessModalProps> = ({ data, onClose, onEnterIntranet }) => {
   if (!data) return null;
 
   return (
@@ -30,23 +34,48 @@ export const PortalSuccessModal: React.FC<PortalSuccessModalProps> = ({ data, on
           </p>
         </div>
 
-        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left text-xs space-y-2">
-          <div className="flex justify-between border-b border-slate-200 pb-1.5">
-            <span className="text-slate-500 uppercase font-bold text-[10px]">Correo Electrónico:</span>
-            <span className="text-slate-900 font-bold">{data.email}</span>
+        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left text-xs space-y-2.5">
+          {data.applicantCode && (
+            <div className="flex justify-between border-b border-slate-200 pb-1.5 items-center">
+              <span className="text-slate-500 uppercase font-bold text-[10px]">Código de Postulante:</span>
+              <span className="text-[#9F062A] font-mono font-black text-sm">{data.applicantCode}</span>
+            </div>
+          )}
+          {data.dni && (
+            <div className="flex justify-between border-b border-slate-200 pb-1.5 items-center">
+              <span className="text-slate-500 uppercase font-bold text-[10px]">DNI (Usuario):</span>
+              <span className="text-slate-900 font-mono font-bold">{data.dni}</span>
+            </div>
+          )}
+          <div className="flex justify-between border-b border-slate-200 pb-1.5 items-center">
+            <span className="text-slate-500 uppercase font-bold text-[10px]">Clave Inicial:</span>
+            <span className="text-slate-900 font-mono font-bold">{data.password || "clave123"}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-slate-500 uppercase font-bold text-[10px]">Acceso a Intranet:</span>
-            <span className="text-emerald-700 font-bold">Credenciales Enviadas al Correo</span>
+          <div className="flex justify-between items-center">
+            <span className="text-slate-500 uppercase font-bold text-[10px]">Correo Electrónico:</span>
+            <span className="text-slate-900 font-semibold truncate max-w-[200px]">{data.email}</span>
           </div>
         </div>
 
-        <button
-          onClick={onClose}
-          className="w-full py-3 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-lg text-xs uppercase tracking-widest shadow-md cursor-pointer"
-        >
-          Entendido
-        </button>
+        <div className="space-y-2">
+          {onEnterIntranet && (
+            <button
+              onClick={() => {
+                onClose();
+                onEnterIntranet();
+              }}
+              className="w-full py-3 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-lg text-xs uppercase tracking-widest shadow-md cursor-pointer transition-colors active:scale-98"
+            >
+              Ingresar a la Intranet
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs uppercase tracking-wider cursor-pointer transition-colors"
+          >
+            Cerrar y Continuar
+          </button>
+        </div>
       </div>
     </div>
   );

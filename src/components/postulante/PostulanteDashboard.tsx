@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { 
-  FileText, CreditCard, Award, Upload, CheckCircle2, 
+import {
+  FileText, CreditCard, Award, Upload, CheckCircle2,
   XCircle, LayoutDashboard, Landmark, Headset, Info
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -31,9 +31,9 @@ interface PostulanteDashboardProps {
   onUpdateEnrollment?: (updated: Enrollment) => void;
 }
 
-export default function PostulanteDashboard({ 
-  applicant, 
-  onUpdateApplicant, 
+export default function PostulanteDashboard({
+  applicant,
+  onUpdateApplicant,
   onLogout,
   onGoToPortal,
   enrollments = [],
@@ -180,7 +180,7 @@ export default function PostulanteDashboard({
   if (currentDocs.certificadoFile.status === "Validado") approvedCount++;
   if (currentDocs.partidaFile?.status === "Validado") approvedCount++;
   if (currentDocs.fotoFile.status === "Validado") approvedCount++;
-  
+
   const globalProgressPercentage = Math.round((approvedCount / totalDocs) * 100);
   const isActuallyAdmitted = applicant.admitted === true || applicant.admitted === "ADMITIDO";
 
@@ -430,7 +430,7 @@ export default function PostulanteDashboard({
   ];
 
   if (isActuallyAdmitted) {
-    sidebarItems.push({ id: "matricula", label: "Pago de Matrícula (Ingresantes)", icon: Landmark });
+    sidebarItems.push({ id: "matricula", label: "Pago de Matrícula", icon: Landmark });
   }
 
   return (
@@ -454,13 +454,13 @@ export default function PostulanteDashboard({
       {/* MAIN DASHBOARD CONTENT AREA */}
       <main className="flex-1 overflow-y-auto bg-slate-100 p-4 sm:p-6 md:p-8 custom-scrollbar">
         {/* TOP BAR HEADER */}
-        <PageHeader 
+        <PageHeader
           title={
             activeTab === "dashboard" ? "Resumen de Admisión" :
-            activeTab === "documentos" ? "Expediente Digital" :
-            activeTab === "pagos" ? "Estado de Pago" :
-            activeTab === "resultados" ? "Resultados de Evaluación" :
-            activeTab === "soporte" ? "Mesa de Ayuda" : "Matrícula de Ingresante"
+              activeTab === "documentos" ? "Expediente Digital" :
+                activeTab === "pagos" ? "Estado de Pago" :
+                  activeTab === "resultados" ? "Resultados de Evaluación" :
+                    activeTab === "soporte" ? "Mesa de Ayuda" : "Matrícula de Ingresante"
           }
           subtitle={`Bienvenido al portal institucional, ${applicant.name}`}
         />
@@ -468,12 +468,12 @@ export default function PostulanteDashboard({
 
         {/* ALERTS DISPLAY */}
         {applicant.admitted === true && (
-          <AlertBox 
+          <AlertBox
             variant="success"
             title="¡FELICIDADES! VACANTE OFICIAL ALCANZADA"
             message={`Ha sido ADMITIDO oficialmente en la carrera técnica de ${currentProgram.name}. Ya puede acceder a la pestaña de 'Pago de Matrícula' y descargar su Constancia de Admisión.`}
             action={
-              <button 
+              <button
                 onClick={() => setIsConstanciaModalOpen(true)}
                 className="bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-[10px] uppercase px-3 py-1.5 rounded-md cursor-pointer"
               >
@@ -485,7 +485,7 @@ export default function PostulanteDashboard({
 
         {/* ACTIVE TAB CONTENT RENDER */}
         {activeTab === "dashboard" && (
-          <DashboardMainTab 
+          <DashboardMainTab
             applicant={applicant}
             currentProgram={currentProgram}
             globalProgressPercentage={globalProgressPercentage}
@@ -496,7 +496,7 @@ export default function PostulanteDashboard({
         )}
 
         {activeTab === "documentos" && (
-          <DocumentosTab 
+          <DocumentosTab
             applicant={applicant}
             approvedCount={approvedCount}
             totalDocs={totalDocs}
@@ -510,7 +510,7 @@ export default function PostulanteDashboard({
         )}
 
         {activeTab === "pagos" && (
-          <PagosTab 
+          <PagosTab
             applicant={applicant}
             paymentDate={paymentDate}
             paymentVoucher={paymentVoucher}
@@ -529,7 +529,7 @@ export default function PostulanteDashboard({
         )}
 
         {activeTab === "resultados" && (
-          <ResultadosTab 
+          <ResultadosTab
             applicant={applicant}
             currentProgram={currentProgram}
             isActuallyAdmitted={isActuallyAdmitted}
@@ -542,7 +542,7 @@ export default function PostulanteDashboard({
         )}
 
         {activeTab === "soporte" && (
-          <SoporteTab 
+          <SoporteTab
             applicant={applicant}
             onUpdateApplicant={onUpdateApplicant}
             supportCategory={supportCategory}
@@ -553,7 +553,7 @@ export default function PostulanteDashboard({
         )}
 
         {activeTab === "matricula" && (
-          <MatriculaTab 
+          <MatriculaTab
             applicant={applicant}
             currentProgram={currentProgram}
             enrollments={enrollments}
@@ -570,12 +570,13 @@ export default function PostulanteDashboard({
             handleStartEditMatricula={handleStartEditMatricula}
             handleSubmitMatriculaVoucher={handleSubmitMatriculaVoucher}
             compressAndResizeImage={compressAndResizeImage}
+            triggerPreview={triggerPreview}
           />
         )}
       </main>
 
       {/* CONSTANCIA MODAL */}
-      <ConstanciaModal 
+      <ConstanciaModal
         isOpen={isConstanciaModalOpen}
         onClose={() => setIsConstanciaModalOpen(false)}
         applicant={applicant}
@@ -585,7 +586,7 @@ export default function PostulanteDashboard({
       <AnimatePresence>
         {stagedUploadModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -604,7 +605,7 @@ export default function PostulanteDashboard({
                   </div>
                 </div>
 
-                <button 
+                <button
                   type="button"
                   onClick={handleCancelUploadModal}
                   className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
@@ -634,9 +635,9 @@ export default function PostulanteDashboard({
                     Vista Previa de Imagen:
                   </span>
                   <div className="bg-slate-900/5 border border-slate-200 rounded-xl p-3 flex justify-center items-center max-h-72 overflow-hidden shadow-inner">
-                    <img 
-                      src={stagedUploadModal.fileDataUrl} 
-                      alt="Previsualización de documento" 
+                    <img
+                      src={stagedUploadModal.fileDataUrl}
+                      alt="Previsualización de documento"
                       className="max-h-64 object-contain rounded-lg shadow-md border border-white"
                     />
                   </div>
@@ -651,7 +652,7 @@ export default function PostulanteDashboard({
               </div>
 
               <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-2.5">
-                <button 
+                <button
                   type="button"
                   onClick={handleCancelUploadModal}
                   className="px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer text-center"
@@ -659,15 +660,15 @@ export default function PostulanteDashboard({
                   Cancelar
                 </button>
 
-                <button 
+                <button
                   type="button"
                   onClick={() => {
-                    const inputId = stagedUploadModal.docKey === "dniFile" 
-                      ? "file-input-dni" 
-                      : stagedUploadModal.docKey === "certificadoFile" 
-                        ? "file-input-cert" 
-                        : stagedUploadModal.docKey === "partidaFile" 
-                          ? "file-input-partida" 
+                    const inputId = stagedUploadModal.docKey === "dniFile"
+                      ? "file-input-dni"
+                      : stagedUploadModal.docKey === "certificadoFile"
+                        ? "file-input-cert"
+                        : stagedUploadModal.docKey === "partidaFile"
+                          ? "file-input-partida"
                           : "file-input-foto";
                     handleCancelUploadModal();
                     setTimeout(() => {
@@ -679,7 +680,7 @@ export default function PostulanteDashboard({
                   Elegir Otra Foto
                 </button>
 
-                <button 
+                <button
                   type="button"
                   onClick={handleConfirmUploadModal}
                   className="px-5 py-2.5 rounded-xl bg-[#8B0020] hover:bg-[#6e0019] text-white font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"

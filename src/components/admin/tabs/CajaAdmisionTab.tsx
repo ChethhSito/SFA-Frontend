@@ -60,7 +60,16 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
                 {applicants
-                  .filter((app) => app.periodId === selectedPeriodId && app.paymentOperation)
+                  .filter((app) => {
+                    const matchesPeriod =
+                      !selectedPeriodId ||
+                      selectedPeriodId === "all" ||
+                      app.periodId === selectedPeriodId ||
+                      !app.periodId ||
+                      app.periodId === "1" ||
+                      app.periodId === "p1";
+                    return matchesPeriod && app.paymentOperation;
+                  })
                   .map((app, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                       <td className="p-4 font-black text-slate-900">

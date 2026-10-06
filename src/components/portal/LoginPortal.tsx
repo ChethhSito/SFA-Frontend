@@ -170,7 +170,7 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
             matchedEnroll = apiEnrolls.find((e: any) => e.studentDni === matchedApp.dni);
           }
         }
-        if (matchedEnroll && (matchedEnroll.academicStatus === "MATRICULADO" || matchedEnroll.academicStatus === "ADMITIDO")) {
+        if (matchedEnroll && matchedEnroll.academicStatus === "MATRICULADO") {
           isMatriculado = true;
         }
       } catch (e) {

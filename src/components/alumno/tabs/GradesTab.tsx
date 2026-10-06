@@ -37,6 +37,13 @@ export const GradesTab: React.FC<GradesTabProps> = ({
     }
   };
 
+  const totalCredits = enrichedCourses.reduce((acc, c) => acc + (Number(c.credits) || 0), 0) || 24;
+  const gradedCourses = enrichedCourses.filter(c => typeof c.evaluations?.[0]?.grade === "number");
+  const hasGrades = gradedCourses.length > 0;
+  const calculatedAverage = hasGrades
+    ? (gradedCourses.reduce((acc, c) => acc + c.evaluations[0].grade, 0) / gradedCourses.length).toFixed(1)
+    : "0.0";
+
   return (
     <PageTransition id="notas" className="space-y-6">
       {/* Header widget */}
@@ -62,11 +69,15 @@ export const GradesTab: React.FC<GradesTabProps> = ({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-xs text-left">
           <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">Promedio Ponderado</span>
-          <span className="text-xl font-black text-[#800521] block mt-1 font-mono">16.8</span>
+          <span className="text-xl font-black text-[#800521] block mt-1 font-mono">
+            {hasGrades ? calculatedAverage : "0.0"}
+          </span>
         </div>
         <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-xs text-left">
           <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">Créditos Llevados</span>
-          <span className="text-xl font-black text-[#800521] block mt-1 font-mono">22.0</span>
+          <span className="text-xl font-black text-[#800521] block mt-1 font-mono">
+            {totalCredits.toFixed(1)}
+          </span>
         </div>
         <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-xs text-left">
           <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">Unidades Didácticas</span>
@@ -74,8 +85,8 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         </div>
         <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-xs text-left">
           <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">Condición Alumno</span>
-          <span className="text-xs font-extrabold text-emerald-850 bg-emerald-50 px-2 py-0.5 inline-block border border-emerald-100 rounded-md uppercase tracking-wider mt-1.5">
-            REGULAR (APROBADO)
+          <span className="text-xs font-extrabold text-sky-850 bg-sky-50 px-2 py-0.5 inline-block border border-sky-100 rounded-md uppercase tracking-wider mt-1.5">
+            {hasGrades ? "REGULAR (EVALUADO)" : "MATRICULADO (EN CURSO)"}
           </span>
         </div>
       </div>
@@ -221,16 +232,16 @@ export const GradesTab: React.FC<GradesTabProps> = ({
       <BoletaNotasModal
         isOpen={showBoletaModal}
         onClose={() => setShowBoletaModal(false)}
-        studentDni={studentInfo?.dni || "76543210"}
-        studentName={studentInfo?.name || "CARLOS EDURADO QUISPE TAPIA"}
-        careerName={studentInfo?.career || "Electrotecnia Industrial"}
-        cycleNumber={5}
+        studentDni={studentInfo?.dni || "00000000"}
+        studentName={studentInfo?.name || "Estudiante"}
+        careerName={studentInfo?.career || "Carrera Técnica"}
+        cycleNumber={1}
         courses={enrichedCourses.map(c => ({
           name: c.name,
-          grade: typeof c.evaluations?.[0]?.grade === "number" ? c.evaluations[0].grade : 16,
-          approved: true
+          grade: typeof c.evaluations?.[0]?.grade === "number" ? c.evaluations[0].grade : 0,
+          approved: false
         }))}
-        average={16.8}
+        average={hasGrades ? Number(calculatedAverage) : 0}
       />
     </PageTransition>
   );
