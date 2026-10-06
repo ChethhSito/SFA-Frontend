@@ -33,9 +33,10 @@ graph TD
 3. **Revisión de Expedientes y Admisión (Módulo MAMC):**
    - El personal de **MAMC** (*Admisión, Matriculación y Caja*) revisa la carpeta digital y física del postulante.
    - Cambia el estado del postulante a **`ADMITIDO`** (`PUT /applicants/:dni`).
-4. **Pago de Matrícula y Prospecto (Módulo MAF):**
-   - En Tesorería se registra el comprobante de caja (`POST /payments`).
-   - El sistema actualiza el estado financiero a **`PAGADO`** y la matrícula a **`MATRICULADO`** (`PUT /enrollments/:dni`).
+4. **Obligación, voucher y conciliación bancaria (Módulo MAF):**
+   - MAF crea o recibe una obligación y registra los datos del voucher. Esa obligación pasa a **En Proceso**; actualmente su estado se mantiene en `localStorage`.
+   - El personal carga un consolidado `.xlsx` en **Validación de Pagos**. `POST /bank-reconciliation/preview` compara operación, DNI, fecha, concepto y monto, y muestra coincidencias y diferencias. La carga no valida pagos por sí sola.
+   - Tras la revisión, `POST /bank-reconciliation/confirm` guarda en MongoDB las filas, resultados y pagos coincidentes. MAF marca esas obligaciones como **Validadas** y sincroniza el estado local usado por MAMC/MGE. Esta conciliación no matricula automáticamente al estudiante ni guarda el Excel original.
 5. **Asignación de Aula y Turno (MAMC):**
    - Se le asigna turno (*Mañana / Noche*), aula física y grupo lectivo.
 
