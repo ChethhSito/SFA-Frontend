@@ -6,6 +6,7 @@ export type MgeSubTab =
   | "pagos"
   | "notas"
   | "asistencias"
+  | "riesgo_ia"
   | "historial"
   | "constancias"
   | "reportes";

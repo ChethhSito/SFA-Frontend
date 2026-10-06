@@ -421,5 +421,20 @@ export async function closeCourseGradesApi(courseCode: string, teacherDni: strin
   });
 }
 
+/* ==========================================================================
+   11. ANALYTICS & MACHINE LEARNING (Riesgo Académico IA)
+   ========================================================================== */
+
+export async function fetchAttritionRiskReport(): Promise<any | null> {
+  return fetchJson<any>("/analytics/attrition-risk");
+}
+
+export async function referStudentToTutoring(studentDni: string, reason?: string): Promise<any | null> {
+  return fetchJson<any>("/analytics/tutoring/refer", {
+    method: "POST",
+    body: JSON.stringify({ studentDni, reason })
+  });
+}
+
 
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import {
   Users, FileText, CreditCard, Award, GraduationCap, CheckSquare,
-  TrendingUp, BookOpen
+  TrendingUp, BookOpen, BrainCircuit
 } from "lucide-react";
 import {
   Applicant,
@@ -24,6 +24,7 @@ import MgeAsistenciasTab from "./tabs/MgeAsistenciasTab";
 import MgeHistorialTab from "./tabs/MgeHistorialTab";
 import MgeConstanciasTab from "./tabs/MgeConstanciasTab";
 import MgeReportesTab from "./tabs/MgeReportesTab";
+import MgeRiesgoIaTab from "./tabs/MgeRiesgoIaTab";
 
 // Modular modals
 import MgeAddStudentModal from "./modals/MgeAddStudentModal";
@@ -494,6 +495,9 @@ export default function MgeDashboard({
         <button onClick={() => { setActiveSubTab("reportes"); setSearchQuery(""); }} className={tabClass("reportes")}>
           <TrendingUp className="w-3.5 h-3.5" /> 8. Reportes Estadísticos
         </button>
+        <button onClick={() => { setActiveSubTab("riesgo_ia"); setSearchQuery(""); }} className={tabClass("riesgo_ia")}>
+          <BrainCircuit className="w-3.5 h-3.5 text-amber-300" /> 9. Riesgo Académico IA
+        </button>
       </div>
 
       <CardContent className="p-6">
@@ -580,6 +584,10 @@ export default function MgeDashboard({
             enrollments={enrollments}
             onDownload={() => triggerNotification("Generando Reporte Estadístico Integrado Semestral en Excel para su exportación a la UGEL...")}
           />
+        )}
+
+        {activeSubTab === "riesgo_ia" && (
+          <MgeRiesgoIaTab />
         )}
       </CardContent>
 
