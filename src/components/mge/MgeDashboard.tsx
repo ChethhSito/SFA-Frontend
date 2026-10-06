@@ -124,6 +124,15 @@ export default function MgeDashboard({
     );
   }, [processedStudents, searchQuery]);
 
+  const activePeriodName = useMemo(() => {
+    const found = admissionPeriods.find((p) => p.id === selectedPeriodId);
+    const raw = found?.name || "Periodo 2026-I";
+    return raw
+      .replace(/\uFFFD/g, "é")
+      .replace(/Acad[\uFFFD\?a-zA-Z]*mico/gi, "Académico")
+      .replace(/Acadmico/gi, "Académico");
+  }, [admissionPeriods, selectedPeriodId]);
+
   // ── Handlers: Students ───────────────────────────────────────────────────
   const handleCreateStudent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -550,7 +559,7 @@ export default function MgeDashboard({
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Ciclo Activo:</span>
               <span className="text-xs font-black text-slate-800">
-                {admissionPeriods.find((p) => p.id === selectedPeriodId)?.name || "Periodo 2026-I"}
+                {activePeriodName}
               </span>
             </div>
             <span className="text-[11px] font-black text-[#9F062A] bg-[#9F062A]/10 px-3 py-1.5 rounded-lg border border-[#9F062A]/20 font-mono tracking-widest hidden sm:inline-block">
