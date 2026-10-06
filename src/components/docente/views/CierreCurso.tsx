@@ -33,7 +33,7 @@ export function CierreCurso({ course, weeksCount, materialsCount, assignmentsCou
       return;
     }
     setIsSigned(true);
-    showToast("🎉 ¡Acta firmada digitalmente con éxito! Los registros se han cerrado y enviado al Coordinador Académico del IESTP San Francisco de Asís.");
+    showToast("¡Acta firmada digitalmente con éxito! Los registros se han cerrado y enviado al Coordinador Académico del IESTP San Francisco de Asís.");
   };
 
   return (
@@ -109,13 +109,13 @@ export function CierreCurso({ course, weeksCount, materialsCount, assignmentsCou
             <Button onClick={() => setShowActaModal(true)} variant="primary" fullWidth className="font-black text-[10px] py-3 uppercase tracking-wider bg-[#8B0026]">
               <FileSpreadsheet className="w-4 h-4 mr-1.5 text-amber-300 animate-pulse" /> Generar Acta Oficial SFA
             </Button>
-            <Button onClick={() => showToast("📈 El Reporte Consolidado de Rendimiento ha sido exitosamente generado y enviado a Coordinación Académica.")} variant="outline" fullWidth className="font-black text-[10px]">
+            <Button onClick={() => showToast("El Reporte Consolidado de Rendimiento ha sido exitosamente generado y enviado a Coordinación Académica.")} variant="outline" fullWidth className="font-black text-[10px]">
               Generar Reporte de Rendimiento
             </Button>
-            <Button onClick={() => showToast("📥 El PDF oficial del curso con todas sus calificaciones ha sido descargado al sistema.")} variant="outline" fullWidth className="font-black text-[10px]">
+            <Button onClick={() => showToast("El PDF oficial del curso con todas sus calificaciones ha sido descargado al sistema.")} variant="outline" fullWidth className="font-black text-[10px]">
               Exportar a PDF
             </Button>
-            <Button onClick={() => showToast("📊 La hoja de cálculo Excel (.xlsx) de notas de alumnos se compiló y descargó.")} variant="outline" fullWidth className="font-black text-[10px]">
+            <Button onClick={() => showToast("La hoja de cálculo Excel (.xlsx) de notas de alumnos se compiló y descargó.")} variant="outline" fullWidth className="font-black text-[10px]">
               Exportar a Excel
             </Button>
           </CardContent>

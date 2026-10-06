@@ -589,10 +589,10 @@ export default function DocenteDashboard({
                     </CardHeader>
                     <CardContent className="p-5 text-[11px] text-slate-700 font-medium space-y-2">
                       <p className="pb-1.5 border-b border-amber-100">
-                        🔔 **Cierre de Actas Parciales**: Se solicita registrar las notas de la Semana 8 en la planilla consolidada antes del 15/06.
+                        <strong>Cierre de Actas Parciales:</strong> Se solicita registrar las notas de la Semana 8 en la planilla consolidada antes del 15/06.
                       </p>
                       <p>
-                        🔧 **Inventario Laboratorio**: Se han inaugurado los módulos físicos Siemens S7-1200 para prácticas del curso de Automatización.
+                        <strong>Inventario Laboratorio:</strong> Se han inaugurado los módulos físicos Siemens S7-1200 para prácticas del curso de Automatización.
                       </p>
                     </CardContent>
                   </Card>

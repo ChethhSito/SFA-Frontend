@@ -139,7 +139,7 @@ export function CurriculumTree({
               <div className="relative">
                 <input 
                   type="text"
-                  placeholder="🔍 Buscar curso (nombre o sigla)..."
+                  placeholder="Buscar curso (nombre o sigla)..."
                   value={cycleSearch[cycleNum] || ""}
                   onChange={(e) => setCycleSearch({ ...cycleSearch, [cycleNum]: e.target.value })}
                   className="w-full text-[10px] px-2 py-1 bg-white border border-slate-200 rounded focus:ring-1 focus:ring-[#9F062A] outline-none"

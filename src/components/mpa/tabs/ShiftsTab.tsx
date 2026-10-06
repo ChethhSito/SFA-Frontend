@@ -70,7 +70,7 @@ export function ShiftsTab({ shifts, schedules, saveDb, setShifts, setSchedules }
             
             {shiftErrorMessage && (
               <div className="p-3 bg-red-50 text-red-800 text-xs rounded-lg border border-red-200 font-bold space-y-1">
-                <p>⚠️ {shiftErrorMessage}</p>
+                <p>{shiftErrorMessage}</p>
                 <p className="text-[10px] font-medium text-slate-500">
                   Recuerde que el Turno Mañana debe ser entre 08:00 AM y 01:00 PM, y no puede haber solapamiento entre turnos.
                 </p>
@@ -78,7 +78,7 @@ export function ShiftsTab({ shifts, schedules, saveDb, setShifts, setSchedules }
             )}
 
             <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-[11px] font-medium text-amber-900 leading-relaxed space-y-1">
-              <p className="font-extrabold uppercase text-[9px] text-amber-800 tracking-wider">🎯 Reglas de Operación:</p>
+              <p className="font-extrabold uppercase text-[9px] text-amber-800 tracking-wider">Reglas de Operación:</p>
               <ul className="list-disc pl-4 space-y-0.5">
                 <li><strong>Mañana:</strong> Permitido exclusivamente de <b>08:00 AM a 01:00 PM</b>.</li>
                 <li><strong>Evitar Cruces:</strong> No se pueden programar turnos que se superpongan en horario.</li>
@@ -239,7 +239,7 @@ export function ShiftsTab({ shifts, schedules, saveDb, setShifts, setSchedules }
             
             {scheduleErrorMessage && (
               <div className="p-3 bg-red-50 text-red-800 text-xs rounded-lg border border-red-200 font-bold space-y-1">
-                <p>⚠️ {scheduleErrorMessage}</p>
+                <p>{scheduleErrorMessage}</p>
                 <p className="text-[10px] font-medium text-slate-500">
                   Por favor seleccione un rango diferente o revise los horarios registrados a la derecha.
                 </p>

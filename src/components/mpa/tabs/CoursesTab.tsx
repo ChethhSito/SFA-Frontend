@@ -199,7 +199,7 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
             </div>
 
             <div className="p-3 bg-amber-50 rounded border border-amber-200 text-[10.5px] text-amber-900 leading-normal font-semibold">
-              ⚠️ Al asignar este curso a una carrera, se vinculará de forma permanente. Luego, asigne el <strong>Ciclo Académico</strong> y la <strong>Malla Curricular</strong> en la pestaña correspondiente.
+              <strong>Nota:</strong> Al asignar este curso a una carrera, se vinculará de forma permanente. Luego, asigne el <strong>Ciclo Académico</strong> y la <strong>Malla Curricular</strong> en la pestaña correspondiente.
             </div>
 
             <Button type="submit" className="w-full bg-[#9F062A] hover:bg-[#800521] text-white uppercase text-[10px] font-black tracking-wider">

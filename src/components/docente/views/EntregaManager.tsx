@@ -75,7 +75,7 @@ export function EntregaManager({ courseId, week, assignment, onOpenGradingTab }:
                       <span className="text-[10px] text-slate-400 font-bold block">DNI: {sub.dni}</span>
                       {sub.fileName && (
                         <span className="text-[11px] text-blue-600 font-mono font-bold block mt-1 underline cursor-pointer select-none">
-                          📁 Descargar sol.: {sub.fileName}
+                          Descargar solución: {sub.fileName}
                         </span>
                       )}
                     </div>

@@ -99,7 +99,7 @@ export function CurriculumTab({
               <div className="space-y-2">
                 <label className="block text-[10px] text-slate-500 font-black uppercase tracking-wider">Versión de Malla / Plan:</label>
                 {careerVersions.length === 0 ? (
-                  <p className="text-xs text-amber-600 font-black italic">⚠️ No hay versiones creadas para esta carrera.</p>
+                  <p className="text-xs text-amber-600 font-black italic">No hay versiones creadas para esta carrera.</p>
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
                     {careerVersions.map(v => {

@@ -163,7 +163,7 @@ export function GroupsTab({
             </div>
 
             <div className="p-3 bg-amber-50 text-amber-900 border border-amber-200 rounded leading-relaxed text-[10.5px]">
-              💡 <strong>Regla del Negocio:</strong> Programación Académica solo mostrará asignaturas de la malla que correspondan al ciclo del grupo.
+              <strong>Regla del Negocio:</strong> Programación Académica solo mostrará asignaturas de la malla que correspondan al ciclo del grupo.
             </div>
 
             <Button type="submit" className="w-full bg-[#9F062A] hover:bg-[#800521] text-white uppercase text-[10px] font-black tracking-wider">

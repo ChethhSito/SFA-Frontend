@@ -113,7 +113,7 @@ export function ClassroomsTab({ classrooms, careers, tasks, saveDb, setClassroom
             </div>
 
             <div className="p-3 bg-[#9F062A]/5 text-[#9F062A] rounded border border-[#9F062A]/20 text-[10px] leading-relaxed">
-              ⚠️ <strong>Regla Especial:</strong> Programación Académica forzará que las sesiones de Laboratorio solo puedan asignarse a aulas tipo Laboratorio.
+              <strong>Regla Institucional:</strong> Programación Académica forzará que las sesiones de Laboratorio solo puedan asignarse a aulas tipo Laboratorio.
             </div>
 
             <Button type="submit" className="w-full bg-[#9F062A] hover:bg-[#800521] text-white uppercase text-[10px] font-black tracking-wider">

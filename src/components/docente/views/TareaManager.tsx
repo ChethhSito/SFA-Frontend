@@ -145,7 +145,7 @@ export function TareaManager({ courseId, week, assignments, onPublishAssignment,
                         )}
                         {(asg as any).attachment && (
                           <span className="bg-blue-50 text-blue-700 border border-blue-100 py-0.5 px-2.5 rounded-full font-mono">
-                            📁 {(asg as any).attachment}
+                            Adjunto: {(asg as any).attachment}
                           </span>
                         )}
                       </div>

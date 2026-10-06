@@ -150,7 +150,7 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
           <div role="alert" className="bg-rose-500/10 border-b border-rose-300 px-6 py-2.5 flex items-center justify-between text-xs font-bold text-rose-900">
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-              <span>⚠️ Se han detectado <strong>{conflictCount} conflicto(s) de sobreposición</strong> de aula o docente en la programación actual.</span>
+              <span>Se han detectado <strong>{conflictCount} conflicto(s) de sobreposición</strong> de aula o docente en la programación actual.</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] bg-rose-600 text-white px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
