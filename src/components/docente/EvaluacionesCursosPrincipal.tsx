@@ -99,16 +99,7 @@ export default function EvaluacionesCursosPrincipal({ courses }: EvaluacionesCur
     if (saved) {
       setSheetData(JSON.parse(saved));
     } else {
-      // Initialize with reasonable random seed scores for polished display
-      const seeded: { [key: string]: string } = {};
-      ROSTER.forEach((std, index) => {
-        formula.variables.forEach((variable) => {
-          const base = 12 + ((index * 2 + variable.label.charCodeAt(0)) % 8);
-          seeded[`${std.dni}-${variable.id}`] = base.toString();
-        });
-      });
-      setSheetData(seeded);
-      localStorage.setItem(key, JSON.stringify(seeded));
+      setSheetData({});
     }
   }, [selectedCourseId, formula]);
 

@@ -43,7 +43,7 @@ export default function ControlAsistenciaPrincipal({
   const totalStatesCount = totalPresente + totalTardanza + totalFalta + totalJustificado;
   const attendanceRate = totalStatesCount > 0 
     ? ((totalPresente + totalTardanza + totalJustificado) / totalStatesCount) * 100 
-    : 94.2; // fallback
+    : 0;
 
   // Apply filters to compile a flattened list of attendance transactions
   interface CompiledAttendanceRow {

@@ -172,18 +172,36 @@ export function CierreCurso({ course, weeksCount, materialsCount, assignmentsCou
                   <span className="w-1/4 text-center">N2 (S8)</span>
                   <span className="w-1/4 text-center">Promedio Final</span>
                 </div>
-                {ROSTER.map((std, idx) => {
-                  const grade1 = [17, 15, 14, 16, 12][idx];
-                  const grade2 = [18, 16, 15, 14, 11][idx];
-                  const finalAvg = Math.round((grade1 + grade2) / 2);
+                {ROSTER.map((std) => {
+                  const regKey1 = `${course.id || course.code}-4-${std.dni}`;
+                  const regKey2 = `${course.id || course.code}-8-${std.dni}`;
+                  let g1: number | null = null;
+                  let g2: number | null = null;
+                  try {
+                    const rawGrades = localStorage.getItem("sfa_grades_registry");
+                    if (rawGrades) {
+                      const parsed = JSON.parse(rawGrades);
+                      if (parsed[regKey1]?.grade !== undefined) g1 = Number(parsed[regKey1].grade);
+                      if (parsed[regKey2]?.grade !== undefined) g2 = Number(parsed[regKey2].grade);
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  }
+
+                  const displayG1 = g1 !== null ? g1 : "-";
+                  const displayG2 = g2 !== null ? g2 : "-";
+                  const finalAvg = (g1 !== null && g2 !== null)
+                    ? Math.round((g1 + g2) / 2)
+                    : (g1 !== null ? g1 : (g2 !== null ? g2 : "-"));
+
                   return (
                     <div key={std.dni} className="p-3.5 flex justify-between items-center bg-white">
                       <div className="w-1/3 text-left">
                         <span className="font-extrabold text-slate-900 block">{std.name} {std.lastName}</span>
                         <span className="text-[9.5px] text-slate-400">DNI: {std.dni}</span>
                       </div>
-                      <span className="w-1/4 text-center font-mono font-bold text-slate-700">{grade1}</span>
-                      <span className="w-1/4 text-center font-mono font-bold text-slate-700">{grade2}</span>
+                      <span className="w-1/4 text-center font-mono font-bold text-slate-700">{displayG1}</span>
+                      <span className="w-1/4 text-center font-mono font-bold text-slate-700">{displayG2}</span>
                       <span className="w-1/4 text-center font-mono font-black text-[#8B0026] text-sm">{finalAvg}</span>
                     </div>
                   );

@@ -277,10 +277,10 @@ export default function DocenteDashboard({
       }
     });
 
-    const gpa = counts > 0 ? totalScore / counts : 14.5;
+    const gpa = counts > 0 ? totalScore / counts : 0;
 
     return {
-      materialsCount: courseMats + 2, 
+      materialsCount: courseMats, 
       assignmentsCount: courseAsgs,
       incidentsCount: 0,
       studentsCount: ROSTER.length,
@@ -305,11 +305,24 @@ export default function DocenteDashboard({
       });
     });
 
+    let attPresente = 0;
+    let attTotal = 0;
+    attendance.forEach((rec) => {
+      if (activeCourseIds.includes(rec.courseId)) {
+        Object.values(rec.statusMap).forEach((st) => {
+          if (st === "Presente" || st === "Tardanza" || st === "Justificado") attPresente++;
+          attTotal++;
+        });
+      }
+    });
+
+    const realAttendanceRate = attTotal > 0 ? (attPresente / attTotal) * 100 : 0;
+
     return {
       totalCourses: teacherCourses.length,
       totalStudents: ROSTER.length * teacherCourses.length,
-      pendingGrades: pendingReviews || 4,
-      attendanceRate: 96.4
+      pendingGrades: pendingReviews,
+      attendanceRate: realAttendanceRate
     };
   };
 
@@ -571,7 +584,7 @@ export default function DocenteDashboard({
                             
                             <div className="text-[11px] text-slate-500 font-bold space-y-1 md:self-end">
                               <p><span className="text-slate-400">Aula/Lab:</span> <span className="text-[#8B0026] uppercase font-extrabold">{c.classroom}</span></p>
-                              <p><span className="text-slate-400">Alumnos:</span> <span className="text-slate-800">{c.studentCount || 5} Alumnos</span></p>
+                              <p><span className="text-slate-400">Alumnos:</span> <span className="text-slate-800">{c.studentCount || ROSTER.length || 0} Alumnos</span></p>
                               <p><span className="text-slate-400">Horario:</span> <span className="text-slate-800">{c.schedule}</span></p>
                               <p><span className="text-slate-400">Fechas:</span> <span className="text-slate-800 font-mono">{c.startDate || "06/04/2026"} al {c.endDate || "24/07/2026"}</span></p>
                             </div>
