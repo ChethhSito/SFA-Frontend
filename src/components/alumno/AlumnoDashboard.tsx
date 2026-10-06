@@ -58,7 +58,7 @@ export default function AlumnoDashboard({
   // Outstanding billing simulation state (el alumno matriculado tiene su matrícula pagada y sin deuda)
   const isEnrolledAndPaid = enrollment.academicStatus === "MATRICULADO" || (enrollment.paymentStatus as string) === "Validado" || (enrollment.paymentStatus as string) === "Pagado" || (enrollment.paymentStatus as string) === "PAGADO";
   const [isPaidInvoice, setIsPaidInvoice] = useState(isEnrolledAndPaid);
-  const [paymentOp, setPaymentOp] = useState(enrollment.paymentOperation || "OP-MATR-2026-0043");
+  const [paymentOp, setPaymentOp] = useState(enrollment.paymentOperation || (isEnrolledAndPaid ? `OP-MATR-2026-${personalData.dni ? personalData.dni.slice(-4) : "0001"}` : ""));
   const [paySuccessMsg, setPaySuccessMsg] = useState("");
 
   useEffect(() => {
@@ -483,6 +483,8 @@ export default function AlumnoDashboard({
             {activeTab === "attendance" && (
               <AttendanceTab
                 enrollment={enrollment}
+                studentDni={studentDni}
+                attendance={attendance}
                 selectedAttendanceSemester={selectedAttendanceSemester}
                 setSelectedAttendanceSemester={setSelectedAttendanceSemester}
                 expandedAttendanceCourse={expandedAttendanceCourse}
@@ -500,6 +502,7 @@ export default function AlumnoDashboard({
                 personalData={personalData}
                 enrollment={enrollment}
                 currentProgram={currentProgram}
+                courses={courses}
                 selectedAcademicOption={selectedAcademicOption}
                 setSelectedAcademicOption={setSelectedAcademicOption}
                 selectedSemesterFilter={selectedSemesterFilter}

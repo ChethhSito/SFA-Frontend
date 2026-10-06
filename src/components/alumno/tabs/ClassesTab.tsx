@@ -83,36 +83,39 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   };
 
   const getLocalWeekTheme = (courseCode: string, week: number) => {
-    const topics: Record<string, { topic: string, desc: string }[]> = {
-      "EE-101": [
-        { topic: "Introducción a la Automatización Industrial", desc: "Syllabus del curso, pirámide de automatización, arquitecturas de control." },
-        { topic: "Sensores y Actuadores de Campo", desc: "Mediciones analógicas y discretas, actuadores neumáticos y contactores." },
-        { topic: "Controladores Lógicos Programables", desc: "Controladores Lógicos Programables: Arquitectura del PLC Siemens S7-1200, módulos de comunicación y direccionamiento." },
-        { topic: "Lógica de Contactos Ladder", desc: "Lógica de relés combinatoria, contactos NA/NC, bobinas, temporizadores TON/TOF." },
-        { topic: "Temporizadores y Conteo de Eventos", desc: "Configuración de temporizadores en cascada y contadores CTU/CTD." },
-        { topic: "Interfaces Hombre-Máquina (HMI)", desc: "Sistemas HMI de panel dinámico, botones, indicadores luminosos y alarmas." },
-        { topic: "Sistemas SCADA", desc: "Supervisión remota, visualización de tendencias, base de datos de tags lectivos." },
-        { topic: "Seguridad Industrial y Redes", desc: "Normativas de seguridad en celdas de automatización y buses de campo (Profinet)." },
-        { topic: "Evaluación Parcial Práctica", desc: "Examen de control secuencial por lotes en estación modular síncrona." },
-        { topic: "Variadores de Frecuencia", desc: "Integración de variador de velocidad con motor mediante señales analógicas." },
-        { topic: "Procesamiento Analógico", desc: "Escalamiento normado de señales de temperatura, presión y nivel en PLC." },
-        { topic: "Control PID Avanzado", desc: "Sintonización empírica de bucles de control PID mediante autotuning." }
-      ],
-      "EE-403": [
-        { topic: "Sistemas de Distribución Eléctrica", desc: "Topologías de redes urbanas e industriales de media y baja tensión." },
-        { topic: "Conductores y Canalizaciones", desc: "Cálculo de sección por capacidad de corriente y caída de tensión." },
-        { topic: "Celdas de Media Tensión", desc: "Interruptores de potencia, seccionadores y sistemas de protección SF6." },
-        { topic: "Transformadores de Distribución", desc: "Conexiones delta-estrella, refrigeración, ensayos de vacío y cortocircuito." }
-      ]
-    };
+    const courseTitle = activeCourse?.name || courseCode;
+    const unitNumber = Math.ceil(week / 4);
 
-    const courseList = topics[courseCode];
-    if (courseList && courseList[week - 1]) {
-      return courseList[week - 1];
+    if (week === 1) {
+      return {
+        topic: `Semana 1: Introducción, Fundamentos y Lineamientos de ${courseTitle}`,
+        desc: `Presentación del syllabus, evaluación diagnóstica inicial y fundamentos conceptuales de ${courseTitle}.`
+      };
     }
+    if (week === 8) {
+      return {
+        topic: `Semana 8: Evaluación Parcial y Consolidación de ${courseTitle}`,
+        desc: `Examen de medio ciclo, verificación de avances prácticos y retroalimentación técnica de ${courseTitle}.`
+      };
+    }
+    if (week === 16) {
+      return {
+        topic: `Semana 16: Evaluación Final y Sustentación Integral de ${courseTitle}`,
+        desc: `Consolidación final de competencias, sustentación de proyectos y cierre de actas de ${courseTitle}.`
+      };
+    }
+
+    const subWeek = ((week - 1) % 4) + 1;
+    const subThemes = [
+      `Fundamentos teóricos y conceptualización técnica`,
+      `Taller práctico y desarrollo guiado de casos`,
+      `Laboratorio aplicado y resolución de problemas`,
+      `Revisión formativa y control de avance de unidad`
+    ];
+
     return {
-      topic: `Tema de Aprendizaje - Semana ${week}`,
-      desc: `Unidad didáctica del plan curricular para la carrera correspondiente al programa de estudios de ${courseCode}.`
+      topic: `Semana ${week}: Unidad ${unitNumber} - ${subThemes[subWeek - 1]} de ${courseTitle}`,
+      desc: `Sesión lectiva correspondiente a la Semana ${week} de ${courseTitle}: aplicación práctica, análisis de casos y desarrollo de competencias.`
     };
   };
 

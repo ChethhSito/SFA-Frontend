@@ -123,7 +123,7 @@ export const GradeSheetTable: React.FC<GradeSheetTableProps> = ({
                     {isUnderWeight ? (
                       <span className="text-[10px] text-slate-350 italic font-semibold">Pendiente</span>
                     ) : isApproved ? (
-                      <span className="text-[9px] font-black uppercase tracking-wider py-1 px-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-sm">ADMITIDO</span>
+                      <span className="text-[9px] font-black uppercase tracking-wider py-1 px-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-sm">APROBADO</span>
                     ) : (
                       <span className="text-[9px] font-black uppercase tracking-wider py-1 px-2.5 bg-red-50 border border-red-200 text-[#8B0026] rounded-sm">DESAPROBADO</span>
                     )}

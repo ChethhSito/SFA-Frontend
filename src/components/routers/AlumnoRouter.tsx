@@ -163,7 +163,7 @@ export default function AlumnoRouter({
     groupId: foundEnr?.groupId || appRecord?.groupId,
     docs: mergedDocs,
     paymentStatus: isEnrolled ? "Validado" : (foundEnr?.paymentStatus || appRecord?.paymentStatus || "No Pagado"),
-    paymentOperation: foundEnr?.paymentOperation || appRecord?.paymentOperation || "OP-MATR-2026-0043"
+    paymentOperation: foundEnr?.paymentOperation || appRecord?.paymentOperation || (isEnrolled ? `OP-MATR-2026-${currentDni ? currentDni.slice(-4) : "0001"}` : "")
   };
   let historyList = cycleStatuses[currentDni] || [];
   if (historyList.length === 0 && currentDni) {

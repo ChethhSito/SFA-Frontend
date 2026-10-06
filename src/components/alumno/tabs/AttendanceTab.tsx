@@ -2,11 +2,13 @@ import React from "react";
 import { 
   ChevronDown, Printer, AlertTriangle, FileText, Calendar, CreditCard, Award, User, Clock, MapPin, CheckCircle2 
 } from "lucide-react";
-import { Enrollment } from "../../../types";
+import { Enrollment, AttendanceRecord } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
 
 interface AttendanceTabProps {
   enrollment: Enrollment;
+  studentDni?: string;
+  attendance?: AttendanceRecord[];
   selectedAttendanceSemester: string;
   setSelectedAttendanceSemester: React.Dispatch<React.SetStateAction<string>>;
   expandedAttendanceCourse: string | null;
@@ -20,6 +22,8 @@ interface AttendanceTabProps {
 
 export const AttendanceTab: React.FC<AttendanceTabProps> = ({
   enrollment,
+  studentDni,
+  attendance = [],
   selectedAttendanceSemester,
   setSelectedAttendanceSemester,
   expandedAttendanceCourse,
@@ -30,28 +34,64 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
   mpaPlanningData,
   studentGroup
 }) => {
-  // Real enrolled courses for Ciclo I
-  const currentAttendanceCourses = studentCourses.map((c) => ({
-    id: c.id,
-    code: c.code,
-    name: c.name,
-    group: studentGroup?.name || "Ciclo I - Sección A",
-    attendanceRate: 100,
-    statusText: "100% Asistencia",
-    statusDesc: "REGULAR • AL DÍA",
-    statusType: "excellent",
-    sesRealizadas: "0 / 16",
-    puntualidad: "100%",
-    faltas: "00",
-    creditos: (c.credits || 4).toString().padStart(2, "0"),
-    schedule: c.schedule || "Horario Regular",
-    classroom: c.classroom || "Aula Principal",
-    teacher: c.teacherName || "Docente Titular"
-  }));
+  const activeDni = studentDni || enrollment.studentDni;
 
-  const totalInasistencias = 0;
-  const totalAlertsCount = 0;
-  const alertMsg = "Sin faltas registradas. El alumno asiste con regularidad.";
+  // Real enrolled courses for Ciclo I with live attendance calculations
+  const currentAttendanceCourses = studentCourses.map((c) => {
+    const courseRecords = attendance.filter((rec) => rec.courseId === c.id || rec.courseId === c.code);
+    const sesDictadas = courseRecords.length;
+
+    let asistencias = 0;
+    let faltas = 0;
+    let tardanzas = 0;
+
+    courseRecords.forEach((rec) => {
+      const status = rec.statusMap?.[activeDni];
+      if (status === "Presente" || status === "Justificado") {
+        asistencias++;
+      } else if (status === "Tardanza") {
+        asistencias++;
+        tardanzas++;
+      } else if (status === "Falta") {
+        faltas++;
+      }
+    });
+
+    const attendanceRate = sesDictadas > 0 ? Math.round((asistencias / sesDictadas) * 100) : 100;
+    const puntualidad = sesDictadas > 0 
+      ? `${Math.round(((asistencias - tardanzas) / Math.max(asistencias, 1)) * 100)}%` 
+      : "100%";
+
+    return {
+      id: c.id,
+      code: c.code,
+      name: c.name,
+      group: studentGroup?.name || "Ciclo I - Sección A",
+      attendanceRate,
+      statusText: `${attendanceRate}% Asistencia`,
+      statusDesc: sesDictadas === 0 ? "REGULAR • AL DÍA" : (attendanceRate >= 70 ? "REGULAR • AL DÍA" : "EN RIESGO POR FALTAS"),
+      statusType: attendanceRate >= 70 ? "excellent" : "warning",
+      sesRealizadas: `${sesDictadas} / 16`,
+      sesDictadas,
+      puntualidad,
+      faltas: faltas.toString().padStart(2, "0"),
+      faltasCount: faltas,
+      asistenciasCount: asistencias,
+      creditos: (c.credits || 4).toString().padStart(2, "0"),
+      schedule: c.schedule || "Horario Regular",
+      classroom: c.classroom || "Aula Principal",
+      teacher: c.teacherName || "Docente Titular"
+    };
+  });
+
+  const totalInasistencias = currentAttendanceCourses.reduce((acc, c) => acc + c.faltasCount, 0);
+  const totalSesiones = currentAttendanceCourses.reduce((acc, c) => acc + c.sesDictadas, 0);
+  const totalAsistencias = currentAttendanceCourses.reduce((acc, c) => acc + c.asistenciasCount, 0);
+  const overallRate = totalSesiones > 0 ? Math.round((totalAsistencias / totalSesiones) * 100) : 100;
+  const totalAlertsCount = currentAttendanceCourses.filter((c) => c.attendanceRate < 70 && c.sesDictadas > 0).length;
+  const alertMsg = totalAlertsCount > 0 
+    ? `${totalAlertsCount} curso(s) en riesgo por inasistencias (>30% faltas reglamentarias)`
+    : "Sin faltas registradas. El alumno asiste con regularidad.";
 
   return (
     <PageTransition id="attendance" className="space-y-6">
@@ -94,8 +134,10 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
           <div>
             <span className="text-slate-400 text-[10px] font-black uppercase tracking-wider block">Asistencia General</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-black text-emerald-600">100%</span>
-              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Al Día</span>
+              <span className={`text-2xl font-black ${overallRate >= 70 ? "text-emerald-600" : "text-amber-600"}`}>{overallRate}%</span>
+              <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${overallRate >= 70 ? "text-emerald-700 bg-emerald-50" : "text-amber-700 bg-amber-50"}`}>
+                {overallRate >= 70 ? "Al Día" : "Observado"}
+              </span>
             </div>
           </div>
           <span className="text-[10px] font-bold text-slate-400 block mt-2">Semestre 2026-I en curso</span>
@@ -116,7 +158,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
           <div>
             <span className="text-slate-400 text-[10px] font-black uppercase tracking-wider block">Inasistencias Totales</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-black text-slate-900">00</span>
+              <span className="text-2xl font-black text-slate-900">{totalInasistencias.toString().padStart(2, "0")}</span>
               <span className="text-xs font-bold text-slate-400">Sesiones</span>
             </div>
           </div>
@@ -127,13 +169,19 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
           <div>
             <div className="flex justify-between items-center">
               <span className="text-slate-400 text-[10px] font-black uppercase tracking-wider block">Alertas de Riesgo</span>
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              {totalAlertsCount > 0 ? (
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              )}
             </div>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-black text-emerald-600">00</span>
+              <span className={`text-2xl font-black ${totalAlertsCount > 0 ? "text-amber-600" : "text-emerald-600"}`}>
+                {totalAlertsCount.toString().padStart(2, "0")}
+              </span>
             </div>
           </div>
-          <span className="text-emerald-700 text-[10px] font-bold leading-tight">{alertMsg}</span>
+          <span className={`${totalAlertsCount > 0 ? "text-amber-700" : "text-emerald-700"} text-[10px] font-bold leading-tight`}>{alertMsg}</span>
         </div>
       </div>
 

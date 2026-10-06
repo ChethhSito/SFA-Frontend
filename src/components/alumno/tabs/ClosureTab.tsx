@@ -1,12 +1,13 @@
 import React from "react";
 import { Printer, Download, Award, CheckCircle2, Mail, FileText, ClipboardList } from "lucide-react";
-import { StudentPersonalData, Enrollment, AcademicProgram, CycleStatus } from "../../../types";
+import { StudentPersonalData, Enrollment, AcademicProgram, CycleStatus, Course } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
 
 interface ClosureTabProps {
   personalData: StudentPersonalData;
   enrollment: Enrollment;
   currentProgram?: AcademicProgram;
+  courses?: Course[];
   selectedAcademicOption: string;
   setSelectedAcademicOption: React.Dispatch<React.SetStateAction<string>>;
   selectedSemesterFilter: string;
@@ -30,6 +31,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   personalData,
   enrollment,
   currentProgram,
+  courses = [],
   selectedAcademicOption,
   setSelectedAcademicOption,
   selectedSemesterFilter,
@@ -119,12 +121,32 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
 
   const activePlanKey = enrollment.programId === "electronica" ? "20" : "52";
   const activeSemesterKey = selectedQueryCycle || "I";
-  const rawCoursesList = CORE_PLAN_COURSES[activePlanKey]?.[activeSemesterKey] || CORE_PLAN_COURSES["20"]["I"];
+  const cycleMap: Record<string, number> = { "I": 1, "II": 2, "III": 3, "IV": 4, "V": 5 };
+  const targetCycleNum = cycleMap[activeSemesterKey] || 1;
+
+  // Filter real courses from database by student's career program and selected cycle
+  const realDbCourses = courses.filter((c) => {
+    const isProgMatch = c.careerId === enrollment.programId || (c as any).career?.toLowerCase().includes(enrollment.programId);
+    const isCycleMatch = c.referenceCycle === targetCycleNum || (c as any).cycle === targetCycleNum;
+    return isProgMatch && isCycleMatch;
+  });
+
+  const rawCoursesList = realDbCourses.length > 0 
+    ? realDbCourses.map((c) => ({
+        code: c.code,
+        name: c.name,
+        type: "Obligatorio",
+        credits: c.credits || 4,
+        status: targetCycleNum === 1 ? "Matriculado (En Curso)" : "Pendiente de Matrícula",
+        teo: 2,
+        pr: 4
+      }))
+    : (CORE_PLAN_COURSES[activePlanKey]?.[activeSemesterKey] || CORE_PLAN_COURSES["20"]["I"]);
   
   // Real academic progress status: For Ciclo I student, cycle I is "Matriculado (En Curso)", cycles II-V are "Pendiente"
   const activeCoursesList = rawCoursesList.map((c) => ({
     ...c,
-    status: activeSemesterKey === "I" ? "Matriculado (En Curso)" : "Pendiente de Matrícula"
+    status: targetCycleNum === 1 ? "Matriculado (En Curso)" : "Pendiente de Matrícula"
   }));
   const cycleCreditsSum = activeCoursesList.reduce((sum, c) => sum + c.credits, 0);
   const weightedGpa = 0.0;
