@@ -83,6 +83,8 @@ src/
    pnpm run dev
    ```
 
+   La API local se consulta en `http://127.0.0.1:3001`. Para cambiarla, copia `.env.example` a `.env.local` y ajusta `VITE_API_URL`.
+
 4. **Compilar para producción**:
    ```bash
    pnpm run build

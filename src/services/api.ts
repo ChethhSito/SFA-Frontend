@@ -1,7 +1,7 @@
 import { Applicant, Enrollment, AdmissionPeriod, Course, Teacher, Graduation, SystemUser } from "../types";
 import { sendWelcomeEmailBrevo } from "../firebase/emailService";
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:3001";
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://127.0.0.1:3001";
 
 /**
  * Generic fetch wrapper handling HTTP errors gracefully with logging.

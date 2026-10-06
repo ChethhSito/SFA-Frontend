@@ -27,7 +27,7 @@ export async function sendWelcomeEmailBrevo(
 ): Promise<boolean> {
   // 1. Try sending via SFA-Backend NestJS Mail Service
   try {
-    const backendUrl = (import.meta.env.VITE_API_URL as string) || "http://localhost:3001";
+    const backendUrl = (import.meta.env.VITE_API_URL as string) || "http://127.0.0.1:3001";
     console.info("Dispatching welcome email via NestJS SFA-Backend:", `${backendUrl}/mail/send-welcome`);
     
     const backendResponse = await fetch(`${backendUrl}/mail/send-welcome`, {

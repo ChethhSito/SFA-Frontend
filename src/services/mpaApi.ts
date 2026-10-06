@@ -1,4 +1,4 @@
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:3001";
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://127.0.0.1:3001";
 
 export const MPA_KEYS = ["periods", "careers", "courses", "curriculum", "curriculum_versions", "shifts", "schedules", "classrooms", "groups", "teachers", "tasks"] as const;
 export type MpaKey = (typeof MPA_KEYS)[number];
