@@ -1,9 +1,9 @@
 # 🏛️ IESTP San Francisco de Asís — Portal e Intranet Institucional (`SFA-Frontend`)
 
-[![React](https://img.shields.io/badge/React-18.x-blue.svg?logo=react)](https://react.dev/)
+[![React](https://img.shields.io/badge/React-19.x-blue.svg?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg?logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.x-646CFF.svg?logo=vite)](https://vitejs.dev/)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.x-38B2AC.svg?logo=tailwindcss)](https://tailwindcss.com/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.x-38B2AC.svg?logo=tailwindcss)](https://tailwindcss.com/)
 [![REST API](https://img.shields.io/badge/Backend-NestJS-E0234E.svg?logo=nestjs)](https://nestjs.com/)
 
 Sistema de Gestión Académica, Admisión e Intranet Institucional del **IESTP San Francisco de Asís**. Diseñado con una arquitectura modular por dominios, interfaz moderna de alta gama y comunicación fluida con la REST API de `SFA-Backend`.
@@ -24,8 +24,18 @@ El sistema cuenta con soporte para **8 roles institucionales y portales dedicado
 - ⚙️ **MAMC**: Control de caja de admisión, validación de carpetas físicas y matriculación.
 - 🏛️ **MPA (Planificación Académica)**: Editor visual de mallas curriculares, créditos y horas pedagógicas.
 - 🎓 **MGE (Gestión Estudiantil & Egresados)**: Titulación, seguimiento de egresados y trámites de grado.
-- 💰 **MAF (Administración & Finanzas)**: Recaudación, recibos de caja, pensiones y estados de pago.
+- 💰 **MAF (Administración & Finanzas)**: Obligaciones, vouchers, estados de pago y conciliación de reportes bancarios.
 - 🔐 **SuperAdmin**: Control total de usuarios, asignación de roles y auditoría global del sistema.
+
+---
+
+## 🧾 Prueba de conciliación bancaria en MAF
+
+En **Solicitudes de Obligaciones** crea una obligación; en **Registro de Pagos (Vouchers)** registra su operación, fecha y monto. Luego abre **Validación de Pagos**, sube el consolidado `.xlsx`, pulsa **Comparar** y revisa el resultado de cada fila antes de **Confirmar e importar**. Solo las coincidencias completas pasan a **Validado**. Las tasas sin equivalencia, duplicados y diferencias quedan señalados para revisión.
+
+Para el archivo ficticio ajustado de prueba, usa DNI `54793519`, concepto `CON01` (**S/ 30**), operación `308496` y fecha `2026-04-12`. El voucher puede tener el prefijo `OP-`. Deben coincidir operación, DNI, concepto, fecha y monto tanto con la obligación como con el voucher. Las demás filas sin voucher MAF no se validarán. La imagen del voucher es una referencia visual: el flujo carga el **Excel**, no la imagen.
+
+El frontend lee el archivo con `read-excel-file` y envía las filas a `POST /bank-reconciliation/preview` y `POST /bank-reconciliation/confirm`. MongoDB guarda las filas extraídas, resultados y pagos confirmados; **no almacena el `.xlsx` original**. Es una automatización de conciliación con confirmación humana, no un RPA que navegue por el portal bancario. Las obligaciones MAF siguen en `localStorage`, por lo que esta versión es para pruebas locales. La API se documenta en `http://127.0.0.1:3001/api/docs`.
 
 ---
 
@@ -63,8 +73,8 @@ src/
 ## 🚀 Requisitos e Instalación Local
 
 ### Requisitos Previos
-- **Node.js**: v18.x o superior
-- **pnpm**: v8.x o superior (`npm i -g pnpm`)
+- **Node.js**: v20 o superior para ejecutar también el backend local
+- **pnpm**: v9 o superior (lockfile v9)
 
 ### Pasos para Ejecutar
 1. **Clonar el repositorio**:
@@ -83,6 +93,8 @@ src/
    pnpm run dev
    ```
 
+   La API local se consulta en `http://127.0.0.1:3001`. Para cambiarla, copia `.env.example` a `.env.local` y ajusta `VITE_API_URL`.
+
 4. **Compilar para producción**:
    ```bash
    pnpm run build
@@ -91,7 +103,7 @@ src/
 ---
 
 ## 🔒 Estándares de Commits
-Este proyecto utiliza el estándar **`[VERBO] + [OBJETO]` en español** definido en [`commit.md`](file:///d:/TP%20-2026/SFA-Frontend/commit.md):
+Este proyecto utiliza el estándar **`[VERBO] + [OBJETO]` en español** descrito en [ESTANDAR_FRONTEND.md](ESTANDAR_FRONTEND.md):
 - `Agrega`, `Implementa`, `Integra`, `Crea`, `Corrige`, `Optimiza`, `Refactoriza`, `Actualiza`.
 
 ---

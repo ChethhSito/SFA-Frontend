@@ -932,6 +932,11 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
             vouchersPorValidar={stats.vouchersPorValidar}
             handleOpenObservePayment={handleOpenObservePayment}
             handleApprovePayment={handleApprovePayment}
+            onBankConfirmed={(ids, fileName) => {
+              const selected = new Set(ids);
+              handleObligationsUpdate(obligations.map(ob => selected.has(ob.id) && ob.status === "En Proceso" ? { ...ob, status: "Validado" } : ob));
+              addAuditLog("Conciliación bancaria", `Se importó ${fileName} y se validaron ${ids.length} pagos.`, "success");
+            }}
           />
         )}
 

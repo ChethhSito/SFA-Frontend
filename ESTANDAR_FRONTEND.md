@@ -48,3 +48,7 @@ graph LR
 1. **Importaciones:** Usar siempre exportaciones limpias desde archivos `index.ts` (Barrels).
 2. **Formato de Commits:** Respetar la regla `[VERBO] + [OBJETO]` en español (`Agrega`, `Implementa`, `Integra`, `Refactoriza`, `Corrige`, `Actualiza`).
 3. **Resiliencia:** Toda llamada API debe manejar fallos de red sin romper la interfaz de usuario.
+
+## Estado del flujo de conciliación MAF
+
+La carga de Excel y la vista previa viven en `src/components/maf/BankReconciliationPanel.tsx`; `bankReport.ts` lee la primera hoja y envía JSON al backend. Las obligaciones y vouchers se mantienen en el estado de `MafDashboard.tsx` y en `localStorage`. Este flujo usa un cliente HTTP que muestra errores al usuario para evitar presentar una confirmación fallida como exitosa. Al migrar MAF a obligaciones compartidas en el backend, esta lógica debe extraerse del estado local y seguir la separación de capas descrita arriba.

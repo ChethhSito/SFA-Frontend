@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Módulos y Funcionalidades Pendientes — SFA
 
 > **IESTP San Francisco de Asís** | *Documento de Seguimiento de Desarrollo*
-> Última actualización: Septiembre 2026
+> Última actualización: Octubre 2026
 
 ---
 
@@ -40,6 +40,12 @@ Este documento define el listado de módulos y mejoras técnicas requeridas para
 ---
 
 ### 📊 4. Módulo de Arqueo de Caja y Reportes Financieros (`MAF`)
+- [x] **Conciliación de reporte bancario de prueba**:
+  - Carga manual de Excel, comparación con vouchers MAF, vista previa y confirmación humana de coincidencias.
+  - Persistencia en MongoDB de filas extraídas, resultados y pagos confirmados; detección de importaciones repetidas.
+- [ ] **Conciliación institucional entre usuarios**:
+  - Trasladar obligaciones y vouchers MAF desde `localStorage` a MongoDB como fuente compartida; añadir permisos del personal de MAF.
+  - Conservar el archivo Excel original y metadatos de auditoría. Integrar una fuente bancaria real solo si se dispone de acceso autorizado.
 - [ ] **Arqueo de Caja Diario**:
   - Módulo de cierre de tesorería diario para comparar pagos validados vs. cobros en caja presencial.
 - [ ] **Exportación de Reportes Financieros (Excel / PDF)**:
@@ -48,8 +54,8 @@ Este documento define el listado de módulos y mejoras técnicas requeridas para
 ---
 
 ### ⚠️ 5. Detector Automático de Conflictos de Horario y Aulas (`MPA`)
-- [ ] **Algoritmo Detector de Solapamiento**:
-  - Alerta en tiempo real si dos docentes o dos cursos han sido asignados al mismo laboratorio/aula física en el mismo horario.
+- [x] **Validación de solapamiento en el backend**:
+  - Rechaza programaciones que superponen grupo, docente o aula dentro del mismo período.
 - [ ] **Asignador Inteligente de Turnos y Aulas**:
   - Sugerencia automática de aulas disponibles según aforo y tipo de laboratorio (Electricidad A / Taller / Aula Teórica).
 
@@ -63,7 +69,8 @@ Este documento define el listado de módulos y mejoras técnicas requeridas para
 | **Constancia de Matrícula PDF** | 🔥 Alta | Alto | Pendiente |
 | **Carnet Estudiantil con QR** | 🟡 Media | Medio | Pendiente |
 | **Cierre de Actas Docente** | 🟡 Media | Alto | Pendiente |
-| **Detector de Conflictos MPA** | 🟢 Baja | Medio | Pendiente |
+| **Conciliación MAF entre usuarios y archivo original** | 🔥 Alta | Alto | Pendiente |
+| **Detector de Conflictos MPA** | 🟢 Baja | Medio | Implementado en backend |
 | **Arqueo de Caja MAF** | 🟢 Baja | Medio | Pendiente |
 
 ---
