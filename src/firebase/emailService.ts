@@ -48,7 +48,7 @@ export async function sendWelcomeEmailBrevo(
     });
 
     if (backendResponse.ok) {
-      console.info("✅ Welcome email sent via SFA-Backend NestJS MailService!");
+      console.info("[MailService] Welcome email sent via SFA-Backend NestJS MailService!");
       return true;
     }
   } catch (backendErr) {
@@ -95,7 +95,7 @@ export async function sendWelcomeEmailBrevo(
 
     if (response.ok) {
       const resData = await response.json();
-      console.info("✅ Welcome email sent via direct Brevo API fallback!", resData);
+      console.info("[MailService] Welcome email sent via direct Brevo API fallback!", resData);
       return true;
     } else {
       const errText = await response.text();

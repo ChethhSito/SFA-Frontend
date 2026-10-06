@@ -219,7 +219,7 @@ export default function SFABot() {
 
       const data = await response.json();
       const botReply = data.candidates?.[0]?.content?.parts?.[0]?.text || 
-        "Entendido. Si requieres orientación específica sobre tu expediente o matrícula, puedes consultar en la Intranet Académica. 🎓";
+        "Entendido. Si requieres orientación específica sobre tu expediente o matrícula, puedes consultar en la Intranet Académica.";
 
       setMessages((prev) => [
         ...prev,
@@ -232,7 +232,7 @@ export default function SFABot() {
       ]);
     } catch (err: any) {
       console.warn("SFABot Gemini fallback:", err);
-      const fallbackReply = "💡 Para consultas sobre tu proceso de admisión o ficha de estudiante, puedes navegar en el menú superior o seleccionar una de nuestras preguntas frecuentes. 🎓";
+      const fallbackReply = "Para consultas sobre tu proceso de admisión o ficha de estudiante, puedes navegar en el menú superior o seleccionar una de nuestras preguntas frecuentes.";
       setMessages((prev) => [
         ...prev,
         {

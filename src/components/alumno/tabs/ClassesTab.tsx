@@ -760,7 +760,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                                     </div>
                                   ) : (
                                     <span className="inline-block mt-1 bg-yellow-400 text-slate-900 py-0.5 px-2 rounded-sm text-[9px] font-black uppercase">
-                                      ⌛ Esperando Calificación del Docente
+                                      Esperando Calificación del Docente
                                     </span>
                                   )}
                                 </div>
