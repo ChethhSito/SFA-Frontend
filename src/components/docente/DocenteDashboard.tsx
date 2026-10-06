@@ -3,7 +3,7 @@ import {
   Users, BookOpen, Clock, FileText, CheckCircle, 
   Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronRight, BarChart3, Settings, AlertCircle, RefreshCw, FileSpreadsheet, Megaphone
 } from "lucide-react";
-import { Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, StudentPersonalData } from "../../types";
+import { Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, StudentPersonalData, Teacher, Enrollment } from "../../types";
 
 // Reusable Custom Design System Components
 import Button from "../ui/Button";
@@ -30,12 +30,14 @@ import AvisosReportesPrincipal from "./AvisosReportesPrincipal";
 
 interface DocenteDashboardProps {
   teacherDni: string;
+  teachers?: Teacher[];
   courses: Course[];
   materials: CourseMaterial[];
   assignments: CourseAssignment[];
   evaluations: CourseEvaluation[];
   attendance: AttendanceRecord[];
   studentsList: { [dni: string]: StudentPersonalData };
+  enrollments?: Enrollment[];
   onUpdateMaterials: (mats: CourseMaterial[]) => void;
   onUpdateAssignments: (asgs: CourseAssignment[]) => void;
   onUpdateAttendance: (att: AttendanceRecord[]) => void;
@@ -44,12 +46,14 @@ interface DocenteDashboardProps {
 
 export default function DocenteDashboard({
   teacherDni,
+  teachers = [],
   courses,
   materials,
   assignments,
   evaluations,
   attendance,
   studentsList,
+  enrollments = [],
   onUpdateMaterials,
   onUpdateAssignments,
   onUpdateAttendance,
@@ -67,23 +71,72 @@ export default function DocenteDashboard({
   // Mobile navigation views toggling
   const [showMobileSidebarCurso, setShowMobileSidebarCurso] = useState(false);
 
-  // Filter courses assigned to this specific teacher
-  const teacherCourses = courses.filter((c) => c.teacherDni === teacherDni || teacherDni === "docente");
+  // Resolve current logged-in teacher
+  const currentTeacher = teachers.find((t) => t.dni === teacherDni) ||
+    (teacherDni === "docente" ? (teachers.find((t) => t.careerId === "electronica") || teachers[0] || null) : null);
+
+  // Filter courses assigned to this specific teacher (supporting multiple professors per course)
+  const teacherCourses = courses.filter((c) => {
+    if (c.teacherDni === teacherDni) return true;
+    if (c.teacherDnis && c.teacherDnis.includes(teacherDni)) return true;
+    if (c.teachers && c.teachers.some((t: any) => t.dni === teacherDni)) return true;
+    if (teacherDni === "docente") {
+      if (currentTeacher) {
+        return (
+          c.teacherDni === currentTeacher.dni ||
+          c.teacherDnis?.includes(currentTeacher.dni) ||
+          c.teachers?.some((t: any) => t.dni === currentTeacher.dni) ||
+          (c.careerId && currentTeacher.careerId && c.careerId === currentTeacher.careerId)
+        );
+      }
+      return true;
+    }
+    return false;
+  });
   const selectedCourse = courses.find((c) => c.id === selectedCourseId) || null;
 
-  // 1. STATE: Weekly Observations per course & week
+  useEffect(() => {
+    if (selectedCourse) {
+      localStorage.setItem("sfa_selected_course_career", selectedCourse.careerId || selectedCourse.career || "");
+    } else {
+      localStorage.removeItem("sfa_selected_course_career");
+    }
+  }, [selectedCourse]);
+
+  useEffect(() => {
+    if (enrollments && enrollments.length > 0) {
+      try {
+        localStorage.setItem("sfa_enrollments", JSON.stringify(enrollments));
+      } catch (e) {
+        console.warn("Could not sync sfa_enrollments:", e);
+      }
+    }
+  }, [enrollments]);
+
+  useEffect(() => {
+    if (studentsList && Object.keys(studentsList).length > 0) {
+      try {
+        localStorage.setItem("sfa_students", JSON.stringify(studentsList));
+      } catch (e) {
+        console.warn("Could not sync sfa_students:", e);
+      }
+    }
+  }, [studentsList]);
+
+  // 1. STATE: Weekly Observations per course & week (clean state, purging mock IDs)
   const [weeklyObservations, setWeeklyObservations] = useState<{ [key: string]: WeeklyObservation[] }>(() => {
     const saved = localStorage.getItem("sfa_weekly_observations");
-    if (saved) return JSON.parse(saved);
-    return {
-      "cur-elec-1-1": [
-        { id: "obs-init-1", text: "Clase introductoria finalizada con quórum completo. Alumnos muestran amplio interés en el simulador de PLC S7-1200.", date: "2026-06-01", type: "General" },
-        { id: "obs-init-2", text: "Se acordó que el trabajo grupal final se entregará de forma obligatoria en la semana 15.", date: "2026-06-01", type: "Acuerdo" }
-      ],
-      "cur-elec-1-4": [
-        { id: "obs-init-3", text: "Dos licencias de TIA Portal fallaron en las PC del laboratorio, se reportó a soporte técnico para reconfiguración.", date: "2026-06-03", type: "Incidencia" }
-      ]
-    };
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        delete parsed["cur-elec-1-1"];
+        delete parsed["cur-elec-1-4"];
+        return parsed;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return {};
   });
 
   // Save observations status in localStorage
@@ -91,14 +144,20 @@ export default function DocenteDashboard({
     localStorage.setItem("sfa_weekly_observations", JSON.stringify(weeklyObservations));
   }, [weeklyObservations]);
 
-  // 2. STATE: Grades registry cache
+  // 2. STATE: Grades registry cache (clean state, purging mock IDs)
   const [gradesRegistry, setGradesRegistry] = useState<{ [key: string]: { grade?: number; feedback?: string } }>(() => {
     const saved = localStorage.getItem("sfa_grades_registry");
-    if (saved) return JSON.parse(saved);
-    return {
-      "cur-elec-1-4-12345678": { grade: 17, feedback: "Excelente lógica de enclavamiento y temporizado TON en PLC Siemens." },
-      "cur-proj-1-4-12345678": { grade: 16, feedback: "Buen desglose EDT, recuerde delimitar las contingencias de hardware." }
-    };
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        delete parsed["cur-elec-1-4-12345678"];
+        delete parsed["cur-proj-1-4-12345678"];
+        return parsed;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return {};
   });
 
   useEffect(() => {
@@ -256,35 +315,31 @@ export default function DocenteDashboard({
 
   const globalStats = getGlobalStats();
 
-  // Handler for custom weekly schedules per course
+  // Handler for custom weekly schedules per course (derived dynamically)
   const getCourseSchedulesList = (courseCode: string) => {
-    switch (courseCode) {
-      case "EE-101":
-        return [
-          { type: "Teoría", day: "Lunes", start: "08:00 AM", end: "10:30 AM", classroom: "Lab. Automatización I", freq: "Semanal" },
-          { type: "Laboratorio", day: "Miércoles", start: "14:00 PM", end: "16:30 PM", classroom: "Estación Siemens S7", freq: "Semanal" }
-        ];
-      case "EE-102":
-        return [
-          { type: "Teoría", day: "Martes", start: "10:00 AM", end: "12:30 PM", classroom: "Aula B-201", freq: "Semanal" },
-          { type: "Laboratorio", day: "Jueves", start: "08:00 AM", end: "10:30 AM", classroom: "Taller Transformadores", freq: "Semanal" }
-        ];
-      case "SY-301":
-        return [
-          { type: "Teoría", day: "Martes", start: "14:00 PM", end: "16:30 PM", classroom: "Lab. de Cómputo C-2", freq: "Semanal" },
-          { type: "Laboratorio", day: "Viernes", start: "10:00 AM", end: "12:30 PM", classroom: "Lab. de Cómputo C-2", freq: "Semanal" }
-        ];
-      case "SY-302":
-        return [
-          { type: "Teoría", day: "Jueves", start: "10:00 AM", end: "12:30 PM", classroom: "Lab. de Redes R-1", freq: "Semanal" },
-          { type: "Laboratorio", day: "Viernes", start: "14:00 PM", end: "16:30 PM", classroom: "Lab. de Redes R-1", freq: "Semanal" }
-        ];
-      default:
-        return [
-          { type: "Teoría", day: "Lunes", start: "14:00 PM", end: "16:30 PM", classroom: "Aula Regular B-105", freq: "Semanal" },
-          { type: "Laboratorio", day: "Miércoles", start: "15:00 PM", end: "17:30 PM", classroom: "Laboratorio C-3", freq: "Semanal" }
-        ];
+    const found = courses.find((c) => c.code === courseCode || c.id === courseCode);
+    if (found && found.schedule) {
+      const parts = found.schedule.split(" • ");
+      if (parts.length >= 2) {
+        return parts.map((part) => {
+          const isLab = part.toLowerCase().includes("lab");
+          const type = isLab ? "Laboratorio" : "Teoría";
+          const dayMatch = part.match(/^(Lunes|Martes|Miércoles|Jueves|Viernes)/i);
+          const day = dayMatch ? dayMatch[1] : "Lunes";
+          const timeMatch = part.match(/\d{2}:\d{2}\s*(?:AM|PM)\s*-\s*\d{2}:\d{2}\s*(?:AM|PM)/i);
+          const timeStr = timeMatch ? timeMatch[0] : "08:00 AM - 11:30 AM";
+          const [start, end] = timeStr.split(" - ");
+          const classRoomMatch = part.match(/\((?:Teoría|Lab):\s*([^)]+)\)/i);
+          const classroom = classRoomMatch ? classRoomMatch[1] : (found.classroom || "Aula Regular");
+          return { type, day, start: start || "08:00 AM", end: end || "11:30 AM", classroom, freq: "Semanal" };
+        });
+      }
     }
+    const cr = found?.classroom || "Aula Regular";
+    return [
+      { type: "Teoría", day: "Lunes", start: "08:00 AM", end: "10:15 AM", classroom: cr, freq: "Semanal" },
+      { type: "Laboratorio", day: "Miércoles", start: "10:30 AM", end: "01:00 PM", classroom: cr, freq: "Semanal" }
+    ];
   };
 
   return (
@@ -294,6 +349,7 @@ export default function DocenteDashboard({
       <div className="hidden md:block">
         <SidebarPrincipal
           teacherDni={teacherDni}
+          teacher={currentTeacher}
           courses={teacherCourses}
           selectedCourseId={selectedCourseId}
           onSelectCourse={(courseId) => {
@@ -417,6 +473,7 @@ export default function DocenteDashboard({
         <div className="md:hidden fixed top-14 bottom-0 left-0 w-64 z-30 bg-white border-r">
           <SidebarPrincipal
             teacherDni={teacherDni}
+            teacher={currentTeacher}
             courses={teacherCourses}
             selectedCourseId={selectedCourseId}
             onSelectCourse={(courseId) => {
@@ -448,7 +505,7 @@ export default function DocenteDashboard({
                     SISTEMA INTRANET INSTITUCIONAL • PORTAL DOCENTE
                   </span>
                   <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-none pt-1">
-                    ¡Buenos días, Profesor Ramos Torres!
+                    ¡Buenos días, {currentTeacher ? `Profesor(a) ${currentTeacher.lastName || currentTeacher.name}` : "Profesor(a)"}!
                   </h2>
                   <p className="text-xs text-white/90 font-medium">
                     Gestione la carga académica, controle avance de syllabus presencial y valide calificaciones nacionales.
@@ -552,27 +609,36 @@ export default function DocenteDashboard({
                       </div>
                     </CardHeader>
                     <CardContent className="p-5 text-xs text-slate-700 font-bold space-y-2.5 font-sans">
-                      <div className="p-2 bg-slate-50 border-l-4 border-[#8B0026] rounded flex justify-between">
-                        <div>
-                          <span className="block font-black text-slate-900 leading-none">Automatización PLC</span>
-                          <span className="text-[10px] text-slate-400 mt-1 block">Lab I • Lunes 8:00 AM - 11:30 AM</span>
-                        </div>
-                        <span className="text-[9px] bg-[#8B0026]/10 text-[#8B0026] font-black h-max px-2 py-0.5 rounded font-mono uppercase">Lunes</span>
-                      </div>
-                      <div className="p-2 bg-slate-50 border-l-4 border-amber-500 rounded flex justify-between">
-                        <div>
-                          <span className="block font-black text-slate-900 leading-none">Admin. de Proyectos</span>
-                          <span className="text-[10px] text-slate-400 mt-1 block">Lab C-2 • Martes 2:00 PM - 5:30 PM</span>
-                        </div>
-                        <span className="text-[9px] bg-amber-505 bg-amber-500/15 text-amber-700 font-black h-max px-2 py-0.5 rounded font-mono uppercase">Martes</span>
-                      </div>
-                      <div className="p-2 bg-slate-50 border-l-4 border-blue-500 rounded flex justify-between">
-                        <div>
-                          <span className="block font-black text-slate-900 leading-none">Redes y Com II</span>
-                          <span className="text-[10px] text-slate-400 mt-1 block">Lab R-1 • Jueves 10:00 AM - 1:00 PM</span>
-                        </div>
-                        <span className="text-[9px] bg-blue-500/10 text-blue-700 font-black h-max px-2 py-0.5 rounded font-mono uppercase">Jueves</span>
-                      </div>
+                      {teacherCourses.length === 0 ? (
+                        <p className="text-slate-400 text-[11px] font-medium py-3 text-center">
+                          No registra sesiones lectivas programadas para el periodo activo.
+                        </p>
+                      ) : (
+                        teacherCourses.slice(0, 4).map((c, idx) => {
+                          const borderColors = ["border-[#8B0026]", "border-amber-500", "border-blue-500", "border-emerald-500"];
+                          const badgeColors = [
+                            "bg-[#8B0026]/10 text-[#8B0026]",
+                            "bg-amber-500/15 text-amber-700",
+                            "bg-blue-500/10 text-blue-700",
+                            "bg-emerald-500/10 text-emerald-700"
+                          ];
+                          const dayBadge = c.schedule?.split(" ")[0] || "Lectivo";
+                          const timeInfo = c.schedule?.includes(" ") ? c.schedule.substring(c.schedule.indexOf(" ") + 1) : (c.schedule || "Horario regular");
+                          return (
+                            <div key={c.id || c.code} className={`p-2 bg-slate-50 border-l-4 ${borderColors[idx % borderColors.length]} rounded flex justify-between items-center`}>
+                              <div className="min-w-0 flex-1 pr-2">
+                                <span className="block font-black text-slate-900 leading-tight truncate">{c.name}</span>
+                                <span className="text-[10px] text-slate-400 mt-1 block truncate">
+                                  {c.classroom || "Aula regular"} • {timeInfo}
+                                </span>
+                              </div>
+                              <span className={`text-[9px] ${badgeColors[idx % badgeColors.length]} font-black h-max px-2 py-0.5 rounded font-mono uppercase shrink-0`}>
+                                {dayBadge}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
                     </CardContent>
                   </Card>
 
@@ -592,7 +658,7 @@ export default function DocenteDashboard({
                         <strong>Cierre de Actas Parciales:</strong> Se solicita registrar las notas de la Semana 8 en la planilla consolidada antes del 15/06.
                       </p>
                       <p>
-                        <strong>Inventario Laboratorio:</strong> Se han inaugurado los módulos físicos Siemens S7-1200 para prácticas del curso de Automatización.
+                        <strong>Entrega de Sílabos y Materiales:</strong> Se recuerda a los docentes completar la carga de unidades de aprendizaje y evaluaciones correspondientes.
                       </p>
                     </CardContent>
                   </Card>
@@ -694,7 +760,10 @@ export default function DocenteDashboard({
           {/* TAB 4: AVISOS Y REPORTES GENERAL */}
           {selectedCourseId === null && activeTab === "avisos_reportes" && (
             <PageTransition id="avisos-reportes-general-tab">
-              <AvisosReportesPrincipal />
+              <AvisosReportesPrincipal 
+                teacherName={currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Docente Titular"}
+                courses={teacherCourses}
+              />
             </PageTransition>
           )}
 
@@ -712,26 +781,30 @@ export default function DocenteDashboard({
             <PageTransition id="config-tab" className="space-y-6 text-left">
               <PageHeader 
                 title="Configuración de Cuenta Docente"
-                subtitle="Firma digital homologada, correo de contacto y habilitaciones del catedrático Ramos."
+                subtitle="Firma digital homologada, correo de contacto y habilitaciones institucionales del docente."
                 icon={<Settings className="w-6 h-6 text-[#8B0026]" />}
               />
               <Card className="max-w-xl mx-auto text-left font-sans text-xs border border-slate-150">
                 <CardHeader>
-                  <CardTitle>Información del Catedrático Ramos</CardTitle>
+                  <CardTitle>Información del Docente Titular</CardTitle>
                 </CardHeader>
                 <CardContent className="p-5 space-y-4">
                   <div className="grid grid-cols-2 gap-4 font-bold text-slate-700">
                     <div>
                       <label className="block text-slate-450 uppercase text-[9px] mb-1 font-black">Nombre Completo</label>
-                      <input type="text" disabled value="Miguel Ángel Ramos Torres" className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-bold" />
+                      <input type="text" disabled value={currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Docente IESTP"} className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-bold" />
                     </div>
                     <div>
                       <label className="block text-slate-450 uppercase text-[9px] mb-1 font-black">DNI de Certificación</label>
-                      <input type="text" disabled value="docente" className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-mono font-bold" />
+                      <input type="text" disabled value={currentTeacher?.dni || teacherDni} className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-mono font-bold" />
                     </div>
-                    <div className="col-span-2">
+                    <div>
                       <label className="block text-slate-450 uppercase text-[9px] mb-1 font-black">E-mail Institucional</label>
-                      <input type="text" disabled value="miguel.ramos@iestpsfa.edu.pe" className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-bold" />
+                      <input type="text" disabled value={currentTeacher?.email || "docente@iestpsfa.edu.pe"} className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-bold" />
+                    </div>
+                    <div>
+                      <label className="block text-slate-450 uppercase text-[9px] mb-1 font-black">Especialidad Principal</label>
+                      <input type="text" disabled value={currentTeacher?.specialty || "Cátedra Universitaria & Tecnológica"} className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-bold" />
                     </div>
                   </div>
                   <AlertBox variant="success" title="Firma Certificada" description="Acuerdo con directiva nacional, su firma digital mediante DNI se encuentra homologada en la pasarela académica del IESTP San Francisco de Asís." className="mt-2 text-[10.5px]" />
@@ -809,10 +882,10 @@ export default function DocenteDashboard({
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-extrabold text-slate-900 text-sm leading-tight uppercase">
-                        Tema: {getWeekTheme(selectedCourse.code, selectedWeek).topic}
+                        Tema: {getWeekTheme(selectedCourse.code, selectedWeek, selectedCourse.name).topic}
                       </h3>
                       <p className="text-[11px] text-slate-500 font-semibold block mt-1">
-                        {getWeekTheme(selectedCourse.code, selectedWeek).desc}
+                        {getWeekTheme(selectedCourse.code, selectedWeek, selectedCourse.name).desc}
                       </p>
                     </div>
                   </div>

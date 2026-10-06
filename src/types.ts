@@ -140,14 +140,18 @@ export interface Course {
   classroom: string;
   schedule: string;
   teacherDni: string;
+  teacherName?: string;
+  teachers?: { dni: string; name: string; role?: string }[];
+  teacherDnis?: string[];
   career?: string;
+  careerId?: string;
   group?: string;
   curriculum?: string;
   startDate?: string;
   endDate?: string;
   studentCount?: number;
   description?: string;
-  cycle?: string;
+  cycle?: string | number;
 }
 
 export interface CourseMaterial {
@@ -231,6 +235,7 @@ export interface Teacher {
   email: string;
   specialty: string;
   specialties?: string[];
+  careerId?: string;
   status?: "Disponible" | "Licencia" | "Inactivo";
 }
 

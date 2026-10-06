@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from "react";
 import DocenteDashboard from "../docente/DocenteDashboard";
-import { Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, StudentPersonalData } from "../../types";
+import { Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, StudentPersonalData, Teacher, Enrollment } from "../../types";
 import { Lock, ArrowLeft } from "lucide-react";
 import Button from "../ui/Button";
 
 interface DocenteRouterProps {
+  teachers?: Teacher[];
   courses: Course[];
   materials: CourseMaterial[];
   assignments: CourseAssignment[];
   evaluations: CourseEvaluation[];
   attendance: AttendanceRecord[];
   studentsList: { [dni: string]: StudentPersonalData };
+  enrollments?: Enrollment[];
   onUpdateMaterials: (updated: CourseMaterial[]) => void;
   onUpdateAssignments: (updated: CourseAssignment[]) => void;
   onUpdateAttendance: (updated: AttendanceRecord[]) => void;
@@ -18,12 +20,14 @@ interface DocenteRouterProps {
 }
 
 export default function DocenteRouter({
+  teachers = [],
   courses,
   materials,
   assignments,
   evaluations,
   attendance,
   studentsList,
+  enrollments = [],
   onUpdateMaterials,
   onUpdateAssignments,
   onUpdateAttendance,
@@ -75,12 +79,14 @@ export default function DocenteRouter({
   return (
     <DocenteDashboard 
       teacherDni={session}
+      teachers={teachers}
       courses={courses}
       materials={materials}
       assignments={assignments}
       evaluations={evaluations}
       attendance={attendance}
       studentsList={studentsList}
+      enrollments={enrollments}
       onUpdateMaterials={onUpdateMaterials}
       onUpdateAssignments={onUpdateAssignments}
       onUpdateAttendance={onUpdateAttendance}

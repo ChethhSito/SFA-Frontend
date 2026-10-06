@@ -3,9 +3,12 @@ import { Info, Mail, Megaphone, FileText, Download, Plus, Trash2, Shield, Calend
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/Card";
 import Button from "../ui/Button";
 import PageHeader from "../ui/PageHeader";
+import { Course } from "../../types";
 
 interface AvisosReportesPrincipalProps {
   initialSubTab?: "avisos" | "comunicados" | "reportes";
+  teacherName?: string;
+  courses?: Course[];
 }
 
 interface AvisoItem {
@@ -25,7 +28,11 @@ interface ComunicadoItem {
   date: string;
 }
 
-export default function AvisosReportesPrincipal({ initialSubTab = "avisos" }: AvisosReportesPrincipalProps) {
+export default function AvisosReportesPrincipal({ 
+  initialSubTab = "avisos",
+  teacherName = "Docente Titular",
+  courses = []
+}: AvisosReportesPrincipalProps) {
   const [subTab, setSubTab] = useState<"avisos" | "comunicados" | "reportes">(initialSubTab);
 
   // Core Data Lists
@@ -40,8 +47,8 @@ export default function AvisosReportesPrincipal({ initialSubTab = "avisos" }: Av
     {
       id: "avis-2",
       sender: "Administración",
-      title: "Inventario de Licencias y Módulos Siemens S7-1500",
-      body: "Se han adquirido licencias educativas definitivas de Siemens TIA Portal v18 para el Laboratorio de Automatización Industrial. Validar instalación antes de clase práctica.",
+      title: "Recursos y Equipamiento en Laboratorios",
+      body: "Se han actualizado las plataformas y herramientas educativas para las prácticas institucionales. Validar operatividad antes de las sesiones prácticas.",
       date: "2026-05-28"
     },
     {
@@ -56,26 +63,18 @@ export default function AvisosReportesPrincipal({ initialSubTab = "avisos" }: Av
   const [acadComms, setAcadComms] = useState<ComunicadoItem[]>([
     {
       id: "comm-1",
-      senderName: "Prof. Miguel Ángel Ramos Torres",
-      courseCode: "EE-101",
-      title: "Guía de Trabajo con Simulador PLC Factory IO",
-      body: "Estimados alumnos de Automatización Industrial, he publicado las diapositivas de soporte técnico para configurar escenas 3D interconectadas con TIA Portal.",
+      senderName: teacherName,
+      courseCode: courses[0]?.code || "General",
+      title: "Publicación de Guía de Aprendizaje e Indicaciones",
+      body: "Estimados estudiantes, se han publicado los materiales lectivos y rúbricas de evaluación correspondientes a las unidades temáticas del semestre.",
       date: "2026-06-02"
-    },
-    {
-      id: "comm-2",
-      senderName: "Prof. Miguel Ángel Ramos Torres",
-      courseCode: "SY-301",
-      title: "Estructuración de EDT y diccionarios de control",
-      body: "Firma obligatoria del Acta Scrum para el Sprint 2 por equipos. Sincronizar avances en la carpeta Drive de coordinación antes de la semana 5.",
-      date: "2026-05-30"
     }
   ]);
 
   // Form states for publishing academic communication
   const [newTitle, setNewTitle] = useState("");
   const [newBody, setNewBody] = useState("");
-  const [newCourse, setNewCourse] = useState("EE-101");
+  const [newCourse, setNewCourse] = useState(courses[0]?.code || "General");
 
   const handlePostComm = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +82,7 @@ export default function AvisosReportesPrincipal({ initialSubTab = "avisos" }: Av
 
     const newItem: ComunicadoItem = {
       id: `comm-${Date.now()}`,
-      senderName: "Prof. Miguel Ángel Ramos Torres",
+      senderName: teacherName,
       courseCode: newCourse,
       title: newTitle.trim(),
       body: newBody.trim(),
@@ -212,10 +211,15 @@ export default function AvisosReportesPrincipal({ initialSubTab = "avisos" }: Av
                     onChange={(e) => setNewCourse(e.target.value)}
                     className="w-full px-3 py-2 bg-white border rounded-md font-semibold text-slate-800 focus:outline-[#8B0026]"
                   >
-                    <option value="EE-101">EE-101 • Automatización Industrial y PLC</option>
-                    <option value="EE-102">EE-102 • Circuitos de Media y Baja Tensión</option>
-                    <option value="SY-301">SY-301 • Administración de Proyectos Informáticos</option>
-                    <option value="SY-302">SY-302 • Redes y Comunicación de Datos II</option>
+                    {courses && courses.length > 0 ? (
+                      courses.map((c) => (
+                        <option key={c.id || c.code} value={c.code}>
+                          {c.code} • {c.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="General">Todas las Asignaturas a Cargo</option>
+                    )}
                   </select>
                 </div>
 

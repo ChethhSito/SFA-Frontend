@@ -149,15 +149,19 @@ export function CierreCurso({ course, weeksCount, materialsCount, assignmentsCou
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-wrap justify-between gap-4">
                 <div>
                   <span className="text-slate-400 block text-[9px] uppercase">PROGRAMA ACADÉMICO</span>
-                  <span className="text-slate-900 uppercase">Sistemas & Electrotecnia</span>
+                  <span className="text-slate-900 uppercase">{course.career || (course.careerId === 'contabilidad' ? 'Contabilidad' : 'Electricidad Industrial')}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[9px] uppercase">DOCENTE AUXILIAR</span>
-                  <span className="text-slate-900">Ing. Miguel Ángel Ramos Torres</span>
+                  <span className="text-slate-400 block text-[9px] uppercase">PLANA DOCENTE</span>
+                  <span className="text-slate-900">
+                    {course.teachers && course.teachers.length > 0
+                      ? course.teachers.map((t: any) => `${t.name} (${t.role || 'Cátedra'})`).join(" • ")
+                      : (course.teacherName || "Docente Titular")}
+                  </span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[9px] uppercase font-bold">SEMESTRE LECTIVO</span>
-                  <span className="text-slate-900">Regular</span>
+                  <span className="text-slate-900">Periodo 2026-I Regular</span>
                 </div>
               </div>
 

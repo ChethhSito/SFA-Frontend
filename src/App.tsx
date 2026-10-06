@@ -202,12 +202,14 @@ export default function App() {
       {/* 5. Teacher registry panel */}
       {currentUser.role === "docente" && (
         <DocenteRouter 
+          teachers={teachers}
           courses={courses}
           materials={materials}
           assignments={assignments}
           evaluations={evaluations}
           attendance={attendance}
           studentsList={studentsData}
+          enrollments={enrollments}
           onUpdateMaterials={handleUpdateMaterials}
           onUpdateAssignments={handleUpdateAssignments}
           onUpdateAttendance={handleUpdateAttendance}

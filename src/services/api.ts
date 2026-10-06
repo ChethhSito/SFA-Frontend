@@ -156,11 +156,14 @@ export async function updateAdmissionPeriod(id: string, data: Partial<AdmissionP
    ========================================================================== */
 
 export async function fetchCourses(): Promise<Course[] | null> {
-  const list = await fetchJson<any[]>("/courses");
+  let list = await fetchJson<any[]>("/courses");
+  if (!list || list.length === 0) {
+    list = await fetchJson<any[]>("/mpa/courses");
+  }
   if (!list) return null;
   return list.map((item) => ({
     ...item,
-    id: item.id || item._id
+    id: item.id || item._id || item.code
   })) as Course[];
 }
 
@@ -183,11 +186,14 @@ export async function updateCourse(code: string, data: Partial<Course>): Promise
    ========================================================================== */
 
 export async function fetchTeachers(): Promise<Teacher[] | null> {
-  const list = await fetchJson<any[]>("/teachers");
+  let list = await fetchJson<any[]>("/teachers");
+  if (!list || list.length === 0) {
+    list = await fetchJson<any[]>("/mpa/teachers");
+  }
   if (!list) return null;
   return list.map((item) => ({
     ...item,
-    id: item.id || item._id
+    id: item.id || item._id || item.dni
   })) as Teacher[];
 }
 

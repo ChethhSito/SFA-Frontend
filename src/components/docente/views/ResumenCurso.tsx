@@ -135,9 +135,13 @@ export function ResumenCurso({
               <span className="text-slate-400 font-semibold">Fecha de fin:</span>
               <span className="text-slate-900 font-mono">{course.endDate || "24/07/2026"}</span>
             </div>
-            <div className="py-2.5 flex justify-between text-slate-400 italic font-medium">
-              <span>Catedrático Titular:</span>
-              <span className="text-[#8B0026] not-italic font-extrabold">Ing. Miguel Ángel Ramos Torres</span>
+            <div className="py-2.5 flex justify-between items-start text-slate-400 italic font-medium gap-3">
+              <span className="shrink-0">Plana Docente:</span>
+              <span className="text-[#8B0026] not-italic font-extrabold text-right">
+                {course.teachers && course.teachers.length > 0
+                  ? course.teachers.map((t: any) => `${t.name} (${t.role || 'Cátedra'})`).join(" • ")
+                  : (course.teacherName || "Docente Titular")}
+              </span>
             </div>
           </CardContent>
         </Card>

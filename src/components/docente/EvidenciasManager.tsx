@@ -32,19 +32,7 @@ export default function EvidenciasManager({ courseId, week }: EvidenciasManagerP
     if (saved) {
       setEvidenceList(JSON.parse(saved));
     } else {
-      // Seed initial mock evidence
-      const initial: EvidenciaItem[] = [
-        {
-          id: `ev-mock-1`,
-          category: "Laboratorio",
-          title: "Captura de lógica Siemens Step7 en ejecución",
-          fileName: "plc_siemens_step_7_logic.png",
-          fileSize: "1.4 MB",
-          date: new Date().toLocaleDateString("es-PE")
-        }
-      ];
-      setEvidenceList(initial);
-      localStorage.setItem(key, JSON.stringify(initial));
+      setEvidenceList([]);
     }
   }, [courseId, week]);
 

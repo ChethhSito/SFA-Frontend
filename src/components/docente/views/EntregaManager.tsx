@@ -17,18 +17,32 @@ interface Props {
 export function EntregaManager({ courseId, week, assignment, onOpenGradingTab }: Props) {
   const subs = (() => {
     if (!assignment) return [];
-    return ROSTER.map((std, idx) => {
-      const hasDelivered = idx < 3;
-      const fileExtDict = ["pdf", "zip", "docx"];
-      const isGraded = idx === 0;
+    const savedKey = `sfa_assignment_submissions_${assignment.id || assignment.title}`;
+    let savedSubmissions: Record<string, any> = {};
+    try {
+      const raw = localStorage.getItem(savedKey);
+      if (raw) savedSubmissions = JSON.parse(raw);
+    } catch (e) {
+      console.error(e);
+    }
+
+    return ROSTER.map((std) => {
+      const existing = (assignment as any).submissions?.find((s: any) => s.studentDni === std.dni) || savedSubmissions[std.dni];
+      if (existing) {
+        return {
+          dni: std.dni,
+          name: `${std.name} ${std.lastName}`,
+          fileName: existing.fileName || "entrega_adjunta.pdf",
+          submitDate: existing.submitDate || "2026-06-03 16:40",
+          status: existing.grade !== undefined ? "Calificado" : "Pendiente de Calificación",
+        };
+      }
       return {
         dni: std.dni,
         name: `${std.name} ${std.lastName}`,
-        fileName: hasDelivered
-          ? `${assignment.title.toLowerCase().replace(/ /g, "_")}_${std.name.toLowerCase()}.${fileExtDict[idx]}`
-          : null,
-        submitDate: hasDelivered ? "2026-06-03 16:40" : null,
-        status: hasDelivered ? (isGraded ? "Calificado" : "Pendiente de Calificación") : "Sin Entregar",
+        fileName: null,
+        submitDate: null,
+        status: "Sin Entregar",
       };
     });
   })();

@@ -3,11 +3,12 @@ import {
   Users, BookOpen, Clock, FileText, CheckCircle, 
   Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronDown, ChevronRight, Settings, BarChart3, Megaphone, FileSpreadsheet
 } from "lucide-react";
-import { Course } from "../../types";
+import { Course, Teacher } from "../../types";
 import Badge from "../ui/Badge";
 
 export interface SidebarPrincipalProps {
   teacherDni: string;
+  teacher?: Teacher | null;
   courses: Course[];
   selectedCourseId: string | null;
   onSelectCourse: (courseId: string | null) => void;
@@ -18,6 +19,7 @@ export interface SidebarPrincipalProps {
 
 export default function SidebarPrincipal({
   teacherDni,
+  teacher,
   courses,
   selectedCourseId,
   onSelectCourse,
@@ -25,16 +27,18 @@ export default function SidebarPrincipal({
   setActiveTab,
   onLogout
 }: SidebarPrincipalProps) {
-  // Hardcoded teacher details per prompt guidelines
-  const teacherInfo = {
-    name: "Miguel Ángel Ramos Torres",
-    role: "Docente de Ingeniería y Automatización",
-    status: "ACTIVO",
-    specialty: "Sistemas & Automatización Industrial"
-  };
+  // Dynamic teacher details from props
+  const teacherName = teacher ? `${teacher.name} ${teacher.lastName}` : "Docente Titular";
+  const teacherRole = teacher?.specialty || (teacher?.careerId === "contabilidad" ? "Docente de Contabilidad" : "Docente de Electricidad Industrial");
+  const teacherStatus = teacher?.status?.toUpperCase() || "ACTIVO";
 
   const getInitials = (name: string) => {
-    return "MR";
+    if (!name) return "DC";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
   };
 
   // Seven requested items in EXACT order:
@@ -77,14 +81,14 @@ export default function SidebarPrincipal({
         <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-left relative overflow-hidden transition-colors">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 bg-amber-400 text-slate-900 border border-amber-300 rounded-full flex items-center justify-center font-black text-xs shrink-0 tracking-tight">
-              {getInitials(teacherInfo.name)}
+              {getInitials(teacherName)}
             </div>
             <div className="min-w-0 flex-1">
-              <h4 className="text-[11.5px] font-black text-slate-800 leading-tight block truncate" title={teacherInfo.name}>
-                {teacherInfo.name}
+              <h4 className="text-[11.5px] font-black text-slate-800 leading-tight block truncate" title={teacherName}>
+                {teacherName}
               </h4>
-              <span className="text-[9.5px] text-slate-500 font-semibold block truncate mt-0.5" title={teacherInfo.role}>
-                {teacherInfo.role}
+              <span className="text-[9.5px] text-slate-500 font-semibold block truncate mt-0.5" title={teacherRole}>
+                {teacherRole}
               </span>
             </div>
           </div>
@@ -92,7 +96,7 @@ export default function SidebarPrincipal({
           <div className="mt-3 pt-2.5 border-t border-slate-200/50 flex justify-between items-center text-[10px] font-bold">
             <span className="text-slate-400 uppercase tracking-widest text-[9px] font-black">ESTADO:</span>
             <Badge variant="success" className="font-extrabold tracking-wider px-2 py-0.5 text-[9px] uppercase border">
-              {teacherInfo.status}
+              {teacherStatus}
             </Badge>
           </div>
         </div>
