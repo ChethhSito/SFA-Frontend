@@ -50,7 +50,7 @@ export const FichaEstudianteModal: React.FC<FichaEstudianteModalProps> = ({
 
   const selectedCourses = getFichaCourses(pId);
   const totalCredits = selectedCourses.reduce((sum, c) => sum + c.credits, 0);
-  const periodName = admissionPeriods.find((p) => p.id === (app?.periodId || "1"))?.name || "Periodo Regular 2026-I";
+  const periodName = admissionPeriods.find((p) => p.id === app?.periodId)?.name || "Convocatoria no registrada";
   const code = app?.applicantCode || `REG-${enr.studentDni.slice(0, 4)}`;
 
   return (

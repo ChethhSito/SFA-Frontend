@@ -81,7 +81,7 @@ export const faqsList: FaqItem[] = [
   },
   {
     id: 3,
-    question: "¿Cuáles son los requisitos para la Pre-Inscripción al Examen 2026-I?",
+    question: "¿Cuáles son los requisitos para la preinscripción al examen de admisión?",
     answer: "Los requisitos básicos son: Copia simple de DNI vigente, Certificado de estudios de 5to de Secundaria (original o digital emitido por el Minedu) y comprobante del derecho de examen de admisión."
   },
   {
@@ -106,8 +106,8 @@ export const faqsList: FaqItem[] = [
   },
   {
     id: 8,
-    question: "¿Cuándo inician las clases del Semestre Académico 2026-I?",
-    answer: "Las clases del Semestre 2026-I inician inmediatamente tras concluir el proceso de matrícula oficial adjudicado a los postulantes aprobados en el Examen de Admisión."
+    question: "¿Cuándo inician las clases del período académico?",
+    answer: "La fecha de inicio de clases se publica en el cronograma de la convocatoria vigente."
   }
 ];
 
@@ -120,13 +120,13 @@ export const transparencyDocs: TransparencyDoc[] = [
   },
   {
     title: "Reglamento Académico Institucional 2026",
-    code: "REG-ACAD-2026-I",
+    code: "REG-ACAD",
     size: "1.8 MB PDF",
     desc: "Normas integrales de evaluación semestral, asistencia, convalidación de asignaturas y permanencia académica."
   },
   {
     title: "Reglamento del Proceso de Admisión Ordinario",
-    code: "REG-ADM-2026-I",
+    code: "REG-ADM",
     size: "1.2 MB PDF",
     desc: "Lineamientos del examen de admisión, ponderación de contenidos, vacantes y adjudicación de plazas."
   },
@@ -155,7 +155,7 @@ export const transparencyDocs: TransparencyDoc[] = [
     desc: "Política de seguridad, privacidad y tratamiento de datos personales de postulantes y estudiantes matriculados."
   },
   {
-    title: "Cuadro Oficial de Vacantes Admisión 2026-I",
+    title: "Cuadro Oficial de Vacantes de Admisión",
     code: "VAC-ADM-2026",
     size: "650 KB PDF",
     desc: "Distribución oficial de vacantes por programa de estudios para los turnos diurno y nocturno."

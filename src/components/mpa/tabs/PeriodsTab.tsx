@@ -43,8 +43,16 @@ export function PeriodsTab({ periods, saveDb, setPeriods }: PeriodsTabProps) {
                 alert("Por favor configure las fechas de inicio y de cierre.");
                 return;
               }
+              if (formPeriod.startDate >= formPeriod.endDate) {
+                alert("La fecha de cierre debe ser posterior a la fecha de inicio.");
+                return;
+              }
               const id = "p_" + Date.now();
               const finalPStatus = formPeriod.status || "Planificación";
+              if (finalPStatus === "Activo" && periods.some(p => p.isActive || p.status === "Activo")) {
+                alert("Ya existe un período académico activo. Ciérrelo o seleccione Planificación para el nuevo período.");
+                return;
+              }
               const next = [...periods, { 
                 ...formPeriod, 
                 id, 

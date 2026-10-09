@@ -328,7 +328,7 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                     <span className="w-2 h-2 rounded-full bg-[#9F062A]"></span>
                     <span>
                       {sanitizePeriodName(
-                        admissionPeriods.find((p) => p.id === (app.periodId || "1"))?.name || "Periodo Regular 2026-I"
+                        admissionPeriods.find((p) => p.id === app.periodId)?.name || "Convocatoria no registrada"
                       )}
                     </span>
                   </div>

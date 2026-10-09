@@ -7,6 +7,18 @@
 
 ## 📌 Inventario de Funcionalidades y Módulos Pendientes
 
+### Integración pendiente de MGE por período académico
+
+- [ ] Registrar una matrícula por alumno y período MPA, con carrera, ciclo y grupo; el esquema actual conserva una sola matrícula por DNI.
+- [ ] Filtrar en MGE por período académico, carrera, ciclo y grupo desde la API, con historial individual. El nombre de período que hoy aparece en la cabecera no filtra todavía el padrón.
+- [ ] Migrar matrículas antiguas antes de activar estos filtros para evitar alumnos sin período asignado.
+
+### Reglas de períodos ya incorporadas
+
+- [x] MPA → MAMC → portal usa períodos reales del backend, sin convocatorias ficticias de respaldo.
+- [x] Un único período MPA activo y una única convocatoria de admisión aperturada; fechas ordenadas y referencias protegidas.
+- [x] El portal y `POST /applicants` bloquean registros fuera de una convocatoria vigente.
+
 Este documento define el listado de módulos y mejoras técnicas requeridas para llevar la plataforma del **IESTP San Francisco de Asís** a producción al 100%.
 
 ---

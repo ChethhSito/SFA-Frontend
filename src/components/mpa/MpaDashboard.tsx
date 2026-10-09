@@ -8,7 +8,7 @@ import {
   MpaSchedule, MpaClassroom, MpaAcademicGroup, MpaProgramTask 
 } from "../../types";
 import Sidebar from "../ui/Sidebar";
-import { MPA_KEYS, MpaKey, fetchMpaCollections, saveMpaCollection } from "../../services/mpaApi";
+import { MPA_KEYS, MpaKey, fetchMpaCollections, fetchMpaCollection, saveMpaCollection } from "../../services/mpaApi";
 import { useConflictDetector } from "../../hooks/mpa/useConflictDetector";
 
 // Tab Subcomponents
@@ -91,8 +91,21 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
     const previous = pendingSaves.current[mpaKey] || Promise.resolve();
     const next = previous.catch(() => undefined).then(() => saveMpaCollection(mpaKey, value));
     pendingSaves.current[mpaKey] = next;
-    void next.then(() => setSyncError(""), error => {
-      setSyncError(`No se guardó ${mpaKey} en el backend: ${error instanceof Error ? error.message : "error desconocido"}. La copia local sigue disponible.`);
+    void next.then(saved => {
+      if (pendingSaves.current[mpaKey] !== next) return;
+      setter(saved);
+      localStorage.setItem(`mpa_db_${key}`, JSON.stringify(saved));
+      setSyncError("");
+    }, async error => {
+      if (pendingSaves.current[mpaKey] !== next) return;
+      try {
+        const current = await fetchMpaCollection(mpaKey);
+        setter(current);
+        localStorage.setItem(`mpa_db_${key}`, JSON.stringify(current));
+      } catch (refreshError) {
+        console.error("No se pudo restaurar el estado MPA desde la API:", refreshError);
+      }
+      setSyncError(`No se guardó ${mpaKey} en el backend: ${error instanceof Error ? error.message : "error desconocido"}. Se restauró el último estado del servidor.`);
     });
   };
 

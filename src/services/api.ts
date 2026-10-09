@@ -141,7 +141,7 @@ export async function createAdmissionPeriod(period: Partial<AdmissionPeriod>): P
 
 export async function updateAdmissionPeriod(id: string, data: Partial<AdmissionPeriod>): Promise<AdmissionPeriod | null> {
   const item = await fetchJson<any>(`/admission-periods/${id}`, {
-    method: "PUT",
+    method: "PATCH",
     body: JSON.stringify(data)
   });
   if (!item) return null;
@@ -149,6 +149,11 @@ export async function updateAdmissionPeriod(id: string, data: Partial<AdmissionP
     ...item,
     id: item.id || item._id
   } as AdmissionPeriod;
+}
+
+export async function deleteAdmissionPeriod(id: string): Promise<boolean> {
+  const result = await fetchJson<{ success: boolean }>(`/admission-periods/${id}`, { method: "DELETE" });
+  return result?.success === true;
 }
 
 /* ==========================================================================

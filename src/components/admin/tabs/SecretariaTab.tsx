@@ -84,11 +84,7 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
         const activeApplicants = applicants.filter(
           (app) =>
             !selectedPeriodId ||
-            selectedPeriodId === "all" ||
-            app.periodId === selectedPeriodId ||
-            !app.periodId ||
-            app.periodId === "1" ||
-            app.periodId === admissionPeriods[0]?.id
+            selectedPeriodId === "all" || app.periodId === selectedPeriodId
         );
         const totalInPeriod = activeApplicants.length;
         const pendingF = activeApplicants.filter((a) => a.folderStatus === "Pending").length;
@@ -211,11 +207,7 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
         const activeApplicants = applicants.filter(
           (app) =>
             !selectedPeriodId ||
-            selectedPeriodId === "all" ||
-            app.periodId === selectedPeriodId ||
-            !app.periodId ||
-            app.periodId === "1" ||
-            app.periodId === admissionPeriods[0]?.id
+            selectedPeriodId === "all" || app.periodId === selectedPeriodId
         );
         const filteredApplicants = activeApplicants.filter((app) => {
           const fullName = `${app.name} ${app.lastName}`.toLowerCase();

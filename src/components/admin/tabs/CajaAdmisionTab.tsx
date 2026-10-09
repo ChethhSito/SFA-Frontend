@@ -63,11 +63,7 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
                   .filter((app) => {
                     const matchesPeriod =
                       !selectedPeriodId ||
-                      selectedPeriodId === "all" ||
-                      app.periodId === selectedPeriodId ||
-                      !app.periodId ||
-                      app.periodId === "1" ||
-                      app.periodId === "p1";
+                      selectedPeriodId === "all" || app.periodId === selectedPeriodId;
                     return matchesPeriod && app.paymentOperation;
                   })
                   .map((app, idx) => (

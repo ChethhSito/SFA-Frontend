@@ -29,6 +29,12 @@ El sistema cuenta con soporte para **8 roles institucionales y portales dedicado
 
 ---
 
+## 📅 Períodos académicos y admisión
+
+El orden de configuración es **MPA → MAMC → portal público**. MPA crea el período académico real; MAMC solo permite elegir períodos devueltos por `/mpa/periods` y crea una convocatoria vinculada. Se eliminó el respaldo ficticio 2026-I/2026-II. El portal muestra el nombre de la convocatoria vigente y habilita el formulario únicamente si está `APERTURADO` y la fecha en Lima está dentro de la preinscripción. El backend vuelve a comprobarlo antes de guardar un postulante.
+
+MPA impide dos períodos activos, fechas invertidas y borrar un período vinculado a una convocatoria o a grupos. MAMC impide dos convocatorias abiertas, duplicar la convocatoria de un período, cronogramas desordenados y borrar una convocatoria con postulantes. Al guardar, se debe verificar `GET /mpa/periods`, `GET /admission-periods` y `GET /applicants/:dni` en Swagger.
+
 ## 🧾 Prueba de conciliación bancaria en MAF
 
 En **Solicitudes de Obligaciones** crea una obligación; en **Registro de Pagos (Vouchers)** registra su operación, fecha y monto. Luego abre **Validación de Pagos**, sube el consolidado `.xlsx`, pulsa **Comparar** y revisa el resultado de cada fila antes de **Confirmar e importar**. Solo las coincidencias completas pasan a **Validado**. Las tasas sin equivalencia, duplicados y diferencias quedan señalados para revisión.

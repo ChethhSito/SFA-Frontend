@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../..
 import PageHeader from "../../ui/PageHeader";
 import PageTransition from "../../ui/PageTransition";
 import Button from "../../ui/Button";
+import { openAdmissionPeriod } from "../../../utils/admissionPeriod";
 
 interface PeriodosTabProps {
   admissionPeriods: AdmissionPeriod[];
@@ -53,16 +54,17 @@ export const PeriodosTab: React.FC<PeriodosTabProps> = ({
   onDeletePeriod,
   sanitizePeriodName,
 }) => {
+  const publicPeriod = openAdmissionPeriod(admissionPeriods);
   return (
     <PageTransition id="periodos" className="space-y-6 animate-fade-in">
       <PageHeader
         title="Apertura y Gestión de Períodos de Admisión"
-        subtitle="Cree nuevos períodos académicos de examen y programe sus fechas clave. Actívelos para habilitar o desactivar el formulario de pre-inscripción pública."
+        subtitle="Vincule una convocatoria a un período MPA. El portal abre solo cuando la convocatoria está aperturada y dentro de sus fechas de preinscripción."
         icon={<Calendar className="w-6 h-6" />}
       />
 
       {/* General Admission Status Banner */}
-      {admissionPeriods.find((p) => p.status === "APERTURADO" || p.isActive) ? (
+      {publicPeriod ? (
         <div className="bg-emerald-50 border border-emerald-250 p-5 rounded-lg flex items-start gap-4 shadow-3xs animate-fade-in">
           <div className="p-2 bg-emerald-100 text-emerald-800 rounded-full shrink-0 animate-fade-in/70">
             <CheckCircle className="w-5 h-5 text-emerald-700 font-bold" />
@@ -70,10 +72,10 @@ export const PeriodosTab: React.FC<PeriodosTabProps> = ({
           <div className="space-y-0.5 text-left">
             <h4 className="text-xs font-black text-emerald-900 uppercase tracking-wide">
               PROCESO DE ADMISIÓN ACTIVO:{" "}
-              {admissionPeriods.find((p) => p.status === "APERTURADO" || p.isActive)?.name}
+              {publicPeriod.name}
             </h4>
             <p className="text-[11px] text-slate-600 font-semibold leading-relaxed">
-              El formulario de pre-inscripción en línea está habilitado para recibir postulantes en el portal público con el cronograma configurado.
+              El formulario público está habilitado dentro del cronograma configurado.
             </p>
           </div>
         </div>
@@ -87,7 +89,7 @@ export const PeriodosTab: React.FC<PeriodosTabProps> = ({
               PORTAL DE ADMISIÓN DESACTIVADO
             </h4>
             <p className="text-[11px] text-slate-650 font-semibold leading-relaxed">
-              No hay ningún periodo de admisión activo en este momento. El formulario público de admisión mostrará el siguiente aviso:
+              No hay una convocatoria aperturada dentro de sus fechas de preinscripción. El portal no aceptará registros:
             </p>
             <div className="mt-2 bg-rose-50 text-[#9F062A] text-[10px] font-black uppercase px-3 py-1.5 text-center rounded border border-rose-100 inline-block tracking-wide shadow-3xs">
               Pronto se reaperturarán los exámenes de admisión

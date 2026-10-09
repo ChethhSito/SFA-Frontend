@@ -3,8 +3,8 @@ import {
   Calendar, CreditCard, Users, GraduationCap, CheckSquare, Compass, FileText
 } from "lucide-react";
 import { Applicant, Enrollment, StudentPersonalData, Classroom, Teacher, Graduation, AdmissionPeriod, Course, CourseAssignment, AttendanceRecord, MpaPeriod } from "../../types";
-import { createAdmissionPeriod, updateAdmissionPeriod } from "../../services/api";
-import { MPA_KEYS, fetchMpaCollections } from "../../services/mpaApi";
+import { createAdmissionPeriod, updateAdmissionPeriod, deleteAdmissionPeriod } from "../../services/api";
+import { MPA_KEYS, fetchMpaCollections, fetchMpaCollection } from "../../services/mpaApi";
 
 // Reusable Custom Design System Components
 import Sidebar from "../ui/Sidebar";
@@ -109,8 +109,13 @@ export default function AdminDashboard({
   // Period & applicant-oriented folder states
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>(() => {
     const active = admissionPeriods.find(p => p.isActive);
-    return active ? active.id : (admissionPeriods[0]?.id || "1");
+    return active ? active.id : (admissionPeriods[0]?.id || "");
   });
+  useEffect(() => {
+    if (selectedPeriodId === "all" || admissionPeriods.some(p => p.id === selectedPeriodId)) return;
+    const active = admissionPeriods.find(p => p.status === "APERTURADO");
+    setSelectedPeriodId(active?.id || admissionPeriods[0]?.id || "");
+  }, [admissionPeriods, selectedPeriodId]);
   const [applicantFilterType, setApplicantFilterType] = useState<"all" | "pending" | "observed" | "approved" | "enrolled">("all");
 
   // Synchronize comprehensive MPA collections in AdminDashboard
@@ -175,30 +180,12 @@ export default function AdminDashboard({
   const [mpaPeriods, setMpaPeriods] = useState<MpaPeriod[]>([]);
   
   React.useEffect(() => {
-    try {
-      const saved = localStorage.getItem("mpa_db_periods");
-      if (saved) {
-        let loaded = JSON.parse(saved);
-        if (Array.isArray(loaded) && loaded.length > 0) {
-          loaded = loaded.map((p: any) => ({
-            ...p,
-            name: sanitizePeriodName(p.name?.replace(/^Semestre\s+/i, "Periodo ") || p.name)
-          }));
-          setMpaPeriods(loaded);
-          return;
-        }
-      }
-      // Provide default fallback periods from MPA so the admin can always create admission periods
-      const defaultMpaPeriods = [
-        { id: "per_2026_1", name: "Periodo Académico 2026-I", startDate: "2026-04-06", endDate: "2026-07-24", isActive: true, status: "Activo" },
-        { id: "per_2026_2", name: "Periodo Académico 2026-II", startDate: "2026-08-17", endDate: "2026-12-18", isActive: false, status: "Pendiente" }
-      ];
-      localStorage.setItem("mpa_db_periods", JSON.stringify(defaultMpaPeriods));
-      setMpaPeriods(defaultMpaPeriods);
-    } catch (e) {
-      console.error(e);
-      setMpaPeriods([]);
-    }
+    fetchMpaCollection<MpaPeriod>("periods")
+      .then(setMpaPeriods)
+      .catch((error) => {
+        console.error("No se pudieron cargar los períodos MPA:", error);
+        setMpaPeriods([]);
+      });
   }, []);
 
   const [newPeriodPreEnrollmentStartDate, setNewPeriodPreEnrollmentStartDate] = useState("");
@@ -703,7 +690,7 @@ export default function AdminDashboard({
     }
   };
 
-  const handleCreatePeriod = (e: React.FormEvent) => {
+  const handleCreatePeriod = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAcademicPeriodId) {
       alert("Por favor seleccione un Período Académico del MPA.");
@@ -776,8 +763,12 @@ export default function AdminDashboard({
       classesStartDate: selectedMpaPeriod.startDate
     };
 
-    onUpdateAdmissionPeriods([...admissionPeriods, newPeriod]);
-    createAdmissionPeriod(newPeriod).catch(err => console.error("Error creating period in MongoDB REST API:", err));
+    const created = await createAdmissionPeriod(newPeriod);
+    if (!created) {
+      alert("No se pudo crear la convocatoria en MongoDB. Revise las fechas y que el período MPA siga disponible.");
+      return;
+    }
+    onUpdateAdmissionPeriods([...admissionPeriods, created]);
 
     setSelectedAcademicPeriodId("");
     setNewPeriodResultsPublicationDate("");
@@ -789,28 +780,20 @@ export default function AdminDashboard({
     setNewPeriodClassesStartDate("");
   };
 
-  const handleUpdatePeriodStatus = (id: string, nextStatus: "PENDIENTE" | "APERTURADO" | "EXAMEN" | "MATRICULA" | "CERRADO") => {
-    const updated = admissionPeriods.map(p => {
-      if (p.id === id) {
-        return { 
-          ...p, 
-          status: nextStatus, 
-          isActive: nextStatus === "APERTURADO" 
-        };
-      }
-      return {
-        ...p,
-        isActive: nextStatus === "APERTURADO" ? false : p.isActive
-      };
-    });
-
-    onUpdateAdmissionPeriods(updated);
-    updated.forEach(p => {
-      updateAdmissionPeriod(p.id, p).catch(err => console.error("Error updating period in MongoDB REST API:", err));
-    });
+  const handleUpdatePeriodStatus = async (id: string, nextStatus: "PENDIENTE" | "APERTURADO" | "EXAMEN" | "MATRICULA" | "CERRADO") => {
+    if (nextStatus === "APERTURADO" && admissionPeriods.some(p => p.id !== id && p.status === "APERTURADO")) {
+      alert("Cierre la convocatoria abierta antes de aperturar otra.");
+      return;
+    }
+    const updated = await updateAdmissionPeriod(id, { status: nextStatus, isActive: nextStatus === "APERTURADO" });
+    if (!updated) {
+      alert("No se pudo actualizar el estado de la convocatoria en MongoDB.");
+      return;
+    }
+    onUpdateAdmissionPeriods(admissionPeriods.map(p => p.id === id ? updated : p));
   };
 
-  const handleDeletePeriod = (id: string) => {
+  const handleDeletePeriod = async (id: string) => {
     const period = admissionPeriods.find(p => p.id === id);
     if (!period) return;
     
@@ -818,6 +801,11 @@ export default function AdminDashboard({
       `¿Está seguro que desea eliminar el Periodo de Admisión "${period.name}"? Al hacerlo, el Período Académico del MPA volverá a estar disponible para su selección.`
     );
     if (confirmDelete) {
+      const deleted = await deleteAdmissionPeriod(id);
+      if (!deleted) {
+        alert("No se pudo eliminar la convocatoria. Si tiene postulantes, debe conservarse para el historial.");
+        return;
+      }
       const filtered = admissionPeriods.filter(p => p.id !== id);
       onUpdateAdmissionPeriods(filtered);
       alert(`Periodo de Admisión "${period.name}" eliminado correctamente. El periodo académico asociado ya está disponible nuevamente para selección.`);

@@ -6,6 +6,8 @@ import {
 import { careersDetail, faqsList } from "../portalData";
 
 interface HomeTabProps {
+  admissionLabel: string;
+  registrationOpen: boolean;
   setCurrentTab: (tab: "inicio" | "nosotros" | "programas" | "admision" | "transparencia" | "contactanos") => void;
   setSelectedProgramId: (id: string) => void;
   setProgramSelection: (id: string) => void;
@@ -13,6 +15,8 @@ interface HomeTabProps {
 }
 
 export const HomeTab: React.FC<HomeTabProps> = ({
+  admissionLabel,
+  registrationOpen,
   setCurrentTab,
   setSelectedProgramId,
   setProgramSelection,
@@ -41,7 +45,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
           <div className="lg:col-span-7 space-y-5 text-white">
             {/* Etiqueta de Admisión con Línea Dorada */}
             <div className="inline-flex items-center gap-2 bg-black/40 border-l-4 border-[#CFA020] px-3.5 py-1.5 rounded-r-md text-xs font-bold uppercase tracking-wider text-white">
-              <span>ADMISION ORDINARIA 2026 ABIERTA</span>
+              <span>{registrationOpen ? `ADMISIÓN ABIERTA · ${admissionLabel}` : "PREINSCRIPCIONES CERRADAS"}</span>
             </div>
 
             {/* Título Grande: Blanco + Dorado para "DE ASÍS" */}
@@ -66,7 +70,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                 onClick={() => { setCurrentTab("admision"); setSubmitSuccessMsg(""); }}
                 className="bg-[#9F062A] hover:bg-[#800521] text-white font-bold px-6 py-3.5 rounded-md text-xs uppercase tracking-wider shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95"
               >
-                <span>EXAMEN DE ADMISIÓN ORDINARIO</span>
+                <span>{registrationOpen ? "PREINSCRÍBETE AL EXAMEN" : "VER INFORMACIÓN DE ADMISIÓN"}</span>
                 <ArrowRight className="w-4 h-4 text-white" />
               </button>
               <button
@@ -338,7 +342,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="text-center max-w-3xl mx-auto space-y-3">
             <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">
-              PROCESO ORDINARIO DE ADMISIÓN 2026-I
+              PROCESO DE ADMISIÓN · {admissionLabel}
             </span>
             <h3 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase tracking-tight">
               Pasos para la Inscripción

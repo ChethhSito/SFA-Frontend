@@ -8,13 +8,13 @@ Este documento detalla el **Flujo de Trabajo Institucional de Extremo a Extremo 
 
 ```mermaid
 graph TD
-    A["🌐 1. PORTAL PÚBLICO<br>Pre-Inscripción en línea"] --> B["📋 2. PORTAL POSTULANTE<br>Subida de Documentos (DNI, Certificado, Foto)"]
-    B --> C["⚙️ 3. MÓDULO MAMC<br>Validación de Expediente y Admisión"]
-    C --> D["💰 4. MÓDULO MAF<br>Pago de Matrícula y Recibo de Caja"]
-    D --> E["👨‍🎓 5. INTRANET ALUMNO<br>Matrícula Activa, Turno y Horario Semanal"]
-    E --> F["🏛️ 6. MÓDULO MPA<br>Malla Curricular, Cursos y Créditos"]
-    F --> G["👨‍🏫 7. INTRANET DOCENTE<br>Asistencia por Fecha, Notas y Materiales"]
-    G --> H["🎓 8. MÓDULO MGE<br>Cierre de Ciclos I-VI, Egreso y Titulación"]
+    A["🏛️ 1. MPA<br>Período académico real"] --> B["⚙️ 2. MAMC<br>Convocatoria vinculada y aperturada"]
+    B --> C["🌐 3. PORTAL PÚBLICO<br>Preinscripción dentro de fechas"]
+    C --> D["📋 4. POSTULANTE<br>Expediente y pagos"]
+    D --> E["⚙️ 5. MAMC<br>Validación y admisión"]
+    E --> F["💰 6. MAF<br>Conciliación y pago"]
+    F --> G["👨‍🎓 7. ALUMNO Y DOCENTE<br>Matrícula, clases y evaluación"]
+    G --> H["🎓 8. MGE<br>Seguimiento, egreso y titulación"]
 ```
 
 ---
@@ -22,9 +22,10 @@ graph TD
 ## 📋 Detalle Paso a Paso del Flujo Institucional
 
 ### 1. 🌐 Fase 1: Pre-Inscripción y Admisión
+0. **Preparación de períodos:** MPA guarda el período académico en `PUT /mpa/periods`. MAMC obtiene esa lista del backend y crea una convocatoria con `POST /admission-periods`, vinculada por `academicPeriodId`. Solo puede haber un período académico activo y una convocatoria `APERTURADO` a la vez. Las fechas de preinscripción, examen, resultados y matrícula deben estar ordenadas antes del inicio de clases. MAMC cambia el estado mediante `PATCH /admission-periods/:id`.
 1. **Pre-Inscripción en Línea (Portal Público):** 
-   - El postulante ingresa a la sección *Admisión*, selecciona su carrera técnica de interés y completa sus datos personales.
-   - **Acción Backend:** Registra al postulante mediante `POST /applicants` en MongoDB y dispara el correo transaccional de bienvenida vía Brevo API.
+   - El formulario aparece solo si la convocatoria está aperturada y la fecha actual en Lima cae dentro de la preinscripción. Sin ella, el portal muestra un aviso y bloquea el registro.
+   - El postulante selecciona su carrera y completa sus datos. `POST /applicants` valida otra vez la convocatoria en el backend antes de guardar en MongoDB. El correo transaccional se intenta después del alta; un fallo de correo no debe confundirse con un fallo de registro.
 2. **Carga de Expediente Digital (Portal Postulante):**
    - El postulante inicia sesión con su DNI y clave temporal (`clave123`).
    - Sube sus documentos digitales: DNI escaneado, Certificado de Secundaria y Foto Carné.
