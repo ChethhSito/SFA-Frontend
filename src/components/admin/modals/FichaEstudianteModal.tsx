@@ -1,12 +1,13 @@
 import React from "react";
 import { Printer } from "lucide-react";
-import { Enrollment, Applicant, AdmissionPeriod } from "../../../types";
+import { Enrollment, Applicant, AdmissionPeriod, StudentPersonalData } from "../../../types";
 import Button from "../../ui/Button";
 
 interface FichaEstudianteModalProps {
   selectedFichaDni: string | null;
   enrollments: Enrollment[];
   applicants: Applicant[];
+  studentsList?: { [dni: string]: StudentPersonalData };
   admissionPeriods: AdmissionPeriod[];
   onClose: () => void;
 }
@@ -15,6 +16,7 @@ export const FichaEstudianteModal: React.FC<FichaEstudianteModalProps> = ({
   selectedFichaDni,
   enrollments,
   applicants,
+  studentsList = {},
   admissionPeriods,
   onClose,
 }) => {
@@ -22,6 +24,7 @@ export const FichaEstudianteModal: React.FC<FichaEstudianteModalProps> = ({
 
   const enr = enrollments.find((e) => e.studentDni === selectedFichaDni);
   const app = applicants.find((a) => a.dni === selectedFichaDni);
+  const student = studentsList[selectedFichaDni];
   if (!enr) return null;
 
   const pId = enr.programId || "electronica";
@@ -90,12 +93,18 @@ export const FichaEstudianteModal: React.FC<FichaEstudianteModalProps> = ({
             <div>
               <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 block">Estudiante</span>
               <span className="text-slate-900 font-black text-xs uppercase">
-                {app ? `${app.lastName}, ${app.name}` : "Estudiante Regular"}
+                {app?.lastName && app?.name
+                  ? `${app.lastName}, ${app.name}`
+                  : student?.lastName && student?.name
+                  ? `${student.lastName}, ${student.name}`
+                  : `${app?.name || student?.name || "Estudiante"} ${app?.lastName || student?.lastName || ""}`.trim() || "Estudiante Regular"}
               </span>
             </div>
             <div>
               <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 block">Código Único</span>
-              <span className="text-[#9F062A] font-black text-xs uppercase font-mono">{code}</span>
+              <span className="text-[#9F062A] font-black text-xs uppercase font-mono">
+                {app?.applicantCode || (student ? `EST-${enr.studentDni}` : `REG-${enr.studentDni}`)}
+              </span>
             </div>
             <div>
               <span className="text-[9px] uppercase font-black tracking-wider text-slate-400 block">

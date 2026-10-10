@@ -111,11 +111,10 @@ export const CajaRegularTab: React.FC<CajaRegularTabProps> = ({
                   return filteredEnrollments.map((enr, idx) => {
                     const student = studentsList[enr.studentDni];
                     const fallbackApplicant = applicants.find((a) => a.dni === enr.studentDni);
-                    const displayName = student
-                      ? `${student.name} ${student.lastName}`
-                      : fallbackApplicant
-                      ? `${fallbackApplicant.name} ${fallbackApplicant.lastName}`
-                      : "Estudiante Admitido";
+                    const displayName = (
+                      `${student?.name || fallbackApplicant?.name || ""} ${student?.lastName || fallbackApplicant?.lastName || ""}`.trim() ||
+                      "Estudiante Admitido"
+                    );
 
                     return (
                       <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
@@ -123,34 +122,38 @@ export const CajaRegularTab: React.FC<CajaRegularTabProps> = ({
                         <td className="p-4 font-mono text-slate-600 font-bold">{enr.studentDni}</td>
                         <td className="p-4 font-mono text-xs text-left">
                           {enr.paymentOperation ? (
-                            <>
-                              <span className="font-bold text-[#5493D5] block mb-1">{enr.paymentOperation}</span>
-                              {enr.paymentVoucherUrl ? (
-                                <button
-                                  onClick={() =>
-                                    triggerAdminPreview(
-                                      "Voucher Matrícula de " + displayName,
-                                      enr.paymentVoucherFileName || "voucher_matricula.jpg",
-                                      "image",
-                                      { fileDataUrl: enr.paymentVoucherUrl }
-                                    )
-                                  }
-                                  className="px-2 py-1 bg-[#9F062A]/10 hover:bg-[#9F062A]/20 text-[#9F062A] text-[9px] font-black uppercase tracking-wider rounded border border-[#9F062A]/20 transition-all cursor-pointer flex items-center gap-1 mt-1 shrink-0"
-                                >
-                                  <Eye className="w-3.5 h-3.5" />
-                                  <span>Ver Voucher Adjunto</span>
-                                </button>
-                              ) : (
-                                <span className="text-[9px] text-slate-400 font-bold block mt-0.5">
-                                  Sin Voucher Físico
-                                </span>
-                              )}
-                            </>
+                            <span className="font-bold text-[#5493D5] block mb-1">{enr.paymentOperation}</span>
                           ) : (
-                            <span className="text-[9.5px] text-amber-700 bg-amber-50 border border-amber-200/80 font-black uppercase px-2 py-0.5 rounded">
-                              Pendiente de Subir Voucher
+                            <span className="text-[9.5px] text-amber-700 bg-amber-50 border border-amber-200/80 font-black uppercase px-2 py-0.5 rounded block mb-1">
+                              Pendiente de Voucher
                             </span>
                           )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              triggerAdminPreview(
+                                "Voucher Matrícula - " + displayName,
+                                enr.paymentVoucherFileName || `voucher_matricula_${enr.studentDni}.jpg`,
+                                enr.paymentVoucherUrl ? "image" : "receipt",
+                                {
+                                  dni: enr.studentDni,
+                                  studentName: student?.name || fallbackApplicant?.name || "",
+                                  studentLastName: student?.lastName || fallbackApplicant?.lastName || "",
+                                  fullName: displayName,
+                                  programName: enr.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad",
+                                  transactionId: enr.paymentOperation || `REG-${enr.studentDni}`,
+                                  amount: "S/. 250.00",
+                                  date: (enr as any).enrollmentDate || new Date().toISOString().split("T")[0],
+                                  concept: "Derecho de Matrícula Regular e Inscripción",
+                                  fileDataUrl: enr.paymentVoucherUrl
+                                }
+                              )
+                            }
+                            className="px-2 py-1 bg-[#9F062A]/10 hover:bg-[#9F062A]/20 text-[#9F062A] text-[9px] font-black uppercase tracking-wider rounded border border-[#9F062A]/20 transition-all cursor-pointer flex items-center gap-1 mt-1 shrink-0"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>{enr.paymentVoucherUrl ? "Ver Voucher Adjunto" : "Ver Recibo Digital"}</span>
+                          </button>
                         </td>
                         <td className="p-4 font-bold">S/. 250.00</td>
                         <td className="p-4">

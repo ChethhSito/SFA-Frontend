@@ -187,13 +187,14 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                             type="button"
                             onClick={() =>
                               triggerAdminPreview(
-                                item.label + " - " + app.name.toUpperCase(),
+                                item.label + " - " + `${app.name} ${app.lastName}`.trim().toUpperCase(),
                                 docState.fileName,
                                 "image",
                                 {
                                   dni: app.dni,
                                   studentName: app.name,
                                   studentLastName: app.lastName,
+                                  fullName: `${app.name} ${app.lastName}`.trim(),
                                   fileDataUrl: docState.fileDataUrl,
                                 }
                               )

@@ -1,6 +1,6 @@
 import React from "react";
 import { CreditCard, CheckCircle2, AlertTriangle, XCircle, Clock, Eye, RefreshCw } from "lucide-react";
-import { Applicant } from "../../../types";
+import { Applicant, StudentPersonalData } from "../../../types";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
@@ -9,6 +9,7 @@ import Button from "../../ui/Button";
 
 interface CajaAdmisionTabProps {
   applicants: Applicant[];
+  studentsList?: { [dni: string]: StudentPersonalData };
   selectedPeriodId: string;
   renderPeriodSelector: () => React.ReactNode;
   triggerAdminPreview: (title: string, fileName: string, fileType: "image" | "receipt", customMeta?: any) => void;
@@ -19,6 +20,7 @@ interface CajaAdmisionTabProps {
 
 export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
   applicants,
+  studentsList = {},
   selectedPeriodId,
   renderPeriodSelector,
   triggerAdminPreview,
@@ -27,6 +29,18 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
   handleResetApplicantPayment,
 }) => {
   const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
+
+  const filteredApplicants = applicants.filter((app) => {
+    const matchesPeriod =
+      !selectedPeriodId ||
+      selectedPeriodId === "all" ||
+      app.periodId === selectedPeriodId ||
+      !app.periodId ||
+      app.periodId === "1" ||
+      app.periodId === "p1";
+    return matchesPeriod;
+  });
+
   return (
     <PageTransition id="caja_admision" className="space-y-6">
       <PageHeader
@@ -59,54 +73,70 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
-                {applicants
-                  .filter((app) => {
-                    const matchesPeriod =
-                      !selectedPeriodId ||
-                      selectedPeriodId === "all" ||
-                      app.periodId === selectedPeriodId ||
-                      !app.periodId ||
-                      app.periodId === "1" ||
-                      app.periodId === "p1";
-                    return matchesPeriod && app.paymentOperation;
-                  })
-                  .map((app, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="p-4 font-black text-slate-900">
-                        {app.name} {app.lastName}
-                      </td>
-                      <td className="p-4 font-mono text-xs text-slate-600 leading-tight">
-                        <span className="block font-bold text-slate-850">{app.dni}</span>
-                        <span className="block text-[9px] text-amber-600 font-extrabold">
-                          {app.applicantCode || "No tiene"}
-                        </span>
-                      </td>
-                      <td className="p-4 uppercase text-slate-500 text-[11px] font-bold">
-                        {ACADEMIC_PROGRAMS.find((p) => p.id === app.programId)?.name || app.programId}
-                      </td>
-                      <td className="p-4 font-mono text-xs text-left">
-                        <span className="font-bold text-[#5493D5] block mb-1">{app.paymentOperation}</span>
-                        {app.paymentVoucherUrl ? (
+                {filteredApplicants.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-slate-400 font-bold italic">
+                      No hay postulantes registrados en este período de admisión.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredApplicants.map((app, idx) => {
+                    const student = studentsList[app.dni];
+                    const fullName = (
+                      `${app.name || student?.name || ""} ${app.lastName || student?.lastName || ""}`.trim() ||
+                      "Postulante Registrado"
+                    );
+                    const programName = ACADEMIC_PROGRAMS.find((p) => p.id === app.programId)?.name || app.programId || "Electricidad Industrial";
+
+                    return (
+                      <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="p-4 font-black text-slate-900">
+                          {fullName}
+                        </td>
+                        <td className="p-4 font-mono text-xs text-slate-600 leading-tight">
+                          <span className="block font-bold text-slate-850">{app.dni}</span>
+                          <span className="block text-[9px] text-amber-600 font-extrabold">
+                            {app.applicantCode || "No tiene"}
+                          </span>
+                        </td>
+                        <td className="p-4 uppercase text-slate-500 text-[11px] font-bold">
+                          {programName}
+                        </td>
+                        <td className="p-4 font-mono text-xs text-left">
+                          {app.paymentOperation ? (
+                            <span className="font-bold text-[#5493D5] block mb-1">{app.paymentOperation}</span>
+                          ) : (
+                            <span className="text-[9.5px] text-slate-400 font-semibold italic block mb-1">
+                              Sin Operación Registrada
+                            </span>
+                          )}
                           <button
+                            type="button"
                             onClick={() =>
                               triggerAdminPreview(
-                                "Voucher de " + app.name + " " + app.lastName,
-                                app.paymentVoucherFileName || "voucher_pago.jpg",
-                                "image",
-                                { fileDataUrl: app.paymentVoucherUrl }
+                                "Voucher Admisión - " + fullName,
+                                app.paymentVoucherFileName || `voucher_admision_${app.dni}.jpg`,
+                                app.paymentVoucherUrl ? "image" : "receipt",
+                                {
+                                  dni: app.dni,
+                                  studentName: app.name || student?.name || "",
+                                  studentLastName: app.lastName || student?.lastName || "",
+                                  fullName: fullName,
+                                  programName: programName,
+                                  transactionId: app.paymentOperation || `ADM-${app.dni}`,
+                                  amount: "S/. 120.00",
+                                  date: app.paymentValidatedAt || app.registeredAt || new Date().toISOString().split("T")[0],
+                                  concept: "Derecho de Examen de Admisión",
+                                  fileDataUrl: app.paymentVoucherUrl
+                                }
                               )
                             }
                             className="px-2 py-1 bg-[#9F062A]/10 hover:bg-[#9F062A]/20 text-[#9F062A] text-[9px] font-black uppercase tracking-wider rounded border border-[#9F062A]/20 transition-all cursor-pointer flex items-center gap-1 mt-1 shrink-0"
                           >
                             <Eye className="w-3.5 h-3.5" />
-                            <span>Ver Voucher Adjunto</span>
+                            <span>{app.paymentVoucherUrl ? "Ver Voucher Adjunto" : "Ver Recibo Digital"}</span>
                           </button>
-                        ) : (
-                          <span className="text-[9px] text-slate-400 font-bold block mt-0.5">
-                            Sin Voucher Físico
-                          </span>
-                        )}
-                      </td>
+                        </td>
                       <td className="p-4 font-bold">S/. 120.00</td>
                       <td className="p-4">
                         {app.paymentStatus === "Validado" ? (
@@ -170,7 +200,8 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
                         )}
                       </td>
                     </tr>
-                  ))}
+                  );
+                }))}
               </tbody>
             </table>
           </div>

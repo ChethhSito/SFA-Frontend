@@ -1,6 +1,6 @@
 import React from "react";
 import { CheckSquare, GraduationCap, FileText } from "lucide-react";
-import { Enrollment, Applicant, AdmissionPeriod } from "../../../types";
+import { Enrollment, Applicant, AdmissionPeriod, StudentPersonalData } from "../../../types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
 import PageTransition from "../../ui/PageTransition";
@@ -8,6 +8,7 @@ import PageTransition from "../../ui/PageTransition";
 interface MatriculadosTabProps {
   enrollments: Enrollment[];
   applicants: Applicant[];
+  studentsList?: { [dni: string]: StudentPersonalData };
   admissionPeriods: AdmissionPeriod[];
   selectedPeriodId: string;
   setSelectedPeriodId: (id: string) => void;
@@ -23,6 +24,7 @@ interface MatriculadosTabProps {
 export const MatriculadosTab: React.FC<MatriculadosTabProps> = ({
   enrollments,
   applicants,
+  studentsList = {},
   admissionPeriods,
   selectedPeriodId,
   setSelectedPeriodId,
@@ -38,19 +40,27 @@ export const MatriculadosTab: React.FC<MatriculadosTabProps> = ({
     .filter((enr) => enr.academicStatus === "MATRICULADO")
     .map((enr) => {
       const applicant = applicants.find((a) => a.dni === enr.studentDni);
-      return { enr, app: applicant };
+      const student = studentsList[enr.studentDni];
+      return { enr, app: applicant, student };
     })
     .filter((item) => {
-      const matchesPeriod = selectedPeriodId === "all" || item.app?.periodId === selectedPeriodId;
+      const matchesPeriod =
+        selectedPeriodId === "all" ||
+        item.app?.periodId === selectedPeriodId ||
+        !item.app?.periodId ||
+        item.app?.periodId === "1" ||
+        item.app?.periodId === "p1";
       const matchesCareer = careerFilter === "all" || item.enr.programId === careerFilter;
 
       let matchesSearch = true;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        const nameOk = item.app?.name?.toLowerCase().includes(q) || false;
-        const lastNameOk = item.app?.lastName?.toLowerCase().includes(q) || false;
+        const appName = item.app?.name || item.student?.name || "";
+        const appLastName = item.app?.lastName || item.student?.lastName || "";
+        const nameOk = appName.toLowerCase().includes(q);
+        const lastNameOk = appLastName.toLowerCase().includes(q);
         const dniOk = item.enr.studentDni.includes(q);
-        const codeOk = item.app?.applicantCode?.toLowerCase().includes(q) || false;
+        const codeOk = (item.app?.applicantCode || "").toLowerCase().includes(q);
         matchesSearch = nameOk || lastNameOk || dniOk || codeOk;
       }
       return matchesPeriod && matchesCareer && matchesSearch;
@@ -209,7 +219,11 @@ export const MatriculadosTab: React.FC<MatriculadosTabProps> = ({
                           <td className="p-4 font-mono font-black text-[#9F062A] uppercase">{code}</td>
                           <td className="p-4 text-left">
                             <span className="font-black text-slate-900 block">
-                              {item.app ? `${item.app.lastName}, ${item.app.name}` : "Estudiante Sin Registro de Enlace"}
+                              {item.app?.lastName && item.app?.name
+                                ? `${item.app.lastName}, ${item.app.name}`
+                                : item.student?.lastName && item.student?.name
+                                ? `${item.student.lastName}, ${item.student.name}`
+                                : `${item.app?.name || item.student?.name || "Estudiante"} ${item.app?.lastName || item.student?.lastName || ""}`.trim()}
                             </span>
                             <span className="text-[10px] text-slate-400 font-mono font-bold mt-0.5 block">
                               DNI: {item.enr.studentDni}
