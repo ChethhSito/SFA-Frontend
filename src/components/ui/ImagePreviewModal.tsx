@@ -11,6 +11,7 @@ interface ImagePreviewModalProps {
     dni?: string;
     studentName?: string;
     studentLastName?: string;
+    fullName?: string;
     programName?: string;
     transactionId?: string;
     amount?: string;
@@ -30,14 +31,30 @@ export default function ImagePreviewModal({
 }: ImagePreviewModalProps) {
   if (!isOpen) return null;
 
-  const appName = "I.E.S.T.P. San Francisco de Asis";
-  const safeDni = metadata?.dni || "71218314";
-  const fullName = `${metadata?.studentName || "Raul"} ${metadata?.studentLastName || "Quintana"}`.toUpperCase();
-  const program = metadata?.programName || "Electricidad Industrial";
-  const trId = metadata?.transactionId || "PRE-620323";
-  const dateStr = metadata?.date || "15/03/2026";
-  const amountStr = metadata?.amount || "S/. 120.00";
-  const conceptStr = metadata?.concept || "Derecho de Examen Ordinario 2026";
+  const appName = "I.E.S.T.P. San Francisco de Asís";
+  const safeDni = metadata?.dni || "";
+  const fullName = (
+    metadata?.fullName ||
+    (metadata?.studentName || metadata?.studentLastName
+      ? `${metadata?.studentName || ""} ${metadata?.studentLastName || ""}`.trim()
+      : "") ||
+    title.replace(/Voucher (Matrícula )?de |Recibo de Caja - |Constancia - /i, "").trim() ||
+    "Postulante / Estudiante Registrado"
+  ).toUpperCase();
+  const program = metadata?.programName || "Educación Superior Tecnológica";
+  const trId = metadata?.transactionId || (safeDni ? `OP-${safeDni}` : "OP-VENTANILLA");
+  const dateStr = metadata?.date || new Date().toISOString().split("T")[0];
+  const amountStr = metadata?.amount || (title.toLowerCase().includes("matrícula") ? "S/. 250.00" : "S/. 120.00");
+  const conceptStr = metadata?.concept || (title.toLowerCase().includes("matrícula") ? "Derecho de Matrícula Regular" : "Derecho de Examen de Admisión");
+
+  const [activeTabMode, setActiveTabMode] = React.useState<"file" | "receipt">(
+    fileType === "receipt" || !metadata?.fileDataUrl ? "receipt" : "file"
+  );
+
+  const isPdf = Boolean(
+    metadata?.fileDataUrl?.startsWith("data:application/pdf") ||
+    fileName?.toLowerCase().endsWith(".pdf")
+  );
 
   const handlePrint = () => {
     window.print();
@@ -83,18 +100,42 @@ export default function ImagePreviewModal({
             <Shield className="w-4 h-4 text-amber-500" />
             <span className="font-extrabold text-[11px] uppercase tracking-widest">{title}</span>
           </div>
-          <button 
-            onClick={onClose} 
-            className="text-slate-400 hover:text-white transition-colors cursor-pointer text-xs font-black p-1"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {metadata?.fileDataUrl && (
+              <div className="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setActiveTabMode("file")}
+                  className={`px-2.5 py-1 text-[9px] font-black uppercase rounded tracking-wider transition-colors ${
+                    activeTabMode === "file" ? "bg-[#9F062A] text-white" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Adjunto
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTabMode("receipt")}
+                  className={`px-2.5 py-1 text-[9px] font-black uppercase rounded tracking-wider transition-colors ${
+                    activeTabMode === "receipt" ? "bg-[#9F062A] text-white" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Recibo Oficial
+                </button>
+              </div>
+            )}
+            <button 
+              onClick={onClose} 
+              className="text-slate-400 hover:text-white transition-colors cursor-pointer text-xs font-black p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Viewport */}
         <div className="p-6 bg-slate-50 flex-1 overflow-y-auto flex flex-col items-center justify-center min-h-[300px]">
           
-          {fileType === "receipt" ? (
+          {activeTabMode === "receipt" ? (
             /* ==============================================
                HIGH-FIDELITY TUITION / FEE RECEIPT TEMPLATE 
                ============================================== */
@@ -109,21 +150,23 @@ export default function ImagePreviewModal({
 
               <div className="mt-4 space-y-2 text-[11px] text-slate-700">
                 <div className="flex justify-between border-b pb-1">
-                  <span className="text-slate-400 font-bold uppercase text-[9px]">N° Operacion:</span>
+                  <span className="text-slate-400 font-bold uppercase text-[9px]">N° Operación:</span>
                   <span className="font-mono font-black text-[#9F062A]">{trId}</span>
                 </div>
                 <div className="flex justify-between border-b pb-1">
-                  <span className="text-slate-400 font-bold uppercase text-[9px]">Fecha de Emision:</span>
+                  <span className="text-slate-400 font-bold uppercase text-[9px]">Fecha de Emisión:</span>
                   <span className="font-bold text-slate-800">{dateStr}</span>
                 </div>
                 <div className="flex justify-between border-b pb-1">
-                  <span className="text-slate-400 font-bold uppercase text-[9px]">Postulante:</span>
+                  <span className="text-slate-400 font-bold uppercase text-[9px]">Titular:</span>
                   <span className="font-extrabold text-slate-900">{fullName}</span>
                 </div>
-                <div className="flex justify-between border-b pb-1">
-                  <span className="text-slate-400 font-bold uppercase text-[9px]">D.N.I.:</span>
-                  <span className="font-mono font-bold text-slate-800">{safeDni}</span>
-                </div>
+                {safeDni && (
+                  <div className="flex justify-between border-b pb-1">
+                    <span className="text-slate-400 font-bold uppercase text-[9px]">D.N.I.:</span>
+                    <span className="font-mono font-bold text-slate-800">{safeDni}</span>
+                  </div>
+                )}
                 <div className="flex justify-between border-b pb-1">
                   <span className="text-slate-400 font-bold uppercase text-[9px]">Especialidad:</span>
                   <span className="font-bold text-slate-800">{program}</span>
@@ -146,7 +189,7 @@ export default function ImagePreviewModal({
                   <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
                   <div className="text-center">
                     <p className="text-[9px] font-black uppercase tracking-widest leading-none">PAGO VALIDADO</p>
-                    <p className="text-[7px] font-bold text-emerald-600 uppercase mt-0.5 leading-none">Oficina de Tesoreria</p>
+                    <p className="text-[7px] font-bold text-emerald-600 uppercase mt-0.5 leading-none">Oficina de Tesorería</p>
                   </div>
                 </div>
                 
@@ -160,21 +203,37 @@ export default function ImagePreviewModal({
           ) : (
             /* ==============================================
                HIGH-FIDELITY DIGITAL FILE SCAN REPRESENTATIONS 
-               ============================================== */            <div className="w-full max-w-sm bg-white p-6 shadow-sm border border-slate-250 rounded-xl relative overflow-hidden text-slate-800">
+               ============================================== */
+            <div className="w-full max-w-md bg-white p-6 shadow-sm border border-slate-250 rounded-xl relative overflow-hidden text-slate-800">
               
               {metadata?.fileDataUrl ? (
                 <div className="flex flex-col items-center justify-center p-2 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
-                  <img 
-                    src={metadata.fileDataUrl} 
-                    alt={title} 
-                    referrerPolicy="no-referrer"
-                    className="max-w-full max-h-[350px] object-contain rounded shadow-xs border border-slate-300"
-                  />
+                  {isPdf ? (
+                    <iframe
+                      src={metadata.fileDataUrl}
+                      title={title}
+                      className="w-full h-[380px] rounded border border-slate-200"
+                    />
+                  ) : (
+                    <img 
+                      src={metadata.fileDataUrl} 
+                      alt={title} 
+                      referrerPolicy="no-referrer"
+                      className="max-w-full max-h-[350px] object-contain rounded shadow-xs border border-slate-300"
+                    />
+                  )}
                 </div>
               ) : (
                 <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-lg text-slate-600 space-y-2">
-                  <p className="font-extrabold text-[11px] uppercase tracking-wider text-[#9F062A]">Imagen no recibida</p>
-                  <p className="text-[10px] text-slate-500 leading-normal font-semibold">El postulante aún no ha cargado una captura o fotografía física real de este requisito en el sistema de admisiones.</p>
+                  <p className="font-extrabold text-[11px] uppercase tracking-wider text-[#9F062A]">Voucher no adjuntado</p>
+                  <p className="text-[10px] text-slate-500 leading-normal font-semibold">El postulante aún no ha cargado una captura física del comprobante.</p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTabMode("receipt")}
+                    className="mt-2 px-3 py-1.5 bg-[#9F062A] text-white text-[10px] font-black uppercase rounded shadow-xs hover:bg-[#800521] transition-colors"
+                  >
+                    Ver Recibo Digital Oficial
+                  </button>
                 </div>
               )}
 
@@ -199,15 +258,13 @@ export default function ImagePreviewModal({
             Cerrar Vista
           </button>
           
-          {fileType === "receipt" && (
-            <button 
-              onClick={handlePrint}
-              className="px-4 py-2 bg-slate-900 border border-slate-900 text-white hover:bg-slate-800 rounded font-black uppercase text-[10px] tracking-wider cursor-pointer flex items-center gap-1.5"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Imprimir Recibo</span>
-            </button>
-          )}
+          <button 
+            onClick={handlePrint}
+            className="px-4 py-2 bg-slate-900 border border-slate-900 text-white hover:bg-slate-800 rounded font-black uppercase text-[10px] tracking-wider cursor-pointer flex items-center gap-1.5"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            <span>Imprimir Recibo</span>
+          </button>
         </div>
 
       </div>

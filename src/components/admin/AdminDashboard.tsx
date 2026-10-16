@@ -906,6 +906,7 @@ export default function AdminDashboard({
         {activeTab === "caja_admision" && (
           <CajaAdmisionTab
             applicants={applicants}
+            studentsList={studentsList}
             selectedPeriodId={selectedPeriodId}
             renderPeriodSelector={renderPeriodSelector}
             triggerAdminPreview={triggerAdminPreview}
@@ -1004,6 +1005,7 @@ export default function AdminDashboard({
           <MatriculadosTab
             enrollments={enrollments}
             applicants={applicants}
+            studentsList={studentsList}
             admissionPeriods={admissionPeriods}
             selectedPeriodId={selectedPeriodId}
             setSelectedPeriodId={setSelectedPeriodId}
@@ -1107,6 +1109,7 @@ export default function AdminDashboard({
         selectedFichaDni={selectedFichaDni}
         enrollments={enrollments}
         applicants={applicants}
+        studentsList={studentsList}
         admissionPeriods={admissionPeriods}
         onClose={() => setSelectedFichaDni(null)}
       />
