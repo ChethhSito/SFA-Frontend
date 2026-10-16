@@ -10,7 +10,7 @@ import {
   where,
   type DocumentData
 } from "firebase/firestore";
-import { db, isFirebaseEnabled } from "./config";
+import { db, isFirestoreEnabled } from "./config";
 
 // --- FIRESTORE ADVANCED ERROR HANDLER PATTERN ---
 // Integrated to assist future telemetry and rule diagnostics
@@ -93,7 +93,7 @@ export async function saveDocumentGeneric<T extends DocumentData>(
   data: T
 ): Promise<void> {
   const path = `${collectionName}/${docId}`;
-  if (!isFirebaseEnabled || !db) {
+  if (!isFirestoreEnabled || !db) {
     console.info(`[Fallback Local State / Standby Write] Path: ${path}`, data);
     return;
   }
@@ -115,7 +115,7 @@ export async function getDocumentGeneric<T extends DocumentData>(
   docId: string
 ): Promise<T | null> {
   const path = `${collectionName}/${docId}`;
-  if (!isFirebaseEnabled || !db) {
+  if (!isFirestoreEnabled || !db) {
     console.info(`[Fallback Local State / Standby Read] Path: ${path} (Firebase disabled)`);
     return null;
   }
@@ -139,7 +139,7 @@ export async function listCollectionGeneric<T extends DocumentData>(
   collectionName: string
 ): Promise<T[]> {
   const path = collectionName;
-  if (!isFirebaseEnabled || !db) {
+  if (!isFirestoreEnabled || !db) {
     console.info(`[Fallback Local State / Standby Read Collection] Path: ${path} (Firebase disabled)`);
     return [];
   }
@@ -165,7 +165,7 @@ export async function updateDocumentGeneric<T extends DocumentData>(
   data: Partial<T>
 ): Promise<void> {
   const path = `${collectionName}/${docId}`;
-  if (!isFirebaseEnabled || !db) {
+  if (!isFirestoreEnabled || !db) {
     console.info(`[Fallback Local State / Standby Update] Path: ${path}`, data);
     return;
   }
@@ -187,7 +187,7 @@ export async function deleteDocumentGeneric(
   docId: string
 ): Promise<void> {
   const path = `${collectionName}/${docId}`;
-  if (!isFirebaseEnabled || !db) {
+  if (!isFirestoreEnabled || !db) {
     console.info(`[Fallback Local State / Standby Delete] Path: ${path} (Firebase disabled)`);
     return;
   }
@@ -210,7 +210,7 @@ export async function queryCollectionGeneric<T extends DocumentData>(
   value: any
 ): Promise<T[]> {
   const path = `${collectionName}?where ${field} ${opStr} ${value}`;
-  if (!isFirebaseEnabled || !db) {
+  if (!isFirestoreEnabled || !db) {
     console.info(`[Fallback Local State / Standby Query] Path: ${path} (Firebase disabled)`);
     return [];
   }

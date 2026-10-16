@@ -6,17 +6,7 @@ import {
 } from "../../services/api";
 
 export function useStudentEnrollment() {
-  const [enrollments, setEnrollments] = useState<any[]>(() => {
-    const savedEnrolls = localStorage.getItem("sfa_enrollments");
-    if (savedEnrolls) {
-      try {
-        return JSON.parse(savedEnrolls);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return [];
-  });
+  const [enrollments, setEnrollments] = useState<any[]>([]);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +18,7 @@ export function useStudentEnrollment() {
         if (!apiEnrolls) throw new Error("No se pudo consultar matrículas");
         setEnrollments(apiEnrolls);
         localStorage.setItem("sfa_enrollments", JSON.stringify(apiEnrolls));
+        if (apiEnrolls.length === 0) localStorage.removeItem("sfa_session_alumno");
       })
       .catch((err) => {
         console.error("Error fetching enrollments from REST API:", err);

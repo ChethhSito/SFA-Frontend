@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { 
   Lock, User, ShieldAlert, ArrowLeft, Loader2, Eye, EyeOff 
 } from "lucide-react";
-import { Role, SystemUser } from "../../types";
+import { Applicant, Role, SystemUser } from "../../types";
 import { motion } from "motion/react";
-import { isFirebaseEnabled } from "../../firebase/config";
+import { isFirestoreEnabled } from "../../firebase/config";
 import { loginWithEmailAndPassword } from "../../firebase/auth";
 import { listCollectionGeneric } from "../../firebase/firestore";
 import { fetchApplicants, fetchApplicantByDni, fetchEnrollments, fetchUsers } from "../../services/api";
@@ -39,22 +39,15 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     // Load REST API applicants from NestJS backend
     fetchApplicants()
       .then((apiApps) => {
-        if (apiApps && apiApps.length > 0) {
-          setLocalApplicants((prev) => {
-            const merged = [...prev];
-            apiApps.forEach((a) => {
-              if (!merged.some((m) => m.dni === a.dni || m.applicantCode === a.applicantCode)) {
-                merged.push(a);
-              }
-            });
-            return merged;
-          });
+        if (apiApps) {
+          setLocalApplicants(apiApps);
+          localStorage.setItem("sfa_applicants", JSON.stringify(apiApps));
         }
       })
       .catch((err) => console.error("Error fetching REST API applicants in login:", err));
 
     // Load Live Firestore applicants if enabled
-    if (isFirebaseEnabled) {
+    if (isFirestoreEnabled) {
       listCollectionGeneric<any>("applicants")
         .then((fireApps) => {
           if (fireApps && fireApps.length > 0) {
@@ -87,18 +80,10 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
 
     setIsSubmitting(true);
 
+    const currentEnrollments = await fetchEnrollments();
     const isDniMatriculado = (dni: string) => {
-      try {
-        const savedEnrolls = localStorage.getItem("sfa_enrollments");
-        if (savedEnrolls) {
-          const localEnrollments = JSON.parse(savedEnrolls);
-          const matchedEnroll = localEnrollments.find((e: any) => e.studentDni === dni);
-          return !!(matchedEnroll && matchedEnroll.academicStatus === "MATRICULADO");
-        }
-      } catch (e) {
-        console.error("Error reading sfa_enrollments:", e);
-      }
-      return false;
+      const matchedEnroll = currentEnrollments?.find((e: any) => e.studentDni === dni);
+      return !!(matchedEnroll && matchedEnroll.academicStatus === "MATRICULADO");
     };
 
     const studentDniForInput = (() => {
@@ -118,8 +103,10 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     let detectedRole: Role | null = null;
     let detectedIdentifier = "";
 
-    // Dynamic lookup of applicants with live API fallback
-    let activeApps = [...localApplicants];
+    // The local API is authoritative, including an empty result after a reset.
+    const apiApps = await fetchApplicants();
+    const activeApps = apiApps || [];
+    if (apiApps) setLocalApplicants(apiApps);
     let matchedApp = activeApps.find(a => 
       a.dni?.toLowerCase() === uTrim || 
       a.applicantCode?.toLowerCase() === uTrim || 
@@ -128,27 +115,9 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
 
     if (!matchedApp) {
       try {
-        const apiApps = await fetchApplicants();
-        if (apiApps && apiApps.length > 0) {
-          activeApps = apiApps;
-          setLocalApplicants(apiApps);
-          matchedApp = apiApps.find(a => 
-            a.dni?.toLowerCase() === uTrim || 
-            a.applicantCode?.toLowerCase() === uTrim || 
-            a.email?.toLowerCase() === uTrim
-          );
-        }
-      } catch (e) {
-        console.error("Live applicant fetch error in login submit:", e);
-      }
-    }
-
-    if (!matchedApp) {
-      try {
         const singleApp = await fetchApplicantByDni(uTrim);
         if (singleApp) {
           matchedApp = singleApp;
-          activeApps.push(singleApp);
         }
       } catch (e) {
         console.error("Direct fetchApplicantByDni error in login:", e);
@@ -158,18 +127,7 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     let isMatriculado = false;
     if (matchedApp) {
       try {
-        const savedEnrolls = localStorage.getItem("sfa_enrollments");
-        let localEnrollments: any[] = [];
-        if (savedEnrolls) {
-          try { localEnrollments = JSON.parse(savedEnrolls); } catch(e) {}
-        }
-        let matchedEnroll = localEnrollments.find((e: any) => e.studentDni === matchedApp.dni);
-        if (!matchedEnroll) {
-          const apiEnrolls = await fetchEnrollments();
-          if (apiEnrolls && Array.isArray(apiEnrolls)) {
-            matchedEnroll = apiEnrolls.find((e: any) => e.studentDni === matchedApp.dni);
-          }
-        }
+        const matchedEnroll = currentEnrollments?.find((e: any) => e.studentDni === matchedApp.dni);
         if (matchedEnroll && matchedEnroll.academicStatus === "MATRICULADO") {
           isMatriculado = true;
         }
@@ -179,6 +137,13 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     }
 
     if (matchedApp && isMatriculado) {
+      const applicantProfile = matchedApp as Applicant & {
+        gender?: string;
+        birthDate?: string;
+        address?: string;
+        district?: string;
+        province?: string;
+      };
       // Validate password against applicant custom password
       const expectedPassword = matchedApp.password || "clave123";
       if (pTrim !== expectedPassword) {
@@ -201,11 +166,11 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
           lastName: matchedApp.lastName,
           email: matchedApp.email,
           phone: matchedApp.phone || "",
-          gender: matchedApp.gender || "Masculino",
-          birthDate: matchedApp.birthDate || "",
-          address: matchedApp.address || "",
-          district: matchedApp.district || "",
-          province: matchedApp.province || "",
+          gender: applicantProfile.gender || "Masculino",
+          birthDate: applicantProfile.birthDate || "",
+          address: applicantProfile.address || "",
+          district: applicantProfile.district || "",
+          province: applicantProfile.province || "",
           emergencyName: "",
           emergencyPhone: "",
           emergencyRelation: "Otros"
@@ -242,22 +207,7 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     }
 
     // -1. Check Dynamic System Users created via SuperAdmin / MongoDB
-    let systemUsers: SystemUser[] = [];
-    try {
-      const savedSys = localStorage.getItem("sfa_system_users");
-      if (savedSys) systemUsers = JSON.parse(savedSys);
-    } catch (e) {}
-
-    try {
-      const apiUsers = await fetchUsers();
-      if (apiUsers && Array.isArray(apiUsers)) {
-        apiUsers.forEach((u) => {
-          if (!systemUsers.some((s) => s.id === u.id || (u.email && s.email === u.email) || (u.dni && s.dni === u.dni))) {
-            systemUsers.push(u);
-          }
-        });
-      }
-    } catch (e) {}
+    const systemUsers: SystemUser[] = (await fetchUsers()) || [];
 
     const matchedSysUser = systemUsers.find(
       (u) =>

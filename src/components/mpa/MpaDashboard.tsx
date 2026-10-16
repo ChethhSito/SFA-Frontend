@@ -51,7 +51,7 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
   const [syncError, setSyncError] = useState("");
   const pendingSaves = useRef<Partial<Record<MpaKey, Promise<unknown>>>>({});
 
-  const { conflicts, hasConflicts, conflictCount } = useConflictDetector(tasks, courses);
+  const { conflicts, hasConflicts, conflictCount, orphanCount } = useConflictDetector(tasks, courses, groups);
 
   // Load the existing academic data from the backend.
   useEffect(() => {
@@ -159,6 +159,11 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
 
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50 min-w-0">
         {syncError && <div role="alert" className="bg-amber-50 text-amber-900 px-6 py-2 text-xs font-semibold border-b border-amber-200">{syncError}</div>}
+        {orphanCount > 0 && (
+          <div role="alert" className="bg-amber-50 text-amber-900 px-6 py-2.5 text-xs font-bold border-b border-amber-200">
+            Hay {orphanCount} programación(es) vinculadas a grupos académicos que ya no existen. Revise los grupos y la programación antes de guardar cambios.
+          </div>
+        )}
         {hasConflicts && (
           <div role="alert" className="bg-rose-500/10 border-b border-rose-300 px-6 py-2.5 flex items-center justify-between text-xs font-bold text-rose-900">
             <div className="flex items-center gap-2">
