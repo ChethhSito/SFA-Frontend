@@ -41,7 +41,7 @@ export default function MgeMatriculaTab({
                 <th className="px-4 py-3.5 text-[10px] font-black uppercase text-slate-500 tracking-wider">Estado Matrícula</th>
                 <th className="px-4 py-3.5 text-[10px] font-black uppercase text-slate-500 tracking-wider">Asignación Carrera</th>
                 <th className="px-4 py-3.5 text-[10px] font-black uppercase text-slate-500 tracking-wider">Asignación de Turno</th>
-                <th className="px-4 py-3.5 text-[10px] font-black uppercase text-slate-500 tracking-wider text-right">Interruptores de Acción</th>
+                <th className="px-4 py-3.5 text-[10px] font-black uppercase text-slate-500 tracking-wider text-right">Acciones de matrícula</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
@@ -52,7 +52,9 @@ export default function MgeMatriculaTab({
                     <div className="text-[10px] font-mono font-bold text-slate-500">DNI: {st.dni}</div>
                   </td>
                   <td className="px-4 py-3.5">
-                    {st.academicStatus === "MATRICULADO" ? (
+                    {!st.enrolled ? (
+                      <Badge variant="warning">SIN MATRÍCULA REGISTRADA</Badge>
+                    ) : st.academicStatus === "MATRICULADO" ? (
                       <Badge variant="success">MATRICULADO ACTIVO</Badge>
                     ) : st.paymentStatus === "Validado" ? (
                       <Badge variant="warning" className="bg-sky-100 text-sky-850 border-sky-300">PENDIENTE A MATRICULAR</Badge>
@@ -63,9 +65,11 @@ export default function MgeMatriculaTab({
                   <td className="px-4 py-3.5">
                     <select
                       value={st.programId}
+                      disabled={!st.enrolled || st.active === false}
                       onChange={(e) => onCareerChange(st.dni, e.target.value as ProgramId)}
                       className="p-1 px-2 border border-slate-250 bg-white font-bold rounded-lg text-slate-850 text-xs focus:outline-none"
                     >
+                      <option value="" disabled>Sin carrera registrada</option>
                       {ACADEMIC_PROGRAMS.map((program) => (
                         <option key={program.id} value={program.id}>{program.name}</option>
                       ))}
@@ -76,6 +80,7 @@ export default function MgeMatriculaTab({
                       {(["Mañana", "Tarde", "Noche"] as const).map((shiftOpt) => (
                         <button
                           key={shiftOpt}
+                          disabled={!st.enrolled || st.active === false}
                           onClick={() => onShiftChange(st.dni, shiftOpt)}
                           className={`px-2 py-1 text-[9px] font-black uppercase rounded transition-all cursor-pointer ${
                             st.shift === shiftOpt
@@ -88,16 +93,15 @@ export default function MgeMatriculaTab({
                       ))}
                     </div>
                   </td>
-                  <td className="px-4 py-3.5 text-right">
+                  <td className="px-4 py-3.5 text-right" title={!st.enrolled ? "Primero registre la matrícula desde la ficha del estudiante" : undefined}>
                     <Button
+                      variant={st.academicStatus === "MATRICULADO" ? "danger" : "success"}
+                      size="sm"
                       onClick={() => onToggleAcademicStatus(st.dni)}
-                      className={`text-[9.5px] font-black uppercase tracking-wide px-3 py-1.5 rounded-lg ${
-                        st.academicStatus === "MATRICULADO"
-                          ? "bg-slate-100 hover:bg-red-50 text-red-650 hover:text-red-750"
-                          : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                      }`}
+                      disabled={!st.enrolled || st.active === false}
+                      className="min-w-36 text-[9.5px] disabled:bg-slate-200 disabled:text-slate-600 disabled:opacity-100 disabled:shadow-none"
                     >
-                      {st.academicStatus === "MATRICULADO" ? "Anular Matrícula" : "Matricular Alumno"}
+                      {st.active === false ? "Estudiante de baja" : st.academicStatus === "MATRICULADO" ? "Anular Matrícula" : "Matricular Alumno"}
                     </Button>
                   </td>
                 </tr>

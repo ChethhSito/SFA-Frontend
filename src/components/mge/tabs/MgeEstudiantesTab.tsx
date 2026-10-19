@@ -81,10 +81,10 @@ export default function MgeEstudiantesTab({
                     </td>
                     <td className="px-4 py-3.5">
                       <div className="font-semibold text-slate-700">{st.phone || "Sin Teléfono"}</div>
-                      <div className="text-[9.5px] text-slate-450 font-medium">Distrito: {st.district}</div>
+                      <div className="text-[9.5px] text-slate-450 font-medium">Distrito: {st.district?.trim() || "Sin registrar"}</div>
                     </td>
                     <td className="px-4 py-3.5">
-                      {st.academicStatus === "MATRICULADO" ? (
+                      {st.active === false ? <div className="text-red-700"><strong>DE BAJA</strong><p className="text-xs">{st.deactivationReason}</p>{st.deactivatedAt ? <p className="text-xs">{new Date(st.deactivatedAt).toLocaleDateString("es-PE", { timeZone: "America/Lima" })}</p> : null}</div> : st.academicStatus === "MATRICULADO" ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[10px] uppercase tracking-wide">
                           <CircleDot className="w-2.5 h-2.5 animate-pulse" /> Matriculado Activo
                         </span>
@@ -105,9 +105,10 @@ export default function MgeEstudiantesTab({
                         <button
                           onClick={() => onDeleteStudent(st.dni)}
                           className="p-1 px-2 bg-red-50 hover:bg-red-100 text-red-700 font-bold rounded transition-all cursor-pointer"
-                          title="Dar de baja"
+                          title={st.active === false ? "Reactivar estudiante" : "Dar de baja"}
+                          aria-label={st.active === false ? "Reactivar estudiante" : "Dar de baja"}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          {st.active === false ? "Reactivar" : <Trash2 className="w-3.5 h-3.5" />}
                         </button>
                       </div>
                     </td>

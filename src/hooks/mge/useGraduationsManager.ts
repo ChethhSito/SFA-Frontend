@@ -7,35 +7,26 @@ import {
 } from "../../services/api";
 
 export function useGraduationsManager() {
-  const [graduations, setGraduations] = useState<Graduation[]>(() => {
-    const saved = localStorage.getItem("sfa_graduations");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Error reading sfa_graduations:", e);
-      }
-    }
-    return [];
-  });
+  const [graduations, setGraduations] = useState<Graduation[]>([]);
 
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const reloadGraduations = async () => {
     setLoading(true);
-    fetchGraduations()
-      .then((apiGrads) => {
-        if (!apiGrads) throw new Error("No se pudo consultar graduaciones");
-        setGraduations(apiGrads);
-        localStorage.setItem("sfa_graduations", JSON.stringify(apiGrads));
-      })
-      .catch((err) => {
-        console.error("Error fetching graduations:", err);
-        setError("Error al cargar graduaciones y egresados.");
-      })
-      .finally(() => setLoading(false));
-  }, []);
+    setError(null);
+    try {
+      const rows = await fetchGraduations();
+      if (!Array.isArray(rows)) throw new Error("No se pudo consultar graduaciones");
+      setGraduations(rows);
+      try { localStorage.setItem("sfa_graduations", JSON.stringify(rows)); } catch { /* Optional cache. */ }
+      return true;
+    } catch {
+      setError("No se pudieron cargar los expedientes. Se necesita una sesión Firebase válida.");
+      return false;
+    } finally { setLoading(false); }
+  };
+  useEffect(() => { void reloadGraduations(); }, []);
 
   const handleUpdateGraduations = (updatedList: Graduation[]) => {
     setGraduations(updatedList);
@@ -48,7 +39,8 @@ export function useGraduationsManager() {
 
   const handleCreateGraduation = async (newGraduation: Partial<Graduation>) => {
     const created = await apiCreateGraduation(newGraduation);
-    const itemToSave = created || (newGraduation as Graduation);
+    if (!created) return null;
+    const itemToSave = created;
     const exists = graduations.some((g) => g.studentDni === itemToSave.studentDni);
     const nextList = exists
       ? graduations.map((g) => (g.studentDni === itemToSave.studentDni ? itemToSave : g))
@@ -58,9 +50,11 @@ export function useGraduationsManager() {
   };
 
   const handleUpdateGraduationByDni = async (studentDni: string, data: Partial<Graduation>) => {
-    await apiUpdateGraduation(studentDni, data);
-    const nextList = graduations.map((g) => (g.studentDni === studentDni ? { ...g, ...data } : g));
+    const saved = await apiUpdateGraduation(studentDni, data);
+    if (!saved) return null;
+    const nextList = graduations.map((g) => (g.studentDni === studentDni ? saved : g));
     handleUpdateGraduations(nextList);
+    return saved;
   };
 
   return {
@@ -68,6 +62,7 @@ export function useGraduationsManager() {
     setGraduations,
     graduationsLoading: loading,
     graduationsError: error,
+    reloadGraduations,
     handleUpdateGraduations,
     handleCreateGraduation,
     handleUpdateGraduationByDni

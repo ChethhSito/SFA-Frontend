@@ -3,8 +3,10 @@ import { X, Edit2 } from "lucide-react";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { ProgramId } from "../../../types";
 import { StudentFormState } from "../mgeTypes";
+import StudentLocationFields from "./StudentLocationFields";
 
 interface Props {
+  saving: boolean;
   studentForm: StudentFormState;
   editingStudentDni: string;
   onFormChange: (form: StudentFormState) => void;
@@ -12,7 +14,7 @@ interface Props {
   onClose: () => void;
 }
 
-export default function MgeEditStudentModal({ studentForm, editingStudentDni, onFormChange, onSubmit, onClose }: Props) {
+export default function MgeEditStudentModal({ saving, studentForm, editingStudentDni, onFormChange, onSubmit, onClose }: Props) {
   const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   const set = (partial: Partial<StudentFormState>) => onFormChange({ ...studentForm, ...partial });
 
@@ -23,12 +25,13 @@ export default function MgeEditStudentModal({ studentForm, editingStudentDni, on
           <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
             <Edit2 className="w-5 h-5 text-[#9F062A]" /> Ficha Integral del Alumno (Modificar)
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-all cursor-pointer">
+          <button disabled={saving} onClick={onClose} className="text-slate-400 hover:text-white transition-all cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={onSubmit} className="p-6 space-y-5 text-xs text-slate-750">
+          <fieldset disabled={saving} className="border-0 p-0 min-w-0 space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-[10px] font-black uppercase text-slate-450 tracking-wider block mb-1">Nombre</label>
@@ -47,6 +50,7 @@ export default function MgeEditStudentModal({ studentForm, editingStudentDni, on
               <label className="text-[10px] font-black uppercase text-slate-450 tracking-wider block mb-1">Género</label>
               <select value={studentForm.gender} onChange={(e) => set({ gender: e.target.value })}
                 className="w-full p-2 border border-slate-250 bg-slate-50 font-bold rounded-lg focus:outline-none">
+                <option value="">Sin registrar</option>
                 <option value="Masculino">Masculino</option>
                 <option value="Femenino">Femenino</option>
               </select>
@@ -76,6 +80,8 @@ export default function MgeEditStudentModal({ studentForm, editingStudentDni, on
             </div>
           </div>
 
+          <StudentLocationFields form={studentForm} onChange={onFormChange} idPrefix="edit-student" />
+
           {/* Program and shift */}
           <div className="p-4 bg-slate-50 border border-slate-205 rounded-xl space-y-4">
             <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest block border-b border-slate-200 pb-1.5">
@@ -86,6 +92,7 @@ export default function MgeEditStudentModal({ studentForm, editingStudentDni, on
                 <label className="text-[10px] font-black uppercase text-slate-450 tracking-wider block mb-1">Programa</label>
                 <select value={studentForm.programId} onChange={(e) => set({ programId: e.target.value as ProgramId })}
                   className="w-full p-2 border border-slate-250 bg-white font-bold rounded-lg focus:outline-none text-slate-800">
+                  <option value="">Seleccione una carrera</option>
                   {ACADEMIC_PROGRAMS.map((prog) => <option key={prog.id} value={prog.id}>{prog.name}</option>)}
                 </select>
               </div>
@@ -93,6 +100,7 @@ export default function MgeEditStudentModal({ studentForm, editingStudentDni, on
                 <label className="text-[10px] font-black uppercase text-slate-450 tracking-wider block mb-1">Turno</label>
                 <select value={studentForm.shift} onChange={(e) => set({ shift: e.target.value as any })}
                   className="w-full p-2 border border-slate-250 bg-white font-bold rounded-lg focus:outline-none text-slate-800">
+                  <option value="">Seleccione un turno</option>
                   <option value="Mañana">Mañana</option>
                   <option value="Tarde">Tarde</option>
                   <option value="Noche">Noche</option>
@@ -135,6 +143,7 @@ export default function MgeEditStudentModal({ studentForm, editingStudentDni, on
               Guardar Datos
             </button>
           </div>
+          </fieldset>
         </form>
       </div>
     </div>

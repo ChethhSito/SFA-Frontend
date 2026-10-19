@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { CreditCard } from "lucide-react";
 import { Enrollment } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
@@ -7,9 +7,11 @@ interface Props {
   processedStudents: ProcessedStudent[];
   enrollments: Enrollment[];
   onUpdatePaymentStatus: (dni: string, status: "Validado" | "Observado") => void;
+  onRegisterOperation: (dni: string, operation: string) => void;
 }
 
-export default function MgePagosTab({ processedStudents, enrollments, onUpdatePaymentStatus }: Props) {
+export default function MgePagosTab({ processedStudents, enrollments, onUpdatePaymentStatus, onRegisterOperation }: Props) {
+  const [operations, setOperations] = useState<Record<string, string>>({});
   return (
     <div className="space-y-6">
       <div className="bg-slate-100 p-4 border border-slate-200 rounded-xl space-y-1.5">
@@ -18,7 +20,7 @@ export default function MgePagosTab({ processedStudents, enrollments, onUpdatePa
           Auditoría Financiera de Matrículas Semestrales
         </h4>
         <p className="text-[11px] font-semibold text-slate-500 leading-relaxed">
-          Cada estudiante que se matricula en el semestre regular debe registrar su voucher de pago (S/. 250). Los directivos verifican los números de operación bancaria con el extracto bancario de la cuenta institucional del IESTP.
+          Los directivos verifican las operaciones de pago registradas con el extracto bancario de la cuenta institucional antes de validarlas.
         </p>
       </div>
 
@@ -35,29 +37,54 @@ export default function MgePagosTab({ processedStudents, enrollments, onUpdatePa
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
-              {processedStudents.map((st) => (
+              {processedStudents.map((st) => {
+                const enrollment = enrollments.find((item) => item.studentDni === st.dni);
+                const operation = enrollment?.paymentOperation?.trim();
+                const validated = st.paymentStatus === "Validado";
+                const canValidate = st.enrolled && !!operation && !validated;
+                return (
                 <tr key={st.dni} className="hover:bg-slate-50/50 transition-all">
                   <td className="px-4 py-3.5">
                     <div className="font-extrabold text-slate-900">{st.lastName}, {st.name}</div>
                     <div className="text-[10px] text-slate-400 font-bold">DNI: {st.dni}</div>
                   </td>
                   <td className="px-4 py-3.5">
-                    <div className="font-bold text-slate-700">Derecho de Matrícula 2026-I</div>
-                    <div className="text-[10px] text-emerald-600 font-black uppercase">Monto: S/. 250.00</div>
+                    <div className="font-bold text-slate-700">Derecho de matrícula</div>
+                    <div className="text-[10px] text-slate-500">Monto no registrado en la matrícula</div>
                   </td>
                   <td className="px-4 py-3.5">
                     <span className="font-mono text-slate-800 font-bold block">
-                      {st.enrolled && enrollments.find((e) => e.studentDni === st.dni)?.paymentOperation
-                        ? enrollments.find((e) => e.studentDni === st.dni)?.paymentOperation
-                        : "OP-" + (904800 + Math.floor(Math.random() * 5000))}
+                      {operation || "Sin operación registrada"}
                     </span>
-                    <span className="text-[9px] text-slate-450 italic font-medium">Bco. de la Nación / Ventanilla</span>
+                    {operation ? <span className="text-[9px] text-slate-500">Operación registrada para revisión</span> : st.enrolled ? (
+                      <form className="mt-2 flex flex-wrap items-center gap-2" onSubmit={(event) => {
+                        event.preventDefault();
+                        onRegisterOperation(st.dni, operations[st.dni] || "");
+                      }}>
+                        <input type="text" required maxLength={100}
+                          aria-label={`Número de operación de ${st.name} ${st.lastName}`}
+                          placeholder="Número de operación"
+                          value={operations[st.dni] || ""}
+                          onChange={(event) => setOperations((previous) => ({ ...previous, [st.dni]: event.target.value }))}
+                          className="w-44 rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:outline-[#9F062A]" />
+                        <button type="submit" disabled={!operations[st.dni]?.trim()}
+                          className="rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs font-bold text-white disabled:bg-slate-200 disabled:text-slate-600 disabled:cursor-not-allowed">
+                          Registrar operación
+                        </button>
+                      </form>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3.5">
                     {st.paymentStatus === "Validado" ? (
                       <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[10px] uppercase">Validado</span>
                     ) : st.paymentStatus === "Observado" ? (
                       <span className="px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-100 font-bold text-[10px] uppercase">Observado</span>
+                    ) : !st.enrolled ? (
+                      <span className="text-slate-500">Sin registro de matrícula</span>
+                    ) : st.paymentStatus === "No Pagado" ? (
+                      <span className="text-slate-500">No pagado</span>
+                    ) : st.paymentStatus === "Pagado" ? (
+                      <span className="text-slate-500">Pagado, pendiente de validación</span>
                     ) : (
                       <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100 font-bold text-[10px] uppercase">Pendiente</span>
                     )}
@@ -66,20 +93,24 @@ export default function MgePagosTab({ processedStudents, enrollments, onUpdatePa
                     <div className="flex justify-end gap-1.5">
                       <button
                         onClick={() => onUpdatePaymentStatus(st.dni, "Validado")}
-                        className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer"
+                        disabled={!canValidate}
+                        title={!st.enrolled ? "Primero registre la matrícula" : !operation ? "Registre la operación antes de validar" : validated ? "El pago ya está validado" : "Validar la operación revisada"}
+                        className="px-2.5 py-1.5 bg-emerald-600 enabled:hover:bg-emerald-700 text-white rounded font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer disabled:bg-slate-200 disabled:text-slate-600 disabled:cursor-not-allowed"
                       >
-                        Validar
+                        {validated ? "Validado" : "Validar"}
                       </button>
                       <button
                         onClick={() => onUpdatePaymentStatus(st.dni, "Observado")}
-                        className="px-2.5 py-1.5 bg-red-650 hover:bg-red-750 text-white rounded font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer"
+                        disabled={!st.enrolled || !operation}
+                        className="px-2.5 py-1.5 bg-red-700 enabled:hover:bg-red-800 text-white rounded font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer disabled:bg-slate-200 disabled:text-slate-600 disabled:cursor-not-allowed"
                       >
                         Observar
                       </button>
                     </div>
+                    {st.enrolled && !operation ? <p className="mt-2 text-[10px] text-slate-600">Registra la operación antes de validar.</p> : null}
                   </td>
                 </tr>
-              ))}
+              ); })}
             </tbody>
           </table>
         </div>

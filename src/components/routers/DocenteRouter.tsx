@@ -11,11 +11,14 @@ interface DocenteRouterProps {
   assignments: CourseAssignment[];
   evaluations: CourseEvaluation[];
   attendance: AttendanceRecord[];
+  attendanceLoading: boolean;
+  attendanceError: string | null;
+  onReloadAttendance: () => Promise<boolean>;
   studentsList: { [dni: string]: StudentPersonalData };
   enrollments?: Enrollment[];
   onUpdateMaterials: (updated: CourseMaterial[]) => void;
-  onUpdateAssignments: (updated: CourseAssignment[]) => void;
-  onUpdateAttendance: (updated: AttendanceRecord[]) => void;
+  onUpdateAssignments: (updated: CourseAssignment[]) => Promise<boolean>;
+  onUpdateAttendance: (updated: AttendanceRecord[]) => Promise<boolean>;
   onLogout: () => void;
 }
 
@@ -31,6 +34,9 @@ export default function DocenteRouter({
   onUpdateMaterials,
   onUpdateAssignments,
   onUpdateAttendance,
+  attendanceLoading,
+  attendanceError,
+  onReloadAttendance,
   onLogout
 }: DocenteRouterProps) {
   const [session, setSession] = useState<string | null>(null);
@@ -85,6 +91,9 @@ export default function DocenteRouter({
       assignments={assignments}
       evaluations={evaluations}
       attendance={attendance}
+      attendanceLoading={attendanceLoading}
+      attendanceError={attendanceError}
+      onReloadAttendance={onReloadAttendance}
       studentsList={studentsList}
       enrollments={enrollments}
       onUpdateMaterials={onUpdateMaterials}

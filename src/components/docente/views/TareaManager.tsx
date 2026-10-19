@@ -9,7 +9,7 @@ interface Props {
   courseId: string;
   week: number;
   assignments: CourseAssignment[];
-  onPublishAssignment: (title: string, desc: string, dueDate: string, attachment?: string, rubric?: string) => void;
+  onPublishAssignment: (title: string, desc: string, dueDate: string, attachment?: string, rubric?: string) => Promise<boolean | undefined>;
   onDeleteAssignment: (id: string) => void;
 }
 
@@ -19,11 +19,16 @@ export function TareaManager({ courseId, week, assignments, onPublishAssignment,
   const [dueDate, setDueDate] = useState("");
   const [attachment, setAttachment] = useState("");
   const [rubric, setRubric] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !description || !dueDate) return;
-    onPublishAssignment(title, description, dueDate, attachment || undefined, rubric || undefined);
+    if (!title || !description || !dueDate || saving) return;
+    setSaving(true);
+    let saved = false;
+    try { saved = !!await onPublishAssignment(title, description, dueDate, attachment || undefined, rubric || undefined); }
+    finally { setSaving(false); }
+    if (!saved) return;
     setTitle("");
     setDescription("");
     setDueDate("");
@@ -106,7 +111,7 @@ export function TareaManager({ courseId, week, assignments, onPublishAssignment,
                 />
               </div>
 
-              <Button type="submit" variant="primary" fullWidth className="font-black text-[10px] py-3 uppercase tracking-wider bg-[#8B0026] text-white">
+              <Button type="submit" disabled={saving} variant="primary" fullWidth className="font-black text-[10px] py-3 uppercase tracking-wider bg-[#8B0026] text-white">
                 <Plus className="w-4 h-4 mr-1.5" /> Publicar Tarea
               </Button>
             </form>

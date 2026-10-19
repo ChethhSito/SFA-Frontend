@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { 
-  Users, BookOpen, Clock, FileText, CheckCircle, 
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  Users, BookOpen, Clock, FileText, CheckCircle,
   Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronRight, BarChart3, Settings, AlertCircle, RefreshCw, FileSpreadsheet, Megaphone
 } from "lucide-react";
 import { Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, StudentPersonalData, Teacher, Enrollment } from "../../types";
 
 // Reusable Custom Design System Components
 import Button from "../ui/Button";
+import Toast, { ToastNotice } from "../ui/Toast";
 import Badge from "../ui/Badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../ui/Card";
 import PageHeader from "../ui/PageHeader";
@@ -17,8 +18,8 @@ import AlertBox from "../ui/AlertBox";
 import { ROSTER, getWeekTheme, WeeklyObservation } from "./DocenteTypes";
 import SidebarPrincipal from "./SidebarPrincipal";
 import SidebarCurso, { WeekOption, CourseSection } from "./SidebarCurso";
-import { 
-  ResumenCurso, MaterialManager, TareaManager, ObservacionManager, CierreCurso 
+import {
+  ResumenCurso, MaterialManager, TareaManager, ObservacionManager, CierreCurso
 } from "./WeeklyViews";
 
 import AsistenciaManager from "./AsistenciaManager";
@@ -36,11 +37,14 @@ interface DocenteDashboardProps {
   assignments: CourseAssignment[];
   evaluations: CourseEvaluation[];
   attendance: AttendanceRecord[];
+  attendanceLoading: boolean;
+  attendanceError: string | null;
+  onReloadAttendance: () => Promise<boolean>;
   studentsList: { [dni: string]: StudentPersonalData };
   enrollments?: Enrollment[];
   onUpdateMaterials: (mats: CourseMaterial[]) => void;
-  onUpdateAssignments: (asgs: CourseAssignment[]) => void;
-  onUpdateAttendance: (att: AttendanceRecord[]) => void;
+  onUpdateAssignments: (asgs: CourseAssignment[]) => Promise<boolean>;
+  onUpdateAttendance: (att: AttendanceRecord[]) => Promise<boolean>;
   onLogout: () => void;
 }
 
@@ -57,12 +61,15 @@ export default function DocenteDashboard({
   onUpdateMaterials,
   onUpdateAssignments,
   onUpdateAttendance,
+  attendanceLoading,
+  attendanceError,
+  onReloadAttendance,
   onLogout
 }: DocenteDashboardProps) {
   // Main Selection States
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("dashboard"); // "dashboard" | "cursos" | "control_asistencia" | "avisos_reportes" | "evaluaciones_cursos" | "configuracion" | "curso"
-  
+
   // Weekly Syllabus States (active when selectedCourseId !== null)
   const [activeSection, setActiveSection] = useState<CourseSection>("general");
   const [selectedWeek, setSelectedWeek] = useState<number>(1);
@@ -91,10 +98,10 @@ export default function DocenteDashboard({
   })();
 
   // Resolve current logged-in teacher by DNI, email, id, or Mongo _id
-  const currentTeacher = allTeachers.find((t) => 
-    t.dni === teacherDni || 
-    t.email?.toLowerCase() === teacherDni?.toLowerCase() || 
-    (t as any)._id === teacherDni || 
+  const currentTeacher = allTeachers.find((t) =>
+    t.dni === teacherDni ||
+    t.email?.toLowerCase() === teacherDni?.toLowerCase() ||
+    (t as any)._id === teacherDni ||
     t.id === teacherDni
   ) || (teacherDni === "docente" || !teacherDni ? (allTeachers.find((t) => t.careerId === "electronica") || allTeachers[0] || null) : null);
 
@@ -169,25 +176,20 @@ export default function DocenteDashboard({
     localStorage.setItem("sfa_weekly_observations", JSON.stringify(weeklyObservations));
   }, [weeklyObservations]);
 
-  // 2. STATE: Grades registry cache (clean state, purging mock IDs)
-  const [gradesRegistry, setGradesRegistry] = useState<{ [key: string]: { grade?: number; feedback?: string } }>(() => {
-    const saved = localStorage.getItem("sfa_grades_registry");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        delete parsed["cur-elec-1-4-12345678"];
-        delete parsed["cur-proj-1-4-12345678"];
-        return parsed;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return {};
-  });
-
-  useEffect(() => {
-    localStorage.setItem("sfa_grades_registry", JSON.stringify(gradesRegistry));
-  }, [gradesRegistry]);
+  const [notice, setNotice] = useState<ToastNotice | null>(null);
+  const closeNotice = useCallback(() => setNotice(null), []);
+  const notify = (message: string, success: boolean) => setNotice({ id: Date.now(), message, kind: success ? "success" : "error" });
+  const gradesRegistry = useMemo(() => {
+    const registry: Record<string, { grade?: number; feedback?: string }> = {};
+    assignments.forEach((assignment) => {
+      const week = assignment.title.match(/^\[Semana (\d+)\]/)?.[1];
+      if (!week) return;
+      assignment.submissions.forEach((submission) => {
+        if (submission.grade !== undefined) registry[`${assignment.courseId}-${week}-${submission.studentDni}`] = submission;
+      });
+    });
+    return registry;
+  }, [assignments]);
 
   // Helper to get materials for selected course & week
   const getFilteredMaterials = () => {
@@ -228,7 +230,7 @@ export default function DocenteDashboard({
   };
 
   // Actions: Publish assignment
-  const handlePublishAssignment = (title: string, desc: string, dueDate: string, attachment?: string, rubric?: string) => {
+  const handlePublishAssignment = async (title: string, desc: string, dueDate: string, attachment?: string, rubric?: string) => {
     if (!selectedCourseId) return;
     const newAsg: CourseAssignment = {
       id: `asg-${Date.now()}`,
@@ -241,12 +243,15 @@ export default function DocenteDashboard({
     if (attachment) (newAsg as any).attachment = attachment;
     if (rubric) (newAsg as any).rubric = rubric;
 
-    onUpdateAssignments([...assignments, newAsg]);
+    const saved = await onUpdateAssignments([...assignments, newAsg]);
+    notify(saved ? "Tarea guardada en el servidor." : "No se pudo guardar la tarea.", saved);
+    return saved;
   };
 
   // Actions: Delete assignment
-  const handleDeleteAssignment = (id: string) => {
-    onUpdateAssignments(assignments.filter((a) => a.id !== id));
+  const handleDeleteAssignment = async (id: string) => {
+    const saved = await onUpdateAssignments(assignments.filter((a) => a.id !== id));
+    notify(saved ? "Tarea eliminada." : "No se pudo eliminar la tarea.", saved);
   };
 
   // Actions: Add observation
@@ -275,16 +280,6 @@ export default function DocenteDashboard({
     }));
   };
 
-  // Actions: Save grade
-  const handleSaveGrade = (studentDni: string, grade: number, feedback: string) => {
-    if (!selectedCourseId) return;
-    const key = `${selectedCourseId}-${selectedWeek}-${studentDni}`;
-    setGradesRegistry((prev) => ({
-      ...prev,
-      [key]: { grade: grade, feedback: feedback }
-    }));
-  };
-
   // Helper to calculate course specific stats
   const getCourseAggregates = (courseId: string) => {
     const courseMats = materials.filter((m) => m.courseId === courseId).length;
@@ -305,7 +300,7 @@ export default function DocenteDashboard({
     const gpa = counts > 0 ? totalScore / counts : 0;
 
     return {
-      materialsCount: courseMats, 
+      materialsCount: courseMats,
       assignmentsCount: courseAsgs,
       incidentsCount: 0,
       studentsCount: ROSTER.length,
@@ -318,7 +313,7 @@ export default function DocenteDashboard({
     let pendingReviews = 0;
     const activeCourseIds = teacherCourses.map((c) => c.id);
     const activeAssignments = assignments.filter((a) => activeCourseIds.includes(a.courseId));
-    
+
     activeAssignments.forEach((asg) => {
       ROSTER.forEach((std) => {
         const weekMatch = asg.title.match(/\[Semana (\d+)\]/);
@@ -382,7 +377,8 @@ export default function DocenteDashboard({
 
   return (
     <div id="docente-viewport" className="flex h-screen w-full overflow-hidden bg-slate-100 select-none text-left font-sans">
-      
+      {notice ? <Toast notice={notice} onClose={closeNotice} /> : null}
+
       {/* 1. SIDEBAR PRINCIPAL */}
       <div className="hidden md:block">
         <SidebarPrincipal
@@ -434,7 +430,7 @@ export default function DocenteDashboard({
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b flex items-center justify-between px-4 z-40 select-none">
         <div className="flex items-center gap-2">
           {selectedCourseId ? (
-            <button 
+            <button
               onClick={() => {
                 if (showMobileSidebarCurso) {
                   setSelectedCourseId(null);
@@ -459,14 +455,14 @@ export default function DocenteDashboard({
 
         <div className="flex gap-2">
           {selectedCourseId && (
-            <button 
+            <button
               onClick={() => setShowMobileSidebarCurso(!showMobileSidebarCurso)}
               className="text-[10px] uppercase font-black px-2 py-1 bg-amber-400 text-slate-900 rounded border"
             >
               {showMobileSidebarCurso ? "Ver Contenido" : "Menú Curso"}
             </button>
           )}
-          <button 
+          <button
             onClick={onLogout}
             className="text-[10px] font-bold text-slate-400 hover:text-red-750"
           >
@@ -573,7 +569,7 @@ export default function DocenteDashboard({
 
               {/* Bento Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
+
                 {/* Left Column: Short course references directory */}
                 <Card className="lg:col-span-2 text-left">
                   <CardHeader>
@@ -585,8 +581,8 @@ export default function DocenteDashboard({
                   <CardContent className="p-5 font-sans space-y-3">
                     {teacherCourses.map((c) => {
                       return (
-                        <div 
-                          key={c.id} 
+                        <div
+                          key={c.id}
                           className="p-5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col justify-between gap-4 transition-all hover:bg-slate-150/50"
                         >
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -606,7 +602,7 @@ export default function DocenteDashboard({
                                 <p><span className="text-slate-400">Currícula:</span> <span className="text-slate-800">{c.curriculum || "Currícula 2024"}</span></p>
                               </div>
                             </div>
-                            
+
                             <div className="text-[11px] text-slate-500 font-bold space-y-1 md:self-end">
                               <p><span className="text-slate-400">Aula/Lab:</span> <span className="text-[#8B0026] uppercase font-extrabold">{c.classroom}</span></p>
                               <p><span className="text-slate-400">Alumnos:</span> <span className="text-slate-800">{c.studentCount || ROSTER.length || 0} Alumnos</span></p>
@@ -709,12 +705,12 @@ export default function DocenteDashboard({
           {/* TAB 2: GENERAL LIST OF COURSES ("Mis Cursos") */}
           {selectedCourseId === null && activeTab === "cursos" && (
             <PageTransition id="cursos-directory-screen" className="space-y-6 text-left">
-              <PageHeader 
+              <PageHeader
                 title="Mis Asignaturas Asignadas"
                 subtitle="Seleccione una materia pedagógica para programar semanas de asistencia, tareas, evaluaciones y evidencias."
                 icon={<BookOpen className="w-6 h-6 text-[#8B0026]" />}
               />
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {teacherCourses.map((c) => {
                   const stats = getCourseAggregates(c.id);
@@ -788,7 +784,11 @@ export default function DocenteDashboard({
           {/* TAB 3: CONTROL DE ASISTENCIA GENERAL (CONSULTAS) */}
           {selectedCourseId === null && activeTab === "control_asistencia" && (
             <PageTransition id="control-asistencia-general-tab">
-              <ControlAsistenciaPrincipal 
+              <ControlAsistenciaPrincipal
+                students={Object.values(studentsList)}
+                loading={attendanceLoading}
+                error={attendanceError}
+                onReload={onReloadAttendance}
                 courses={teacherCourses}
                 attendanceRecords={attendance}
               />
@@ -798,7 +798,7 @@ export default function DocenteDashboard({
           {/* TAB 4: AVISOS Y REPORTES GENERAL */}
           {selectedCourseId === null && activeTab === "avisos_reportes" && (
             <PageTransition id="avisos-reportes-general-tab">
-              <AvisosReportesPrincipal 
+              <AvisosReportesPrincipal
                 teacherName={currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Docente Titular"}
                 courses={teacherCourses}
               />
@@ -808,7 +808,7 @@ export default function DocenteDashboard({
           {/* TAB 5: EVALUACIONES DE CURSOS SPREADSHEETS */}
           {selectedCourseId === null && activeTab === "evaluaciones_cursos" && (
             <PageTransition id="evaluaciones-cursos-general-tab">
-              <EvaluacionesCursosPrincipal 
+              <EvaluacionesCursosPrincipal studentsList={studentsList} enrollments={enrollments} assignments={assignments} onUpdateAssignments={onUpdateAssignments}
                 courses={teacherCourses}
               />
             </PageTransition>
@@ -817,7 +817,7 @@ export default function DocenteDashboard({
           {/* TAB 6: CONFIGURACION PERSONAL */}
           {selectedCourseId === null && activeTab === "configuracion" && (
             <PageTransition id="config-tab" className="space-y-6 text-left">
-              <PageHeader 
+              <PageHeader
                 title="Configuración de Cuenta Docente"
                 subtitle="Firma digital homologada, correo de contacto y habilitaciones institucionales del docente."
                 icon={<Settings className="w-6 h-6 text-[#8B0026]" />}
@@ -854,7 +854,7 @@ export default function DocenteDashboard({
           {/* COURSE INTEGRATION SUB SECTIONS (Selected course context) */}
           {selectedCourseId && activeTab === "curso" && selectedCourse && (
             <div className="space-y-6">
-              
+
               {/* SECTION A: GENERAL SUMMARY BANNER AND SHEET */}
               {activeSection === "general" && (
                 <PageTransition id="curso-general" className="space-y-6">
@@ -873,7 +873,7 @@ export default function DocenteDashboard({
                     subtitle="Distribución horaria presencial programada para el semestre en vigor."
                     icon={<Clock className="w-5 h-5 text-[#8B0026]" />}
                   />
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {getCourseSchedulesList(selectedCourse.code).map((sch, idx) => (
                       <Card key={idx} className="border border-slate-150">
@@ -933,6 +933,10 @@ export default function DocenteDashboard({
                     {/* Sub-item 1: Asistencia */}
                     {selectedWeekOption === "asistencia" && (
                       <AsistenciaManager
+                        loading={attendanceLoading}
+                        error={attendanceError}
+                        onReload={onReloadAttendance}
+                        students={enrollments.filter((enrollment) => enrollment.academicStatus === "MATRICULADO" && enrollment.programId === (selectedCourse?.careerId || selectedCourse?.career)).map((enrollment) => studentsList[enrollment.studentDni]).filter(Boolean)}
                         courseId={selectedCourseId}
                         week={selectedWeek}
                         attendanceRecords={attendance}
@@ -967,13 +971,9 @@ export default function DocenteDashboard({
                       <EvaluacionesManager
                         courseId={selectedCourseId}
                         week={selectedWeek}
-                        grades={ROSTER.reduce((acc, current) => {
-                          const key = `${selectedCourseId}-${selectedWeek}-${current.dni}`;
-                          const saved = gradesRegistry[key];
-                          acc[current.dni] = saved || {};
-                          return acc;
-                        }, {} as { [dni: string]: { grade?: number; feedback?: string } })}
-                        onSaveGrade={handleSaveGrade}
+                        students={enrollments.filter((enrollment) => enrollment.academicStatus === "MATRICULADO" && enrollment.programId === (selectedCourse?.careerId || selectedCourse?.career)).map((enrollment) => studentsList[enrollment.studentDni]).filter(Boolean)}
+                        assignments={assignments}
+                        onUpdateAssignments={onUpdateAssignments}
                       />
                     )}
 

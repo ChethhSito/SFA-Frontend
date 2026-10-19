@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import {
   fetchStudents,
   fetchGraduations,
+  setStudentActive,
   updateStudentPersonalData as apiUpdatePersonalData,
   updateStudentCycleStatuses as apiUpdateCycleStatuses,
   updateStudentCourseGrade as apiUpdateCourseGrade
@@ -79,21 +80,19 @@ export function useStudentGrades() {
   }, []);
 
   const handleUpdateStudentsData = async (updatedMap: any) => {
-    setStudentsData(updatedMap);
-    try {
-      localStorage.setItem("sfa_students", JSON.stringify(updatedMap));
-    } catch (e) {
-      console.warn("[localStorage] Could not save sfa_students:", e);
-    }
-
-    // Direct sync for modified student personal details
     for (const [dni, details] of Object.entries(updatedMap)) {
-      try {
-        await apiUpdatePersonalData(dni, details);
-      } catch (err) {
-        console.error(`Error updating student personal data for DNI ${dni}:`, err);
+      if (JSON.stringify(studentsData[dni]) === JSON.stringify(details)) continue;
+      const saved = await apiUpdatePersonalData(dni, details);
+      if (!saved) {
+        setStudentsError(`No se pudieron guardar los datos del estudiante ${dni}.`);
+        return false;
       }
     }
+    setStudentsData(updatedMap);
+    setStudentsError(null);
+    try { localStorage.setItem("sfa_students", JSON.stringify(updatedMap)); }
+    catch (err) { console.warn("No se pudo guardar la caché de estudiantes", err); }
+    return true;
   };
 
   const handleUpdatePersonalSingle = async (dni: string, details: any) => {
@@ -105,6 +104,18 @@ export function useStudentGrades() {
       console.warn(e);
     }
     await apiUpdatePersonalData(dni, details);
+  };
+
+  const handleSetStudentActive = async (dni: string, active: boolean, reason?: string) => {
+    const saved = await setStudentActive(dni, active, reason);
+    if (!saved || saved.dni !== dni || saved.active !== active) return false;
+    setStudentsData((previous: any) => {
+      const next = { ...previous, [dni]: saved };
+      try { localStorage.setItem("sfa_students", JSON.stringify(next)); }
+      catch (error) { console.warn("No se pudo guardar la caché de estudiantes", error); }
+      return next;
+    });
+    return true;
   };
 
   const handleUpdateCourseGrade = async (dni: string, courseName: string, grade: number) => {
@@ -137,6 +148,7 @@ export function useStudentGrades() {
     studentsLoading,
     studentsError,
     handleUpdateStudentsData,
+    handleSetStudentActive,
     handleUpdatePersonalSingle,
     handleUpdateCourseGrade,
     handleUpdateGraduations

@@ -2,10 +2,11 @@ import React from "react";
 import { Download, Printer, Save, Check } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import Button from "../../ui/Button";
-import { ROSTER } from "../DocenteTypes";
+import { StudentPersonalData } from "../../../types";
 import { CourseFormula } from "./CourseFormulaCard";
 
 interface GradeSheetTableProps {
+  students: StudentPersonalData[];
   formula: CourseFormula;
   sheetData: { [key: string]: string };
   computeStudentAverage: (studentDni: string) => { average: number; missingAny: boolean };
@@ -17,6 +18,7 @@ interface GradeSheetTableProps {
 }
 
 export const GradeSheetTable: React.FC<GradeSheetTableProps> = ({
+  students,
   formula,
   sheetData,
   computeStudentAverage,
@@ -67,7 +69,7 @@ export const GradeSheetTable: React.FC<GradeSheetTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-150/60 font-sans text-xs">
-            {ROSTER.map((std) => {
+            {students.map((std) => {
               const stats = computeStudentAverage(std.dni);
               const isUnderWeight = stats.missingAny;
               const isApproved = stats.average >= 12.5;

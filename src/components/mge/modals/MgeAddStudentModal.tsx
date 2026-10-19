@@ -3,15 +3,17 @@ import { X, Users } from "lucide-react";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { ProgramId } from "../../../types";
 import { StudentFormState } from "../mgeTypes";
+import StudentLocationFields from "./StudentLocationFields";
 
 interface Props {
+  saving: boolean;
   studentForm: StudentFormState;
   onFormChange: (form: StudentFormState) => void;
   onSubmit: (e: React.FormEvent) => void;
   onClose: () => void;
 }
 
-export default function MgeAddStudentModal({ studentForm, onFormChange, onSubmit, onClose }: Props) {
+export default function MgeAddStudentModal({ saving, studentForm, onFormChange, onSubmit, onClose }: Props) {
   const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   const set = (partial: Partial<StudentFormState>) => onFormChange({ ...studentForm, ...partial });
 
@@ -22,12 +24,13 @@ export default function MgeAddStudentModal({ studentForm, onFormChange, onSubmit
           <h3 className="text-sm font-black uppercase tracking-wider flex items-center gap-2">
             <Users className="w-5 h-5 text-[#9F062A]" /> Registrar Estudiante Directo
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-all cursor-pointer">
+          <button disabled={saving} onClick={onClose} className="text-slate-400 hover:text-white transition-all cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={onSubmit} className="p-6 space-y-5 text-xs text-slate-750">
+          <fieldset disabled={saving} className="border-0 p-0 min-w-0 space-y-5">
           {/* Personal details */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -60,6 +63,7 @@ export default function MgeAddStudentModal({ studentForm, onFormChange, onSubmit
               <label className="text-[10px] font-black uppercase text-slate-450 tracking-wider block mb-1">Género</label>
               <select value={studentForm.gender} onChange={(e) => set({ gender: e.target.value })}
                 className="w-full p-2 border border-slate-250 bg-slate-50 font-bold rounded-lg focus:outline-[#9F062A]">
+                <option value="">Sin registrar</option>
                 <option value="Masculino">Masculino</option>
                 <option value="Femenino">Femenino</option>
               </select>
@@ -87,6 +91,8 @@ export default function MgeAddStudentModal({ studentForm, onFormChange, onSubmit
             </div>
           </div>
 
+          <StudentLocationFields form={studentForm} onChange={onFormChange} idPrefix="add-student" />
+
           {/* Program and shift */}
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
             <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest block border-b border-slate-200 pb-1.5">
@@ -97,6 +103,7 @@ export default function MgeAddStudentModal({ studentForm, onFormChange, onSubmit
                 <label className="text-[10px] font-black uppercase text-slate-450 tracking-wider block mb-1">Programa Profesional</label>
                 <select value={studentForm.programId} onChange={(e) => set({ programId: e.target.value as ProgramId })}
                   className="w-full p-2 border border-slate-250 bg-white font-bold rounded-lg focus:outline-none">
+                  <option value="">Seleccione una carrera</option>
                   {ACADEMIC_PROGRAMS.map((prog) => <option key={prog.id} value={prog.id}>{prog.name}</option>)}
                 </select>
               </div>
@@ -104,6 +111,7 @@ export default function MgeAddStudentModal({ studentForm, onFormChange, onSubmit
                 <label className="text-[10px] font-black uppercase text-slate-450 tracking-wider block mb-1">Turno Asignado</label>
                 <select value={studentForm.shift} onChange={(e) => set({ shift: e.target.value as any })}
                   className="w-full p-2 border border-slate-250 bg-white font-bold rounded-lg focus:outline-none">
+                  <option value="">Seleccione un turno</option>
                   <option value="Mañana">Mañana</option>
                   <option value="Tarde">Tarde</option>
                   <option value="Noche">Noche</option>
@@ -146,9 +154,10 @@ export default function MgeAddStudentModal({ studentForm, onFormChange, onSubmit
             </button>
             <button type="submit"
               className="px-6 py-2.5 rounded-xl bg-[#9F062A] hover:bg-[#820522] text-white font-bold uppercase tracking-wider transition-all shadow-md shadow-[#9F062A]/20 cursor-pointer">
-              Registrar & Matricular
+              Registrar estudiante
             </button>
           </div>
+          </fieldset>
         </form>
       </div>
     </div>

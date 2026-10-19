@@ -2,8 +2,12 @@ import React from "react";
 import { CheckSquare } from "lucide-react";
 import { Course, AttendanceRecord } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
+import { academicToday } from "../../../utils/attendance";
 
 interface Props {
+  loading: boolean;
+  error: string | null;
+  onReload: () => Promise<boolean>;
   courses: Course[];
   processedStudents: ProcessedStudent[];
   attendance: AttendanceRecord[];
@@ -16,6 +20,9 @@ interface Props {
 }
 
 export default function MgeAsistenciasTab({
+  loading,
+  error,
+  onReload,
   courses,
   processedStudents,
   attendance,
@@ -33,9 +40,12 @@ export default function MgeAsistenciasTab({
   const course = courses.find((c) => c.id === selectedAttendanceCourseId);
   const studentsInAttendanceCourse = course
     ? processedStudents.filter(
-        (s) => s.enrolled && s.academicStatus === "MATRICULADO" && s.programId === course.career
+        (s) => s.enrolled && s.academicStatus === "MATRICULADO" && s.programId === (course.careerId || course.career)
       )
     : [];
+
+  if (loading) return <p role="status">Cargando asistencias del servidor...</p>;
+  if (error) return <div role="alert" className="space-y-3 text-red-700"><p>{error}</p><button type="button" onClick={() => { void onReload(); }} className="rounded-lg border px-3 py-2">Reintentar carga</button></div>;
 
   return (
     <div className="space-y-6">
@@ -45,6 +55,7 @@ export default function MgeAsistenciasTab({
             1. Curso / Turno Evaluado:
           </label>
           <select
+            aria-label="Curso de asistencia"
             value={selectedAttendanceCourseId}
             onChange={(e) => onCourseChange(e.target.value)}
             className="w-full p-2 border border-slate-250 bg-white font-bold rounded-lg text-xs"
@@ -60,11 +71,15 @@ export default function MgeAsistenciasTab({
             2. Fecha Registrada:
           </label>
           <input
+            aria-label="Fecha de asistencia"
             type="date"
             value={selectedAttendanceDate}
             onChange={(e) => onDateChange(e.target.value)}
             className="w-full p-2 border border-slate-250 bg-white font-bold rounded-lg text-xs"
           />
+          {selectedAttendanceDate > academicToday() ? <p role="status" className="mt-2 text-xs text-amber-800">
+            Fecha futura: estas marcas se guardan, pero se incluirán en los porcentajes de asistencia y riesgo académico cuando llegue esa fecha (hora de Lima).
+          </p> : null}
         </div>
       </div>
 
@@ -78,13 +93,13 @@ export default function MgeAsistenciasTab({
           <div className="flex gap-2">
             <button
               onClick={() => onFillAttendanceAll("Presente")}
-              className="px-2.5 py-1 bg-emerald-650 hover:bg-emerald-700 text-white rounded text-[10px] uppercase font-bold cursor-pointer"
+              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] uppercase font-bold cursor-pointer"
             >
               Marcar Todos Presentes
             </button>
             <button
               onClick={() => onFillAttendanceAll("Falta")}
-              className="px-2.5 py-1 bg-red-650 hover:bg-red-750 text-white rounded text-[10px] uppercase font-bold cursor-pointer"
+              className="px-2.5 py-1 bg-red-700 hover:bg-red-800 text-white rounded text-[10px] uppercase font-bold cursor-pointer"
             >
               Marcar Todos Faltas
             </button>
@@ -110,12 +125,13 @@ export default function MgeAsistenciasTab({
                 </tr>
               ) : (
                 studentsInAttendanceCourse.map((st) => {
-                  const currentStatus = activeAttendanceRecord?.statusMap[st.dni] || "Presente";
+                  const currentStatus = activeAttendanceRecord?.statusMap[st.dni] || "";
                   return (
                     <tr key={st.dni} className="hover:bg-slate-50/50">
                       <td className="px-4 py-3 font-extrabold text-slate-900">{st.lastName}, {st.name}</td>
                       <td className="px-4 py-3 font-bold font-mono text-slate-700">{st.dni}</td>
                       <td className="px-4 py-3">
+                        {!currentStatus ? <span className="text-slate-500">Sin registrar</span> : null}
                         {currentStatus === "Presente" && (
                           <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-black uppercase text-[9.5px]">Presente</span>
                         )}

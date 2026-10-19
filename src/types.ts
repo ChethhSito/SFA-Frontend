@@ -88,6 +88,10 @@ export interface StudentDoc {
 }
 
 export interface StudentPersonalData {
+  active?: boolean;
+  deactivatedAt?: string | null;
+  deactivationReason?: string;
+  reactivatedAt?: string | null;
   dni: string;
   birthDate: string;
   name: string;
@@ -163,6 +167,7 @@ export interface CourseMaterial {
 }
 
 export interface CourseAssignment {
+  kind?: "assignment" | "assessment";
   id: string;
   courseId: string;
   title: string;
@@ -174,6 +179,7 @@ export interface CourseAssignment {
     fileName: string;
     submitDate: string;
     grade?: number; // scale 0-20
+    feedback?: string;
   }[];
 }
 
@@ -191,6 +197,7 @@ export interface CourseEvaluation {
 }
 
 export interface AttendanceRecord {
+  week?: number;
   id: string;
   courseId: string;
   date: string;

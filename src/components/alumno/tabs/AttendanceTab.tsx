@@ -1,11 +1,15 @@
 import React from "react";
-import { 
-  ChevronDown, Printer, AlertTriangle, FileText, Calendar, CreditCard, Award, User, Clock, MapPin, CheckCircle2 
+import {
+  ChevronDown, Printer, AlertTriangle, FileText, Calendar, CreditCard, Award, User, Clock, MapPin, CheckCircle2
 } from "lucide-react";
 import { Enrollment, AttendanceRecord } from "../../../types";
+import { studentAttendanceRecords } from "../../../utils/attendance";
 import PageTransition from "../../ui/PageTransition";
 
 interface AttendanceTabProps {
+  loading: boolean;
+  error: string | null;
+  onReload: () => Promise<boolean>;
   enrollment: Enrollment;
   studentDni?: string;
   attendance?: AttendanceRecord[];
@@ -21,6 +25,9 @@ interface AttendanceTabProps {
 }
 
 export const AttendanceTab: React.FC<AttendanceTabProps> = ({
+  loading,
+  error,
+  onReload,
   enrollment,
   studentDni,
   attendance = [],
@@ -34,11 +41,13 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
   mpaPlanningData,
   studentGroup
 }) => {
+  if (loading) return <p role="status">Cargando asistencias del servidor...</p>;
+  if (error) return <div role="alert" className="text-red-700"><p>{error}</p><button type="button" onClick={() => { void onReload(); }} className="border rounded-lg p-2 mt-2">Reintentar carga</button></div>;
   const activeDni = studentDni || enrollment.studentDni;
 
   // Real enrolled courses for Ciclo I with live attendance calculations
   const currentAttendanceCourses = studentCourses.map((c) => {
-    const courseRecords = attendance.filter((rec) => rec.courseId === c.id || rec.courseId === c.code);
+    const courseRecords = studentAttendanceRecords(attendance, c.attendanceCourseIds || [c.id, c.code], activeDni);
     const sesDictadas = courseRecords.length;
 
     let asistencias = 0;
@@ -57,10 +66,10 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
       }
     });
 
-    const attendanceRate = sesDictadas > 0 ? Math.round((asistencias / sesDictadas) * 100) : 100;
-    const puntualidad = sesDictadas > 0 
-      ? `${Math.round(((asistencias - tardanzas) / Math.max(asistencias, 1)) * 100)}%` 
-      : "100%";
+    const attendanceRate = sesDictadas > 0 ? Math.round((asistencias / sesDictadas) * 100) : null;
+    const puntualidad = asistencias > 0
+      ? `${Math.round(((asistencias - tardanzas) / Math.max(asistencias, 1)) * 100)}%`
+      : "Sin datos";
 
     return {
       id: c.id,
@@ -68,11 +77,12 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
       name: c.name,
       group: studentGroup?.name || "Ciclo I - Sección A",
       attendanceRate,
-      statusText: `${attendanceRate}% Asistencia`,
-      statusDesc: sesDictadas === 0 ? "REGULAR • AL DÍA" : (attendanceRate >= 70 ? "REGULAR • AL DÍA" : "EN RIESGO POR FALTAS"),
+      statusText: attendanceRate === null ? "Sin datos" : `${attendanceRate}% Asistencia`,
+      statusDesc: sesDictadas === 0 ? "SIN REGISTROS" : (attendanceRate >= 70 ? "REGULAR • AL DÍA" : "EN RIESGO POR FALTAS"),
       statusType: attendanceRate >= 70 ? "excellent" : "warning",
-      sesRealizadas: `${sesDictadas} / 16`,
+      sesRealizadas: String(sesDictadas),
       sesDictadas,
+      records: courseRecords,
       puntualidad,
       faltas: faltas.toString().padStart(2, "0"),
       faltasCount: faltas,
@@ -87,11 +97,11 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
   const totalInasistencias = currentAttendanceCourses.reduce((acc, c) => acc + c.faltasCount, 0);
   const totalSesiones = currentAttendanceCourses.reduce((acc, c) => acc + c.sesDictadas, 0);
   const totalAsistencias = currentAttendanceCourses.reduce((acc, c) => acc + c.asistenciasCount, 0);
-  const overallRate = totalSesiones > 0 ? Math.round((totalAsistencias / totalSesiones) * 100) : 100;
+  const overallRate = totalSesiones > 0 ? Math.round((totalAsistencias / totalSesiones) * 100) : null;
   const totalAlertsCount = currentAttendanceCourses.filter((c) => c.attendanceRate < 70 && c.sesDictadas > 0).length;
-  const alertMsg = totalAlertsCount > 0 
+  const alertMsg = totalAlertsCount > 0
     ? `${totalAlertsCount} curso(s) en riesgo por inasistencias (>30% faltas reglamentarias)`
-    : "Sin faltas registradas. El alumno asiste con regularidad.";
+    : totalSesiones ? "No hay alertas en los registros disponibles." : "Sin asistencias registradas para evaluar.";
 
   return (
     <PageTransition id="attendance" className="space-y-6">
@@ -101,7 +111,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              Control Escolar y Asistencia • Semestre 2026-I
+              Control Escolar y Asistencia • Registros disponibles
             </span>
           </div>
           <h2 id="asis-view-main" className="text-xl font-black text-slate-900 tracking-tight mt-1">
@@ -115,7 +125,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
         <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
           <div className="text-left bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl select-none">
             <span className="text-[9px] text-[#800521] font-extrabold block uppercase tracking-wider">Semestre Lectivo</span>
-            <span className="text-xs font-black text-slate-800">2026-I (Ciclo I)</span>
+            <span className="text-xs font-black text-slate-800">Historial disponible</span>
           </div>
 
           <button
@@ -134,13 +144,13 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
           <div>
             <span className="text-slate-400 text-[10px] font-black uppercase tracking-wider block">Asistencia General</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className={`text-2xl font-black ${overallRate >= 70 ? "text-emerald-600" : "text-amber-600"}`}>{overallRate}%</span>
+              <span className={`text-2xl font-black ${overallRate >= 70 ? "text-emerald-600" : "text-amber-600"}`}>{overallRate === null ? "Sin datos" : `${overallRate}%`}</span>
               <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${overallRate >= 70 ? "text-emerald-700 bg-emerald-50" : "text-amber-700 bg-amber-50"}`}>
-                {overallRate >= 70 ? "Al Día" : "Observado"}
+                {overallRate === null ? "Sin registros" : overallRate >= 70 ? "Al Día" : "Observado"}
               </span>
             </div>
           </div>
-          <span className="text-[10px] font-bold text-slate-400 block mt-2">Semestre 2026-I en curso</span>
+          <span className="text-[10px] font-bold text-slate-400 block mt-2">Registros históricos disponibles</span>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs text-left flex flex-col justify-between min-h-[110px]">
@@ -194,7 +204,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                 Listado de Asignaturas Matriculadas (Ciclo I)
               </h3>
               <span className="text-[10px] text-slate-500 font-extrabold uppercase">
-                Periodo 2026-I
+                Historial de asistencia
               </span>
             </div>
 
@@ -203,7 +213,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                 const isOpen = expandedAttendanceCourse === c.id;
                 return (
                   <div key={c.id} className="border border-slate-200 rounded-xl overflow-hidden transition-all duration-200">
-                    <div 
+                    <div
                       onClick={() => setExpandedAttendanceCourse(isOpen ? null : c.id)}
                       className="p-4 bg-white hover:bg-slate-50/70 flex items-center justify-between cursor-pointer select-none transition-all"
                     >
@@ -253,6 +263,11 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                           </div>
                         </div>
 
+                        <div className="bg-white p-3 rounded-lg border text-xs space-y-2">
+                          <p className="font-bold">Registros diarios del alumno</p>
+                          {c.records.length ? c.records.map((record) => <p key={record.id}>{record.date}: {record.statusMap[activeDni]}</p>) : <p>Sin registros de asistencia.</p>}
+                        </div>
+
                         <div className="bg-white p-3.5 rounded-lg border border-slate-200/80 text-xs space-y-1">
                           <div className="flex justify-between">
                             <span className="text-slate-500 font-bold">Docente Titular:</span>
@@ -282,7 +297,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
             <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block text-left">Atajos Académicos</span>
 
             <div className="grid grid-cols-2 gap-2.5">
-              <button 
+              <button
                 onClick={() => setActiveTab("schedule")}
                 className="p-3 rounded-xl border border-slate-200 hover:border-[#800521] bg-slate-50 hover:bg-slate-100/70 text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all"
               >
@@ -290,7 +305,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                 <span className="text-[10px] font-black text-slate-800">Mi Horario</span>
               </button>
 
-              <button 
+              <button
                 onClick={() => setActiveTab("classes")}
                 className="p-3 rounded-xl border border-slate-200 hover:border-[#800521] bg-slate-50 hover:bg-slate-100/70 text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all"
               >
@@ -298,7 +313,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                 <span className="text-[10px] font-black text-slate-800">Mis Cursos</span>
               </button>
 
-              <button 
+              <button
                 onClick={() => setActiveTab("notas")}
                 className="p-3 rounded-xl border border-slate-200 hover:border-[#800521] bg-slate-50 hover:bg-slate-100/70 text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all"
               >
@@ -306,7 +321,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                 <span className="text-[10px] font-black text-slate-800">Notas</span>
               </button>
 
-              <button 
+              <button
                 onClick={() => { setActiveTab("profile"); }}
                 className="p-3 rounded-xl border border-slate-200 hover:border-[#800521] bg-slate-50 hover:bg-slate-100/70 text-center flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all"
               >
@@ -319,7 +334,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
           {/* Próximas Sesiones reales desde studentTasks */}
           <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
             <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block text-left">Próximas Sesiones Programadas</span>
-            
+
             <div className="space-y-3">
               {studentTasks.slice(0, 3).map((task: any, tIdx: number) => {
                 const courseObj = mpaPlanningData?.courses?.find((c: any) => c.id === task.courseId);

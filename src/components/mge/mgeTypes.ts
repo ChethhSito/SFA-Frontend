@@ -25,29 +25,32 @@ export interface StudentFormState {
   emergencyName: string;
   emergencyPhone: string;
   emergencyRelation: string;
-  programId: ProgramId;
-  shift: "Mañana" | "Tarde" | "Noche";
+  programId: ProgramId | "";
+  shift: "" | "Mañana" | "Tarde" | "Noche";
 }
 
 export const defaultStudentForm: StudentFormState = {
   dni: "",
   name: "",
   lastName: "",
-  birthDate: "2002-05-15",
-  gender: "Masculino",
+  birthDate: "",
+  gender: "",
   email: "",
   phone: "",
   address: "",
-  district: "San Juan de Lurigancho",
-  province: "Lima",
+  district: "",
+  province: "",
   emergencyName: "",
   emergencyPhone: "",
-  emergencyRelation: "Padre/Madre",
-  programId: "sistemas",
-  shift: "Mañana",
+  emergencyRelation: "",
+  programId: "",
+  shift: "",
 };
 
 export interface ProcessedStudent {
+  active?: boolean;
+  deactivatedAt?: string | null;
+  deactivationReason?: string;
   dni: string;
   name: string;
   lastName: string;

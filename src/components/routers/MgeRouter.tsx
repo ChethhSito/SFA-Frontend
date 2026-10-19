@@ -5,19 +5,32 @@ import { Lock, ArrowLeft } from "lucide-react";
 import Button from "../ui/Button";
 
 interface MgeRouterProps {
+  onReloadGraduations: () => Promise<boolean>;
+  graduationsLoading: boolean;
+  graduationsError: string | null;
+  sourceLoading: boolean;
+  sourceError: string | null;
+  assignmentsLoading: boolean;
+  assignmentsError: string | null;
+  onSetStudentActive: (dni: string, active: boolean, reason?: string) => Promise<boolean>;
   applicants: Applicant[];
   enrollments: Enrollment[];
   studentsList: { [dni: string]: StudentPersonalData };
   courses: Course[];
   assignments: CourseAssignment[];
   attendance: AttendanceRecord[];
+  attendanceLoading: boolean;
+  attendanceError: string | null;
+  onReloadAttendance: () => Promise<boolean>;
   graduations: Graduation[];
   admissionPeriods: AdmissionPeriod[];
   onUpdateEnrollments: (enrolls: Enrollment[]) => void;
-  onUpdateStudentsList: (students: { [dni: string]: StudentPersonalData }) => void;
+  onUpdateStudentsList: (students: { [dni: string]: StudentPersonalData }) => Promise<boolean>;
+  onCreateEnrollment: (data: Enrollment) => Promise<Enrollment | null>;
+  onSaveEnrollment: (dni: string, data: Partial<Enrollment>) => Promise<Enrollment | null>;
   onUpdateCourses: (courses: Course[]) => void;
-  onUpdateAssignments: (asgs: CourseAssignment[]) => void;
-  onUpdateAttendance: (att: AttendanceRecord[]) => void;
+  onUpdateAssignments: (asgs: CourseAssignment[]) => Promise<boolean>;
+  onUpdateAttendance: (att: AttendanceRecord[]) => Promise<boolean>;
   onUpdateGraduations: (grads: Graduation[]) => void;
   onLogout: () => void;
 }
@@ -75,17 +88,30 @@ export default function MgeRouter(props: MgeRouterProps) {
 
   return (
     <MgeDashboard
+      onReloadGraduations={props.onReloadGraduations}
+      graduationsLoading={props.graduationsLoading}
+      graduationsError={props.graduationsError}
+      sourceLoading={props.sourceLoading}
+      sourceError={props.sourceError}
+      assignmentsLoading={props.assignmentsLoading}
+      assignmentsError={props.assignmentsError}
+      onSetStudentActive={props.onSetStudentActive}
       applicants={props.applicants}
       enrollments={props.enrollments}
       studentsList={props.studentsList}
       courses={props.courses}
       assignments={props.assignments}
       attendance={props.attendance}
+      attendanceLoading={props.attendanceLoading}
+      attendanceError={props.attendanceError}
+      onReloadAttendance={props.onReloadAttendance}
       graduations={props.graduations}
       admissionPeriods={props.admissionPeriods}
       selectedPeriodId={selectedPeriodId}
       onUpdateEnrollments={props.onUpdateEnrollments}
       onUpdateStudentsList={props.onUpdateStudentsList}
+      onCreateEnrollment={props.onCreateEnrollment}
+      onSaveEnrollment={props.onSaveEnrollment}
       onUpdateCourses={props.onUpdateCourses}
       onUpdateAssignments={props.onUpdateAssignments}
       onUpdateAttendance={props.onUpdateAttendance}

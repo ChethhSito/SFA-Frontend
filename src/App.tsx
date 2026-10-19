@@ -34,6 +34,9 @@ export default function App() {
     assignments,
     evaluations,
     attendance,
+    attendanceLoading,
+    attendanceError,
+    reloadAttendance,
     cycleStatuses,
     setCycleStatuses,
     graduations,
@@ -41,7 +44,13 @@ export default function App() {
     setAdmissionPeriods,
     handleUpdateApplicantsFromAdmin,
     handleUpdateEnrollments,
+    handleCreateEnrollment,
+    handleUpdateEnrollmentByDni,
     handleUpdateStudentsData,
+    handleSetStudentActive,
+    studentsLoading, studentsError, enrollmentsLoading, enrollmentsError, coursesLoading, coursesError, assignmentsLoading, assignmentsError,
+    graduationsLoading, graduationsError,
+    reloadGraduations,
     handleUpdateClassrooms,
     handleUpdateTeachers,
     handleUpdateCourses,
@@ -72,7 +81,7 @@ export default function App() {
   const handleUpdateApplicant = (updated: any) => {
 
     const exists = applicants.some((a) => a.dni === updated.dni);
-    const nextList = exists 
+    const nextList = exists
       ? applicants.map((a) => (a.dni === updated.dni ? updated : a))
       : [...applicants, updated];
 
@@ -138,7 +147,7 @@ export default function App() {
 
   const handleUpdateEnrollment = (enr: any) => {
     const exists = enrollments.some((item) => item.studentDni === enr.studentDni);
-    const nextList = exists 
+    const nextList = exists
       ? enrollments.map((item) => (item.studentDni === enr.studentDni ? enr : item))
       : [...enrollments, enr];
     handleUpdateEnrollments(nextList);
@@ -152,8 +161,8 @@ export default function App() {
     <div id="root-viewport" className="min-h-screen bg-slate-100 selection:bg-[#9F062A] selection:text-white">
       {/* 1. Portal Public view */}
       {currentUser.role === "portal" && (
-        <PortalHome 
-          onEnterIntranet={handleEnterIntranet} 
+        <PortalHome
+          onEnterIntranet={handleEnterIntranet}
           onLogout={handleLogout}
           admissionPeriods={admissionPeriods}
         />
@@ -161,7 +170,7 @@ export default function App() {
 
       {/* 2. Login Gateway */}
       {currentUser.role === "login" && (
-        <LoginPortal 
+        <LoginPortal
           onBack={() => setCurrentUser({ role: "portal", identifier: "" })}
           onLoginSuccess={handleLoginSuccess}
         />
@@ -169,7 +178,7 @@ export default function App() {
 
       {/* 3. Applicant workspace */}
       {currentUser.role === "postulante" && (
-        <PostulanteRouter 
+        <PostulanteRouter
           applicants={applicants}
           enrollments={enrollments}
           onUpdateApplicant={handleUpdateApplicant}
@@ -182,7 +191,10 @@ export default function App() {
 
       {/* 4. Student regular dashboard */}
       {currentUser.role === "alumno" && (
-        <AlumnoRouter 
+        <AlumnoRouter
+          attendanceLoading={attendanceLoading}
+          attendanceError={attendanceError}
+          onReloadAttendance={reloadAttendance}
           enrollments={enrollments}
           studentsData={studentsData}
           courses={courses}
@@ -201,7 +213,10 @@ export default function App() {
 
       {/* 5. Teacher registry panel */}
       {currentUser.role === "docente" && (
-        <DocenteRouter 
+        <DocenteRouter
+          attendanceLoading={attendanceLoading}
+          attendanceError={attendanceError}
+          onReloadAttendance={reloadAttendance}
           teachers={teachers}
           courses={courses}
           materials={materials}
@@ -219,7 +234,7 @@ export default function App() {
 
       {/* 5.5 SuperAdmin System Administration panel */}
       {currentUser.role === "superadmin" && (
-        <SuperAdminRouter 
+        <SuperAdminRouter
           onLogout={handleLogout}
           onSwitchRole={handleLoginSuccess}
         />
@@ -227,7 +242,7 @@ export default function App() {
 
       {/* 6. Administrator backoffice panel */}
       {currentUser.role === "administrador" && (
-        <AdminRouter 
+        <AdminRouter
           applicants={applicants}
           enrollments={enrollments}
           studentsList={studentsData}
@@ -255,7 +270,7 @@ export default function App() {
 
       {/* 7. MPA Academic Planning backoffice panel */}
       {currentUser.role === "mpa" && (
-        <MpaRouter 
+        <MpaRouter
           onLogout={handleLogout}
         />
       )}
@@ -263,6 +278,19 @@ export default function App() {
       {/* 7.5 MGE Student Management backoffice panel */}
       {currentUser.role === "mge" && (
         <MgeRouter
+          sourceLoading={studentsLoading || enrollmentsLoading || coursesLoading}
+          sourceError={studentsError || enrollmentsError || coursesError}
+          assignmentsLoading={assignmentsLoading}
+          assignmentsError={assignmentsError}
+          graduationsLoading={graduationsLoading}
+          graduationsError={graduationsError}
+          onReloadGraduations={reloadGraduations}
+          onSetStudentActive={handleSetStudentActive}
+          attendanceLoading={attendanceLoading}
+          attendanceError={attendanceError}
+          onReloadAttendance={reloadAttendance}
+          onCreateEnrollment={handleCreateEnrollment}
+          onSaveEnrollment={handleUpdateEnrollmentByDni}
           applicants={applicants}
           enrollments={enrollments}
           studentsList={studentsData}
@@ -283,7 +311,7 @@ export default function App() {
 
       {/* 7.6 MAF Administration and Finance panel */}
       {currentUser.role === "maf" && (
-        <MafRouter 
+        <MafRouter
           onLogout={handleLogout}
         />
       )}

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { fetchCourses, fetchTeachers, saveCourseAttendance } from "../../services/api";
+import { useEffect, useState, useRef } from "react";
+import { fetchCourses, fetchTeachers, fetchCourseAttendance, saveCourseAttendance } from "../../services/api";
 import { fetchMpaCollection } from "../../services/mpaApi";
 
 export function useTeacherClassroom() {
@@ -27,15 +27,34 @@ export function useTeacherClassroom() {
     return [];
   });
 
-  const [attendance, setAttendance] = useState<any[]>(() => {
-    const saved = localStorage.getItem("sfa_attendance");
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { console.error(e); }
+  const [attendance, setAttendance] = useState<any[]>([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(true);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
+  const attendanceReady = useRef(false);
+  const attendanceSaving = useRef(false);
+  const cacheAttendance = (records: any[]) => {
+    setAttendance(records);
+    try { localStorage.setItem("sfa_attendance", JSON.stringify(records)); }
+    catch (err) { console.warn("No se pudo guardar la caché de asistencias", err); }
+  };
+  const reloadAttendance = async () => {
+    setAttendanceLoading(true);
+    const records = await fetchCourseAttendance();
+    if (!records) {
+      attendanceReady.current = false;
+      setAttendanceError("No se pudieron cargar las asistencias del servidor. Reintente antes de registrar cambios.");
+      setAttendanceLoading(false);
+      return false;
     }
-    return [];
-  });
+    cacheAttendance(records);
+    attendanceReady.current = true;
+    setAttendanceError(null);
+    setAttendanceLoading(false);
+    return true;
+  };
 
   useEffect(() => {
+    void reloadAttendance();
     fetchMpaCollection<any>("classrooms").then((items) => {
       setClassrooms(items);
       localStorage.setItem("sfa_classrooms", JSON.stringify(items));
@@ -83,22 +102,25 @@ export function useTeacherClassroom() {
     }
   };
 
-  const handleUpdateAttendance = async (updatedList: any[]) => {
-    setAttendance(updatedList);
+  const handleUpdateAttendance = async (updatedList: any[]): Promise<boolean> => {
+    if (!attendanceReady.current || attendanceSaving.current) return false;
+    attendanceSaving.current = true;
+    let confirmed = [...attendance];
     try {
-      localStorage.setItem("sfa_attendance", JSON.stringify(updatedList));
-    } catch (e) {
-      console.warn("[localStorage] Could not save sfa_attendance:", e);
-    }
-
-    const latest = updatedList[updatedList.length - 1];
-    if (latest && latest.courseId && latest.date && latest.statusMap) {
-      try {
-        await saveCourseAttendance(latest.courseId, latest.date, latest.statusMap);
-      } catch (err) {
-        console.warn("[API Error] Could not save attendance to DB:", err);
+      for (const record of updatedList) {
+        const previous = attendance.find((item) => item.courseId === record.courseId && item.date === record.date);
+        const changes = Object.fromEntries(Object.entries(record.statusMap || {}).filter(([dni, status]) => previous?.statusMap?.[dni] !== status));
+        if (!Object.keys(changes).length) continue;
+        const response = await saveCourseAttendance(record.courseId, record.date, changes as Record<string, string>, record.week);
+        if (!response) return false;
+        const saved = { ...response, id: response._id || response.id || `${response.courseId}-${response.date}` };
+        const index = confirmed.findIndex((item) => item.courseId === saved.courseId && item.date === saved.date);
+        if (index >= 0) confirmed[index] = saved;
+        else confirmed.push(saved);
+        cacheAttendance([...confirmed]);
       }
-    }
+      return true;
+    } finally { attendanceSaving.current = false; }
   };
 
   return {
@@ -109,6 +131,9 @@ export function useTeacherClassroom() {
     courses,
     setCourses,
     attendance,
+    attendanceLoading,
+    attendanceError,
+    reloadAttendance,
     setAttendance,
     handleUpdateClassrooms,
     handleUpdateTeachers,

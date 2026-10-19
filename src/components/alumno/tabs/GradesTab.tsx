@@ -38,11 +38,11 @@ export const GradesTab: React.FC<GradesTabProps> = ({
   };
 
   const totalCredits = enrichedCourses.reduce((acc, c) => acc + (Number(c.credits) || 0), 0) || 24;
-  const gradedCourses = enrichedCourses.filter(c => typeof c.evaluations?.[0]?.grade === "number");
-  const hasGrades = gradedCourses.length > 0;
+  const grades = enrichedCourses.flatMap((course) => course.evaluations || []).filter((evaluation) => typeof evaluation.grade === "number");
+  const hasGrades = grades.length > 0;
   const calculatedAverage = hasGrades
-    ? (gradedCourses.reduce((acc, c) => acc + c.evaluations[0].grade, 0) / gradedCourses.length).toFixed(1)
-    : "0.0";
+    ? (grades.reduce((sum, evaluation) => sum + evaluation.grade, 0) / grades.length).toFixed(1)
+    : "Sin notas";
 
   return (
     <PageTransition id="notas" className="space-y-6">
@@ -50,7 +50,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
       <div className="bg-white rounded-xl border border-slate-100 p-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shadow-xs">
         <div>
           <h2 id="notas-view-main" className="text-lg font-black text-[#800521] tracking-tight uppercase font-display leading-none">Mis Calificaciones</h2>
-          <p className="text-[11px] text-slate-550 font-bold mt-1.5 uppercase tracking-wider">Boleta de calificaciones actual, fórmulas de notas y avance ponderado</p>
+          <p className="text-[11px] text-slate-550 font-bold mt-1.5 uppercase tracking-wider">Calificaciones guardadas por evaluación. El promedio mostrado es simple.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
@@ -68,7 +68,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
       {/* Summary row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-xs text-left">
-          <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">Promedio Ponderado</span>
+          <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">Promedio de notas</span>
           <span className="text-xl font-black text-[#800521] block mt-1 font-mono">
             {hasGrades ? calculatedAverage : "0.0"}
           </span>

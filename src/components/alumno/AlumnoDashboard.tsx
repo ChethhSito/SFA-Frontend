@@ -24,6 +24,9 @@ interface AlumnoDashboardProps {
   assignments: CourseAssignment[];
   evaluations: CourseEvaluation[];
   attendance: AttendanceRecord[];
+  attendanceLoading: boolean;
+  attendanceError: string | null;
+  onReloadAttendance: () => Promise<boolean>;
   cycleStatuses: CycleStatus[];
   graduation: Graduation | undefined;
   onUpdatePersonal: (data: StudentPersonalData) => void;
@@ -41,6 +44,9 @@ export default function AlumnoDashboard({
   assignments,
   evaluations,
   attendance,
+  attendanceLoading,
+  attendanceError,
+  onReloadAttendance,
   cycleStatuses,
   graduation,
   onUpdatePersonal,
@@ -273,15 +279,14 @@ export default function AlumnoDashboard({
 
     let description = c.description || `Unidad didáctica del plan curricular para la carrera de ${currentProgram?.name || "Electricidad Industrial"}. Enfocada en desarrollar competencias profesionales esenciales del sector tecnológico nacional.`;
 
-    let formula = "NF = (EP1 * 0.20) + (TR1 * 0.15) + (EC1 * 0.15) + (PF1 * 0.50)";
-
-    // Clean initial evaluations without fake mock grades
-    const evaluationsList = [
-      { name: "Examen Parcial", sub: "Programado en semestre", prefix: "EP1", weight: "20%", grade: "NR" },
-      { name: "Trabajo Continuo I", sub: "Informe Técnico / Monografías", prefix: "TR1", weight: "15%", grade: "NR" },
-      { name: "Evaluación Diaria", sub: "Desempeño y talleres", prefix: "EC1", weight: "15%", grade: "NR" },
-      { name: "Proyecto Final", sub: "Entrega prevista semana final", prefix: "PF1", weight: "50%", grade: "NR" }
-    ];
+    const formula = "Calificaciones registradas por evaluación";
+    const relatedCourse = courses.find((course) => course.code === c.code);
+    const evaluationsList = assignments.filter((assignment) =>
+      [c.id, c.code, relatedCourse?.id].includes(assignment.courseId)).map((assignment, index) => {
+      const submission = assignment.submissions.find((item) => item.studentDni === studentDni);
+      return { name: assignment.title, sub: assignment.description, prefix: `EV${index + 1}`,
+        weight: "Sin ponderación", grade: submission?.grade === undefined ? "NR" : submission.grade };
+    });
 
     return {
       id: c.id,
@@ -297,6 +302,7 @@ export default function AlumnoDashboard({
       iconType,
       description,
       formula,
+      attendanceCourseIds: [c.id, c.code, relatedCourse?.id].filter(Boolean),
       evaluations: evaluationsList
     };
   });
@@ -446,6 +452,9 @@ export default function AlumnoDashboard({
 
             {activeTab === "classes" && (
               <ClassesTab
+                attendance={attendance}
+                attendanceLoading={attendanceLoading}
+                attendanceError={attendanceError}
                 enrichedCourses={enrichedCourses}
                 currentProgram={currentProgram}
                 selectedCourseDetail={selectedCourseDetail}
@@ -482,6 +491,9 @@ export default function AlumnoDashboard({
 
             {activeTab === "attendance" && (
               <AttendanceTab
+                loading={attendanceLoading}
+                error={attendanceError}
+                onReload={onReloadAttendance}
                 enrollment={enrollment}
                 studentDni={studentDni}
                 attendance={attendance}

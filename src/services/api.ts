@@ -1,5 +1,6 @@
 import { Applicant, Enrollment, AdmissionPeriod, Course, Teacher, Graduation, SystemUser } from "../types";
 import { sendWelcomeEmailBrevo } from "../firebase/emailService";
+import { auth } from "../firebase/config";
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://127.0.0.1:3001";
 
@@ -8,12 +9,19 @@ const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://127.0.0
  */
 async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T | null> {
   try {
+    let authorization: Record<string, string> = {};
+    if ((endpoint.startsWith("/graduations") || endpoint.startsWith("/certificates")) && auth) {
+      await auth.authStateReady();
+      const token = await auth.currentUser?.getIdToken();
+      if (token) authorization = { Authorization: `Bearer ${token}` };
+    }
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
       headers: {
         "Content-Type": "application/json",
-        ...options?.headers
+        ...options?.headers,
+        ...authorization,
       },
-      ...options
     });
 
     if (!res.ok) {
@@ -109,7 +117,7 @@ export async function createEnrollment(enrollment: Partial<Enrollment>): Promise
 
 export async function updateEnrollment(studentDni: string, data: Partial<Enrollment>): Promise<Enrollment | null> {
   return fetchJson<Enrollment>(`/enrollments/${studentDni}`, {
-    method: "PUT",
+    method: "PATCH",
     body: JSON.stringify(data)
   });
 }
@@ -156,15 +164,18 @@ export async function updateAdmissionPeriod(id: string, data: Partial<AdmissionP
    ========================================================================== */
 
 export async function fetchCourses(): Promise<Course[] | null> {
-  let list = await fetchJson<any[]>("/courses");
-  if (!list || list.length === 0) {
-    list = await fetchJson<any[]>("/mpa/courses");
+  const [classroomCourses, catalogCourses] = await Promise.all([
+    fetchJson<any[]>("/courses"), fetchJson<any[]>("/mpa/courses"),
+  ]);
+  if (!classroomCourses && !catalogCourses) return null;
+  const catalogByCode = new Map((catalogCourses || []).map((course) => [course.code, course]));
+  const byCode = new Map((classroomCourses || []).map((course) => [course.code, {
+    ...course, careerId: course.careerId || catalogByCode.get(course.code)?.careerId,
+  }]));
+  for (const course of catalogCourses || []) {
+    if (!byCode.has(course.code)) byCode.set(course.code, course);
   }
-  if (!list) return null;
-  return list.map((item) => ({
-    ...item,
-    id: item.id || item._id || item.code
-  })) as Course[];
+  return [...byCode.values()].map((item) => ({ ...item, id: item.id || item._id || item.code })) as Course[];
 }
 
 export async function createCourse(course: Partial<Course>): Promise<Course | null> {
@@ -228,7 +239,7 @@ export async function createGraduation(graduation: Partial<Graduation>): Promise
 
 export async function updateGraduation(studentDni: string, data: Partial<Graduation>): Promise<Graduation | null> {
   return fetchJson<Graduation>(`/graduations/${studentDni}`, {
-    method: "PUT",
+    method: "PATCH",
     body: JSON.stringify(data)
   });
 }
@@ -342,6 +353,10 @@ export async function fetchStudentByDni(dni: string): Promise<any | null> {
   return fetchJson<any>(`/students/${dni}`);
 }
 
+export function setStudentActive(dni: string, active: boolean, reason?: string): Promise<any | null> {
+  return fetchJson<any>(`/students/${encodeURIComponent(dni)}/status`, { method: "PATCH", body: JSON.stringify({ active, reason }) });
+}
+
 export async function updateStudentPersonalData(dni: string, data: any): Promise<any | null> {
   return fetchJson<any>(`/students/${dni}/personal-data`, {
     method: "PUT",
@@ -367,14 +382,15 @@ export async function updateStudentCourseGrade(dni: string, courseName: string, 
    11. ATTENDANCE, MATERIALS, ASSIGNMENTS & CLASSROOMS (Docentes & Alumnos)
    ========================================================================== */
 
-export async function fetchCourseAttendance(courseId: string): Promise<any[] | null> {
-  return fetchJson<any[]>(`/courses/attendance/${courseId}`);
+export async function fetchCourseAttendance(courseId?: string): Promise<any[] | null> {
+  const list = await fetchJson<any[]>(courseId ? `/courses/attendance/${encodeURIComponent(courseId)}` : '/courses/attendance/list');
+  return list?.map((record) => ({ ...record, id: record._id || record.id || `${record.courseId}-${record.date}` })) ?? null;
 }
 
-export async function saveCourseAttendance(courseId: string, date: string, statusMap: Record<string, string>): Promise<any | null> {
+export async function saveCourseAttendance(courseId: string, date: string, statusMap: Record<string, string>, week?: number): Promise<any | null> {
   return fetchJson<any>(`/courses/attendance/${courseId}`, {
     method: "POST",
-    body: JSON.stringify({ date, statusMap })
+    body: JSON.stringify({ date, statusMap, week })
   });
 }
 
@@ -392,7 +408,16 @@ export async function uploadCourseMaterial(material: { courseId: string; title: 
 
 export async function fetchCourseAssignments(courseId?: string): Promise<any[] | null> {
   const query = courseId ? `?courseId=${courseId}` : "";
-  return fetchJson<any[]>(`/courses/assignments/list${query}`);
+  const list = await fetchJson<any[]>(`/courses/assignments/list${query}`);
+  return list?.map((item) => ({ ...item, id: item._id || item.id })) ?? null;
+}
+
+export async function updateCourseAssignment(id: string, assignment: any): Promise<any | null> {
+  return fetchJson<any>(`/courses/assignments/${id}`, { method: 'PATCH', body: JSON.stringify(assignment) });
+}
+
+export async function deleteCourseAssignment(id: string): Promise<{ success: boolean } | null> {
+  return fetchJson<{ success: boolean }>(`/courses/assignments/${id}`, { method: 'DELETE' });
 }
 
 export async function createCourseAssignment(assignment: { courseId: string; title: string; description: string; dueDate: string }): Promise<any | null> {
@@ -440,6 +465,82 @@ export async function referStudentToTutoring(studentDni: string, reason?: string
     method: "POST",
     body: JSON.stringify({ studentDni, reason })
   });
+}
+
+export interface TutoringReferral {
+  studentDni: string;
+  studentName: string;
+  reason: string;
+  registeredAt: string;
+  readAt: string | null;
+  status?: "PENDIENTE" | "EN_ATENCION" | "CERRADO";
+  responsible?: string;
+  revision?: number;
+  closedAt?: string | null;
+  history?: { status: string; note: string; responsible: string; date: string }[];
+}
+
+export function fetchTutoringReferrals(): Promise<TutoringReferral[] | null> {
+  return fetchJson<TutoringReferral[]>("/analytics/tutoring/referrals");
+}
+
+export function markTutoringReferralRead(studentDni: string): Promise<TutoringReferral | null> {
+  return fetchJson<TutoringReferral>(`/analytics/tutoring/referrals/${encodeURIComponent(studentDni)}/read`, { method: "PATCH" });
+}
+
+export function updateTutoringCase(dni: string, data: { status: string; responsible: string; note: string; revision: number }) {
+  return fetchJson<TutoringReferral>(`/analytics/tutoring/referrals/${encodeURIComponent(dni)}/case`, { method: "PATCH", body: JSON.stringify(data) });
+}
+
+export interface AcademicAlert {
+  key: string;
+  studentDni: string;
+  studentName: string;
+  kind: "ASISTENCIA" | "NOTAS";
+  level: "CRITICO" | "MODERADO";
+  value: number;
+  message: string;
+  active: boolean;
+  detectedAt: string;
+  evaluatedAt: string;
+  resolvedAt: string | null;
+  resolutionReason?: "" | "RECUPERADO" | "SIN_DATOS" | "INACTIVO";
+  readAt: string | null;
+}
+export function refreshAcademicAlerts() {
+  return fetchJson<{ alerts: AcademicAlert[]; refreshedAt: string }>("/analytics/alerts/refresh", { method: "POST" });
+}
+export function readAcademicAlert(key: string, detectedAt: string) {
+  return fetchJson<AcademicAlert>(`/analytics/alerts/${encodeURIComponent(key)}/read`, { method: "PATCH", body: JSON.stringify({ detectedAt }) });
+}
+
+export interface IssuedCertificate {
+  _id: string;
+  studentDni: string;
+  studentName: string;
+  number: string;
+  issuedDate: string;
+  issuerName: string;
+  fileName: string;
+  sha256: string;
+  verificationCode: string;
+  registeredAt: string;
+  active: boolean;
+  revokedAt: string | null;
+  revocationReason: string;
+}
+export function fetchCertificates(dni?: string) { return fetchJson<IssuedCertificate[]>(dni ? `/certificates/student/${encodeURIComponent(dni)}` : "/certificates"); }
+export function registerCertificate(data: { studentDni: string; number: string; issuedDate: string; issuerName: string; fileName: string; fileData: string }) {
+  return fetchJson<IssuedCertificate>("/certificates", { method: "POST", body: JSON.stringify(data) });
+}
+export function fetchCertificateFile(id: string) {
+  return fetchJson<{ fileName: string; fileData: string; sha256: string; active: boolean }>(`/certificates/${encodeURIComponent(id)}/file`);
+}
+export function revokeCertificate(id: string, reason: string) {
+  return fetchJson<IssuedCertificate>(`/certificates/${encodeURIComponent(id)}/revoke`, { method: "PATCH", body: JSON.stringify({ reason }) });
+}
+export function verifyCertificate(code: string) {
+  return fetchJson<{ registered: boolean; active: boolean; number: string; issuedDate: string; sha256: string; signatureValidation: string; message: string }>(`/certificate-verification/${encodeURIComponent(code)}`);
 }
 
 

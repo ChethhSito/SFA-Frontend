@@ -1,3 +1,5 @@
+import { AttendanceRecord } from "../../../types";
+import { studentAttendanceRecords } from "../../../utils/attendance";
 import React from "react";
 import { 
   Zap, Cpu, Sliders, Award, ChevronRight, ChevronDown, BookOpen, Clock, CheckCircle2, 
@@ -7,6 +9,9 @@ import { CourseMaterial, CourseAssignment, CourseEvaluation, AcademicProgram, St
 import PageTransition from "../../ui/PageTransition";
 
 interface ClassesTabProps {
+  attendance: AttendanceRecord[];
+  attendanceLoading: boolean;
+  attendanceError: string | null;
   enrichedCourses: any[];
   currentProgram?: AcademicProgram;
   selectedCourseDetail: string;
@@ -30,6 +35,9 @@ interface ClassesTabProps {
 }
 
 export const ClassesTab: React.FC<ClassesTabProps> = ({
+  attendance,
+  attendanceLoading,
+  attendanceError,
   enrichedCourses,
   currentProgram,
   selectedCourseDetail,
@@ -643,34 +651,16 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               </div>
 
               <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-                {selectedClassWeekOption === "asistencia" && (
-                  <div className="space-y-3 font-sans">
-                    <div className="bg-emerald-50 text-emerald-900 border border-emerald-100 p-3 rounded-lg text-[11px] font-bold flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>Control de Asistencia Semanal Procesada Correctamente.</span>
-                    </div>
-                    <div className="border border-slate-150 rounded-lg p-4 space-y-3.5">
-                      <div className="flex justify-between items-center border-b pb-2">
-                        <span className="text-slate-400 font-bold text-[10px] uppercase">Estado de Asistencia</span>
-                        <span className="bg-emerald-100 text-emerald-800 font-black border border-emerald-200 px-2.5 py-0.5 rounded text-[10px] uppercase">
-                          Presente
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center border-b pb-2">
-                        <span className="text-slate-400 font-bold text-[10px] uppercase">Fecha de Control:</span>
-                        <span className="text-slate-800 font-extrabold">2026-05-{10 + selectedClassWeek}</span>
-                      </div>
-                      <div className="flex justify-between items-center border-b pb-2">
-                        <span className="text-slate-400 font-bold text-[10px] uppercase">Hora de Entrada Registrada:</span>
-                        <span className="text-slate-800 font-mono font-bold">08:05 AM</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-400 font-bold text-[10px] uppercase">Validado por Docente Titular:</span>
-                        <span className="text-slate-800 font-extrabold">Sí, firma digitalizada.</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {selectedClassWeekOption === "asistencia" && (() => {
+                  if (attendanceLoading) return <p role="status">Cargando asistencias...</p>;
+                  if (attendanceError) return <p role="alert" className="text-red-700">{attendanceError}</p>;
+                  const records = studentAttendanceRecords(attendance, activeCourse.attendanceCourseIds || [activeCourse.id, activeCourse.code], studentDni).filter((record) => record.week === selectedClassWeek);
+                  return <div className="space-y-3 text-sm">
+                    <p className="font-bold">Asistencia registrada de la semana {selectedClassWeek}</p>
+                    {records.length ? records.map((record) => <div key={record.id} className="flex justify-between border rounded-lg p-3"><span>{record.date}</span><span>{record.statusMap[studentDni]}</span></div>)
+                      : <p>No hay registros vinculados a esta semana. Consulta el resumen de Asistencia para los registros diarios sin semana asignada.</p>}
+                  </div>;
+                })()}
 
                 {selectedClassWeekOption === "materiales" && (() => {
                   const mats = filteredDBMaterials.length > 0 ? filteredDBMaterials : getFallbackMaterialsForWeek(selectedClassWeek, activeCourse.name, activeCourse.code);

@@ -3,15 +3,22 @@ import { BookOpen, Calendar, Filter, Users, Search, HelpCircle, BarChart3, Trend
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/Card";
 import Badge from "../ui/Badge";
 import PageHeader from "../ui/PageHeader";
-import { Course, AttendanceRecord } from "../../types";
-import { ROSTER } from "./DocenteTypes";
+import { Course, AttendanceRecord, StudentPersonalData } from "../../types";
 
 interface ControlAsistenciaPrincipalProps {
+  students: StudentPersonalData[];
+  loading: boolean;
+  error: string | null;
+  onReload: () => Promise<boolean>;
   courses: Course[];
   attendanceRecords: AttendanceRecord[];
 }
 
 export default function ControlAsistenciaPrincipal({
+  students,
+  loading,
+  error,
+  onReload,
   courses,
   attendanceRecords,
 }: ControlAsistenciaPrincipalProps) {
@@ -22,7 +29,7 @@ export default function ControlAsistenciaPrincipal({
   const [selectedDate, setSelectedDate] = useState<string>("");
 
   // Process global stats
-  const totalStudents = ROSTER.length;
+  const totalStudents = new Set(attendanceRecords.filter((record) => courses.some((course) => course.id === record.courseId)).flatMap((record) => Object.keys(record.statusMap))).size;
   
   // Calculate attendance counters
   let totalPresente = 0;
@@ -31,7 +38,8 @@ export default function ControlAsistenciaPrincipal({
   let totalJustificado = 0;
 
   // Track values from nested statusMaps
-  attendanceRecords.forEach((record) => {
+  const relevantRecords = attendanceRecords.filter((record) => courses.some((course) => course.id === record.courseId));
+  relevantRecords.forEach((record) => {
     Object.values(record.statusMap).forEach((status) => {
       if (status === "Presente") totalPresente++;
       else if (status === "Tardanza") totalTardanza++;
@@ -68,13 +76,13 @@ export default function ControlAsistenciaPrincipal({
 
     // Parse week and session typed from ID: `att-${courseId}-w${week}-${session}`
     const idParts = record.id.split("-");
-    let weekNum = 1;
-    let sessionType = "Teoría";
+    let weekNum = record.week || 0;
+    let sessionType = "Registro diario";
 
     // Regex check week
     const weekMatch = record.id.match(/-w(\d+)-/);
     if (weekMatch) {
-      weekNum = parseInt(weekMatch[1], 10);
+      weekNum = record.week || parseInt(weekMatch[1], 10);
     }
     if (record.id.toLowerCase().includes("-laboratorio") || record.id.toLowerCase().includes("lab")) {
       sessionType = "Laboratorio";
@@ -91,7 +99,7 @@ export default function ControlAsistenciaPrincipal({
 
     // Build subrows for each student matching state
     Object.keys(record.statusMap).forEach((dni) => {
-      const student = ROSTER.find((s) => s.dni === dni);
+      const student = students.find((s) => s.dni === dni);
       if (!student) return;
 
       // Filter student
@@ -120,12 +128,14 @@ export default function ControlAsistenciaPrincipal({
         icon={<BarChart3 className="w-5 h-5 text-[#8B0026]" />}
       />
 
+      {loading ? <p role="status">Cargando asistencias...</p> : null}
+      {error ? <div role="alert" className="text-red-700"><p>{error}</p><button type="button" onClick={() => { void onReload(); }}>Reintentar carga</button></div> : null}
       {/* Aggregate metrics KPIs rows */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4 bg-white border border-slate-150">
           <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest block">Quórum de Asistencia</span>
           <div className="flex items-baseline gap-1 mt-2">
-            <span className="text-2xl font-black text-emerald-600 font-mono">{attendanceRate.toFixed(1)}%</span>
+            <span className="text-2xl font-black text-emerald-600 font-mono">{totalStatesCount ? `${attendanceRate.toFixed(1)}%` : "Sin datos"}</span>
             <span className="text-[9px] text-slate-400 font-bold block">Aceptable</span>
           </div>
         </Card>
@@ -212,7 +222,7 @@ export default function ControlAsistenciaPrincipal({
                 className="w-full px-3 py-2 bg-white border rounded-lg font-semibold focus:outline-[#8B0026]"
               >
                 <option value="all">Todos los Alumnos</option>
-                {ROSTER.map((s) => (
+                {students.map((s) => (
                   <option key={s.dni} value={s.dni}>
                     {s.lastName}, {s.name}
                   </option>
@@ -282,7 +292,7 @@ export default function ControlAsistenciaPrincipal({
                         </span>
                       </td>
                       <td className="py-3.5 px-3 font-extrabold text-slate-800 text-center font-mono">
-                        S{row.weekNumber}
+                        {row.weekNumber ? `S${row.weekNumber}` : "Sin registrar"}
                       </td>
                       <td className="py-3.5 px-3">
                         <span className="font-extrabold text-slate-500 text-[10.5px]">

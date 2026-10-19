@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import {
   Users, FileText, CreditCard, Award, GraduationCap, CheckSquare,
   TrendingUp, BookOpen, BrainCircuit, Calendar
@@ -15,6 +15,8 @@ import {
   ProgramId
 } from "../../types";
 import Sidebar from "../ui/Sidebar";
+import Toast, { ToastKind, ToastNotice } from "../ui/Toast";
+import { createGraduation, updateGraduation } from "../../services/api";
 
 // Modular tabs
 import MgeEstudiantesTab from "./tabs/MgeEstudiantesTab";
@@ -33,21 +35,36 @@ import MgeEditStudentModal from "./modals/MgeEditStudentModal";
 
 // Types
 import { MgeSubTab, StudentFormState, defaultStudentForm } from "./mgeTypes";
+import { useMgeNavigation } from "../../hooks/mge/useMgeNavigation";
+import GraduationAccessPanel from "./GraduationAccessPanel";
 
 interface MgeDashboardProps {
+  onReloadGraduations: () => Promise<boolean>;
+  graduationsLoading: boolean;
+  graduationsError: string | null;
+  sourceLoading: boolean;
+  sourceError: string | null;
+  assignmentsLoading: boolean;
+  assignmentsError: string | null;
+  onSetStudentActive: (dni: string, active: boolean, reason?: string) => Promise<boolean>;
   applicants: Applicant[];
   enrollments: Enrollment[];
   studentsList: { [dni: string]: StudentPersonalData };
   courses: Course[];
   assignments: CourseAssignment[];
   attendance: AttendanceRecord[];
+  attendanceLoading: boolean;
+  attendanceError: string | null;
+  onReloadAttendance: () => Promise<boolean>;
   graduations: Graduation[];
   admissionPeriods?: AdmissionPeriod[];
   onUpdateEnrollments: (enrolls: Enrollment[]) => void;
-  onUpdateStudentsList: (students: { [dni: string]: StudentPersonalData }) => void;
+  onUpdateStudentsList: (students: { [dni: string]: StudentPersonalData }) => Promise<boolean>;
+  onCreateEnrollment: (data: Enrollment) => Promise<Enrollment | null>;
+  onSaveEnrollment: (dni: string, data: Partial<Enrollment>) => Promise<Enrollment | null>;
   onUpdateCourses: (courses: Course[]) => void;
-  onUpdateAssignments: (asgs: CourseAssignment[]) => void;
-  onUpdateAttendance: (att: AttendanceRecord[]) => void;
+  onUpdateAssignments: (asgs: CourseAssignment[]) => Promise<boolean>;
+  onUpdateAttendance: (att: AttendanceRecord[]) => Promise<boolean>;
   onUpdateGraduations: (grads: Graduation[]) => void;
   selectedPeriodId?: string;
   onLogout?: () => void;
@@ -55,6 +72,10 @@ interface MgeDashboardProps {
 }
 
 export default function MgeDashboard({
+  onReloadGraduations,
+  graduationsLoading, graduationsError,
+  sourceLoading, sourceError, assignmentsLoading, assignmentsError,
+  onSetStudentActive,
   applicants,
   enrollments,
   studentsList,
@@ -65,22 +86,45 @@ export default function MgeDashboard({
   admissionPeriods = [],
   onUpdateEnrollments,
   onUpdateStudentsList,
+  onCreateEnrollment,
+  onSaveEnrollment,
   onUpdateCourses,
   onUpdateAssignments,
   onUpdateAttendance,
+  attendanceLoading,
+  attendanceError,
+  onReloadAttendance,
   onUpdateGraduations,
   selectedPeriodId,
   onLogout,
   onGoToPortal,
 }: MgeDashboardProps) {
   // Navigation
-  const [activeSubTab, setActiveSubTab] = useState<MgeSubTab>("estudiantes");
+  const { activeSubTab, setActiveSubTab } = useMgeNavigation();
   const [searchQuery, setSearchQuery] = useState("");
+  const [notice, setNotice] = useState<ToastNotice | null>(null);
+  const noticeSequence = useRef(0);
+  const closeNotice = useCallback(() => setNotice(null), []);
+  const triggerNotification = (message: string, kind: ToastKind = "success") => {
+    setNotice({ id: ++noticeSequence.current, message, kind });
+  };
+  const [saving, setSaving] = useState(false);
+  const saveInProgress = useRef(false);
+  const runSave = async (action: () => Promise<void>) => {
+    if (saveInProgress.current) return;
+    saveInProgress.current = true;
+    setSaving(true);
+    try { await action(); }
+    catch { triggerNotification("No se pudo completar el guardado. Intente nuevamente.", "error"); }
+    finally { saveInProgress.current = false; setSaving(false); }
+  };
 
   // Modals
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showEditStudentModal, setShowEditStudentModal] = useState(false);
   const [editingStudentDni, setEditingStudentDni] = useState<string | null>(null);
+  const [statusDni, setStatusDni] = useState<string | null>(null);
+  const [statusReason, setStatusReason] = useState("");
 
   // Shared form state for both modals
   const [studentForm, setStudentForm] = useState<StudentFormState>(defaultStudentForm);
@@ -91,11 +135,13 @@ export default function MgeDashboard({
   const [temporaryGrades, setTemporaryGrades] = useState<{ [dni: string]: number }>({});
   const [selectedAttendanceCourseId, setSelectedAttendanceCourseId] = useState<string>(courses[0]?.id || "");
   const [selectedAttendanceDate, setSelectedAttendanceDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
+    new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())
   );
   const [selectedHistoryDni, setSelectedHistoryDni] = useState<string>("");
-
-  const triggerNotification = (msg: string) => window.alert(msg);
+  useEffect(() => {
+    if (!courses.some((course) => course.id === selectedCourseId)) setSelectedCourseId(courses[0]?.id || "");
+    if (!courses.some((course) => course.id === selectedAttendanceCourseId)) setSelectedAttendanceCourseId(courses[0]?.id || "");
+  }, [courses, selectedCourseId, selectedAttendanceCourseId]);
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const processedStudents = useMemo(() => {
@@ -104,10 +150,10 @@ export default function MgeDashboard({
       return {
         ...student,
         enrolled: !!enrollment,
-        academicStatus: enrollment?.academicStatus || "ADMITIDO",
-        programId: enrollment?.programId || "sistemas",
-        shift: enrollment?.shift || "Noche",
-        paymentStatus: enrollment?.paymentStatus || "No Pagado",
+        academicStatus: student.active === false ? "BAJA" : enrollment?.academicStatus || "Sin matrícula",
+        programId: enrollment?.programId || "",
+        shift: enrollment?.shift || "",
+        paymentStatus: enrollment?.paymentStatus || "Sin registro",
       };
     });
   }, [studentsList, enrollments]);
@@ -126,7 +172,7 @@ export default function MgeDashboard({
 
   const activePeriodName = useMemo(() => {
     const found = admissionPeriods.find((p) => p.id === selectedPeriodId);
-    const raw = found?.name || "Periodo 2026-I";
+    const raw = found?.name || "Sin periodo seleccionado";
     return raw
       .replace(/\uFFFD/g, "é")
       .replace(/Acad[\uFFFD\?a-zA-Z]*mico/gi, "Académico")
@@ -134,43 +180,52 @@ export default function MgeDashboard({
   }, [admissionPeriods, selectedPeriodId]);
 
   // ── Handlers: Students ───────────────────────────────────────────────────
-  const handleCreateStudent = (e: React.FormEvent) => {
+  const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     const { dni, name, lastName, birthDate, gender, email, phone, address, district, province, emergencyName, emergencyPhone, emergencyRelation, programId, shift } = studentForm;
 
     if (!dni || dni.length !== 8 || isNaN(Number(dni))) {
-      triggerNotification("El DNI debe contener exactamente 8 números.");
+      triggerNotification("El DNI debe contener exactamente 8 números.", "warning");
       return;
     }
-    if (!name || !lastName || !email) {
-      triggerNotification("Por favor complete nombre, apellido y correo institucional.");
+    if (!name || !lastName || !email || !programId || !shift) {
+      triggerNotification("Complete nombre, apellido, correo, carrera y turno.", "warning");
       return;
     }
 
+    if (studentsList[dni] || enrollments.some((en) => en.studentDni === dni)) {
+      triggerNotification("El DNI ya está registrado. Use la opción de editar.", "warning");
+      return;
+    }
     const updatedStudents = { ...studentsList };
     updatedStudents[dni] = { dni, name, lastName, birthDate, gender, email, phone, address, district, province, emergencyName, emergencyPhone, emergencyRelation };
-    onUpdateStudentsList(updatedStudents);
+    if (!await onUpdateStudentsList(updatedStudents)) {
+      triggerNotification("No se pudieron guardar los datos del estudiante. Intente nuevamente.", "error");
+      return;
+    }
 
     const newEnrollment: Enrollment = {
       studentDni: dni,
       programId,
-      academicStatus: "MATRICULADO",
+      academicStatus: "ADMITIDO",
       docs: {
-        dniFile: { status: "Validado", fileName: "dni_manual.pdf" },
-        certificadoFile: { status: "Validado", fileName: "certificado_manual.pdf" },
-        partidaFile: { status: "Validado", fileName: "partida_manual.pdf" },
-        fotoFile: { status: "Validado", fileName: "foto_manual.jpg" }
+        dniFile: { status: "No Enviado" },
+        certificadoFile: { status: "No Enviado" },
+        partidaFile: { status: "No Enviado" },
+        fotoFile: { status: "No Enviado" }
       },
-      paymentStatus: "Validado",
-      paymentOperation: "OP-MANUAL-" + Math.floor(100000 + Math.random() * 900000),
-      paymentType: "number",
+      paymentStatus: "No Pagado",
       shift
     };
 
-    onUpdateEnrollments([...enrollments, newEnrollment]);
+    if (!await onCreateEnrollment(newEnrollment)) {
+      triggerNotification("Se guardó la ficha, pero no se pudo crear la matrícula. Puede completarla editando la ficha.", "error");
+      setShowAddStudentModal(false);
+      return;
+    }
     setShowAddStudentModal(false);
     setStudentForm(defaultStudentForm);
-    triggerNotification(`¡Estudiante ${name} ${lastName} ingresado y matriculado correctamente!`);
+    triggerNotification(`Estudiante ${name} ${lastName} registrado como admitido. Falta validar documentos y pago.`);
   };
 
   const handleEditClick = (dni: string) => {
@@ -183,25 +238,29 @@ export default function MgeDashboard({
       dni: student.dni,
       name: student.name,
       lastName: student.lastName,
-      birthDate: student.birthDate || "2002-05-15",
-      gender: student.gender || "Masculino",
+      birthDate: student.birthDate || "",
+      gender: student.gender || "",
       email: student.email,
       phone: student.phone || "",
       address: student.address || "",
-      district: student.district || "San Juan de Lurigancho",
-      province: student.province || "Lima",
+      district: student.district || "",
+      province: student.province || "",
       emergencyName: student.emergencyName || "",
       emergencyPhone: student.emergencyPhone || "",
-      emergencyRelation: student.emergencyRelation || "Padre/Madre",
-      programId: enrollment?.programId || "sistemas",
-      shift: enrollment?.shift || "Noche",
+      emergencyRelation: student.emergencyRelation || "",
+      programId: enrollment?.programId || "",
+      shift: enrollment?.shift || "",
     });
     setShowEditStudentModal(true);
   };
 
-  const handleUpdateStudent = (e: React.FormEvent) => {
+  const handleUpdateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingStudentDni) return;
+    if (!studentForm.programId || !studentForm.shift) {
+      triggerNotification("Seleccione la carrera y el turno del estudiante.", "warning");
+      return;
+    }
 
     const updatedStudents = { ...studentsList };
     updatedStudents[editingStudentDni] = {
@@ -219,14 +278,22 @@ export default function MgeDashboard({
       emergencyPhone: studentForm.emergencyPhone,
       emergencyRelation: studentForm.emergencyRelation,
     };
-    onUpdateStudentsList(updatedStudents);
+    if (!await onUpdateStudentsList(updatedStudents)) {
+      triggerNotification("No se pudieron guardar los datos del estudiante. Intente nuevamente.", "error");
+      return;
+    }
 
-    const updatedEnrollments = enrollments.map((en) =>
-      en.studentDni === editingStudentDni
-        ? { ...en, programId: studentForm.programId, shift: studentForm.shift }
-        : en
-    );
-    onUpdateEnrollments(updatedEnrollments);
+    const enrollmentData = { programId: studentForm.programId, shift: studentForm.shift };
+    const savedEnrollment = enrollments.some((en) => en.studentDni === editingStudentDni)
+      ? await onSaveEnrollment(editingStudentDni, enrollmentData)
+      : await onCreateEnrollment({ studentDni: editingStudentDni, ...enrollmentData,
+          academicStatus: "ADMITIDO", paymentStatus: "No Pagado",
+          docs: { dniFile: { status: "No Enviado" }, certificadoFile: { status: "No Enviado" },
+            partidaFile: { status: "No Enviado" }, fotoFile: { status: "No Enviado" } } });
+    if (!savedEnrollment) {
+      triggerNotification("La ficha se guardó, pero la carrera y el turno no se pudieron guardar. Intente nuevamente.", "error");
+      return;
+    }
 
     setShowEditStudentModal(false);
     setEditingStudentDni(null);
@@ -234,65 +301,108 @@ export default function MgeDashboard({
   };
 
   const handleDeleteStudent = (dni: string) => {
-    if (confirm(`¿Está seguro de eliminar o dar de baja el registro académico del estudiante DNI ${dni}? Esta acción es irreversible.`)) {
-      const updatedStudents = { ...studentsList };
-      delete updatedStudents[dni];
-      onUpdateStudentsList(updatedStudents);
-      onUpdateEnrollments(enrollments.filter((e) => e.studentDni !== dni));
-      triggerNotification("Se completó la baja del estudiante y se vació su matrícula actual.");
+    setStatusDni(dni);
+    setStatusReason("");
+  };
+  const saveStudentStatus = async () => {
+    if (sourceLoading || sourceError) { triggerNotification("Recargue los datos del servidor antes de cambiar el estado.", "error"); return; }
+    if (!statusDni) return;
+    const active = studentsList[statusDni]?.active === false;
+    if (!await onSetStudentActive(statusDni, active, statusReason)) {
+      triggerNotification("No se pudo guardar el estado del estudiante. Intente nuevamente.", "error");
+      return;
     }
+    setStatusDni(null);
+    triggerNotification(active ? "Estudiante reactivado. Se conserva su matrícula anterior." : "Baja registrada. Se conservan la matrícula y el historial académico.");
+  };
+
+  const persistEnrollment = async (dni: string, data: Partial<Enrollment>) => {
+    if (!await onSaveEnrollment(dni, data)) {
+      triggerNotification("No se pudo guardar el cambio en el servidor. Intente nuevamente.", "error");
+      return false;
+    }
+    return true;
   };
 
   // ── Handlers: Matrícula ───────────────────────────────────────────────────
-  const handleToggleAcademicStatus = (dni: string) => {
+  const handleToggleAcademicStatus = async (dni: string) => {
+    if (studentsList[dni]?.active === false) { triggerNotification("Reactive al estudiante desde el padrón antes de matricularlo.", "warning"); return; }
     const existing = enrollments.find((e) => e.studentDni === dni);
-    const nextStatus: "ADMITIDO" | "MATRICULADO" = existing?.academicStatus === "ADMITIDO" ? "MATRICULADO" : "ADMITIDO";
+    const nextStatus: "ADMITIDO" | "MATRICULADO" = existing?.academicStatus === "MATRICULADO" ? "ADMITIDO" : "MATRICULADO";
 
     if (nextStatus === "MATRICULADO") {
       const currentPayStatus = existing?.paymentStatus || "No Pagado";
       if (currentPayStatus !== "Validado") {
-        alert(
-          `[ALERTA] CONTROL DE RECAUDACIÓN Y PAGOS (MAMC):\n\nNo se puede registrar la matrícula de este alumno porque su pago único de S/. 250.00 de matrícula aún no ha sido VALIDADO por la Oficina de Caja (Estado actual: ${
-            currentPayStatus === "Pendiente" ? "PENDIENTE DE VALIDACIÓN" :
-            currentPayStatus === "Observado" ? "PAGO OBSERVADO / RECHAZADO" : "PENDIENTE DE PAGO"
-          }).\n\nPor favor, diríjase a la sección de Caja de Matrícula para validar el pago primero.`
+        triggerNotification(
+          `No se puede matricular: el pago ${currentPayStatus === "Observado" ? "está observado" : "aún no está validado"}. Revísalo en Pagos de Matrícula.`,
+          "warning",
         );
         return;
       }
     }
 
-    onUpdateEnrollments(enrollments.map((e) => e.studentDni === dni ? { ...e, academicStatus: nextStatus } : e));
+    if (!await persistEnrollment(dni, { academicStatus: nextStatus })) return;
     triggerNotification(`Estado de matrícula actualizado.`);
   };
 
-  const handleEnrollmentShiftChange = (dni: string, shift: "Mañana" | "Tarde" | "Noche") => {
-    onUpdateEnrollments(enrollments.map((e) => e.studentDni === dni ? { ...e, shift } : e));
+  const handleEnrollmentShiftChange = async (dni: string, shift: "Mañana" | "Tarde" | "Noche") => {
+    if (!await persistEnrollment(dni, { shift })) return;
     triggerNotification(`Turno asignado a ${shift}.`);
   };
 
-  const handleEnrollmentCareerChange = (dni: string, programId: ProgramId) => {
-    onUpdateEnrollments(enrollments.map((e) => e.studentDni === dni ? { ...e, programId } : e));
+  const handleEnrollmentCareerChange = async (dni: string, programId: ProgramId) => {
+    if (!await persistEnrollment(dni, { programId })) return;
     triggerNotification(`Carrera del alumno reasignada exitosamente.`);
   };
 
   // ── Handlers: Pagos ───────────────────────────────────────────────────────
-  const handleUpdatePaymentStatus = (dni: string, status: "Validado" | "Observado") => {
-    onUpdateEnrollments(enrollments.map((e) => e.studentDni === dni ? { ...e, paymentStatus: status } : e));
+  const handleRegisterPaymentOperation = async (dni: string, rawOperation: string) => {
+    const operation = rawOperation.trim();
+    if (!operation || operation.length > 100) {
+      triggerNotification("Ingrese un número de operación válido (máximo 100 caracteres).", "warning");
+      return;
+    }
+    if (!enrollments.some((enrollment) => enrollment.studentDni === dni)) {
+      triggerNotification("Primero registre la matrícula del estudiante.", "warning");
+      return;
+    }
+    if (!await persistEnrollment(dni, { paymentOperation: operation, paymentStatus: "Pendiente" })) return;
+    triggerNotification("Operación registrada. Revisa el pago y luego pulsa Validar.");
+  };
+
+  const handleUpdatePaymentStatus = async (dni: string, status: "Validado" | "Observado") => {
+    if (status === "Validado" && !enrollments.find((enrollment) => enrollment.studentDni === dni)?.paymentOperation?.trim()) {
+      triggerNotification("No hay una operación de pago registrada para validar.", "warning");
+      return;
+    }
+    if (!await persistEnrollment(dni, { paymentStatus: status })) return;
     triggerNotification(`Pago de matrícula ${status === "Validado" ? "VALIDADO con éxito y habilitado" : "OBSERVADO por tesorería"}.`);
   };
 
   // ── Handlers: Notas ───────────────────────────────────────────────────────
   const handleGradeChange = (dni: string, value: string) => {
+    if (!value.trim()) {
+      setTemporaryGrades((previous) => {
+        const next = { ...previous };
+        delete next[dni];
+        return next;
+      });
+      return;
+    }
     const score = Math.max(0, Math.min(20, Number(value) || 0));
     setTemporaryGrades((prev) => ({ ...prev, [dni]: score }));
   };
 
-  const handleSaveGrades = () => {
+  const handleSaveGrades = async () => {
     if (!selectedCourseId) return;
+    if (Object.keys(temporaryGrades).length === 0) {
+      triggerNotification("Ingrese al menos una calificación antes de guardar.", "warning");
+      return;
+    }
 
     const activeCourseObj = courses.find((c) => c.id === selectedCourseId);
     const studentsInActiveCourse = activeCourseObj
-      ? processedStudents.filter((s) => s.enrolled && s.academicStatus === "MATRICULADO" && s.programId === activeCourseObj.career)
+      ? processedStudents.filter((s) => s.enrolled && s.academicStatus === "MATRICULADO" && s.programId === (activeCourseObj.careerId || activeCourseObj.career))
       : [];
 
     const matchingAssignment = assignments.find(
@@ -310,33 +420,34 @@ export default function MgeDashboard({
 
     if (!targetAssignment) {
       const newAsg: CourseAssignment = {
+        kind: "assessment",
         id: "asg-" + Math.floor(100000 + Math.random() * 900000),
         courseId: selectedCourseId,
         title: selectedTaskTitle,
         description: "Registro de notas consolidado por administración",
-        dueDate: "2026-06-30",
+        dueDate: new Date().toISOString().split("T")[0],
         submissions: []
       };
       updatedAssignments.push(newAsg);
       targetAssignment = newAsg;
     }
 
-    const finalSubmissions = [...targetAssignment.submissions];
+    const finalSubmissions = targetAssignment.submissions.map((submission) => ({ ...submission }));
     const currentStudentsMap = new Map(finalSubmissions.map((s) => [s.studentDni, s]));
 
     studentsInActiveCourse.forEach((student) => {
       const isTempChanged = temporaryGrades[student.dni] !== undefined;
-      const scoreToSave = isTempChanged ? temporaryGrades[student.dni] : (currentGradesForTask[student.dni] ?? 12);
+      const scoreToSave = isTempChanged ? temporaryGrades[student.dni] : currentGradesForTask[student.dni];
+      if (scoreToSave === undefined) return;
 
       if (currentStudentsMap.has(student.dni)) {
         const sub = currentStudentsMap.get(student.dni)!;
         sub.grade = scoreToSave;
-        sub.submitDate = new Date().toISOString().split("T")[0];
       } else {
         finalSubmissions.push({
           studentDni: student.dni,
           studentName: `${student.name} ${student.lastName}`,
-          fileName: "registro_nota_admin.pdf",
+          fileName: "",
           submitDate: new Date().toISOString().split("T")[0],
           grade: scoreToSave
         });
@@ -349,13 +460,19 @@ export default function MgeDashboard({
         : a
     );
 
-    onUpdateAssignments(updatedAssignments);
+    if (!await onUpdateAssignments(updatedAssignments)) {
+      triggerNotification("No se pudieron guardar todas las notas. Los cambios pendientes se conservaron para reintentar.", "error");
+      return;
+    }
     setTemporaryGrades({});
     triggerNotification(`¡Notas del Curso guardadas con éxito en el Registro Académico!`);
   };
 
   // ── Handlers: Asistencias ─────────────────────────────────────────────────
-  const handleUpdateStudentAttendance = (studentDni: string, status: "Presente" | "Tardanza" | "Falta" | "Justificado") => {
+  const handleUpdateStudentAttendance = async (studentDni: string, status: "Presente" | "Tardanza" | "Falta" | "Justificado") => {
+    if (!selectedAttendanceCourseId || !selectedAttendanceDate) {
+      triggerNotification("Seleccione un curso y una fecha para registrar asistencia.", "warning"); return;
+    }
     let updatedAttendance = [...attendance];
     const existingIndex = attendance.findIndex(
       (att) => att.courseId === selectedAttendanceCourseId && att.date === selectedAttendanceDate
@@ -373,25 +490,32 @@ export default function MgeDashboard({
         statusMap: { [studentDni]: status }
       });
     }
-    onUpdateAttendance(updatedAttendance);
+    if (!await onUpdateAttendance(updatedAttendance)) {
+      triggerNotification("No se pudo guardar la asistencia en el servidor. Intente nuevamente.", "error"); return;
+    }
+    triggerNotification("Asistencia guardada en el servidor.");
   };
 
-  const handleFillAttendanceAll = (status: "Presente" | "Falta") => {
+  const handleFillAttendanceAll = async (status: "Presente" | "Falta") => {
     const course = courses.find((c) => c.id === selectedAttendanceCourseId);
     const studentsInCourse = course
-      ? processedStudents.filter((s) => s.enrolled && s.academicStatus === "MATRICULADO" && s.programId === course.career)
+      ? processedStudents.filter((s) => s.enrolled && s.academicStatus === "MATRICULADO" && s.programId === (course.careerId || course.career))
       : [];
 
+    if (!selectedAttendanceCourseId || !selectedAttendanceDate) {
+      triggerNotification("Seleccione un curso y una fecha para registrar asistencia.", "warning"); return;
+    }
     let updatedAttendance = [...attendance];
     const existingIndex = attendance.findIndex(
       (att) => att.courseId === selectedAttendanceCourseId && att.date === selectedAttendanceDate
     );
 
+    if (!studentsInCourse.length) { triggerNotification("No hay alumnos matriculados para registrar asistencia.", "warning"); return; }
     const fullMap: { [dni: string]: any } = {};
     studentsInCourse.forEach((s) => { fullMap[s.dni] = status; });
 
     if (existingIndex >= 0) {
-      updatedAttendance[existingIndex] = { ...updatedAttendance[existingIndex], statusMap: fullMap };
+      updatedAttendance[existingIndex] = { ...updatedAttendance[existingIndex], statusMap: { ...updatedAttendance[existingIndex].statusMap, ...fullMap } };
     } else {
       updatedAttendance.push({
         id: "att-" + Math.floor(100000 + Math.random() * 900000),
@@ -401,39 +525,46 @@ export default function MgeDashboard({
       });
     }
 
-    onUpdateAttendance(updatedAttendance);
+    if (!await onUpdateAttendance(updatedAttendance)) {
+      triggerNotification("No se pudo guardar la asistencia en el servidor. Intente nuevamente.", "error"); return;
+    }
     triggerNotification(`Asistencia masiva registrada como: "${status}" para todos los alumnos.`);
   };
 
   // ── Handlers: Constancias ─────────────────────────────────────────────────
-  const handleIssuerUpdate = (studentDni: string, approve: boolean) => {
-    const nextStatus = approve ? "Certificado Emitido" : "No Apto";
-    onUpdateGraduations(
-      graduations.map((g) =>
-        g.studentDni === studentDni
-          ? { ...g, status: nextStatus as any, step: "Emision" as any, obs: approve ? "Constancia Digital oficial generada y firmada por Coordinación Académica" : "Expediente observado por falta de horas de práctica" }
-          : g
-      )
-    );
-    triggerNotification(`Trámite académico ${approve ? "APROBADO. El certificado ha sido emitido con firma digital!" : "OBSERVADO por inconsistencia de datos"}.`);
+  const handleIssuerUpdate = async (studentDni: string, approve: boolean) => {
+    const current = graduations.find((row) => row.studentDni === studentDni);
+    if (approve && (!current || !Object.values(current.docsChecked).every((checked) => checked === true))) {
+      triggerNotification("Revise y guarde todos los requisitos antes de marcar el expediente apto.", "warning"); return;
+    }
+    const saved = await updateGraduation(studentDni, { status: approve ? "Apto" : "No Apto", step: "Revision Documental" });
+    if (!saved) { triggerNotification("No se pudo guardar la revisión del expediente.", "error"); return; }
+    onUpdateGraduations(graduations.map((row) => row.studentDni === studentDni ? saved : row));
+    triggerNotification("Revisión del expediente guardada.");
   };
 
-  const handleCreateGraduationProcess = (dni: string) => {
+  const handleCreateGraduationProcess = async (dni: string) => {
     if (graduations.some((g) => g.studentDni === dni)) {
-      triggerNotification("El estudiante ya cuenta con una solicitud registrada o en trámite activo.");
+      triggerNotification("El estudiante ya cuenta con una solicitud registrada o en trámite activo.", "warning");
       return;
     }
-    onUpdateGraduations([
-      ...graduations,
-      {
+    const saved = await createGraduation({
         studentDni: dni,
         status: "Solicitado",
         step: "Solicitud",
-        docsChecked: { solicitud: true, constanciaEgresado: true, practicasPre: true, pagoDerecho: true },
+        docsChecked: { solicitud: false, constanciaEgresado: false, practicasPre: false, pagoDerecho: false },
         obs: "Ingresado manualmente por el MGE Administrativo"
-      }
-    ]);
+    });
+    if (!saved) { triggerNotification("No se pudo abrir el expediente en el servidor.", "error"); return; }
+    onUpdateGraduations([...graduations, saved]);
     triggerNotification("Se aperturó el expediente de Constancia de Egresado y Certificado de Estudios modulado.");
+  };
+
+  const handleSaveGraduationDocs = async (dni: string, docsChecked: Graduation['docsChecked'], obs: string) => {
+    const saved = await updateGraduation(dni, { docsChecked, obs, status: "En Proceso", step: "Revision Documental" });
+    if (!saved) { triggerNotification("No se pudieron guardar los requisitos del expediente.", "error"); return; }
+    onUpdateGraduations(graduations.map((row) => row.studentDni === dni ? saved : row));
+    triggerNotification("Requisitos y observaciones guardados.");
   };
 
   return (
@@ -569,9 +700,10 @@ export default function MgeDashboard({
         </header>
 
         {/* Content area */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 custom-scrollbar">
+        {saving ? <p role="status" className="p-3">Guardando cambios en el servidor...</p> : null}
+        <fieldset disabled={saving} className="flex-1 min-h-0 min-w-0 border-0 overflow-y-auto p-4 md:p-6 custom-scrollbar">
           {activeSubTab === "estudiantes" && (
-            <MgeEstudiantesTab
+            sourceLoading ? <p role="status">Cargando el padrón y las matrículas...</p> : sourceError ? <p role="alert" className="text-red-700">{sourceError} Recargue para reintentar.</p> : <MgeEstudiantesTab
               filteredStudents={filteredStudents}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
@@ -582,11 +714,11 @@ export default function MgeDashboard({
           )}
 
           {activeSubTab === "matricula_gral" && (
-            <MgeMatriculaTab
+            sourceLoading ? <p role="status">Cargando matrículas...</p> : sourceError ? <p role="alert" className="text-red-700">{sourceError} Recargue para reintentar.</p> : <MgeMatriculaTab
               processedStudents={processedStudents}
-              onToggleAcademicStatus={handleToggleAcademicStatus}
-              onShiftChange={handleEnrollmentShiftChange}
-              onCareerChange={handleEnrollmentCareerChange}
+              onToggleAcademicStatus={(dni) => { void runSave(() => handleToggleAcademicStatus(dni)); }}
+              onShiftChange={(dni, shift) => { void runSave(() => handleEnrollmentShiftChange(dni, shift)); }}
+              onCareerChange={(dni, programId) => { void runSave(() => handleEnrollmentCareerChange(dni, programId)); }}
             />
           )}
 
@@ -594,7 +726,8 @@ export default function MgeDashboard({
             <MgePagosTab
               processedStudents={processedStudents}
               enrollments={enrollments}
-              onUpdatePaymentStatus={handleUpdatePaymentStatus}
+              onUpdatePaymentStatus={(dni, status) => { void runSave(() => handleUpdatePaymentStatus(dni, status)); }}
+              onRegisterOperation={(dni, operation) => { void runSave(() => handleRegisterPaymentOperation(dni, operation)); }}
             />
           )}
 
@@ -609,7 +742,7 @@ export default function MgeDashboard({
               onCourseChange={(id) => { setSelectedCourseId(id); setTemporaryGrades({}); }}
               onTaskChange={(t) => { setSelectedTaskTitle(t); setTemporaryGrades({}); }}
               onGradeChange={handleGradeChange}
-              onSaveGrades={handleSaveGrades}
+              onSaveGrades={() => { void runSave(handleSaveGrades); }}
             />
           )}
 
@@ -622,51 +755,69 @@ export default function MgeDashboard({
               selectedAttendanceDate={selectedAttendanceDate}
               onCourseChange={setSelectedAttendanceCourseId}
               onDateChange={setSelectedAttendanceDate}
-              onUpdateStudentAttendance={handleUpdateStudentAttendance}
-              onFillAttendanceAll={handleFillAttendanceAll}
+              loading={attendanceLoading}
+              error={attendanceError}
+              onReload={onReloadAttendance}
+              onUpdateStudentAttendance={(dni, status) => { void runSave(() => handleUpdateStudentAttendance(dni, status)); }}
+              onFillAttendanceAll={(status) => { void runSave(() => handleFillAttendanceAll(status)); }}
             />
           )}
 
           {activeSubTab === "historial" && (
-            <MgeHistorialTab
+            sourceLoading || assignmentsLoading ? <p role="status">Cargando registros académicos...</p> : sourceError || assignmentsError ? <p role="alert" className="text-red-700">{sourceError || assignmentsError} Recargue la página para reintentar.</p> : <MgeHistorialTab
               processedStudents={processedStudents}
               courses={courses}
               assignments={assignments}
               selectedHistoryDni={selectedHistoryDni}
               onSelectDni={setSelectedHistoryDni}
-              onPrint={(name) => triggerNotification(`Simulación de descarga del Récord de Notas en PDF para el alumno ${name}. Documento digital firmado.`)}
             />
           )}
 
           {activeSubTab === "constancias" && (
-            <MgeConstanciasTab
+            sourceLoading || graduationsLoading ? <p role="status">Cargando expedientes...</p> : sourceError ? <p role="alert" className="text-red-700">{sourceError}</p> : graduationsError ? <GraduationAccessPanel error={graduationsError} onReload={onReloadGraduations} /> : <MgeConstanciasTab
               graduations={graduations}
               studentsList={studentsList}
               processedStudents={processedStudents}
-              onIssuerUpdate={handleIssuerUpdate}
-              onCreateGraduationProcess={handleCreateGraduationProcess}
+              onIssuerUpdate={(dni, approve) => { void runSave(() => handleIssuerUpdate(dni, approve)); }}
+              onCreateGraduationProcess={(dni) => { void runSave(() => handleCreateGraduationProcess(dni)); }}
+              onSaveDocs={(dni, docs, obs) => { void runSave(() => handleSaveGraduationDocs(dni, docs, obs)); }}
             />
           )}
 
           {activeSubTab === "reportes" && (
-            <MgeReportesTab
+            sourceLoading ? <p role="status">Cargando datos de estudiantes y matrícula...</p> : sourceError ? <p role="alert" className="text-red-700">{sourceError} Recargue la página para reintentar.</p> : <MgeReportesTab
               enrollments={enrollments}
-              onDownload={() => triggerNotification("Generando Reporte Estadístico Integrado Semestral en Excel para su exportación a la UGEL...")}
+              students={processedStudents}
+              attendance={attendance}
+              attendanceLoading={attendanceLoading}
+              attendanceError={attendanceError}
             />
           )}
 
           {activeSubTab === "riesgo_ia" && (
             <MgeRiesgoIaTab />
           )}
-        </div>
+        </fieldset>
       </main>
 
+      {notice ? <Toast notice={notice} onClose={closeNotice} /> : null}
+
       {/* Modals */}
+      {statusDni ? <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+        <section role="dialog" aria-modal="true" aria-labelledby="student-status-title" className="bg-white rounded-xl p-6 w-full max-w-lg space-y-4">
+          <h2 id="student-status-title" className="font-bold">{studentsList[statusDni]?.active === false ? "Reactivar estudiante" : "Dar de baja al estudiante"}</h2>
+          <p>{studentsList[statusDni]?.name} {studentsList[statusDni]?.lastName} · {statusDni}</p>
+          <p className="text-sm">La ficha, matrícula, pagos y notas se conservarán. Puede revertir la baja desde el padrón.</p>
+          {studentsList[statusDni]?.active !== false ? <><label htmlFor="deactivation-reason" className="block">Motivo de la baja</label><textarea id="deactivation-reason" value={statusReason} onChange={(event) => setStatusReason(event.target.value)} maxLength={1000} disabled={saving} className="border rounded-lg p-3 w-full" /></> : null}
+          <div className="flex justify-end gap-3"><button type="button" disabled={saving} onClick={() => setStatusDni(null)} className="border rounded-lg px-4 py-2">Cancelar</button><button type="button" disabled={saving || (studentsList[statusDni]?.active !== false && !statusReason.trim())} onClick={() => { void runSave(saveStudentStatus); }} className="bg-[#9F062A] text-white rounded-lg px-4 py-2 disabled:opacity-50">{saving ? "Guardando..." : "Confirmar cambio"}</button></div>
+        </section>
+      </div> : null}
       {showAddStudentModal && (
         <MgeAddStudentModal
           studentForm={studentForm}
           onFormChange={setStudentForm}
-          onSubmit={handleCreateStudent}
+          saving={saving}
+          onSubmit={(event) => { event.preventDefault(); void runSave(() => handleCreateStudent(event)); }}
           onClose={() => setShowAddStudentModal(false)}
         />
       )}
@@ -676,7 +827,8 @@ export default function MgeDashboard({
           studentForm={studentForm}
           editingStudentDni={editingStudentDni}
           onFormChange={setStudentForm}
-          onSubmit={handleUpdateStudent}
+          saving={saving}
+          onSubmit={(event) => { event.preventDefault(); void runSave(() => handleUpdateStudent(event)); }}
           onClose={() => { setShowEditStudentModal(false); setEditingStudentDni(null); }}
         />
       )}

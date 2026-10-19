@@ -3,6 +3,7 @@ import { Unlock } from "lucide-react";
 import Button from "../../ui/Button";
 
 interface EditGradeModalProps {
+  saving?: boolean;
   isOpen: boolean;
   activeStudentName: string;
   activeVariableId: string;
@@ -14,6 +15,7 @@ interface EditGradeModalProps {
 }
 
 export const EditGradeModal: React.FC<EditGradeModalProps> = ({
+  saving = false,
   isOpen,
   activeStudentName,
   activeVariableId,
@@ -42,6 +44,7 @@ export const EditGradeModal: React.FC<EditGradeModalProps> = ({
         <div className="space-y-2">
           <label className="block text-slate-500 uppercase text-[9px] font-black tracking-wider text-left">Firma Digital Habilitada. Nueva Nota:</label>
           <input
+            disabled={saving}
             type="text"
             autoFocus
             placeholder="Ejemplo: 14.5"
@@ -60,6 +63,7 @@ export const EditGradeModal: React.FC<EditGradeModalProps> = ({
 
         <div className="flex gap-2">
           <Button
+            disabled={saving}
             onClick={onClose}
             variant="secondary"
             className="flex-1 py-2.5 font-bold uppercase text-[10px]"
@@ -67,11 +71,12 @@ export const EditGradeModal: React.FC<EditGradeModalProps> = ({
             Cancelar
           </Button>
           <Button
+            disabled={saving}
             onClick={onSaveGrade}
             variant="primary"
             className="flex-1 py-2.5 font-bold uppercase text-[10px] bg-[#8B0026] text-white"
           >
-            Guardar Nota
+            {saving ? "Guardando..." : "Guardar Nota"}
           </Button>
         </div>
       </div>

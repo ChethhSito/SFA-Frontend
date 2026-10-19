@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { FileSpreadsheet, CheckCircle } from "lucide-react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { FileSpreadsheet } from "lucide-react";
 import PageHeader from "../ui/PageHeader";
-import { Course } from "../../types";
-import { ROSTER } from "./DocenteTypes";
+import { Course, CourseAssignment, StudentPersonalData, Enrollment } from "../../types";
+import Toast, { ToastNotice } from "../ui/Toast";
 
 import { CourseFormulaCard, CourseFormula } from "./evaluaciones/CourseFormulaCard";
 import { SecurePinModal } from "./evaluaciones/SecurePinModal";
@@ -11,6 +11,10 @@ import { GradeSheetTable } from "./evaluaciones/GradeSheetTable";
 
 interface EvaluacionesCursosPrincipalProps {
   courses: Course[];
+  assignments: CourseAssignment[];
+  studentsList: Record<string, StudentPersonalData>;
+  enrollments: Enrollment[];
+  onUpdateAssignments: (assignments: CourseAssignment[]) => Promise<boolean>;
 }
 
 const COURSE_FORMULAS: { [code: string]: CourseFormula } = {
@@ -55,12 +59,13 @@ const COURSE_FORMULAS: { [code: string]: CourseFormula } = {
   }
 };
 
-export default function EvaluacionesCursosPrincipal({ courses }: EvaluacionesCursosPrincipalProps) {
+export default function EvaluacionesCursosPrincipal({ courses, assignments, studentsList, enrollments, onUpdateAssignments }: EvaluacionesCursosPrincipalProps) {
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
-  const [sheetData, setSheetData] = useState<{ [key: string]: string }>({});
+  const [saving, setSaving] = useState(false);
   
   // Custom Toast/Notification State
-  const [notification, setNotification] = useState<string | null>(null);
+  const [notification, setNotification] = useState<ToastNotice | null>(null);
+  const closeNotification = useCallback(() => setNotification(null), []);
 
   // Secure Keypad Modals state
   const [pinModalOpen, setPinModalOpen] = useState(false);
@@ -74,11 +79,8 @@ export default function EvaluacionesCursosPrincipal({ courses }: EvaluacionesCur
   const [errorMessage, setErrorMessage] = useState("");
   const [gradeErrorMessage, setGradeErrorMessage] = useState("");
 
-  const triggerNotification = (message: string) => {
-    setNotification(message);
-    setTimeout(() => {
-      setNotification(null);
-    }, 4000);
+  const triggerNotification = (message: string, kind: ToastNotice['kind'] = "info") => {
+    setNotification({ id: Date.now(), message, kind });
   };
 
   // Setup default course on first load
@@ -91,17 +93,20 @@ export default function EvaluacionesCursosPrincipal({ courses }: EvaluacionesCur
   const selectedCourse = courses.find((c) => c.id === selectedCourseId) || null;
   const formula = selectedCourse ? (COURSE_FORMULAS[selectedCourse.code] || COURSE_FORMULAS["default"]) : COURSE_FORMULAS["default"];
 
-  // Load from local storage when selected course shifts
-  useEffect(() => {
-    if (!selectedCourseId) return;
-    const key = `sfa_grading_formula_sheet_${selectedCourseId}`;
-    const saved = localStorage.getItem(key);
-    if (saved) {
-      setSheetData(JSON.parse(saved));
-    } else {
-      setSheetData({});
-    }
-  }, [selectedCourseId, formula]);
+  const roster = useMemo(() => enrollments.filter((enrollment) =>
+    enrollment.academicStatus === "MATRICULADO" && enrollment.programId === (selectedCourse?.careerId || selectedCourse?.career))
+    .map((enrollment) => studentsList[enrollment.studentDni]).filter(Boolean), [enrollments, studentsList, selectedCourse]);
+  const sheetData = useMemo(() => {
+    const sheet: Record<string, string> = {};
+    assignments.filter((assignment) => assignment.courseId === selectedCourseId && assignment.title.startsWith("[Planilla] "))
+      .forEach((assignment) => {
+        const variable = assignment.title.slice("[Planilla] ".length);
+        assignment.submissions.forEach((submission) => {
+          if (submission.grade !== undefined) sheet[`${submission.studentDni}-${variable}`] = String(submission.grade);
+        });
+      });
+    return sheet;
+  }, [assignments, selectedCourseId]);
 
   // Helper formula average solver
   const computeStudentAverage = (studentDni: string) => {
@@ -187,7 +192,8 @@ export default function EvaluacionesCursosPrincipal({ courses }: EvaluacionesCur
     setTempGrade(clean);
   };
 
-  const handleSaveGradeSecure = () => {
+  const handleSaveGradeSecure = async () => {
+    if (saving || !selectedCourseId) return;
     if (tempGrade === "") {
       setGradeErrorMessage("La nota no puede estar vacía.");
       return;
@@ -197,86 +203,49 @@ export default function EvaluacionesCursosPrincipal({ courses }: EvaluacionesCur
       setGradeErrorMessage("Formato de calificación incorrecto.");
       return;
     }
-    if (score < 0 || score > 20) {
+    if (!Number.isFinite(score) || score < 0 || score > 20) {
       setGradeErrorMessage("Calificación fuera de rango [0-20]. Permita únicamente valores válidos.");
       return;
     }
 
-    // Save score in local sheetData state
-    const nextData = {
-      ...sheetData,
-      [`${activeStudentDni}-${activeVariableId}`]: tempGrade
+    const assessmentTitle = `[Planilla] ${activeVariableId}`;
+    const existing = assignments.find((assignment) => assignment.courseId === selectedCourseId && assignment.title === assessmentTitle);
+    const submissions = existing?.submissions.map((submission) => ({ ...submission })) || [];
+    const index = submissions.findIndex((submission) => submission.studentDni === activeStudentDni);
+    if (index >= 0) submissions[index] = { ...submissions[index], grade: score };
+    else submissions.push({ studentDni: activeStudentDni, studentName: activeStudentName,
+      fileName: "", submitDate: new Date().toISOString().slice(0, 10), grade: score });
+    const assessment: CourseAssignment = existing ? { ...existing, submissions } : {
+      id: `assessment-${Date.now()}`, kind: "assessment", courseId: selectedCourseId,
+      title: assessmentTitle, description: "Componente de la planilla de calificaciones",
+      dueDate: new Date().toISOString().slice(0, 10), submissions,
     };
-    setSheetData(nextData);
-    
-    // Automatically recalculate and save updated courses cache
-    if (selectedCourseId) {
-      const key = `sfa_grading_formula_sheet_${selectedCourseId}`;
-      localStorage.setItem(key, JSON.stringify(nextData));
-      
-      // Sync averages with student database
-      ROSTER.forEach((std) => {
-        const studentDni = std.dni;
-        let average = 0;
-
-        formula.variables.forEach((v) => {
-          const cellVal = studentDni === activeStudentDni && v.id === activeVariableId ? tempGrade : nextData[`${studentDni}-${v.id}`];
-          if (cellVal !== undefined && cellVal !== "") {
-            const val = parseFloat(cellVal);
-            if (!isNaN(val)) average += val * v.weight;
-          }
-        });
-        
-        const finalAverage = Math.round(average * 10) / 10;
-        const customKey = `${selectedCourseId}-cierre-${studentDni}`;
-        localStorage.setItem(`sfa_grades_cierre_${customKey}`, finalAverage.toString());
-      });
-    }
-
-    setEditModalOpen(false);
-    triggerNotification(`Nota de [${activeVariableId}] para el alumno ${activeStudentName} editada y guardada como ${score.toFixed(1)}`);
+    setSaving(true);
+    try {
+      const saved = await onUpdateAssignments(existing ? assignments.map((item) => item.id === existing.id ? assessment : item) : [...assignments, assessment]);
+      if (!saved) { setGradeErrorMessage("No se pudo guardar la nota en el servidor. Intente nuevamente."); return; }
+      setEditModalOpen(false);
+      triggerNotification(`Nota de ${activeVariableId} guardada en el servidor.`, "success");
+    } finally { setSaving(false); }
   };
 
-  // SAVE AND ACTIONS
-  const handleSaveSheet = () => {
-    if (!selectedCourseId) return;
-    const key = `sfa_grading_formula_sheet_${selectedCourseId}`;
-    localStorage.setItem(key, JSON.stringify(sheetData));
-
-    ROSTER.forEach((std) => {
-      const res = computeStudentAverage(std.dni);
-      const customKey = `${selectedCourseId}-cierre-${std.dni}`;
-      localStorage.setItem(`sfa_grades_cierre_${customKey}`, res.average.toString());
-    });
-
-    triggerNotification("Cambios guardados localmente de manera satisfactoria.");
-  };
-
-  const handlePublishOfficial = () => {
-    handleSaveSheet();
-    triggerNotification("Promedios oficiales publicados, actas firmadas digitalmente y sincronizadas en la Intranet.");
-  };
+  const handleSaveSheet = () => triggerNotification("Cada nota se guarda en el servidor al confirmar Guardar Nota.");
+  const handlePublishOfficial = () => triggerNotification("Las notas están guardadas. La publicación de actas y su firma oficial siguen pendientes.");
 
   const handleExportExcel = () => {
     if (!selectedCourse) return;
-    triggerNotification(`Generando planilla de cálculo... Archivo "${selectedCourse.code}_PLANILLA_NOTAS.xlsx" exportado.`);
+    triggerNotification("La exportación Excel está pendiente de implementación.");
   };
 
   const handleExportPDF = () => {
     if (!selectedCourse) return;
-    triggerNotification(`Generando reporte académico... Archivo oficial "${selectedCourse.code}_ACTA_EVALUACION.pdf" descargado.`);
+    triggerNotification("La exportación PDF está pendiente de implementación.");
   };
 
   return (
     <div id="evaluaciones-cursos-sheet-screen" className="space-y-6 text-left relative">
       
-      {/* Toast Notification */}
-      {notification && (
-        <div className="fixed top-5 right-5 bg-slate-900 border border-slate-705 text-white py-3.5 px-5 rounded-xl shadow-2xl z-50 flex items-center gap-2.5 text-xs font-bold font-sans animate-in fade-in slide-in-from-top-4 duration-200">
-          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{notification}</span>
-        </div>
-      )}
+      {notification ? <Toast notice={notification} onClose={closeNotification} /> : null}
 
       <PageHeader
         title="Evaluación Unificada por Curso"
@@ -310,6 +279,7 @@ export default function EvaluacionesCursosPrincipal({ courses }: EvaluacionesCur
 
           {/* Interactive spreadsheet grid */}
           <GradeSheetTable
+            students={roster}
             formula={formula}
             sheetData={sheetData}
             computeStudentAverage={computeStudentAverage}
@@ -339,6 +309,7 @@ export default function EvaluacionesCursosPrincipal({ courses }: EvaluacionesCur
 
       {/* MODAL 2: GRADE MODIFICATION */}
       <EditGradeModal
+        saving={saving}
         isOpen={editModalOpen}
         activeStudentName={activeStudentName}
         activeVariableId={activeVariableId}

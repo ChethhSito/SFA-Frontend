@@ -1,8 +1,10 @@
-import React, { useMemo } from "react";
-import { Printer } from "lucide-react";
+import React, { useMemo, useState } from "react";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { Course, CourseAssignment } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
+import { recordedHistory } from "../../../utils/mgeReports";
+import { createHistoryPdf } from "../../../utils/historyPdf";
+import { academicToday } from "../../../utils/attendance";
 
 interface Props {
   processedStudents: ProcessedStudent[];
@@ -10,162 +12,40 @@ interface Props {
   assignments: CourseAssignment[];
   selectedHistoryDni: string;
   onSelectDni: (dni: string) => void;
-  onPrint: (name: string) => void;
 }
 
-export default function MgeHistorialTab({
-  processedStudents,
-  courses,
-  assignments,
-  selectedHistoryDni,
-  onSelectDni,
-  onPrint,
-}: Props) {
-  const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
-  const activeHistoryStudent = useMemo(
-    () => processedStudents.find((s) => s.dni === selectedHistoryDni) || null,
-    [processedStudents, selectedHistoryDni]
-  );
-
-  const activeHistoryGradesList = useMemo(() => {
-    if (!selectedHistoryDni) return [];
-    const list: { courseName: string; code: string; grade: number; credits: number; status: string }[] = [];
-
-    courses.forEach((course) => {
-      const courseAsgs = assignments.filter((a) => a.courseId === course.id);
-      if (courseAsgs.length > 0) {
-        let sum = 0;
-        let count = 0;
-        courseAsgs.forEach((asg) => {
-          const studentSub = asg.submissions.find((s) => s.studentDni === selectedHistoryDni);
-          if (studentSub && studentSub.grade !== undefined) {
-            sum += studentSub.grade;
-            count++;
-          }
-        });
-        const average = count > 0 ? Math.round(sum / count) : 12 + Math.floor(Math.random() * 5);
-        list.push({ courseName: course.name, code: course.code, grade: average, credits: course.credits || 4, status: average >= 13 ? "Aprobado" : "Desaprobado" });
-      } else {
-        const randomGrade = 13 + Math.floor(Math.random() * 7);
-        list.push({ courseName: course.name, code: course.code, grade: randomGrade, credits: course.credits || 4, status: "Aprobado" });
-      }
-    });
-    return list;
-  }, [selectedHistoryDni, courses, assignments]);
-
-  const weightedAverage = useMemo(() => {
-    if (activeHistoryGradesList.length === 0) return 0;
-    const totalCredits = activeHistoryGradesList.reduce((acc, c) => acc + c.credits, 0);
-    const sumPoints = activeHistoryGradesList.reduce((acc, c) => acc + c.grade * c.credits, 0);
-    return Math.round((sumPoints / totalCredits) * 10) / 10;
-  }, [activeHistoryGradesList]);
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-slate-50 p-4 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">
-            Seleccione Estudiante para revisar su Récord Consolidado:
-          </label>
-          <select
-            value={selectedHistoryDni}
-            onChange={(e) => onSelectDni(e.target.value)}
-            className="p-2 border border-slate-250 bg-white font-bold rounded-lg text-xs"
-          >
-            <option value="">-- Seleccionar Estudiante --</option>
-            {processedStudents.map((st) => (
-              <option key={st.dni} value={st.dni}>
-                {st.lastName}, {st.name} (DNI: {st.dni})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {activeHistoryStudent && (
-          <button
-            onClick={() => onPrint(`${activeHistoryStudent.name} ${activeHistoryStudent.lastName}`)}
-            className="self-start sm:self-center px-4 py-2.5 bg-[#9F062A] hover:bg-[#820522] text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all"
-          >
-            <Printer className="w-4 h-4" /> Imprimir Boleta Consolidada
-          </button>
-        )}
-      </div>
-
-      {activeHistoryStudent ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Student profile card */}
-          <div className="lg:col-span-1 border border-slate-200 rounded-xl p-5 bg-slate-50 shadow-3xs space-y-4">
-            <div className="text-center pb-4 border-b border-slate-200">
-              <div className="w-16 h-16 bg-[#9F062A] text-white rounded-full flex items-center justify-center mx-auto text-xl font-black mb-3">
-                {activeHistoryStudent.name[0]}{activeHistoryStudent.lastName[0]}
-              </div>
-              <h4 className="font-extrabold text-[#9F062A] uppercase tracking-wide">
-                {activeHistoryStudent.name} {activeHistoryStudent.lastName}
-              </h4>
-              <p className="text-[10px] font-bold text-slate-500 font-mono">DNI: {activeHistoryStudent.dni}</p>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <span className="text-[9.5px] font-black uppercase text-slate-450 block">Programa Curricular:</span>
-                <span className="font-bold text-slate-800">
-                  {ACADEMIC_PROGRAMS.find((p) => p.id === activeHistoryStudent.programId)?.name || activeHistoryStudent.programId}
-                </span>
-              </div>
-              <div>
-                <span className="text-[9.5px] font-black uppercase text-slate-450 block">Correo Institucional:</span>
-                <span className="font-bold text-slate-800 font-mono">{activeHistoryStudent.email}</span>
-              </div>
-              <div>
-                <span className="text-[9.5px] font-black uppercase text-slate-450 block">Estado Actual:</span>
-                <span className="inline-block mt-0.5 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase border border-emerald-150">
-                  Regular Matriculado
-                </span>
-              </div>
-              <div>
-                <span className="text-[9.5px] font-black uppercase text-slate-450 block">Turno:</span>
-                <span className="font-bold text-slate-800">{activeHistoryStudent.shift}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Grades history */}
-          <div className="lg:col-span-2 border border-slate-200 rounded-xl bg-white overflow-hidden shadow-3xs">
-            <div className="bg-slate-900 px-4 py-3 flex justify-between items-center text-white">
-              <span className="text-xs font-black uppercase tracking-wider">Historial Escolar de Clases</span>
-              <div className="text-right">
-                <span className="text-[9px] text-slate-400 block font-bold uppercase">PROMEDIO PONDERADO</span>
-                <span className="text-sm font-black font-mono text-emerald-400">{weightedAverage} / 20</span>
-              </div>
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {activeHistoryGradesList.map((c, i) => (
-                <div key={i} className="p-4 flex justify-between items-center text-xs hover:bg-slate-50/50 transition-all">
-                  <div>
-                    <div className="font-bold text-slate-900">{c.courseName}</div>
-                    <div className="text-[10px] text-slate-450 font-bold font-mono">Código: {c.code} · Créditos: {c.credits}</div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="font-black font-mono text-slate-800 bg-slate-100 px-2.5 py-1 rounded text-center min-w-[50px]">
-                      {c.grade}
-                    </span>
-                    {c.status === "Aprobado" ? (
-                      <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold uppercase text-[9px]">Aprobado</span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded bg-red-50 text-red-700 font-bold uppercase text-[9px]">Reprobado</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="text-center py-12 text-slate-440 font-bold uppercase">
-          Por favor seleccione un alumno de la lista para renderizar su récord de notas.
-        </div>
-      )}
-    </div>
-  );
+export default function MgeHistorialTab({ processedStudents, courses, assignments, selectedHistoryDni, onSelectDni }: Props) {
+  const { programs } = useAcademicCatalog();
+  const [printError, setPrintError] = useState("");
+  const [downloading, setDownloading] = useState(false);
+  const student = processedStudents.find((row) => row.dni === selectedHistoryDni);
+  const rows = useMemo(() => student ? recordedHistory(student, courses, assignments) : [], [student, courses, assignments]);
+  const program = programs.find((row) => row.id === student?.programId)?.name || student?.programId || "Sin programa registrado";
+  const download = async () => {
+    if (!student || downloading) return;
+    setPrintError("");
+    setDownloading(true);
+    try {
+      const pdf = await createHistoryPdf(student, program, rows, academicToday());
+      pdf.save(`Historial_${student.dni}_${academicToday()}.pdf`);
+    } catch { setPrintError("No se pudo generar el PDF del historial. Intente nuevamente."); }
+    finally { setDownloading(false); }
+  };
+  return <div className="space-y-5">
+    <label htmlFor="history-student" className="block font-bold">Historial académico del estudiante</label>
+    <select id="history-student" value={selectedHistoryDni} onChange={(event) => { onSelectDni(event.target.value); setPrintError(""); }} className="border rounded-lg p-3 max-w-full">
+      <option value="">Seleccione un estudiante</option>{processedStudents.map((row) => <option key={row.dni} value={row.dni}>{row.lastName}, {row.name} · {row.dni}{row.active === false ? " · De baja" : ""}</option>)}
+    </select>
+    {student ? <>
+      <section className="border rounded-xl bg-white p-5 space-y-3"><h3 className="font-bold">{student.name} {student.lastName} · {student.dni}</h3><p>{program} · {student.academicStatus} · {student.shift || "Sin turno registrado"}</p>
+        <p className="text-sm text-slate-600">Se muestran promedios simples de calificaciones guardadas por curso. NR significa sin calificación registrada. Incluye registros históricos; no sustituye un acta ni determina la aprobación oficial de cursos.</p>
+        <button type="button" disabled={downloading} onClick={() => { void download(); }} className="bg-[#9F062A] text-white rounded-lg px-4 py-2 disabled:opacity-50">{downloading ? "Generando PDF..." : "Descargar historial PDF"}</button>
+        {printError ? <p role="alert" className="text-red-700">{printError}</p> : null}
+      </section>
+      <div className="overflow-x-auto border rounded-xl bg-white"><table className="w-full text-left text-sm"><thead className="bg-slate-50"><tr>{["Código", "Curso", "Créditos del catálogo", "Calificaciones", "Promedio /20"].map((heading) => <th scope="col" key={heading} className="p-3">{heading}</th>)}</tr></thead><tbody>
+        {rows.map((row) => <tr key={row.code} className="border-t"><td className="p-3">{row.code}</td><td className="p-3">{row.courseName}</td><td className="p-3">{row.credits ?? "Sin datos"}</td><td className="p-3">{row.count}</td><td className="p-3 font-bold">{row.grade ?? "NR"}</td></tr>)}
+        {!rows.length ? <tr><td colSpan={5} className="p-5">No hay cursos o calificaciones registradas para mostrar.</td></tr> : null}
+      </tbody></table></div>
+    </> : <p>Seleccione un estudiante para consultar sus registros.</p>}
+  </div>;
 }

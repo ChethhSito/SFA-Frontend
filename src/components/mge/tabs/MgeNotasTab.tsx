@@ -34,7 +34,7 @@ export default function MgeNotasTab({
 
   const studentsInActiveCourse = activeCourseObj
     ? processedStudents.filter(
-        (s) => s.enrolled && s.academicStatus === "MATRICULADO" && s.programId === activeCourseObj.career
+        (s) => s.enrolled && s.academicStatus === "MATRICULADO" && s.programId === (activeCourseObj.careerId || activeCourseObj.career)
       )
     : [];
 
@@ -84,6 +84,9 @@ export default function MgeNotasTab({
             <option value="Práctica de Laboratorio 1">Práctica de Laboratorio N° 01</option>
             <option value="Avance Proyecto Integrador">Proyecto Integrador Modular</option>
             <option value="Constancia Portafolio">Presentación de Portafolio de Evidencias</option>
+            {assignments.filter((assignment) => assignment.courseId === selectedCourseId && !["Evaluación Final", "Práctica de Laboratorio 1", "Avance Proyecto Integrador", "Constancia Portafolio"].includes(assignment.title)).map((assignment) => (
+              <option key={assignment.id} value={assignment.title}>{assignment.title}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -125,7 +128,7 @@ export default function MgeNotasTab({
                   studentsInActiveCourse.map((st) => {
                     const existingScore = currentGradesForTask[st.dni];
                     const currentTemp = temporaryGrades[st.dni];
-                    const scoreToEvaluate = currentTemp !== undefined ? currentTemp : (existingScore ?? 12);
+                    const scoreToEvaluate = currentTemp !== undefined ? currentTemp : existingScore;
 
                     return (
                       <tr key={st.dni} className="hover:bg-slate-50/50">
@@ -153,7 +156,7 @@ export default function MgeNotasTab({
                           />
                         </td>
                         <td className="px-4 py-3 text-right">
-                          {scoreToEvaluate >= 13 ? (
+                          {scoreToEvaluate === undefined ? <span className="text-slate-500">Sin nota registrada</span> : scoreToEvaluate >= 13 ? (
                             <span className="font-black text-emerald-600 block uppercase tracking-wider text-[11px]">
                               Aprobado ({scoreToEvaluate})
                             </span>

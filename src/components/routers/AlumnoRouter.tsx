@@ -12,6 +12,9 @@ interface AlumnoRouterProps {
   assignments: CourseAssignment[];
   evaluations: CourseEvaluation[];
   attendance: AttendanceRecord[];
+  attendanceLoading: boolean;
+  attendanceError: string | null;
+  onReloadAttendance: () => Promise<boolean>;
   cycleStatuses: { [dni: string]: CycleStatus[] };
   graduations: Graduation[];
   onUpdatePersonal: (studentDni: string, updated: StudentPersonalData) => void;
@@ -28,6 +31,9 @@ export default function AlumnoRouter({
   assignments,
   evaluations,
   attendance,
+  attendanceLoading,
+  attendanceError,
+  onReloadAttendance,
   cycleStatuses,
   graduations,
   onUpdatePersonal,
@@ -189,6 +195,9 @@ export default function AlumnoRouter({
       assignments={assignments}
       evaluations={evaluations}
       attendance={attendance}
+      attendanceLoading={attendanceLoading}
+      attendanceError={attendanceError}
+      onReloadAttendance={onReloadAttendance}
       cycleStatuses={historyList}
       graduation={gradDoc}
       onUpdatePersonal={(updated) => onUpdatePersonal(currentDni, updated)}

@@ -134,6 +134,8 @@ export function useAppData() {
 
     // Students & Grades (MGE)
     studentsData: gradesHook.studentsData,
+    studentsLoading: gradesHook.studentsLoading,
+    studentsError: gradesHook.studentsError,
     setStudentsData: gradesHook.setStudentsData,
     cycleStatuses: gradesHook.cycleStatuses,
     setCycleStatuses: gradesHook.setCycleStatuses,
@@ -141,7 +143,9 @@ export function useAppData() {
     setGraduations: mgeHook.setGraduations,
     graduationsLoading: mgeHook.graduationsLoading,
     graduationsError: mgeHook.graduationsError,
+    reloadGraduations: mgeHook.reloadGraduations,
     handleUpdateStudentsData: gradesHook.handleUpdateStudentsData,
+    handleSetStudentActive: gradesHook.handleSetStudentActive,
     handleUpdateGraduations: mgeHook.handleUpdateGraduations,
     handleCreateGraduation: mgeHook.handleCreateGraduation,
     handleUpdateGraduationByDni: mgeHook.handleUpdateGraduationByDni,
@@ -161,12 +165,17 @@ export function useAppData() {
     teachers: classroomHook.teachers,
     setTeachers: classroomHook.setTeachers,
     attendance: classroomHook.attendance,
+    attendanceLoading: classroomHook.attendanceLoading,
+    attendanceError: classroomHook.attendanceError,
+    reloadAttendance: classroomHook.reloadAttendance,
     setAttendance: classroomHook.setAttendance,
     handleUpdateClassrooms: classroomHook.handleUpdateClassrooms,
     handleUpdateTeachers: classroomHook.handleUpdateTeachers,
     handleUpdateAttendance: classroomHook.handleUpdateAttendance,
 
     // Materials, Assignments & Evaluations
+    assignmentsLoading: materialHook.assignmentsLoading,
+    assignmentsError: materialHook.assignmentsError,
     materials: materialHook.materials,
     setMaterials: materialHook.setMaterials,
     assignments: materialHook.assignments,
