@@ -1,5 +1,5 @@
 import React from "react";
-import { CreditCard, CheckCircle2, AlertTriangle, Clock, Eye, RefreshCw } from "lucide-react";
+import { CreditCard, CheckCircle2, AlertTriangle, Clock, Eye, RefreshCw, FileText } from "lucide-react";
 import { Enrollment, Applicant, StudentPersonalData } from "../../../types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
@@ -116,40 +116,70 @@ export const CajaRegularTab: React.FC<CajaRegularTabProps> = ({
                       <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                         <td className="p-4 font-black text-slate-900">{displayName}</td>
                         <td className="p-4 font-mono text-slate-600 font-bold">{enr.studentDni}</td>
-                        <td className="p-4 font-mono text-xs text-left">
-                          {enr.paymentOperation ? (
-                            <span className="font-bold text-[#5493D5] block mb-1">{enr.paymentOperation}</span>
-                          ) : (
-                            <span className="text-[9.5px] text-amber-700 bg-amber-50 border border-amber-200/80 font-black uppercase px-2 py-0.5 rounded block mb-1">
-                              Pendiente de Voucher
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              triggerAdminPreview(
-                                "Voucher Matrícula - " + displayName,
-                                enr.paymentVoucherFileName || `voucher_matricula_${enr.studentDni}.jpg`,
-                                enr.paymentVoucherUrl ? "image" : "receipt",
-                                {
-                                  dni: enr.studentDni,
-                                  studentName: student?.name || fallbackApplicant?.name || "",
-                                  studentLastName: student?.lastName || fallbackApplicant?.lastName || "",
-                                  fullName: displayName,
-                                  programName: enr.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad",
-                                  transactionId: enr.paymentOperation || `REG-${enr.studentDni}`,
-                                  amount: "S/. 250.00",
-                                  date: (enr as any).enrollmentDate || new Date().toISOString().split("T")[0],
-                                  concept: "Derecho de Matrícula Regular e Inscripción",
-                                  fileDataUrl: enr.paymentVoucherUrl
-                                }
-                              )
-                            }
-                            className="px-2 py-1 bg-[#9F062A]/10 hover:bg-[#9F062A]/20 text-[#9F062A] text-[9px] font-black uppercase tracking-wider rounded border border-[#9F062A]/20 transition-all cursor-pointer flex items-center gap-1 mt-1 shrink-0"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>{enr.paymentVoucherUrl ? "Ver Voucher Adjunto" : "Ver Recibo Digital"}</span>
-                          </button>
+                        <td className="p-4 text-left">
+                          {(() => {
+                            const hasVoucherFile = Boolean(
+                              enr.paymentVoucherUrl ||
+                              enr.paymentVoucherFileName ||
+                              (enr.paymentOperation && /\.(png|jpe?g|webp|pdf)$/i.test(enr.paymentOperation))
+                            );
+                            const voucherFileName = enr.paymentVoucherFileName || (
+                              enr.paymentOperation && /\.(png|jpe?g|webp|pdf)$/i.test(enr.paymentOperation)
+                                ? enr.paymentOperation
+                                : `voucher_matricula_${enr.studentDni}.jpg`
+                            );
+
+                            return (
+                              <div className="flex flex-col items-start gap-1.5">
+                                {hasVoucherFile ? (
+                                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80 text-[11px] font-semibold max-w-[190px]">
+                                    <FileText className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                                    <span className="truncate font-mono" title={voucherFileName}>
+                                      {voucherFileName}
+                                    </span>
+                                  </div>
+                                ) : enr.paymentOperation ? (
+                                  <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-sky-50 text-sky-800 border border-sky-200 font-mono text-[11px] font-bold shadow-3xs">
+                                    <span className="text-sky-500 font-normal">N°</span> {enr.paymentOperation}
+                                  </div>
+                                ) : (
+                                  <span className="text-[9.5px] text-amber-700 bg-amber-50 border border-amber-200/80 font-black uppercase px-2 py-0.5 rounded">
+                                    Pendiente de Voucher
+                                  </span>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    triggerAdminPreview(
+                                      "Voucher Matrícula - " + displayName,
+                                      voucherFileName,
+                                      hasVoucherFile ? "image" : "receipt",
+                                      {
+                                        dni: enr.studentDni,
+                                        studentName: student?.name || fallbackApplicant?.name || "",
+                                        studentLastName: student?.lastName || fallbackApplicant?.lastName || "",
+                                        fullName: displayName,
+                                        programName: enr.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad",
+                                        transactionId: enr.paymentOperation || `REG-${enr.studentDni}`,
+                                        amount: "S/. 250.00",
+                                        date: (enr as any).enrollmentDate || new Date().toISOString().split("T")[0],
+                                        concept: "Derecho de Matrícula Regular e Inscripción",
+                                        fileDataUrl: enr.paymentVoucherUrl,
+                                        fileName: voucherFileName,
+                                        docLabel: "Comprobante de Pago de Matrícula Regular",
+                                        isVoucher: true,
+                                      }
+                                    )
+                                  }
+                                  className="group inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#9F062A] via-[#B31238] to-[#9F062A] hover:from-[#800521] hover:to-[#9F062A] text-white text-[10px] font-black uppercase tracking-wider rounded-lg shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer border border-[#800521]/30 shrink-0 select-none"
+                                >
+                                  <Eye className="w-3.5 h-3.5 text-rose-200 group-hover:text-white transition-colors" />
+                                  <span>{hasVoucherFile ? "Ver Voucher Adjunto" : "Ver Recibo Digital"}</span>
+                                </button>
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td className="p-4 font-bold">S/. 250.00</td>
                         <td className="p-4">

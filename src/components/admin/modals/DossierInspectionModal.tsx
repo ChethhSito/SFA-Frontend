@@ -133,7 +133,7 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
               <div className="grid grid-cols-1 gap-4">
                 {docsConfig.map((item) => {
                   const docState = appDocs[item.key] || { status: "No Enviado" as const };
-                  const isUploaded = !!docState.fileDataUrl;
+                  const isUploaded = Boolean(docState.fileDataUrl || (docState.fileName && docState.status !== "No Enviado"));
                   const obsInputKey = `${app.dni}_${item.key}`;
                   const currentObsText = individualDocObs[obsInputKey] || "";
 
@@ -149,7 +149,9 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                           </h4>
                           <span className="text-[10.5px] text-slate-500 font-medium block">
                             {isUploaded ? (
-                              <span className="font-mono text-slate-700 font-semibold">Archivo: {docState.fileName}</span>
+                              <span className="font-mono text-slate-700 font-semibold">
+                                Archivo: {docState.fileName || "Documento digital adjunto"}
+                              </span>
                             ) : (
                               <span className="text-slate-400 italic">Sin archivo recibido del postulante</span>
                             )}
@@ -181,21 +183,26 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                         <div className="bg-slate-50 border border-slate-200/70 rounded-xl p-3 flex items-center justify-between">
                           <span className="text-[10.5px] text-emerald-800 font-bold flex items-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            Adjunto cargado y listo para auditoría
+                            Adjunto recibido y listo para auditoría
                           </span>
                           <button
                             type="button"
                             onClick={() =>
                               triggerAdminPreview(
                                 item.label + " - " + `${app.name} ${app.lastName}`.trim().toUpperCase(),
-                                docState.fileName,
-                                "image",
+                                docState.fileName || `${item.key}.jpg`,
+                                docState.fileDataUrl ? "image" : "receipt",
                                 {
                                   dni: app.dni,
                                   studentName: app.name,
                                   studentLastName: app.lastName,
                                   fullName: `${app.name} ${app.lastName}`.trim(),
+                                  programName: app.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad",
+                                  docLabel: item.label,
+                                  fileName: docState.fileName,
                                   fileDataUrl: docState.fileDataUrl,
+                                  docStatus: docState.status,
+                                  date: new Date().toISOString().split("T")[0],
                                 }
                               )
                             }

@@ -350,7 +350,7 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
                           <button
                             type="button"
                             onClick={() => setSelectedDossierAppDni(app.dni)}
-                            className="inline-flex items-center gap-1.5 uppercase font-black text-[9px] tracking-wider bg-[#9F062A] hover:bg-[#800521] text-white px-2.5 py-1.5 rounded-lg border border-transparent shadow-xs transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 uppercase font-black text-[10px] tracking-wider bg-gradient-to-r from-[#9F062A] to-[#B81033] hover:from-[#800521] hover:to-[#9F062A] text-white px-3 py-1.5 rounded-lg border border-[#800521]/30 shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer select-none"
                           >
                             <FileText className="w-3.5 h-3.5" />
                             <span>Dossier</span>

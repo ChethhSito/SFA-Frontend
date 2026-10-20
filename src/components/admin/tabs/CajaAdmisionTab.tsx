@@ -1,5 +1,5 @@
 import React from "react";
-import { CreditCard, CheckCircle2, AlertTriangle, XCircle, Clock, Eye, RefreshCw } from "lucide-react";
+import { CreditCard, CheckCircle2, AlertTriangle, XCircle, Clock, Eye, RefreshCw, FileText } from "lucide-react";
 import { Applicant, StudentPersonalData } from "../../../types";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
@@ -99,40 +99,70 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
                         <td className="p-4 uppercase text-slate-500 text-[11px] font-bold">
                           {programName}
                         </td>
-                        <td className="p-4 font-mono text-xs text-left">
-                          {app.paymentOperation ? (
-                            <span className="font-bold text-[#5493D5] block mb-1">{app.paymentOperation}</span>
-                          ) : (
-                            <span className="text-[9.5px] text-slate-400 font-semibold italic block mb-1">
-                              Sin Operación Registrada
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() =>
-                              triggerAdminPreview(
-                                "Voucher Admisión - " + fullName,
-                                app.paymentVoucherFileName || `voucher_admision_${app.dni}.jpg`,
-                                app.paymentVoucherUrl ? "image" : "receipt",
-                                {
-                                  dni: app.dni,
-                                  studentName: app.name || student?.name || "",
-                                  studentLastName: app.lastName || student?.lastName || "",
-                                  fullName: fullName,
-                                  programName: programName,
-                                  transactionId: app.paymentOperation || `ADM-${app.dni}`,
-                                  amount: "S/. 120.00",
-                                  date: app.paymentValidatedAt || app.registeredAt || new Date().toISOString().split("T")[0],
-                                  concept: "Derecho de Examen de Admisión",
-                                  fileDataUrl: app.paymentVoucherUrl
-                                }
-                              )
-                            }
-                            className="px-2 py-1 bg-[#9F062A]/10 hover:bg-[#9F062A]/20 text-[#9F062A] text-[9px] font-black uppercase tracking-wider rounded border border-[#9F062A]/20 transition-all cursor-pointer flex items-center gap-1 mt-1 shrink-0"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>{app.paymentVoucherUrl ? "Ver Voucher Adjunto" : "Ver Recibo Digital"}</span>
-                          </button>
+                        <td className="p-4 text-left">
+                          {(() => {
+                            const hasVoucherFile = Boolean(
+                              app.paymentVoucherUrl ||
+                              app.paymentVoucherFileName ||
+                              (app.paymentOperation && /\.(png|jpe?g|webp|pdf)$/i.test(app.paymentOperation))
+                            );
+                            const voucherFileName = app.paymentVoucherFileName || (
+                              app.paymentOperation && /\.(png|jpe?g|webp|pdf)$/i.test(app.paymentOperation)
+                                ? app.paymentOperation
+                                : `voucher_admision_${app.dni}.jpg`
+                            );
+
+                            return (
+                              <div className="flex flex-col items-start gap-1.5">
+                                {hasVoucherFile ? (
+                                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80 text-[11px] font-semibold max-w-[190px]">
+                                    <FileText className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                                    <span className="truncate font-mono" title={voucherFileName}>
+                                      {voucherFileName}
+                                    </span>
+                                  </div>
+                                ) : app.paymentOperation ? (
+                                  <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-sky-50 text-sky-800 border border-sky-200 font-mono text-[11px] font-bold shadow-3xs">
+                                    <span className="text-sky-500 font-normal">N°</span> {app.paymentOperation}
+                                  </div>
+                                ) : (
+                                  <span className="text-[10px] text-slate-400 font-semibold italic">
+                                    Sin Operación Registrada
+                                  </span>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    triggerAdminPreview(
+                                      "Voucher Admisión - " + fullName,
+                                      voucherFileName,
+                                      hasVoucherFile ? "image" : "receipt",
+                                      {
+                                        dni: app.dni,
+                                        studentName: app.name || student?.name || "",
+                                        studentLastName: app.lastName || student?.lastName || "",
+                                        fullName: fullName,
+                                        programName: programName,
+                                        transactionId: app.paymentOperation || `ADM-${app.dni}`,
+                                        amount: "S/. 120.00",
+                                        date: app.paymentValidatedAt || app.registeredAt || new Date().toISOString().split("T")[0],
+                                        concept: "Derecho de Examen de Admisión",
+                                        fileDataUrl: app.paymentVoucherUrl,
+                                        fileName: voucherFileName,
+                                        docLabel: "Comprobante de Pago de Admisión",
+                                        isVoucher: true,
+                                      }
+                                    )
+                                  }
+                                  className="group inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#9F062A] via-[#B31238] to-[#9F062A] hover:from-[#800521] hover:to-[#9F062A] text-white text-[10px] font-black uppercase tracking-wider rounded-lg shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer border border-[#800521]/30 shrink-0 select-none"
+                                >
+                                  <Eye className="w-3.5 h-3.5 text-rose-200 group-hover:text-white transition-colors" />
+                                  <span>{hasVoucherFile ? "Ver Voucher Adjunto" : "Ver Recibo Digital"}</span>
+                                </button>
+                              </div>
+                            );
+                          })()}
                         </td>
                       <td className="p-4 font-bold">S/. 120.00</td>
                       <td className="p-4">

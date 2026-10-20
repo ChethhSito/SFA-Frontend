@@ -159,20 +159,9 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
       }
     }
 
-    // Persist to NestJS Backend (MongoDB) — strip fileDataUrl to avoid large HTTP payload
-    const forApi = {
-      ...updated,
-      docs: updated.docs
-        ? Object.fromEntries(
-            Object.entries(updated.docs).map(([k, v]: [string, any]) => [
-              k,
-              { status: v.status, fileName: v.fileName, observations: v.observations }
-            ])
-          )
-        : undefined
-    };
+    // Persist to NestJS Backend (MongoDB) including fileDataUrl and voucher data
     try {
-      await updateApplicant(updated.dni, forApi as any);
+      await updateApplicant(updated.dni, updated as any);
       console.log("Updated applicant in Backend REST API successfully!");
     } catch (apiErr) {
       console.error("Error saving updated applicant to REST API:", apiErr);

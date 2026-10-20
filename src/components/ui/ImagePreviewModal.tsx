@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Printer, Shield, CheckCircle } from "lucide-react";
+import { X, Printer, Shield, CheckCircle, FileText, CheckCircle2, FileCheck, ExternalLink } from "lucide-react";
 
 interface ImagePreviewModalProps {
   isOpen: boolean;
@@ -18,6 +18,10 @@ interface ImagePreviewModalProps {
     date?: string;
     concept?: string;
     fileDataUrl?: string;
+    fileName?: string;
+    docLabel?: string;
+    docStatus?: string;
+    isVoucher?: boolean;
   };
 }
 
@@ -48,12 +52,30 @@ export default function ImagePreviewModal({
   const conceptStr = metadata?.concept || (title.toLowerCase().includes("matrícula") ? "Derecho de Matrícula Regular" : "Derecho de Examen de Admisión");
 
   const [activeTabMode, setActiveTabMode] = React.useState<"file" | "receipt">(
-    fileType === "receipt" || !metadata?.fileDataUrl ? "receipt" : "file"
+    fileType === "receipt" ? "receipt" : "file"
   );
+
+  React.useEffect(() => {
+    if (isOpen) {
+      if (fileType === "receipt") {
+        setActiveTabMode("receipt");
+      } else {
+        setActiveTabMode("file");
+      }
+    }
+  }, [isOpen, fileType, metadata?.fileDataUrl, fileName]);
 
   const isPdf = Boolean(
     metadata?.fileDataUrl?.startsWith("data:application/pdf") ||
     fileName?.toLowerCase().endsWith(".pdf")
+  );
+
+  const canToggleReceipt = Boolean(
+    metadata?.transactionId ||
+    metadata?.amount ||
+    title.toLowerCase().includes("voucher") ||
+    title.toLowerCase().includes("recibo") ||
+    metadata?.concept
   );
 
   const handlePrint = () => {
@@ -101,7 +123,7 @@ export default function ImagePreviewModal({
             <span className="font-extrabold text-[11px] uppercase tracking-widest">{title}</span>
           </div>
           <div className="flex items-center gap-2">
-            {metadata?.fileDataUrl && (
+            {canToggleReceipt && (
               <div className="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700">
                 <button
                   type="button"
@@ -110,7 +132,7 @@ export default function ImagePreviewModal({
                     activeTabMode === "file" ? "bg-[#9F062A] text-white" : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  Adjunto
+                  {metadata?.docLabel ? "Documento" : "Comprobante"}
                 </button>
                 <button
                   type="button"
@@ -223,25 +245,91 @@ export default function ImagePreviewModal({
                     />
                   )}
                 </div>
+              ) : (fileName || metadata?.fileName || metadata?.docLabel) ? (
+                <div className="p-6 bg-gradient-to-b from-white to-slate-50 border border-slate-200 rounded-xl text-slate-800 space-y-4 shadow-3xs w-full">
+                  <div className="flex items-center gap-3 border-b border-slate-150 pb-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#9F062A]/10 border border-[#9F062A]/20 flex items-center justify-center text-[#9F062A]">
+                      <FileCheck className="w-5 h-5 text-[#9F062A]" />
+                    </div>
+                    <div>
+                      <span className="text-[9.5px] font-extrabold uppercase tracking-widest text-[#9F062A] block">
+                        Expediente Digital Oficial
+                      </span>
+                      <h4 className="font-extrabold text-sm text-slate-900 leading-tight">
+                        {metadata?.docLabel || title}
+                      </h4>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
+                      <span className="text-slate-400 font-bold uppercase text-[9.5px]">Archivo Registrado:</span>
+                      <span className="font-mono font-bold text-slate-800 text-[11px] truncate max-w-[200px]" title={fileName || metadata?.fileName}>
+                        {fileName || metadata?.fileName || "Documento Digital"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
+                      <span className="text-slate-400 font-bold uppercase text-[9.5px]">Postulante:</span>
+                      <span className="font-extrabold text-slate-900">{fullName}</span>
+                    </div>
+                    {safeDni && (
+                      <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
+                        <span className="text-slate-400 font-bold uppercase text-[9.5px]">DNI:</span>
+                        <span className="font-mono font-bold text-slate-800">{safeDni}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
+                      <span className="text-slate-400 font-bold uppercase text-[9.5px]">Especialidad:</span>
+                      <span className="font-bold text-slate-700">{program}</span>
+                    </div>
+                    <div className="flex justify-between py-1">
+                      <span className="text-slate-400 font-bold uppercase text-[9.5px]">Estado Auditoría:</span>
+                      <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Registrado en Base de Datos
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-100/80 rounded-lg p-2.5 border border-slate-200 text-center">
+                    <p className="text-[10px] text-slate-600 font-medium">
+                      El postulante adjuntó <strong className="text-slate-900">{fileName || metadata?.fileName}</strong> como respaldo oficial para su validación.
+                    </p>
+                  </div>
+
+                  {canToggleReceipt && (
+                    <div className="pt-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTabMode("receipt")}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#9F062A] hover:bg-[#800521] text-white text-[10.5px] font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
+                      >
+                        <Shield className="w-3.5 h-3.5" />
+                        <span>Ver Recibo Digital Oficial</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-lg text-slate-600 space-y-2">
                   <p className="font-extrabold text-[11px] uppercase tracking-wider text-[#9F062A]">Voucher no adjuntado</p>
                   <p className="text-[10px] text-slate-500 leading-normal font-semibold">El postulante aún no ha cargado una captura física del comprobante.</p>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTabMode("receipt")}
-                    className="mt-2 px-3 py-1.5 bg-[#9F062A] text-white text-[10px] font-black uppercase rounded shadow-xs hover:bg-[#800521] transition-colors"
-                  >
-                    Ver Recibo Digital Oficial
-                  </button>
+                  {canToggleReceipt && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTabMode("receipt")}
+                      className="mt-2 px-3 py-1.5 bg-[#9F062A] text-white text-[10px] font-black uppercase rounded shadow-xs hover:bg-[#800521] transition-colors"
+                    >
+                      Ver Recibo Digital Oficial
+                    </button>
+                  )}
                 </div>
               )}
 
               {/* Watermark file stamp details */}
               <div className="mt-4 pt-3 border-t border-slate-200 flex justify-between items-center text-[9px] font-semibold text-slate-400">
-                <span>Archivo adjunto: {fileName || "Sin archivo"}</span>
+                <span>Archivo adjunto: {fileName || metadata?.fileName || "Sin archivo"}</span>
                 <span className="font-mono text-[8px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 uppercase">
-                  {metadata?.fileDataUrl ? "Cargado" : "Pendiente"}
+                  {metadata?.fileDataUrl ? "Cargado" : (fileName || metadata?.fileName) ? "Registrado" : "Pendiente"}
                 </span>
               </div>
             </div>
