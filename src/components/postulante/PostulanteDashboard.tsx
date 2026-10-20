@@ -174,11 +174,25 @@ export default function PostulanteDashboard({
     setPreviewOpen(true);
   };
 
+  const getDoc = (key: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile") => {
+    const raw = applicant.docs?.[key];
+    const cachedUrl = raw?.fileDataUrl || (applicant.dni ? localStorage.getItem(`sfa_file_data_${applicant.dni}_${key}`) : null) || undefined;
+    if (!cachedUrl) {
+      return { status: "No Enviado" as const, fileName: undefined, fileDataUrl: undefined };
+    }
+    return {
+      status: (raw?.status && raw.status !== "No Enviado") ? raw.status : ("Pendiente" as const),
+      fileName: raw?.fileName,
+      fileDataUrl: cachedUrl,
+      observations: raw?.observations
+    };
+  };
+
   const currentDocs = {
-    dniFile: applicant.docs?.dniFile || { status: "No Enviado" as const },
-    certificadoFile: applicant.docs?.certificadoFile || { status: "No Enviado" as const },
-    partidaFile: applicant.docs?.partidaFile || { status: "No Enviado" as const },
-    fotoFile: applicant.docs?.fotoFile || { status: "No Enviado" as const }
+    dniFile: getDoc("dniFile"),
+    certificadoFile: getDoc("certificadoFile"),
+    partidaFile: getDoc("partidaFile"),
+    fotoFile: getDoc("fotoFile")
   };
 
   const totalDocs = 4;

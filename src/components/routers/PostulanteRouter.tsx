@@ -137,13 +137,22 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
     if (applicantToRender?.docs) {
       const rehydratedDocs = { ...applicantToRender.docs } as any;
       for (const k of ["dniFile", "certificadoFile", "partidaFile", "fotoFile"]) {
-        if (rehydratedDocs[k] && !rehydratedDocs[k].fileDataUrl) {
-          try {
-            const cachedUrl = localStorage.getItem(`sfa_file_data_${currentDni}_${k}`);
-            if (cachedUrl) {
-              rehydratedDocs[k] = { ...rehydratedDocs[k], fileDataUrl: cachedUrl };
-            }
-          } catch (e) {}
+        let cachedUrl: string | null = null;
+        try {
+          cachedUrl = localStorage.getItem(`sfa_file_data_${currentDni}_${k}`);
+        } catch (e) {}
+
+        const finalUrl = rehydratedDocs[k]?.fileDataUrl || cachedUrl;
+        if (finalUrl) {
+          rehydratedDocs[k] = { ...rehydratedDocs[k], fileDataUrl: finalUrl };
+        } else {
+          // Si no hay archivo de imagen fisica, figura estrictamente como No Enviado
+          rehydratedDocs[k] = {
+            status: "No Enviado",
+            fileName: undefined,
+            fileDataUrl: undefined,
+            observations: rehydratedDocs[k]?.observations
+          };
         }
       }
       applicantToRender.docs = rehydratedDocs;

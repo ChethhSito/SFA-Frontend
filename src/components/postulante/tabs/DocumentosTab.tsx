@@ -30,13 +30,26 @@ export const DocumentosTab: React.FC<DocumentosTabProps> = React.memo(({
   handleFileChange,
   triggerPreview,
 }) => {
-  // Helper to get doc with persistent localStorage cache fallback
+  // Helper to get doc: si NO tiene archivo de imagen real, figura estrictamente como No Enviado
   const getDoc = (key: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile") => {
-    const doc = applicant.docs?.[key] || { status: "No Enviado" as const };
-    const cachedUrl = doc.fileDataUrl || (applicant.dni ? localStorage.getItem(`sfa_file_data_${applicant.dni}_${key}`) : null) || undefined;
+    const rawDoc = applicant.docs?.[key];
+    const cachedUrl = rawDoc?.fileDataUrl || (applicant.dni ? localStorage.getItem(`sfa_file_data_${applicant.dni}_${key}`) : null) || undefined;
+    
+    // Si no hay imagen física (cachedUrl), el documento figura como NO ENVIADO (no hay registro)
+    if (!cachedUrl) {
+      return {
+        status: "No Enviado" as const,
+        fileName: undefined,
+        fileDataUrl: undefined,
+        observations: undefined
+      };
+    }
+
     return {
-      ...doc,
-      fileDataUrl: cachedUrl
+      status: (rawDoc?.status && rawDoc.status !== "No Enviado") ? rawDoc.status : ("Pendiente" as const),
+      fileName: rawDoc?.fileName || `${key}.png`,
+      fileDataUrl: cachedUrl,
+      observations: rawDoc?.observations
     };
   };
 
@@ -246,10 +259,11 @@ export const DocumentosTab: React.FC<DocumentosTabProps> = React.memo(({
           {docConfigs.map((cfg) => {
             const doc = currentDocs[cfg.key];
             const hasImage = Boolean(doc.fileDataUrl);
-            const isApproved = doc.status === "Validado";
-            const isPending = doc.status === "Pendiente";
+            const isApproved = hasImage && doc.status === "Validado";
+            const isPending = hasImage && doc.status === "Pendiente";
             const isObserved = doc.status === "Observado";
             const isNotSent = !isApproved && !isPending && !isObserved;
+            const displayStatus = isNotSent ? "No Enviado" : doc.status;
 
             return (
               <div 
@@ -283,46 +297,31 @@ export const DocumentosTab: React.FC<DocumentosTabProps> = React.memo(({
                             ? "bg-red-100 text-red-800 border border-red-200"
                             : "bg-slate-100 text-slate-500 border border-slate-200"
                     }`}>
-                      {doc.status}
+                      {displayStatus}
                     </span>
                   </div>
 
                   {/* Card Body: Vista Previa de la Imagen */}
                   <div className="mt-4">
-                    {(isApproved || isPending) && (
+                    {(isApproved || isPending) && hasImage && (
                       <div className="space-y-3">
                         {/* Image Preview Box */}
                         <div className="relative group/img rounded-xl overflow-hidden bg-slate-900/5 border border-slate-200 h-44 flex items-center justify-center">
-                          {hasImage ? (
-                            <>
-                              <img 
-                                src={doc.fileDataUrl} 
-                                alt={cfg.title} 
-                                className="max-h-full max-w-full object-contain p-2 transition-transform duration-300 group-hover/img:scale-105"
-                              />
-                              <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => triggerPreview(cfg.fullTitle, doc.fileName || cfg.fallbackName, "image", { fileDataUrl: doc.fileDataUrl, docKey: cfg.key })}
-                                  className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-900 rounded-lg text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
-                                >
-                                  <Eye className="w-3.5 h-3.5 text-[#8B0020]" />
-                                  <span>Ampliar Imagen</span>
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <div className="flex flex-col items-center justify-center p-4 text-center space-y-1">
-                              <FileCheck className="w-10 h-10 text-[#8B0020] mb-1" />
-                              <span className="font-mono text-xs font-bold text-slate-800 truncate max-w-[220px]" title={doc.fileName || cfg.fallbackName}>
-                                {doc.fileName || cfg.fallbackName}
-                              </span>
-                              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                                Archivo Oficial Registrado
-                              </span>
-                              <p className="text-[9px] text-slate-400 font-medium">Haga clic en 'Ver Imagen' para inspección digital.</p>
-                            </div>
-                          )}
+                          <img 
+                            src={doc.fileDataUrl} 
+                            alt={cfg.title} 
+                            className="max-h-full max-w-full object-contain p-2 transition-transform duration-300 group-hover/img:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => triggerPreview(cfg.fullTitle, doc.fileName || cfg.fallbackName, "image", { fileDataUrl: doc.fileDataUrl, docKey: cfg.key })}
+                              className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-900 rounded-lg text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-[#8B0020]" />
+                              <span>Ampliar Imagen</span>
+                            </button>
+                          </div>
                         </div>
 
                         {/* File info banner */}
