@@ -9,6 +9,8 @@ import { MPA_KEYS, fetchMpaCollections, fetchMpaCollection } from "../../service
 // Reusable Custom Design System Components
 import Sidebar from "../ui/Sidebar";
 import ImagePreviewModal from "../ui/ImagePreviewModal";
+import Toast, { ToastNotice } from "../ui/Toast";
+import ConfirmModal from "../ui/ConfirmModal";
 
 // Sub-components: Tabs
 import { PeriodosTab } from "./tabs/PeriodosTab";
@@ -117,6 +119,28 @@ export default function AdminDashboard({
     setSelectedPeriodId(active?.id || admissionPeriods[0]?.id || "");
   }, [admissionPeriods, selectedPeriodId]);
   const [applicantFilterType, setApplicantFilterType] = useState<"all" | "pending" | "observed" | "approved" | "enrolled">("all");
+  
+  // Reusable feedback states (Toasts y Modales de Confirmación)
+  const [toast, setToast] = useState<ToastNotice | null>(null);
+  const notify = (message: string, kind: ToastNotice["kind"] = "info") => {
+    setToast({ id: Date.now(), message, kind });
+  };
+
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: "danger" | "warning" | "info" | "primary";
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    variant: "primary",
+    onConfirm: () => {},
+  });
 
   // Synchronize comprehensive MPA collections in AdminDashboard
   useEffect(() => {
@@ -238,7 +262,7 @@ export default function AdminDashboard({
 
   const handleConfirmObservePayment = () => {
     if (!observePaymentReason.trim()) {
-      alert("Por favor escriba o seleccione un motivo para la observacion.");
+      notify("Por favor escriba o seleccione un motivo para la observación.", "warning");
       return;
     }
     const updated = applicants.map((app) => {
@@ -256,7 +280,7 @@ export default function AdminDashboard({
     setObservePaymentModalOpen(false);
     setObservePaymentDni(null);
     setObservePaymentReason("");
-    alert("Pago del Postulante observado con exito");
+    notify("Pago del Postulante observado con éxito.", "success");
   };
 
   const openApprovePaymentConfirm = (dni: string, type: "admision" | "matricula") => {
@@ -286,7 +310,7 @@ export default function AdminDashboard({
         console.warn(e);
       }
       onUpdateApplicants(updated);
-      alert("Pago de admision del Postulante APROBADO con exito, confirmado y cerrado.");
+      notify("Pago de admisión del Postulante APROBADO con éxito, confirmado y cerrado.", "success");
     } else {
       const exists = enrollments.some((enr) => enr.studentDni === approvePaymentDni);
       let updated: any[];
@@ -327,7 +351,7 @@ export default function AdminDashboard({
         console.warn(e);
       }
       onUpdateEnrollments(updated);
-      alert("¡Pago de Matrícula APROBADO con éxito! El estudiante se encuentra ahora con pago validado y PENDIENTE DE MATRÍCULA.");
+      notify("¡Pago de Matrícula APROBADO con éxito! El estudiante se encuentra con pago validado y PENDIENTE DE MATRÍCULA.", "success");
     }
 
     setApprovePaymentModalOpen(false);
@@ -351,7 +375,7 @@ export default function AdminDashboard({
     });
 
     onUpdateApplicants(updated);
-    alert("Pago de admision del Postulante RECHAZADO con exito");
+    notify("Pago de admisión del Postulante RECHAZADO con éxito.", "info");
   };
 
   const handleApproveEnrollmentPayment = (studentDni: string, approve: boolean) => {
@@ -371,7 +395,7 @@ export default function AdminDashboard({
     });
 
     onUpdateEnrollments(updated);
-    alert("Pago de Matricula RECHAZADO/OBSERVADO con exito");
+    notify("Pago de Matrícula RECHAZADO/OBSERVADO con éxito.", "info");
   };
 
   const handleResetApplicantPayment = (applicantDni: string) => {
@@ -386,7 +410,7 @@ export default function AdminDashboard({
       return app;
     });
     onUpdateApplicants(updated);
-    alert("Estado del pago de examen restablecido a 'Pendiente' para su corrección.");
+    notify("Estado del pago de examen restablecido a 'Pendiente' para su corrección.", "info");
   };
 
   const handleResetEnrollmentPayment = (studentDni: string) => {
@@ -401,8 +425,9 @@ export default function AdminDashboard({
       return enr;
     });
     onUpdateEnrollments(updated);
-    alert("Estado del pago de matrícula restablecido a 'Pendiente' para su corrección.");
+    notify("Estado del pago de matrícula restablecido a 'Pendiente' para su corrección.", "info");
   };
+
 
   const handleConfirmMatricula = (studentDni: string, shift: "Mañana" | "Tarde" | "Noche", programId: any, groupId?: string) => {
     let effectiveGroupId = groupId;
@@ -422,7 +447,7 @@ export default function AdminDashboard({
     }
 
     if (!effectiveGroupId) {
-      alert("Por favor, seleccione un Grupo Académico para el estudiante antes de procesar la matrícula.");
+      notify("Por favor, seleccione un Grupo Académico para el estudiante antes de procesar la matrícula.", "warning");
       return;
     }
 
@@ -438,15 +463,16 @@ export default function AdminDashboard({
 
     const hasProgramming = mpaTasks.length === 0 || mpaTasks.some((t: any) => t.groupId === effectiveGroupId);
     if (!hasProgramming) {
-      alert("El Grupo Académico seleccionado aún no posee una programación académica completa. Finalice la programación antes de utilizar este grupo.");
+      notify("El Grupo Académico seleccionado aún no posee una programación académica completa. Finalice la programación antes de utilizar este grupo.", "warning");
       return;
     }
 
     const existing = enrollments.find(e => e.studentDni === studentDni);
     const currentPayStatus = existing?.paymentStatus || "No Pagado";
     if (currentPayStatus !== "Validado") {
-      alert(
-        `CONTROL DE RECAUDACIÓN Y PAGOS (MAMC):\n\nNo se puede registrar la matrícula de este ingresante porque su pago único de S/. 250.00 de matrícula aún no ha sido VALIDADO por la Oficina de Caja.\n\nPor favor, vaya a la pestaña de "Caja (Matrículas)" para auditar, verificar y registrar la conformidad del voucher antes de continuar.`
+      notify(
+        "Control de Recaudación (MAMC): El pago de matrícula de S/. 250.00 debe ser VALIDADO por la Oficina de Caja antes de matricular.",
+        "warning"
       );
       return;
     }
@@ -504,7 +530,7 @@ export default function AdminDashboard({
     
     onUpdateApplicants(updatedApps);
     onUpdateEnrollments(updatedEnrList);
-    alert("Postulante admisionado matriculado con éxito en el Ciclo I");
+    notify("Postulante admisionado matriculado con éxito en el Ciclo I.", "success");
   };
 
   const handleResetMatricula = (studentDni: string) => {
@@ -528,7 +554,7 @@ export default function AdminDashboard({
     });
     onUpdateApplicants(updatedApps);
     onUpdateEnrollments(updated);
-    alert("Inscripción de matrícula revertida a Solo Admitido.");
+    notify("Inscripción de matrícula revertida a Solo Admitido.", "info");
   };
 
   const handleValidateApplicantDocument = (
@@ -586,7 +612,7 @@ export default function AdminDashboard({
   ) => {
     const obsText = folderObservationInput[applicantDni] || "";
     if (status === "Observed" && !obsText.trim()) {
-      alert("Para marcar un expediente como observado es obligatorio ingresar una observación general.");
+      notify("Para marcar un expediente como observado es obligatorio ingresar una observación general.", "warning");
       return;
     }
 
@@ -631,7 +657,7 @@ export default function AdminDashboard({
     });
 
     onUpdateApplicants(updated);
-    alert(`Expediente del postulante con DNI ${applicantDni} actualizado a estado: ${status === "Approved" ? "COMPLETADO (APROBADO)" : status}.`);
+    notify(`Expediente del postulante con DNI ${applicantDni} actualizado a estado: ${status === "Approved" ? "COMPLETADO (APROBADO)" : status}.`, "success");
   };
 
   const handleMpaPeriodChange = (periodId: string) => {
@@ -693,19 +719,19 @@ export default function AdminDashboard({
   const handleCreatePeriod = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAcademicPeriodId) {
-      alert("Por favor seleccione un Período Académico del MPA.");
+      notify("Por favor seleccione un Período Académico del MPA.", "warning");
       return;
     }
 
     const selectedMpaPeriod = mpaPeriods.find(p => p.id === selectedAcademicPeriodId);
     if (!selectedMpaPeriod) {
-      alert("El Período Académico seleccionado no es válido.");
+      notify("El Período Académico seleccionado no es válido.", "warning");
       return;
     }
 
     const alreadyAssociated = admissionPeriods.some(p => p.academicPeriodId === selectedAcademicPeriodId);
     if (alreadyAssociated) {
-      alert(`El Período Académico "${selectedMpaPeriod.name}" ya está asociado a otro Período de Admisión.`);
+      notify(`El Período Académico "${selectedMpaPeriod.name}" ya está asociado a otro Período de Admisión.`, "warning");
       return;
     }
 
@@ -717,32 +743,32 @@ export default function AdminDashboard({
       !newPeriodEnrollmentStartDate ||
       !newPeriodEnrollmentEndDate
     ) {
-      alert("Por favor complete todas las fechas obligatorias: Pre-Inscripción, Examen, Publicación de Resultados y Límites de Matrícula.");
+      notify("Por favor complete todas las fechas obligatorias: Pre-Inscripción, Examen, Publicación de Resultados y Límites de Matrícula.", "warning");
       return;
     }
 
     if (newPeriodPreEnrollmentStartDate > newPeriodPreEnrollmentEndDate) {
-      alert("Error de validación: La fecha de inicio de Pre-Inscripción no puede ser posterior a su fecha límite.");
+      notify("Error de validación: La fecha de inicio de Pre-Inscripción no puede ser posterior a su fecha límite.", "warning");
       return;
     }
     if (newPeriodPreEnrollmentEndDate > newPeriodAdmissionDate) {
-      alert("Error de validación: La fecha límite de Pre-Inscripción no puede ser posterior a la fecha del Examen de Admisión.");
+      notify("Error de validación: La fecha límite de Pre-Inscripción no puede ser posterior a la fecha del Examen de Admisión.", "warning");
       return;
     }
     if (newPeriodAdmissionDate > newPeriodResultsPublicationDate) {
-      alert("Error de validación: La fecha de Examen de Admisión no puede ser posterior a la publicación de resultados.");
+      notify("Error de validación: La fecha de Examen de Admisión no puede ser posterior a la publicación de resultados.", "warning");
       return;
     }
     if (newPeriodResultsPublicationDate > newPeriodEnrollmentStartDate) {
-      alert("Error de validación: La fecha de publicación de resultados no puede ser posterior al inicio de la Matrícula Regular.");
+      notify("Error de validación: La fecha de publicación de resultados no puede ser posterior al inicio de la Matrícula Regular.", "warning");
       return;
     }
     if (newPeriodEnrollmentStartDate > newPeriodEnrollmentEndDate) {
-      alert("Error de validación: La fecha de inicio de Matrícula no puede ser posterior a su fecha límite.");
+      notify("Error de validación: La fecha de inicio de Matrícula no puede ser posterior a su fecha límite.", "warning");
       return;
     }
     if (newPeriodEnrollmentEndDate > selectedMpaPeriod.startDate) {
-      alert("Error de validación: La fecha límite de Matrícula no puede ser posterior al inicio de clases establecido por el MPA.");
+      notify("Error de validación: La fecha límite de Matrícula no puede ser posterior al inicio de clases establecido por el MPA.", "warning");
       return;
     }
 
@@ -765,7 +791,7 @@ export default function AdminDashboard({
 
     const created = await createAdmissionPeriod(newPeriod);
     if (!created) {
-      alert("No se pudo crear la convocatoria en MongoDB. Revise las fechas y que el período MPA siga disponible.");
+      notify("No se pudo crear la convocatoria en MongoDB. Revise las fechas y que el período MPA siga disponible.", "error");
       return;
     }
     onUpdateAdmissionPeriods([...admissionPeriods, created]);
@@ -778,38 +804,46 @@ export default function AdminDashboard({
     setNewPeriodEnrollmentStartDate("");
     setNewPeriodEnrollmentEndDate("");
     setNewPeriodClassesStartDate("");
+    notify(`Convocatoria "${formattedName}" registrada exitosamente.`, "success");
   };
 
   const handleUpdatePeriodStatus = async (id: string, nextStatus: "PENDIENTE" | "APERTURADO" | "EXAMEN" | "MATRICULA" | "CERRADO") => {
     if (nextStatus === "APERTURADO" && admissionPeriods.some(p => p.id !== id && p.status === "APERTURADO")) {
-      alert("Cierre la convocatoria abierta antes de aperturar otra.");
+      notify("Cierre la convocatoria abierta antes de aperturar otra.", "warning");
       return;
     }
     const updated = await updateAdmissionPeriod(id, { status: nextStatus, isActive: nextStatus === "APERTURADO" });
     if (!updated) {
-      alert("No se pudo actualizar el estado de la convocatoria en MongoDB.");
+      notify("No se pudo actualizar el estado de la convocatoria en MongoDB.", "error");
       return;
     }
     onUpdateAdmissionPeriods(admissionPeriods.map(p => p.id === id ? updated : p));
+    notify(`Estado de la convocatoria actualizado a ${nextStatus}.`, "success");
   };
 
-  const handleDeletePeriod = async (id: string) => {
+  const handleDeletePeriod = (id: string) => {
     const period = admissionPeriods.find(p => p.id === id);
     if (!period) return;
     
-    const confirmDelete = window.confirm(
-      `¿Está seguro que desea eliminar el Periodo de Admisión "${period.name}"? Al hacerlo, el Período Académico del MPA volverá a estar disponible para su selección.`
-    );
-    if (confirmDelete) {
-      const deleted = await deleteAdmissionPeriod(id);
-      if (!deleted) {
-        alert("No se pudo eliminar la convocatoria. Si tiene postulantes, debe conservarse para el historial.");
-        return;
+    setConfirmModal({
+      isOpen: true,
+      title: "Eliminar Periodo de Admisión",
+      message: `¿Está seguro que desea eliminar el Periodo de Admisión "${period.name}"?\n\nAl hacerlo, el Período Académico del MPA volverá a estar disponible para su selección en nuevas convocatorias.`,
+      variant: "danger",
+      confirmText: "Eliminar Periodo",
+      cancelText: "Cancelar",
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        const deleted = await deleteAdmissionPeriod(id);
+        if (!deleted) {
+          notify("No se pudo eliminar la convocatoria. Si tiene postulantes, debe conservarse para el historial.", "error");
+          return;
+        }
+        const filtered = admissionPeriods.filter(p => p.id !== id);
+        onUpdateAdmissionPeriods(filtered);
+        notify(`Periodo de Admisión "${period.name}" eliminado correctamente. El periodo académico asociado ya está disponible nuevamente para selección.`, "success");
       }
-      const filtered = admissionPeriods.filter(p => p.id !== id);
-      onUpdateAdmissionPeriods(filtered);
-      alert(`Periodo de Admisión "${period.name}" eliminado correctamente. El periodo académico asociado ya está disponible nuevamente para selección.`);
-    }
+    });
   };
 
   return (
@@ -1113,6 +1147,24 @@ export default function AdminDashboard({
         admissionPeriods={admissionPeriods}
         onClose={() => setSelectedFichaDni(null)}
       />
+
+      {/* Action Toast Notifications */}
+      {toast && (
+        <Toast notice={toast} onClose={() => setToast(null)} />
+      )}
+
+      {/* Reusable Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant={confirmModal.variant}
+        confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
+
 }

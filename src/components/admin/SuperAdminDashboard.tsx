@@ -12,6 +12,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui
 import PageHeader from "../ui/PageHeader";
 import Sidebar from "../ui/Sidebar";
 import PageTransition from "../ui/PageTransition";
+import Toast, { ToastNotice } from "../ui/Toast";
+import ConfirmModal from "../ui/ConfirmModal";
 
 interface SuperAdminDashboardProps {
   onLogout: () => void;
@@ -125,7 +127,28 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
     role: "administrador" as Role,
     assignedModule: "MAMC - Admisión y Matrícula",
     password: "123",
-    status: "Activo" as const
+  });
+
+  // Reusable feedback states (Toasts y Modales de Confirmación)
+  const [toast, setToast] = useState<ToastNotice | null>(null);
+  const notify = (message: string, kind: ToastNotice["kind"] = "info") => {
+    setToast({ id: Date.now(), message, kind });
+  };
+
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: "danger" | "warning" | "info" | "primary";
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    variant: "primary",
+    onConfirm: () => {},
   });
 
   // Load from Backend REST API on mount
@@ -209,7 +232,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
   const handleSubmitUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.dni || !formData.name || !formData.email) {
-      alert("Por favor complete los campos obligatorios: DNI, Nombre y Correo Institucional.");
+      notify("Por favor complete los campos obligatorios: DNI, Nombre y Correo Institucional.", "warning");
       return;
     }
 
@@ -233,7 +256,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
       const newList = users.map((u) => (u.id === editingUser.id ? updated : u));
       saveUsersState(newList);
       await updateUser(editingUser.id, updated).catch(err => console.error("Error updating user in API:", err));
-      alert(`Usuario ${fullName} actualizado correctamente.`);
+      notify(`Usuario ${fullName} actualizado correctamente.`, "success");
     } else {
       const newUser: SystemUser = {
         id: `usr_${Date.now()}`,
@@ -252,7 +275,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
       const newList = [newUser, ...users];
       saveUsersState(newList);
       await createUser(newUser).catch(err => console.error("Error creating user in API:", err));
-      alert(`¡Nuevo Gestor/Usuario ${fullName} registrado con éxito en el sistema!`);
+      notify(`¡Nuevo Gestor/Usuario ${fullName} registrado con éxito en el sistema!`, "success");
     }
 
     setIsSubmitting(false);
@@ -265,18 +288,29 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
     const newList = users.map((u) => (u.id === usr.id ? updated : u));
     saveUsersState(newList);
     await updateUser(usr.id, updated).catch(err => console.error("Error updating status in API:", err));
+    notify(`Estado del usuario ${usr.displayName} cambiado a ${nextStatus}.`, "info");
   };
 
-  const handleDeleteUser = async (usr: SystemUser) => {
+  const handleDeleteUser = (usr: SystemUser) => {
     if (usr.role === "superadmin" && users.filter((u) => u.role === "superadmin").length <= 1) {
-      alert("No se puede eliminar el único Super Administrador del sistema.");
+      notify("No se puede eliminar el único Super Administrador del sistema.", "warning");
       return;
     }
-    if (window.confirm(`¿Está seguro de eliminar al usuario ${usr.displayName}?`)) {
-      const newList = users.filter((u) => u.id !== usr.id);
-      saveUsersState(newList);
-      await deleteUser(usr.id).catch(err => console.error("Error deleting user in API:", err));
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "Eliminar Usuario del Sistema",
+      message: `¿Está seguro de eliminar al usuario "${usr.displayName}" (${usr.email})?\n\nEsta acción revocará inmediatamente sus credenciales de acceso institucional.`,
+      variant: "danger",
+      confirmText: "Eliminar Usuario",
+      cancelText: "Cancelar",
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        const newList = users.filter((u) => u.id !== usr.id);
+        saveUsersState(newList);
+        await deleteUser(usr.id).catch(err => console.error("Error deleting user in API:", err));
+        notify(`Usuario ${usr.displayName} eliminado del sistema.`, "success");
+      }
+    });
   };
 
   const filteredUsers = users.filter((u) => {
@@ -802,6 +836,24 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
           </div>
         </div>
       )}
+
+      {/* Action Toast Notifications */}
+      {toast && (
+        <Toast notice={toast} onClose={() => setToast(null)} />
+      )}
+
+      {/* Reusable Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant={confirmModal.variant}
+        confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
+

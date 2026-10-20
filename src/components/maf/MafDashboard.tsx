@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../ui/Sidebar";
+import ConfirmModal from "../ui/ConfirmModal";
 import { Card, CardContent } from "../ui/Card";
 import {
   CreditCard,
@@ -59,6 +60,23 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
   const [showRegisterVoucherModal, setShowRegisterVoucherModal] = useState(false);
   const [showObserveModal, setShowObserveModal] = useState(false);
   const [showExonerationModal, setShowExonerationModal] = useState(false);
+
+  // Reusable confirmation modal state
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: "danger" | "warning" | "info" | "primary";
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    variant: "primary",
+    onConfirm: () => {},
+  });
 
   // Forms state variables
   const [conceptForm, setConceptForm] = useState<Omit<MafConcept, "id">>({
@@ -346,13 +364,23 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
   };
 
   const handleDeleteConcept = (id: string, code: string) => {
-    if (confirm(`¿Está seguro de que desea eliminar permanentemente el concepto de tasa ${code}?`)) {
-      const nextList = concepts.filter(c => c.id !== id);
-      handleConceptsUpdate(nextList);
-      addAuditLog("Eliminar Concepto Académico", `Se eliminó el concepto ${code} del catálogo institucional.`, "warning");
-      triggerNotification("Concepto de tasa eliminado del catálogo.");
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "Eliminar Concepto de Tasa",
+      message: `¿Está seguro de que desea eliminar permanentemente el concepto de tasa "${code}" del catálogo institucional?`,
+      variant: "danger",
+      confirmText: "Eliminar Concepto",
+      cancelText: "Cancelar",
+      onConfirm: () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        const nextList = concepts.filter(c => c.id !== id);
+        handleConceptsUpdate(nextList);
+        addAuditLog("Eliminar Concepto Académico", `Se eliminó el concepto ${code} del catálogo institucional.`, "warning");
+        triggerNotification("Concepto de tasa eliminado del catálogo.");
+      }
+    });
   };
+
 
   const handleToggleConceptActive = (id: string) => {
     const nextList = concepts.map(c => {
@@ -467,26 +495,36 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
     const ob = obligations.find(o => o.id === oblId);
     if (!ob) return;
 
-    if (confirm(`¿Confirmó el importe de S/. ${ob.finalAmount} y desea VALIDAR oficialmente este pago de ${ob.studentName}?`)) {
-      const nextList = obligations.map(o => {
-        if (o.id === oblId) {
-          addAuditLog(
-            "Validación Aprobación",
-            `El comprobante ${o.voucherDetails?.operationNumber || "N/A"} asociado a ${o.studentName} fue VALIDADO exitosamente.`,
-            "success"
-          );
-          return {
-            ...o,
-            status: "Validado" as const,
-          };
-        }
-        return o;
-      });
+    setConfirmModal({
+      isOpen: true,
+      title: "Validar Pago Oficial",
+      message: `¿Confirmó el importe de S/. ${ob.finalAmount} y desea VALIDAR oficialmente este pago de ${ob.studentName}?`,
+      variant: "primary",
+      confirmText: "Validar Pago",
+      cancelText: "Cancelar",
+      onConfirm: () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        const nextList = obligations.map(o => {
+          if (o.id === oblId) {
+            addAuditLog(
+              "Validación Aprobación",
+              `El comprobante ${o.voucherDetails?.operationNumber || "N/A"} asociado a ${o.studentName} fue VALIDADO exitosamente.`,
+              "success"
+            );
+            return {
+              ...o,
+              status: "Validado" as const,
+            };
+          }
+          return o;
+        });
 
-      handleObligationsUpdate(nextList);
-      triggerNotification("Pago auditado y VALIDADO oficialmente.");
-    }
+        handleObligationsUpdate(nextList);
+        triggerNotification("Pago auditado y VALIDADO oficialmente.", "success");
+      }
+    });
   };
+
 
   const handleOpenObservePayment = (oblId: string) => {
     setSelectedObligationId(oblId);
@@ -585,13 +623,23 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
   };
 
   const handleDeleteExoneration = (id: string, name: string) => {
-    if (confirm(`¿Desea anular la exoneración de ${name}?`)) {
-      const nextList = exonerations.filter(ex => ex.id !== id);
-      handleExonerationsUpdate(nextList);
-      addAuditLog("Anulación de Exoneración", `Se anuló la exoneración para ${name}.`, "warning");
-      triggerNotification("Exoneración anulada con éxito.");
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: "Anular Beca / Exoneración",
+      message: `¿Está seguro de anular la exoneración de ${name}?`,
+      variant: "warning",
+      confirmText: "Anular Exoneración",
+      cancelText: "Cancelar",
+      onConfirm: () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        const nextList = exonerations.filter(ex => ex.id !== id);
+        handleExonerationsUpdate(nextList);
+        addAuditLog("Anulación de Exoneración", `Se anuló la exoneración para ${name}.`, "warning");
+        triggerNotification("Exoneración anulada con éxito.", "info");
+      }
+    });
   };
+
 
   // Support Ticket Form Submit
   const handleAddTicket = (e: React.FormEvent) => {
@@ -1019,6 +1067,19 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
         setFormExonerationDni={setFormExonerationDni}
         handleAddExoneration={handleAddExoneration}
       />
+
+      {/* Reusable Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant={confirmModal.variant}
+        confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
+        onConfirm={confirmModal.onConfirm}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
+
 }

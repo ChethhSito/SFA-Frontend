@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { 
   MpaAcademicGroup, MpaPeriod, MpaCareer, MpaCourse, 
   MpaCurriculumItem, MpaShift, MpaClassroom, MpaProgramTask, MpaSchedule 
 } from "../../../types";
 import { MpaCurriculumVersion } from "./CurriculumTab";
 import { PageTransition } from "../PageTransition";
+import ConfirmModal from "../../ui/ConfirmModal";
 
 import { CareerSchedulesView } from "../program/CareerSchedulesView";
 import { ProgramTaskForm } from "../program/ProgramTaskForm";
@@ -47,12 +48,19 @@ export function ProgramTab({
   setTasks,
   isCareerSchedulesView = false
 }: ProgramTabProps) {
+  const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
 
   const handleDeleteTask = (taskId: string) => {
-    if (!window.confirm("¿Está seguro de eliminar esta sesión programada?")) return;
-    const filtered = tasks.filter(t => t.id !== taskId);
-    saveDb("tasks", filtered, setTasks);
+    setDeleteTaskId(taskId);
   };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTaskId) return;
+    const filtered = tasks.filter(t => t.id !== deleteTaskId);
+    saveDb("tasks", filtered, setTasks);
+    setDeleteTaskId(null);
+  };
+
 
   if (isCareerSchedulesView) {
     return (
@@ -99,7 +107,20 @@ export function ProgramTab({
           groups={groups}
           onDeleteTask={handleDeleteTask}
         />
+
+        {/* Modal de confirmación para eliminar sesión */}
+        <ConfirmModal
+          isOpen={Boolean(deleteTaskId)}
+          title="Eliminar Sesión Programada"
+          message="¿Está seguro de eliminar esta sesión programada del calendario académico?"
+          variant="danger"
+          confirmText="Eliminar Sesión"
+          cancelText="Cancelar"
+          onConfirm={handleConfirmDelete}
+          onClose={() => setDeleteTaskId(null)}
+        />
       </div>
     </PageTransition>
+
   );
 }
