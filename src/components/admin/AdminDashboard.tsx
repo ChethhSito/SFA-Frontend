@@ -572,11 +572,16 @@ export default function AdminDashboard({
           fotoFile: { status: "No Enviado" as const }
         };
         const currentDoc = docsObj[docKey] || { status: "No Enviado" as const };
+        const storedFileDataUrl = typeof window !== "undefined"
+          ? localStorage.getItem(`sfa_file_data_${applicantDni}_${docKey}`)
+          : null;
+        const effectiveDataUrl = currentDoc.fileDataUrl || storedFileDataUrl || undefined;
 
         const updatedDocs = {
           ...docsObj,
           [docKey]: {
             ...currentDoc,
+            fileDataUrl: effectiveDataUrl,
             status: status as any,
             observations: status === "Observado" ? (observations || "") : undefined
           }

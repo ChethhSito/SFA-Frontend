@@ -52,17 +52,18 @@ export default function ImagePreviewModal({
   const amountStr = metadata?.amount || (title.toLowerCase().includes("matrícula") ? "S/. 250.00" : "S/. 120.00");
   const conceptStr = metadata?.concept || (title.toLowerCase().includes("matrícula") ? "Derecho de Matrícula Regular" : "Derecho de Examen de Admisión");
 
-  const [activeTabMode, setActiveTabMode] = React.useState<"file" | "receipt">(
-    fileType === "receipt" ? "receipt" : "file"
-  );
-
   const isPersonalDocument = Boolean(
     metadata?.docKey ||
+    metadata?.isVoucher === false ||
     title.toLowerCase().includes("dni") ||
     title.toLowerCase().includes("certificado") ||
     title.toLowerCase().includes("partida") ||
     title.toLowerCase().includes("foto") ||
     title.toLowerCase().includes("expediente")
+  );
+
+  const [activeTabMode, setActiveTabMode] = React.useState<"file" | "receipt">(
+    isPersonalDocument ? "file" : (fileType === "receipt" ? "receipt" : "file")
   );
 
   const canToggleReceipt = !isPersonalDocument && (
@@ -107,13 +108,15 @@ export default function ImagePreviewModal({
 
   React.useEffect(() => {
     if (isOpen) {
-      if (fileType === "receipt") {
+      if (isPersonalDocument) {
+        setActiveTabMode("file");
+      } else if (fileType === "receipt") {
         setActiveTabMode("receipt");
       } else {
         setActiveTabMode("file");
       }
     }
-  }, [isOpen, fileType, effectiveImageUrl, fileName]);
+  }, [isOpen, fileType, effectiveImageUrl, fileName, isPersonalDocument]);
 
   const isPdf = Boolean(
     effectiveImageUrl?.startsWith("data:application/pdf") ||
@@ -295,9 +298,32 @@ export default function ImagePreviewModal({
                   </div>
                 </div>
               ) : (
-                <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-lg text-slate-600 space-y-2">
-                  <p className="font-extrabold text-[11px] uppercase tracking-wider text-[#9F062A]">Archivo no adjuntado</p>
-                  <p className="text-[10px] text-slate-500 leading-normal font-semibold">El postulante aún no ha cargado una captura física del archivo.</p>
+                <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-xl text-slate-600 space-y-3">
+                  <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shadow-2xs">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-xs uppercase tracking-wider text-slate-800">
+                      {metadata?.docLabel || title}
+                    </h4>
+                    {(fileName || metadata?.fileName) && (
+                      <p className="text-[10.5px] font-mono text-slate-600 font-semibold mt-1">
+                        Archivo registrado: <span className="text-slate-900 font-bold">{fileName || metadata?.fileName}</span>
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium max-w-xs mx-auto">
+                    {fileName || metadata?.fileName
+                      ? "El postulante registró este nombre de archivo, pero la captura física no está en caché local."
+                      : "El postulante aún no ha cargado la captura física de este documento."}
+                  </p>
+                  {metadata?.docStatus && (
+                    <div className="pt-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+                        Estado: {metadata.docStatus}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
