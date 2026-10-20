@@ -13,6 +13,7 @@ interface SoporteTabProps {
   adminSupportReply: string;
   setAdminSupportReply: (r: string) => void;
   onUpdateApplicants: (apps: Applicant[]) => void;
+  notify?: (message: string, kind?: "success" | "error" | "warning" | "info") => void;
 }
 
 export const SoporteTab: React.FC<SoporteTabProps> = ({
@@ -22,6 +23,7 @@ export const SoporteTab: React.FC<SoporteTabProps> = ({
   adminSupportReply,
   setAdminSupportReply,
   onUpdateApplicants,
+  notify,
 }) => {
   return (
     <PageTransition id="soporte" className="space-y-6 animate-fade-in">
@@ -197,7 +199,7 @@ export const SoporteTab: React.FC<SoporteTabProps> = ({
                       });
                       onUpdateApplicants(updated);
                       setAdminSupportReply("");
-                      alert("Su respuesta de soporte tecnico fue registrada y enviada con exito.");
+                      notify?.("Su respuesta de soporte técnico fue registrada y enviada con éxito.", "success");
                     }}
                     className="pt-3 border-t border-slate-200 space-y-3"
                   >

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Printer, Download, Calendar, Clock, MapPin, User, CheckCircle2, LayoutGrid, ListFilter } from "lucide-react";
 import { StudentPersonalData, AcademicProgram, Enrollment } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
+import Toast, { ToastNotice } from "../../ui/Toast";
 
 interface ScheduleTabProps {
   personalData: StudentPersonalData;
@@ -21,6 +22,7 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
   studentGroup
 }) => {
   const [viewMode, setViewMode] = useState<"matrix" | "cards">("matrix");
+  const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
 
   const daysOfWeek = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"] as const;
 
@@ -106,7 +108,14 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
             <Printer className="w-3.5 h-3.5 text-slate-500" /> Imprimir
           </button>
           <button 
-            onClick={() => alert("Descargando horario oficial de Ciclo I en formato PDF firmado...")}
+            onClick={() => {
+              setToastNotice({
+                id: Date.now(),
+                message: "Preparando vista de impresión del horario oficial para guardar en PDF.",
+                kind: "info",
+              });
+              window.print();
+            }}
             className="bg-[#800521] hover:bg-[#9F062A] text-white px-3.5 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
           >
             <Download className="w-3.5 h-3.5 text-amber-400" /> Exportar PDF
@@ -290,6 +299,10 @@ export const ScheduleTab: React.FC<ScheduleTabProps> = ({
             </p>
           </div>
         </div>
+      )}
+
+      {toastNotice && (
+        <Toast notice={toastNotice} onClose={() => setToastNotice(null)} />
       )}
     </PageTransition>
   );

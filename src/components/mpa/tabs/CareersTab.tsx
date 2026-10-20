@@ -11,9 +11,10 @@ interface CareersTabProps {
   tasks: MpaProgramTask[];
   saveDb: (key: string, value: any, setter: Function) => void;
   setCareers: React.Dispatch<React.SetStateAction<MpaCareer[]>>;
+  notify?: (message: string, kind?: "success" | "error" | "warning" | "info") => void;
 }
 
-export function CareersTab({ careers, curriculum, groups, tasks, saveDb, setCareers }: CareersTabProps) {
+export function CareersTab({ careers, curriculum, groups, tasks, saveDb, setCareers, notify }: CareersTabProps) {
   const [formCareer, setFormCareer] = useState<{
     id: string;
     name: string;
@@ -174,7 +175,7 @@ export function CareersTab({ careers, curriculum, groups, tasks, saveDb, setCare
                               return gp && gp.careerId === item.id;
                             });
                             if (hasCurriculum || hasGroups || hasTasks) {
-                              alert("No se puede eliminar la carrera porque tiene mallas curriculares, grupos académicos o programaciones asociadas.");
+                              notify?.("No se puede eliminar la carrera porque tiene mallas curriculares, grupos académicos o programaciones asociadas.", "warning");
                               return;
                             }
                             const next = careers.filter(c => c.id !== item.id);

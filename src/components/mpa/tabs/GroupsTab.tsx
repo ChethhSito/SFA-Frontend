@@ -22,6 +22,7 @@ interface GroupsTabProps {
   teachers: any[];
   saveDb: (key: string, value: any, setter: Function) => void;
   setGroups: React.Dispatch<React.SetStateAction<MpaAcademicGroup[]>>;
+  notify?: (message: string, kind?: "success" | "error" | "warning" | "info") => void;
 }
 
 export function GroupsTab({
@@ -36,7 +37,8 @@ export function GroupsTab({
   classrooms,
   teachers,
   saveDb,
-  setGroups
+  setGroups,
+  notify
 }: GroupsTabProps) {
   const [formGroup, setFormGroup] = useState({
     id: "",
@@ -59,13 +61,13 @@ export function GroupsTab({
             onSubmit={(e) => {
               e.preventDefault();
               if (!formGroup.name || !formGroup.periodId || !formGroup.careerId || !formGroup.shiftId) {
-                alert("Todos los campos con asteriscos son mandatorios.");
+                notify?.("Todos los campos con asteriscos son mandatorios.", "warning");
                 return;
               }
               
               const activeVersion = curriculumVersions.find(v => v.careerId === formGroup.careerId && v.isActive);
               if (!activeVersion) {
-                alert("No es posible crear el grupo porque la carrera seleccionada no posee una malla curricular activa.");
+                notify?.("No es posible crear el grupo porque la carrera seleccionada no posee una malla curricular activa.", "warning");
                 return;
               }
 
@@ -234,7 +236,7 @@ export function GroupsTab({
                             onClick={() => {
                               const hasScheduledTasks = tasks.some(t => t.groupId === item.id);
                               if (hasScheduledTasks) {
-                                alert("No se puede eliminar el grupo académico porque tiene programaciones académicas activas asignadas.");
+                                notify?.("No se puede eliminar el grupo académico porque tiene programaciones académicas activas asignadas.", "warning");
                                 return;
                               }
                               const next = groups.filter(g => g.id !== item.id);

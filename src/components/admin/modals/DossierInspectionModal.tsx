@@ -20,6 +20,7 @@ interface DossierInspectionModalProps {
   ) => void;
   handleUpdateFolderStatus: (applicantDni: string, status: "Pending" | "Observed" | "Approved" | "Enrolled") => void;
   sanitizePeriodName: (name?: string) => string;
+  notify?: (message: string, kind?: "success" | "error" | "warning" | "info") => void;
 }
 
 export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
@@ -35,6 +36,7 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
   handleValidateApplicantDocument,
   handleUpdateFolderStatus,
   sanitizePeriodName,
+  notify,
 }) => {
   if (!selectedDossierAppDni) return null;
 
@@ -261,7 +263,7 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                             type="button"
                             onClick={() => {
                               if (!currentObsText.trim()) {
-                                alert("Por favor ingrese el motivo de observación para este requisito.");
+                                notify?.("Por favor ingrese el motivo de observación para este requisito.", "warning");
                                 return;
                               }
                               handleValidateApplicantDocument(app.dni, item.key, "Observado", currentObsText.trim());
@@ -410,7 +412,7 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                           key={opt.id}
                           onClick={() => {
                             if (opt.id === "Observed" && !(folderObservationInput[app.dni] || "").trim()) {
-                              alert("Por favor ingrese una observacion antes de marcar la carpeta como observada.");
+                              notify?.("Por favor ingrese una observación antes de marcar la carpeta como observada.", "warning");
                               return;
                             }
                             handleUpdateFolderStatus(app.dni, opt.id);

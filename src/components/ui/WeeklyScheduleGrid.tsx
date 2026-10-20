@@ -68,7 +68,7 @@ export const WeeklyScheduleGrid: React.FC<WeeklyScheduleGridProps> = ({
   const handlePrint = () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      alert("Por favor habilita las ventanas emergentes.");
+      console.warn("La ventana de impresión fue bloqueada por el navegador.");
       return;
     }
 

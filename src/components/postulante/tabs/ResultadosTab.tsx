@@ -94,7 +94,8 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
               } else if (approvedCount < 4 || applicant.paymentStatus !== "Validado") {
                 setActiveTab("documentos");
               } else {
-                alert("Su aula de examen presencial es el Aula 104 - Pabellón A. Presentarse este Domingo 15 de Marzo a las 08:30 AM.");
+                const el = document.getElementById("exam-guide");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
               }
             }}
             className="w-full bg-white hover:bg-amber-50 text-[#8B0020] font-black py-2.5 rounded-lg text-[11px] uppercase tracking-wider shadow-sm hover:shadow-md transition-all cursor-pointer text-center flex items-center justify-center gap-2 group"
@@ -111,7 +112,7 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
         </div>
 
         {/* Card 2: Guía de Requisitos y Recomendaciones */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs text-left flex flex-col justify-between">
+        <div id="exam-guide" className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs text-left flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5 mb-3">
               <div className="w-6 h-6 rounded-md bg-[#8B0020]/10 text-[#8B0020] flex items-center justify-center shrink-0">

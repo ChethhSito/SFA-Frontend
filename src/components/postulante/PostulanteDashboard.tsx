@@ -12,6 +12,7 @@ import Sidebar from "../ui/Sidebar";
 import PageHeader from "../ui/PageHeader";
 import AlertBox from "../ui/AlertBox";
 import ImagePreviewModal from "../ui/ImagePreviewModal";
+import { Toast, ToastNotice, ToastKind } from "../ui";
 
 // Modular Sub-components for Postulante Dashboard
 import ConstanciaModal from "./modals/ConstanciaModal";
@@ -42,6 +43,10 @@ export default function PostulanteDashboard({
   const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   // Active Navigation Tab State
   const [activeTab, setActiveTab] = useState<"dashboard" | "documentos" | "pagos" | "resultados" | "soporte" | "matricula">("dashboard");
+  const [toast, setToast] = useState<ToastNotice | null>(null);
+  const notify = (message: string, kind: ToastKind = "info") => {
+    setToast({ id: Date.now(), message, kind });
+  };
 
   const getFormattedDate = (isoDate?: string, fallback: string = "12/03/2026") => {
     if (!isoDate) return fallback;
@@ -273,7 +278,7 @@ export default function PostulanteDashboard({
       filename = stagedDniFile;
       dataUrl = stagedDniPreview;
       if (!filename) {
-        alert("Por favor, seleccione una imagen para la Copia de DNI primero.");
+        notify("Por favor, seleccione una imagen para la Copia de DNI primero.", "warning");
         return;
       }
       setStagedDniFile("");
@@ -281,7 +286,7 @@ export default function PostulanteDashboard({
       filename = stagedCertFile;
       dataUrl = stagedCertPreview;
       if (!filename) {
-        alert("Por favor, seleccione una imagen para el Certificado de Secundaria primero.");
+        notify("Por favor, seleccione una imagen para el Certificado de Secundaria primero.", "warning");
         return;
       }
       setStagedCertFile("");
@@ -289,7 +294,7 @@ export default function PostulanteDashboard({
       filename = stagedPartidaFile;
       dataUrl = stagedPartidaPreview;
       if (!filename) {
-        alert("Por favor, seleccione una imagen para la Partida de Nacimiento primero.");
+        notify("Por favor, seleccione una imagen para la Partida de Nacimiento primero.", "warning");
         return;
       }
       setStagedPartidaFile("");
@@ -297,7 +302,7 @@ export default function PostulanteDashboard({
       filename = stagedFotoFile;
       dataUrl = stagedFotoPreview;
       if (!filename) {
-        alert("Por favor, seleccione una imagen para la Foto primero.");
+        notify("Por favor, seleccione una imagen para la Foto primero.", "warning");
         return;
       }
       setStagedFotoFile("");
@@ -316,14 +321,14 @@ export default function PostulanteDashboard({
     };
 
     onUpdateApplicant(updatedApplicant);
-    alert(`¡Documento "${filename}" enviado a validación por secretaría!`);
+    notify(`¡Documento "${filename}" enviado a validación por secretaría!`, "success");
   };
 
   const handleSubmitPaymentVoucher = (e: React.FormEvent) => {
     e.preventDefault();
     if (paymentType === "number") {
       if (!paymentVoucher.trim()) {
-        alert("Por favor ingrese el número de operación bancaria de su pago.");
+        notify("Por favor ingrese el número de operación bancaria de su pago.", "warning");
         return;
       }
       const updatedApplicant: Applicant = {
@@ -335,10 +340,10 @@ export default function PostulanteDashboard({
         paymentVoucherUrl: undefined
       };
       onUpdateApplicant(updatedApplicant);
-      alert("¡Número de operación de pago ingresado correctamente! Estado actualizado a Pendiente de validación bancaria.");
+      notify("¡Número de operación de pago ingresado correctamente! Estado actualizado a Pendiente de validación bancaria.", "success");
     } else {
       if (!stagedVoucherPreview) {
-        alert("Por favor seleccione la imagen de su voucher de pago primero.");
+        notify("Por favor seleccione la imagen de su voucher de pago primero.", "warning");
         return;
       }
       const updatedApplicant: Applicant = {
@@ -352,7 +357,7 @@ export default function PostulanteDashboard({
       onUpdateApplicant(updatedApplicant);
       setStagedVoucherFile("");
       setStagedVoucherPreview("");
-      alert("¡Voucher de pago enviado correctamente! Estado actualizado a Pendiente de validación por Tesorería.");
+      notify("¡Voucher de pago enviado correctamente! Estado actualizado a Pendiente de validación por Tesorería.", "success");
     }
   };
 
@@ -376,7 +381,7 @@ export default function PostulanteDashboard({
 
     if (matriculaPaymentType === "number") {
       if (!matriculaVoucher.trim()) {
-        alert("Por favor ingrese el número de operación de su depósito de matrícula.");
+        notify("Por favor ingrese el número de operación de su depósito de matrícula.", "warning");
         return;
       }
       const updatedEnr: Enrollment = {
@@ -389,10 +394,10 @@ export default function PostulanteDashboard({
       };
       if (onUpdateEnrollment) onUpdateEnrollment(updatedEnr);
       setIsEditingMatricula(false);
-      alert("¡Operación de matrícula enviada! La oficina de caja (MAMC) validará el abono de S/. 250.00 a la brevedad.");
+      notify("¡Operación de matrícula enviada! La oficina de caja validará el abono de S/. 250.00 a la brevedad.", "success");
     } else {
       if (!stagedMatriculaPreview) {
-        alert("Por favor seleccione la foto de su voucher de depósito de matrícula.");
+        notify("Por favor seleccione la foto de su voucher de depósito de matrícula.", "warning");
         return;
       }
       const updatedEnr: Enrollment = {
@@ -407,7 +412,7 @@ export default function PostulanteDashboard({
       setIsEditingMatricula(false);
       setStagedMatriculaFile("");
       setStagedMatriculaPreview("");
-      alert("¡Foto de voucher de matrícula enviada! La oficina de caja (MAMC) verificará el comprobante.");
+      notify("¡Foto de voucher de matrícula enviada! La oficina de caja verificará el comprobante.", "success");
     }
   };
 
@@ -703,6 +708,11 @@ export default function PostulanteDashboard({
         fileType={previewFileType}
         metadata={previewMetadata}
       />
+
+      {/* ACTION TOAST NOTIFICATIONS */}
+      {toast && (
+        <Toast notice={toast} onClose={() => setToast(null)} />
+      )}
     </div>
   );
 }

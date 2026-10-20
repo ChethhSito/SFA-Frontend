@@ -16,6 +16,7 @@ interface PostulantesTabProps {
   setPostulantesClassroomFilter: (c: string) => void;
   onUpdateApplicants: (apps: Applicant[]) => void;
   renderPeriodSelector: () => React.ReactNode;
+  notify?: (message: string, kind?: "success" | "error" | "warning" | "info") => void;
 }
 
 export const PostulantesTab: React.FC<PostulantesTabProps> = ({
@@ -29,6 +30,7 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
   setPostulantesClassroomFilter,
   onUpdateApplicants,
   renderPeriodSelector,
+  notify,
 }) => {
   const activeApps = applicants.filter((app) => 
     !selectedPeriodId || 
@@ -292,7 +294,7 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
                               onChange={(e) => {
                                 const val = e.target.value;
                                 if (val === "admitido" && !app.examClassroom) {
-                                  alert("¡Validación requerida! No se puede admitir al postulante sin antes haberle asignado un aula para que rinda su examen de admisión.");
+                                  notify?.("¡Validación requerida! No se puede admitir al postulante sin antes haberle asignado un aula para que rinda su examen de admisión.", "warning");
                                   return;
                                 }
                                 const updatedList = applicants.map((a) => {
@@ -322,13 +324,14 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
                                 onUpdateApplicants(updatedList);
 
                                 if (val === "admitido") {
-                                  alert(
-                                    `El ingresante ${app.name} ${app.lastName} ahora figura con el resultado ADMITIDO y pasará instantáneamente a la bandeja de matrícula.`
+                                  notify?.(
+                                    `El ingresante ${app.name} ${app.lastName} ahora figura con el resultado ADMITIDO y pasará instantáneamente a la bandeja de matrícula.`,
+                                    "success"
                                   );
                                 } else if (val === "no_admitido") {
-                                  alert(`El postulante ${app.name} ${app.lastName} ha sido calificado como NO ADMITIDO.`);
+                                  notify?.(`El postulante ${app.name} ${app.lastName} ha sido calificado como NO ADMITIDO.`, "warning");
                                 } else {
-                                  alert(`El postulante ${app.name} ${app.lastName} queda en estado PENDIENTE.`);
+                                  notify?.(`El postulante ${app.name} ${app.lastName} queda en estado PENDIENTE.`, "info");
                                 }
                               }}
                               className={`text-[11px] font-sans font-black uppercase tracking-wider bg-white border rounded-md px-3 py-1.5 shadow-3xs cursor-pointer focus:outline-none ${

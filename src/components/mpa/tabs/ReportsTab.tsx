@@ -18,6 +18,7 @@ interface ReportsTabProps {
   courses: MpaCourse[];
   teachers: any[];
   classrooms: MpaClassroom[];
+  notify?: (message: string, kind?: "success" | "error" | "warning" | "info") => void;
 }
 
 export function ReportsTab({
@@ -27,7 +28,8 @@ export function ReportsTab({
   groups,
   courses,
   teachers,
-  classrooms
+  classrooms,
+  notify
 }: ReportsTabProps) {
   return (
     <PageTransition id="reports">
@@ -102,7 +104,7 @@ export function ReportsTab({
               onClick={() => {
                 const printWindow = window.open("", "_blank");
                 if (!printWindow) {
-                  alert("Por favor habilitar ventanas emergentes para continuar.");
+                  notify?.("Por favor habilitar ventanas emergentes para continuar.", "warning");
                   return;
                 }
                 printWindow.document.write(`

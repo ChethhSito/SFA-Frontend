@@ -8,9 +8,10 @@ interface PeriodsTabProps {
   periods: MpaPeriod[];
   saveDb: (key: string, value: any, setter: Function) => void;
   setPeriods: React.Dispatch<React.SetStateAction<MpaPeriod[]>>;
+  notify?: (message: string, kind?: "success" | "error" | "warning" | "info") => void;
 }
 
-export function PeriodsTab({ periods, saveDb, setPeriods }: PeriodsTabProps) {
+export function PeriodsTab({ periods, saveDb, setPeriods, notify }: PeriodsTabProps) {
   const [formPeriod, setFormPeriod] = useState<{
     id: string;
     name: string;
@@ -36,21 +37,21 @@ export function PeriodsTab({ periods, saveDb, setPeriods }: PeriodsTabProps) {
               const computedName = `Periodo ${formPeriodYear}-${formPeriodTerm}`;
               const exist = periods.some(p => p.name === computedName);
               if (exist) {
-                alert(`Ya existe un período con el nombre "${computedName}".`);
+                notify?.(`Ya existe un período con el nombre "${computedName}".`, "warning");
                 return;
               }
               if (!formPeriod.startDate || !formPeriod.endDate) {
-                alert("Por favor configure las fechas de inicio y de cierre.");
+                notify?.("Por favor configure las fechas de inicio y de cierre.", "warning");
                 return;
               }
               if (formPeriod.startDate >= formPeriod.endDate) {
-                alert("La fecha de cierre debe ser posterior a la fecha de inicio.");
+                notify?.("La fecha de cierre debe ser posterior a la fecha de inicio.", "warning");
                 return;
               }
               const id = "p_" + Date.now();
               const finalPStatus = formPeriod.status || "Planificación";
               if (finalPStatus === "Activo" && periods.some(p => p.isActive || p.status === "Activo")) {
-                alert("Ya existe un período académico activo. Ciérrelo o seleccione Planificación para el nuevo período.");
+                notify?.("Ya existe un período académico activo. Ciérrelo o seleccione Planificación para el nuevo período.", "warning");
                 return;
               }
               const next = [...periods, { 

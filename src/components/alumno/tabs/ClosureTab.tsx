@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { Printer, Download, Award, CheckCircle2, Mail, FileText, ClipboardList } from "lucide-react";
 import { StudentPersonalData, Enrollment, AcademicProgram, CycleStatus, Course } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
+import Toast, { ToastNotice } from "../../ui/Toast";
 
 interface ClosureTabProps {
   personalData: StudentPersonalData;
@@ -50,6 +51,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   setAdvisorConsultSuccess,
   cycleStatuses
 }) => {
+  const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
   const CORE_PLAN_COURSES: Record<string, Record<string, Array<{ code: string; name: string; type: string; credits: number; status: string; teo: number; pr: number }>>> = {
     "52": {
       "I": [
@@ -174,7 +176,14 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
           </div>
 
           <button
-            onClick={() => alert(`Simulación: Generando y descargando el récord oficial de estudios para el ${activePlanKey === "20" ? "Plan 20 - Electrónica Industrial" : "Plan 52 - Contabilidad"} en formato PDF firmado...`)}
+            onClick={() => {
+              setToastNotice({
+                id: Date.now(),
+                message: `Generando récord oficial de estudios para el ${activePlanKey === "20" ? "Plan 20 - Electrónica Industrial" : "Plan 52 - Contabilidad"}.`,
+                kind: "info",
+              });
+              window.print();
+            }}
             className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10.5px] py-1.5 px-4 rounded-lg flex items-center gap-2 select-none uppercase tracking-wide cursor-pointer transition-all h-[34px] shadow-sm font-bold"
           >
             <Printer className="w-4 h-4" /> IMPRIMIR RECORD
@@ -427,7 +436,11 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             
             <div className="space-y-2">
               <button 
-                onClick={() => alert(`Simulación: Generando y descargando Boleta Oficial de Notas de Alumno (${selectedQueryCycle} Ciclo - Periodo Activo).`)}
+                onClick={() => setToastNotice({
+                  id: Date.now(),
+                  message: `Generando y descargando Boleta Oficial de Notas (${selectedQueryCycle} Ciclo).`,
+                  kind: "info",
+                })}
                 className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all"
               >
                 <span className="flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-slate-400" /> Boleta de Notas ({selectedQueryCycle} Ciclo)</span>
@@ -435,7 +448,11 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
               </button>
 
               <button 
-                onClick={() => alert("Simulación: Abriendo Plan Curricular Completo del Estudiante firmado digitalmente por Secretaría Académica.")}
+                onClick={() => setToastNotice({
+                  id: Date.now(),
+                  message: "Abriendo Plan Curricular Completo del Estudiante firmado digitalmente.",
+                  kind: "info",
+                })}
                 className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all"
               >
                 <span className="flex items-center gap-2"><ClipboardList className="w-3.5 h-3.5 text-slate-400" /> Plan Curricular Completo</span>
@@ -443,7 +460,11 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
               </button>
 
               <button 
-                onClick={() => alert("Simulación: Descargando Ficha de Matrícula Consolidada semestre activo.")}
+                onClick={() => setToastNotice({
+                  id: Date.now(),
+                  message: "Descargando Ficha de Matrícula Consolidada semestre activo.",
+                  kind: "info",
+                })}
                 className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all"
               >
                 <span className="flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-slate-400" /> Ficha de Matrícula Activa</span>
@@ -453,6 +474,10 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
           </div>
         </aside>
       </div>
+
+      {toastNotice && (
+        <Toast notice={toastNotice} onClose={() => setToastNotice(null)} />
+      )}
     </PageTransition>
   );
 };

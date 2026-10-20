@@ -11,9 +11,10 @@ interface CoursesTabProps {
   tasks: MpaProgramTask[];
   saveDb: (key: string, value: any, setter: Function) => void;
   setCourses: React.Dispatch<React.SetStateAction<MpaCourse[]>>;
+  notify?: (message: string, kind?: "success" | "error" | "warning" | "info") => void;
 }
 
-export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCourses }: CoursesTabProps) {
+export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCourses, notify }: CoursesTabProps) {
   const [coursesFilterCareer, setCoursesFilterCareer] = useState<string>("all");
   const [formCourse, setFormCourse] = useState<{
     id: string;
@@ -52,7 +53,7 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
               
               const isGeneral = formCourse.type === "General";
               if (!isGeneral && (!formCourse.careerId || formCourse.careerId === "comun")) {
-                alert("Para un curso de Especialidad, debe asociar obligatoriamente una carrera de referencia.");
+                notify?.("Para un curso de Especialidad, debe asociar obligatoriamente una carrera de referencia.", "warning");
                 return;
               }
               
@@ -304,7 +305,7 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
                           const inCurriculum = curriculum.some(curr => curr.courseId === item.id);
                           const inTasks = tasks.some(t => t.courseId === item.id);
                           if (inCurriculum || inTasks) {
-                            alert("No se puede eliminar el curso porque ya está siendo utilizado.");
+                            notify?.("No se puede eliminar el curso porque ya está siendo utilizado.", "warning");
                             return;
                           }
                           const next = courses.filter(c => c.id !== item.id);

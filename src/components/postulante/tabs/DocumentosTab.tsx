@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { 
   FileText, ArrowRight, Info, ChevronUp, ChevronDown, Upload, Headset, MessageSquare 
 } from "lucide-react";
 import PageTransition from "../../ui/PageTransition";
+import AlertBox from "../../ui/AlertBox";
 import { Applicant } from "../../../types";
 
 interface DocumentosTabProps {
@@ -37,6 +38,7 @@ export const DocumentosTab: React.FC<DocumentosTabProps> = React.memo(({
     partidaFile: applicant.docs?.partidaFile || { status: "No Enviado" as const },
     fotoFile: applicant.docs?.fotoFile || { status: "No Enviado" as const }
   };
+  const [notice, setNotice] = useState<{ message: string; variant: "danger" | "warning" | "success" | "info" } | null>(null);
 
   return (
     <PageTransition id="documentos" className="space-y-6">
@@ -44,6 +46,23 @@ export const DocumentosTab: React.FC<DocumentosTabProps> = React.memo(({
       <div className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest text-left">
         Admisión 2026 &gt; <span className="text-slate-600">Expediente de Admisión</span>
       </div>
+
+      {notice && (
+        <AlertBox 
+          variant={notice.variant} 
+          title="Notificación de Expediente" 
+          message={notice.message} 
+          actions={
+            <button 
+              type="button" 
+              onClick={() => setNotice(null)} 
+              className="text-xs font-bold underline cursor-pointer"
+            >
+              Cerrar
+            </button>
+          }
+        />
+      )}
 
       {/* Header section with Ver Tutorial button */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -53,7 +72,10 @@ export const DocumentosTab: React.FC<DocumentosTabProps> = React.memo(({
         </div>
 
         <button 
-          onClick={() => alert("Simulación de Video Tutorial: 'Cómo escanear y subir correctamente los requisitos de matrícula en formato PDF de baja compresión y alta fidelidad.'")}
+          onClick={() => setNotice({
+            message: "Tutorial: Asegúrese de digitalizar sus documentos oficiales (DNI, Certificados) en orientación vertical con bordes legibles y sin reflejos.",
+            variant: "info"
+          })}
           className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-extrabold uppercase text-[10px] py-2 px-4 shadow-sm rounded-sm tracking-wide transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
         >
           <span>Ver Tutorial</span>
@@ -95,9 +117,15 @@ export const DocumentosTab: React.FC<DocumentosTabProps> = React.memo(({
           <button 
             onClick={() => {
               if (globalProgressPercentage < 100) {
-                alert(`No se han completado los 4 requisitos necesarios. Asegúrese de cargar sus archivos y que todos estén bajo estado 'Validado' (Aprobado) por secretaría para formalizar.`);
+                setNotice({
+                  message: "No se han completado los 4 requisitos necesarios. Asegúrese de cargar sus archivos y que todos estén bajo estado 'Validado' (Aprobado) por secretaría para formalizar.",
+                  variant: "warning"
+                });
               } else {
-                alert(`¡Expediente enviado a revisión final! El comité académico de admisiones confirmará su plaza de estudios hoy mismo.`);
+                setNotice({
+                  message: "¡Expediente enviado a revisión final! El comité académico de admisiones confirmará su plaza de estudios hoy mismo.",
+                  variant: "success"
+                });
               }
             }}
             className="w-full bg-white hover:bg-amber-50 text-[#8B0020] font-black py-3 rounded-xl text-xs uppercase tracking-widest shadow-md hover:shadow-lg transition-all cursor-pointer text-center flex items-center justify-center gap-2 group"

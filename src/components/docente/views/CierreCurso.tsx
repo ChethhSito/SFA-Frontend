@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import Badge from "../../ui/Badge";
 import Button from "../../ui/Button";
 import PageHeader from "../../ui/PageHeader";
+import Toast, { ToastNotice } from "../../ui/Toast";
 
 interface Props {
   course: Course;
@@ -19,37 +20,27 @@ export function CierreCurso({ course, weeksCount, materialsCount, assignmentsCou
   const [showActaModal, setShowActaModal] = useState(false);
   const [isSigned, setIsSigned] = useState(false);
   const [signDni, setSignDni] = useState("");
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 4000);
+  const notify = (message: string, kind: ToastNotice["kind"] = "info") => {
+    setToastNotice({ id: Date.now(), message, kind });
   };
 
   const handleSignActa = (e: React.FormEvent) => {
     e.preventDefault();
     if (signDni.length < 8) {
-      alert("Por favor ingrese un DNI válido de 8 dígitos para proceder con la firma segura.");
+      notify("Por favor ingrese un DNI válido de 8 dígitos para proceder con la firma segura.", "warning");
       return;
     }
     setIsSigned(true);
-    showToast("¡Acta firmada digitalmente con éxito! Los registros se han cerrado y enviado al Coordinador Académico del IESTP San Francisco de Asís.");
+    notify("¡Acta firmada digitalmente con éxito! Los registros se han cerrado y enviado al Coordinador Académico del IESTP San Francisco de Asís.", "success");
   };
 
   return (
     <div className="space-y-6 text-left relative">
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 max-w-md p-4 bg-emerald-600 text-white rounded-xl shadow-2xl flex items-start gap-3 border border-emerald-500 animate-slide-up">
-          <CheckCircle2 className="w-6 h-6 shrink-0 mt-0.5 text-amber-300" />
-          <div className="text-xs font-bold font-sans">
-            <span className="block font-black text-white text-[13px] mb-1">PROCESAMIENTO COMPLETED</span>
-            <p>{toastMessage}</p>
-          </div>
-          <button onClick={() => setToastMessage(null)} className="p-1 hover:bg-emerald-750 rounded text-emerald-100">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+      {toastNotice && (
+        <Toast notice={toastNotice} onClose={() => setToastNotice(null)} />
       )}
 
       <PageHeader
@@ -109,13 +100,13 @@ export function CierreCurso({ course, weeksCount, materialsCount, assignmentsCou
             <Button onClick={() => setShowActaModal(true)} variant="primary" fullWidth className="font-black text-[10px] py-3 uppercase tracking-wider bg-[#8B0026]">
               <FileSpreadsheet className="w-4 h-4 mr-1.5 text-amber-300 animate-pulse" /> Generar Acta Oficial SFA
             </Button>
-            <Button onClick={() => showToast("El Reporte Consolidado de Rendimiento ha sido exitosamente generado y enviado a Coordinación Académica.")} variant="outline" fullWidth className="font-black text-[10px]">
+            <Button onClick={() => notify("El Reporte Consolidado de Rendimiento ha sido exitosamente generado y enviado a Coordinación Académica.", "info")} variant="outline" fullWidth className="font-black text-[10px]">
               Generar Reporte de Rendimiento
             </Button>
-            <Button onClick={() => showToast("El PDF oficial del curso con todas sus calificaciones ha sido descargado al sistema.")} variant="outline" fullWidth className="font-black text-[10px]">
+            <Button onClick={() => notify("El PDF oficial del curso con todas sus calificaciones ha sido descargado al sistema.", "info")} variant="outline" fullWidth className="font-black text-[10px]">
               Exportar a PDF
             </Button>
-            <Button onClick={() => showToast("La hoja de cálculo Excel (.xlsx) de notas de alumnos se compiló y descargó.")} variant="outline" fullWidth className="font-black text-[10px]">
+            <Button onClick={() => notify("La hoja de cálculo Excel (.xlsx) de notas de alumnos se compiló y descargó.", "info")} variant="outline" fullWidth className="font-black text-[10px]">
               Exportar a Excel
             </Button>
           </CardContent>

@@ -1,12 +1,13 @@
 import { AttendanceRecord } from "../../../types";
 import { studentAttendanceRecords } from "../../../utils/attendance";
-import React from "react";
+import React, { useState } from "react";
 import { 
   Zap, Cpu, Sliders, Award, ChevronRight, ChevronDown, BookOpen, Clock, CheckCircle2, 
   Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark
 } from "lucide-react";
 import { CourseMaterial, CourseAssignment, CourseEvaluation, AcademicProgram, StudentPersonalData } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
+import Toast, { ToastNotice } from "../../ui/Toast";
 
 interface ClassesTabProps {
   attendance: AttendanceRecord[];
@@ -61,6 +62,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 }) => {
   const classesCoursesData = enrichedCourses;
   const activeCourse = classesCoursesData.find(c => c.name === selectedCourseDetail);
+  const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
 
   const Card = ({ children, className = "" }: any) => <div className={`bg-white rounded-xl border border-slate-100 p-6 shadow-xs ${className}`}>{children}</div>;
   const CardHeader = ({ children, className = "" }: any) => <div className={`space-y-1.5 ${className}`}>{children}</div>;
@@ -294,8 +296,11 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
       return a;
     });
     onUpdateAssignments(updated);
-    
-    alert(`¡Archivo "${customFileName}" subido exitosamente a la plataforma educativa como evidencia para la evaluación!`);
+    setToastNotice({
+      id: Date.now(),
+      message: `Archivo "${customFileName}" subido exitosamente a la plataforma educativa como evidencia.`,
+      kind: "success",
+    });
   };
 
   const toggleWeekExpandedLocal = (wNum: number) => {
@@ -684,7 +689,11 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                               </div>
                             </div>
                             <button
-                              onClick={() => alert(`Se ha emulado la descarga del material adjunto: ${m.fileName}`)}
+                              onClick={() => setToastNotice({
+                                id: Date.now(),
+                                message: `Descargando material didáctico: ${m.fileName}`,
+                                kind: "info",
+                              })}
                               className="bg-[#800521]/10 hover:bg-[#800521] text-[#800521] hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all cursor-pointer select-none"
                             >
                               Descargar
@@ -783,7 +792,11 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                                         if (input && input.value.trim()) {
                                           handleSimulateHWUpload(asg.id, input.value);
                                         } else {
-                                          alert("Por favor digite un nombre de archivo válido.");
+                                          setToastNotice({
+                                            id: Date.now(),
+                                            message: "Por favor digite un nombre de archivo válido.",
+                                            kind: "warning",
+                                          });
                                         }
                                       }}
                                       className="bg-[#800521] hover:bg-[#9F062A] text-white h-10 px-4 rounded text-[10.5px] font-black uppercase cursor-pointer select-none"
@@ -912,6 +925,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           );
         })()}
       </div>
+
+      {toastNotice && (
+        <Toast notice={toastNotice} onClose={() => setToastNotice(null)} />
+      )}
     </PageTransition>
   );
 };

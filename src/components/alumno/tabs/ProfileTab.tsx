@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { CheckCircle2, Clock, XCircle, Upload, FileText, Eye, ShieldCheck, X, BookOpen, Check } from "lucide-react";
 import { StudentPersonalData, Enrollment, AcademicProgram, Graduation } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
+import Toast, { ToastNotice } from "../../ui/Toast";
 
 interface ProfileTabProps {
   personalData: StudentPersonalData;
@@ -42,6 +43,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   onUpdateEnrollment,
   graduation
 }) => {
+  const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
   const [previewDoc, setPreviewDoc] = useState<{
     title: string;
     fileName: string;
@@ -270,7 +272,11 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             </div>
 
             <button 
-              onClick={() => alert("Para actualizar sus datos de domicilio oficiales para titulación, consulte a ventanilla de Secretaría Académica.")}
+              onClick={() => setToastNotice({
+                id: Date.now(),
+                message: "Para actualizar sus datos de domicilio oficiales para titulación, consulte a ventanilla de Secretaría Académica.",
+                kind: "info",
+              })}
               className="w-full mt-6 bg-[#800521] hover:bg-[#9F062A] text-white font-bold py-2 rounded-lg text-xs uppercase tracking-wider transition-all cursor-pointer"
             >
               Editar Perfil
@@ -597,6 +603,10 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
           </div>
         </div>
       </div>
+
+      {toastNotice && (
+        <Toast notice={toastNotice} onClose={() => setToastNotice(null)} />
+      )}
     </PageTransition>
   );
 };

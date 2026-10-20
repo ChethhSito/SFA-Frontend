@@ -1018,6 +1018,7 @@ export default function AdminDashboard({
             setPostulantesClassroomFilter={setPostulantesClassroomFilter}
             onUpdateApplicants={onUpdateApplicants}
             renderPeriodSelector={renderPeriodSelector}
+            notify={notify}
           />
         )}
 
@@ -1029,6 +1030,7 @@ export default function AdminDashboard({
             selectedPeriodId={selectedPeriodId}
             onUpdateApplicants={onUpdateApplicants}
             renderPeriodSelector={renderPeriodSelector}
+            notify={notify}
           />
         )}
 
@@ -1112,6 +1114,7 @@ export default function AdminDashboard({
             adminSupportReply={adminSupportReply}
             setAdminSupportReply={setAdminSupportReply}
             onUpdateApplicants={onUpdateApplicants}
+            notify={notify}
           />
         )}
 
@@ -1149,6 +1152,7 @@ export default function AdminDashboard({
         handleValidateApplicantDocument={handleValidateApplicantDocument}
         handleUpdateFolderStatus={handleUpdateFolderStatus}
         sanitizePeriodName={sanitizePeriodName}
+        notify={notify}
       />
 
       {/* Image Previewer Modal */}
