@@ -163,11 +163,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
     return applicants.filter((app) => {
       const matchesPeriod =
         !selectedPeriodId ||
-        selectedPeriodId === "all" ||
-        app.periodId === selectedPeriodId ||
-        !app.periodId ||
-        app.periodId === "1" ||
-        app.periodId === "p1";
+        selectedPeriodId === "all" || app.periodId === selectedPeriodId;
 
       const isAdmitted =
         app.admitted === true ||

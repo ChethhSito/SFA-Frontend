@@ -93,7 +93,7 @@ export default function ImagePreviewModal({
         }
       `}</style>
       <div className="w-full max-w-lg bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden text-left flex flex-col max-h-[90vh]">
-        
+
         {/* Header */}
         <div className="bg-slate-900 text-white p-4 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-2">
@@ -123,8 +123,8 @@ export default function ImagePreviewModal({
                 </button>
               </div>
             )}
-            <button 
-              onClick={onClose} 
+            <button
+              onClick={onClose}
               className="text-slate-400 hover:text-white transition-colors cursor-pointer text-xs font-black p-1"
             >
               <X className="w-4 h-4" />
@@ -134,10 +134,10 @@ export default function ImagePreviewModal({
 
         {/* Scrollable Viewport */}
         <div className="p-6 bg-slate-50 flex-1 overflow-y-auto flex flex-col items-center justify-center min-h-[300px]">
-          
+
           {activeTabMode === "receipt" ? (
             /* ==============================================
-               HIGH-FIDELITY TUITION / FEE RECEIPT TEMPLATE 
+               HIGH-FIDELITY TUITION / FEE RECEIPT TEMPLATE
                ============================================== */
             <div id="receipt-print-area" className="w-full max-w-sm bg-white border border-slate-300 p-6 shadow-sm rounded-lg relative overflow-hidden font-sans border-t-4 border-t-[#9F062A]">
               <div className="text-center space-y-1">
@@ -192,7 +192,7 @@ export default function ImagePreviewModal({
                     <p className="text-[7px] font-bold text-emerald-600 uppercase mt-0.5 leading-none">Oficina de Tesorería</p>
                   </div>
                 </div>
-                
+
                 {/* Barcode representation */}
                 <div className="mt-5 flex flex-col items-center space-y-1 opacity-70">
                   <div className="h-6 w-44 bg-[repeating-linear-gradient(90deg,currentColor,currentColor_1px,transparent_1px,transparent_4px)] text-slate-800" />
@@ -202,10 +202,10 @@ export default function ImagePreviewModal({
             </div>
           ) : (
             /* ==============================================
-               HIGH-FIDELITY DIGITAL FILE SCAN REPRESENTATIONS 
+               HIGH-FIDELITY DIGITAL FILE SCAN REPRESENTATIONS
                ============================================== */
             <div className="w-full max-w-md bg-white p-6 shadow-sm border border-slate-250 rounded-xl relative overflow-hidden text-slate-800">
-              
+
               {metadata?.fileDataUrl ? (
                 <div className="flex flex-col items-center justify-center p-2 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
                   {isPdf ? (
@@ -215,9 +215,9 @@ export default function ImagePreviewModal({
                       className="w-full h-[380px] rounded border border-slate-200"
                     />
                   ) : (
-                    <img 
-                      src={metadata.fileDataUrl} 
-                      alt={title} 
+                    <img
+                      src={metadata.fileDataUrl}
+                      alt={title}
                       referrerPolicy="no-referrer"
                       className="max-w-full max-h-[350px] object-contain rounded shadow-xs border border-slate-300"
                     />
@@ -251,14 +251,14 @@ export default function ImagePreviewModal({
 
         {/* Footer actions */}
         <div className="bg-slate-100 p-4 border-t border-slate-200 flex justify-end gap-2 shrink-0">
-          <button 
+          <button
             onClick={onClose}
             className="px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 cursor-pointer"
           >
             Cerrar Vista
           </button>
-          
-          <button 
+
+          <button
             onClick={handlePrint}
             className="px-4 py-2 bg-slate-900 border border-slate-900 text-white hover:bg-slate-800 rounded font-black uppercase text-[10px] tracking-wider cursor-pointer flex items-center gap-1.5"
           >

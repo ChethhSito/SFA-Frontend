@@ -8,6 +8,7 @@ import {
 export type PortalTab = "inicio" | "nosotros" | "programas" | "admision" | "transparencia" | "contactanos";
 
 interface PortalHeaderProps {
+  admissionLabel: string;
   currentTab: PortalTab;
   setCurrentTab: (tab: PortalTab) => void;
   setSelectedProgramId: (id: string) => void;
@@ -15,11 +16,13 @@ interface PortalHeaderProps {
   setSubmitSuccessMsg: (msg: string) => void;
   activeSessionRole: string | null;
   activeRoleLabel: string | null;
+  activeSessionName: string | null;
   onEnterIntranet: () => void;
   onLogout?: () => void;
 }
 
 export const PortalHeader: React.FC<PortalHeaderProps> = ({
+  admissionLabel,
   currentTab,
   setCurrentTab,
   setSelectedProgramId,
@@ -217,7 +220,7 @@ export const PortalHeader: React.FC<PortalHeaderProps> = ({
                   className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold uppercase flex items-center gap-2.5 text-slate-800 cursor-pointer"
                 >
                   <CheckSquare className="w-4 h-4 text-[#9F062A] shrink-0" />
-                  <span>Pre-Inscripción Virtual 2026-I</span>
+                  <span>Preinscripción: {admissionLabel}</span>
                 </button>
                 <button
                   onClick={() => {

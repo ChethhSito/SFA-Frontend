@@ -9,74 +9,62 @@ export interface ScheduleConflict {
   schedule: string;
 }
 
-export function useConflictDetector(planningItems: any[] = [], courses: any[] = []) {
-  const conflicts = useMemo(() => {
+function toMinutes(value: unknown): number | null {
+  if (typeof value !== "string") return null;
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!match) return null;
+  let hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (minute > 59 || hour > (match[3] ? 12 : 23) || (match[3] && hour < 1)) return null;
+  if (match[3]) hour = hour % 12 + (match[3].toUpperCase() === "PM" ? 12 : 0);
+  return hour * 60 + minute;
+}
+
+export function useConflictDetector(planningItems: any[] = [], courses: any[] = [], groups: any[] = []) {
+  const { conflicts, orphanCount } = useMemo(() => {
     const list: ScheduleConflict[] = [];
-    if (!planningItems || planningItems.length === 0) return list;
+    const periodByGroup = new Map(groups.map(group => [group.id, group.periodId]));
+    const orphans = planningItems.filter(item => !periodByGroup.has(item.groupId)).length;
+    const courseName = (item: any) => {
+      const course = courses.find((candidate: any) => candidate.id === item.courseId || candidate.code === item.courseId);
+      return item.courseName || course?.name || item.courseId || item.name || "Curso";
+    };
 
-    const classroomScheduleMap: Record<string, { courseName: string; schedule: string }[]> = {};
-    const teacherScheduleMap: Record<string, { courseName: string; schedule: string }[]> = {};
+    for (let i = 0; i < planningItems.length; i++) {
+      const first = planningItems[i];
+      const period = periodByGroup.get(first.groupId);
+      const firstStart = toMinutes(first.startTime);
+      const firstEnd = toMinutes(first.endTime);
+      if (!period || !first.dayOfWeek || firstStart === null || firstEnd === null || firstStart >= firstEnd) continue;
 
-    planningItems.forEach((item) => {
-      const classroom = item.classroom || item.classroomId;
-      const schedule = item.schedule || item.timeSlot || (item.dayOfWeek && item.startTime ? `${item.dayOfWeek} ${item.startTime}-${item.endTime}` : item.scheduleId);
-      const teacher = item.teacherDni || item.teacherName;
-      const courseMatch = courses.find((c: any) => c.id === item.courseId || c.code === item.courseId);
-      const courseName = item.courseName || (courseMatch ? courseMatch.name : item.courseId) || item.name || "Curso";
+      for (let j = i + 1; j < planningItems.length; j++) {
+        const second = planningItems[j];
+        if (periodByGroup.get(second.groupId) !== period || second.dayOfWeek !== first.dayOfWeek) continue;
+        const secondStart = toMinutes(second.startTime);
+        const secondEnd = toMinutes(second.endTime);
+        if (secondStart === null || secondEnd === null || secondStart >= secondEnd || firstStart >= secondEnd || secondStart >= firstEnd) continue;
 
-      if (classroom && schedule) {
-        const key = `${classroom}__${schedule}`;
-        if (!classroomScheduleMap[key]) {
-          classroomScheduleMap[key] = [];
+        const schedule = `${first.dayOfWeek} ${first.startTime}-${first.endTime} / ${second.startTime}-${second.endTime}`;
+        if (first.classroomId && first.classroomId === second.classroomId) {
+          list.push({
+            type: "classroom",
+            description: `Cruce de aula: ${first.classroomId} tiene dos sesiones simultáneas el ${schedule}.`,
+            item1: courseName(first), item2: courseName(second),
+            classroomOrTeacher: first.classroomId, schedule,
+          });
         }
-        classroomScheduleMap[key].push({ courseName, schedule });
-      }
-
-      if (teacher && schedule) {
-        const key = `${teacher}__${schedule}`;
-        if (!teacherScheduleMap[key]) {
-          teacherScheduleMap[key] = [];
+        if (first.teacherDni && first.teacherDni === second.teacherDni) {
+          list.push({
+            type: "teacher",
+            description: `Cruce de docente: hay dos sesiones simultáneas el ${schedule}.`,
+            item1: courseName(first), item2: courseName(second),
+            classroomOrTeacher: first.teacherDni, schedule,
+          });
         }
-        teacherScheduleMap[key].push({ courseName, schedule });
       }
-    });
+    }
+    return { conflicts: list, orphanCount: orphans };
+  }, [planningItems, courses, groups]);
 
-    // Detect classroom overlaps
-    Object.entries(classroomScheduleMap).forEach(([key, matches]) => {
-      if (matches.length > 1) {
-        const [classroom, schedule] = key.split("__");
-        list.push({
-          type: "classroom",
-          description: `Cruce de Aula: El aula "${classroom}" tiene ${matches.length} asignaciones simultáneas en el horario ${schedule}.`,
-          item1: matches[0].courseName,
-          item2: matches[1].courseName,
-          classroomOrTeacher: classroom,
-          schedule
-        });
-      }
-    });
-
-    // Detect teacher overlaps
-    Object.entries(teacherScheduleMap).forEach(([key, matches]) => {
-      if (matches.length > 1) {
-        const [teacher, schedule] = key.split("__");
-        list.push({
-          type: "teacher",
-          description: `Cruce de Docente: El docente "${teacher}" tiene ${matches.length} asignaciones simultáneas en el horario ${schedule}.`,
-          item1: matches[0].courseName,
-          item2: matches[1].courseName,
-          classroomOrTeacher: teacher,
-          schedule
-        });
-      }
-    });
-
-    return list;
-  }, [planningItems, courses]);
-
-  return {
-    conflicts,
-    hasConflicts: conflicts.length > 0,
-    conflictCount: conflicts.length
-  };
+  return { conflicts, hasConflicts: conflicts.length > 0, conflictCount: conflicts.length, orphanCount };
 }

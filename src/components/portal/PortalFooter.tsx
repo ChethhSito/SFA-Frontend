@@ -2,12 +2,14 @@ import React from "react";
 import { MapPin, Phone, Mail } from "lucide-react";
 
 interface PortalFooterProps {
+  admissionLabel: string;
   setCurrentTab: (tab: "inicio" | "nosotros" | "programas" | "admision" | "transparencia" | "contactanos") => void;
   setSelectedProgramId: (id: string) => void;
   onEnterIntranet: () => void;
 }
 
 export const PortalFooter: React.FC<PortalFooterProps> = ({
+  admissionLabel,
   setCurrentTab,
   setSelectedProgramId,
   onEnterIntranet
@@ -47,7 +49,7 @@ export const PortalFooter: React.FC<PortalFooterProps> = ({
         <div>
           <h5 className="text-white font-extrabold uppercase tracking-wider mb-3 text-[11px]">Enlaces de Interés</h5>
           <ul className="space-y-2 text-[11px] font-medium">
-            <li><button onClick={() => setCurrentTab("admision")} className="hover:text-amber-300 transition-colors text-slate-200 cursor-pointer">Pre-Inscripción 2026-I</button></li>
+            <li><button onClick={() => setCurrentTab("admision")} className="hover:text-amber-300 transition-colors text-slate-200 cursor-pointer">Preinscripción: {admissionLabel}</button></li>
             <li><button onClick={() => setCurrentTab("transparencia")} className="hover:text-amber-300 transition-colors text-slate-200 cursor-pointer">Portal de Transparencia</button></li>
             <li><button onClick={onEnterIntranet} className="hover:text-amber-300 transition-colors text-slate-200 cursor-pointer">Intranet Académica</button></li>
           </ul>

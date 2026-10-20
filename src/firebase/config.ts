@@ -6,6 +6,7 @@ import firebaseConfig from "../../firebase-applet-config.json";
 
 // The application determines if Firebase is active based on the API key presence
 export const isFirebaseEnabled = !!firebaseConfig.apiKey && firebaseConfig.apiKey !== "";
+export const isFirestoreEnabled = isFirebaseEnabled && import.meta.env.VITE_USE_FIRESTORE === "true";
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
@@ -20,13 +21,15 @@ if (isFirebaseEnabled) {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     auth = getAuth(app);
     
-    // Enable long polling to ensure connection succeeds inside sandboxed iframes
-    db = initializeFirestore(app, {
-      experimentalForceLongPolling: true
-    }, (firebaseConfig as any).firestoreDatabaseId || undefined);
+    // Firestore requires an explicit opt-in; local API data is the default.
+    if (isFirestoreEnabled) {
+      db = initializeFirestore(app, {
+        experimentalForceLongPolling: true
+      }, (firebaseConfig as any).firestoreDatabaseId || undefined);
+    }
     
     storage = getStorage(app);
-    console.info("Firebase services have been initialized successfully with long-polling!");
+    console.info("Firebase authentication and storage initialized.");
   } catch (error) {
     console.error("Failed to initialize Firebase services:", error);
   }

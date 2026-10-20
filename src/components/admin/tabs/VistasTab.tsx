@@ -22,11 +22,7 @@ export const VistasTab: React.FC<VistasTabProps> = ({
 }) => {
   const activeApps = applicants.filter((app) => 
     !selectedPeriodId || 
-    selectedPeriodId === "all" || 
-    app.periodId === selectedPeriodId ||
-    !app.periodId ||
-    app.periodId === "1" ||
-    app.periodId === "p1"
+    selectedPeriodId === "all" || app.periodId === selectedPeriodId
   );
   const totalAppsCount = activeApps.length;
   const completedDossiers = activeApps.filter((app) => {
@@ -43,11 +39,7 @@ export const VistasTab: React.FC<VistasTabProps> = ({
     const isApp = applicants.find((a) => {
       const matchesPeriod =
         !selectedPeriodId ||
-        selectedPeriodId === "all" ||
-        a.periodId === selectedPeriodId ||
-        !a.periodId ||
-        a.periodId === "1" ||
-        a.periodId === "p1";
+        selectedPeriodId === "all" || a.periodId === selectedPeriodId;
       return a.dni === enr.studentDni && matchesPeriod;
     });
     return enr.academicStatus === "MATRICULADO" && isApp;

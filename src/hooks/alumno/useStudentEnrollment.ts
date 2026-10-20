@@ -18,6 +18,7 @@ export function useStudentEnrollment() {
         if (!apiEnrolls) throw new Error("No se pudo consultar matrículas");
         setEnrollments(apiEnrolls);
         localStorage.setItem("sfa_enrollments", JSON.stringify(apiEnrolls));
+        if (apiEnrolls.length === 0) localStorage.removeItem("sfa_session_alumno");
       })
       .catch((err) => {
         console.error("Error fetching enrollments from REST API:", err);

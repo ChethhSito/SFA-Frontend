@@ -32,11 +32,7 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
 }) => {
   const activeApps = applicants.filter((app) => 
     !selectedPeriodId || 
-    selectedPeriodId === "all" || 
-    app.periodId === selectedPeriodId ||
-    !app.periodId ||
-    app.periodId === "1" ||
-    app.periodId === "p1"
+    selectedPeriodId === "all" || app.periodId === selectedPeriodId
   );
 
   // A candidate is a ready "Postulante" once all 4 documents are validated AND payment is validated.

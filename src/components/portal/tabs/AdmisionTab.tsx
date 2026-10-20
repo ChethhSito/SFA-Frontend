@@ -2,6 +2,8 @@ import React from "react";
 import { Landmark, FileCheck, Check, CheckCircle2, AlertCircle, Loader2, Send, ArrowRight } from "lucide-react";
 
 interface AdmisionTabProps {
+  admissionLabel: string;
+  registrationOpen: boolean;
   dniInput: string;
   setDniInput: (val: string) => void;
   nameInput: string;
@@ -24,6 +26,8 @@ interface AdmisionTabProps {
 }
 
 export const AdmisionTab: React.FC<AdmisionTabProps> = ({
+  admissionLabel,
+  registrationOpen,
   dniInput,
   setDniInput,
   nameInput,
@@ -49,10 +53,12 @@ export const AdmisionTab: React.FC<AdmisionTabProps> = ({
       <div className="max-w-7xl mx-auto space-y-10">
 
         <div className="text-center max-w-3xl mx-auto">
-          <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">PROCESO ORDINARIO 2026-I</span>
+          <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">PROCESO DE ADMISIÓN · {admissionLabel}</span>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Pre-Inscripción Virtual de Admisión</h2>
           <p className="text-xs sm:text-sm text-slate-600 font-medium mt-2 leading-relaxed">
-            Completa el formulario oficial para obtener tu Código de Postulante y registrar tus credenciales de acceso a la Intranet Académica.
+            {registrationOpen
+              ? "Completa el formulario oficial para obtener tu código de postulante y tus datos de acceso."
+              : "Aquí se habilitará el formulario cuando MAMC abra una convocatoria vigente."}
           </p>
         </div>
 
@@ -128,7 +134,7 @@ export const AdmisionTab: React.FC<AdmisionTabProps> = ({
                   <p className="text-xs text-slate-500 font-medium mt-0.5">Ingresa tus datos completos tal como figuran en tu DNI.</p>
                 </div>
                 <span className="bg-[#9F062A] text-white text-[10px] font-mono font-bold px-3 py-1 rounded-md uppercase">
-                  ADMISIÓN 2026-I
+                  {admissionLabel}
                 </span>
               </div>
 
@@ -151,7 +157,11 @@ export const AdmisionTab: React.FC<AdmisionTabProps> = ({
                 </div>
               )}
 
-              {submitSuccessMsg ? (
+              {!registrationOpen ? (
+                <div className="bg-amber-50 border border-amber-300 text-amber-950 p-5 rounded-xl text-sm font-semibold">
+                  No hay una convocatoria abierta dentro de las fechas de preinscripción. Consulte este portal cuando MAMC habilite el proceso.
+                </div>
+              ) : submitSuccessMsg ? (
                 <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 p-6 rounded-xl text-xs space-y-4">
                   <div className="flex items-start gap-3">
                     <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
@@ -271,7 +281,7 @@ export const AdmisionTab: React.FC<AdmisionTabProps> = ({
                   </button>
 
                   <p className="text-[10px] text-slate-500 text-center font-medium pt-2">
-                    Al registrarte se generará tu Código de Postulante y se enviarán tus credenciales de la Intranet por correo electrónico.
+                    Al registrarte se generará tu código de postulante y se mostrarán tus datos de acceso en la confirmación.
                   </p>
                 </form>
               )}

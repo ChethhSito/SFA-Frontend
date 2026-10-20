@@ -3,7 +3,7 @@ import PostulanteDashboard from "../postulante";
 import { Applicant, Enrollment } from "../../types";
 import { Lock, ArrowLeft, Loader2 } from "lucide-react";
 import Button from "../ui/Button";
-import { auth, isFirebaseEnabled, db } from "../../firebase/config";
+import { auth, isFirestoreEnabled, db } from "../../firebase/config";
 import { getDocumentGeneric, saveDocumentGeneric } from "../../firebase/firestore";
 import { doc, onSnapshot } from "firebase/firestore";
 import { fetchApplicantByDni, updateApplicant } from "../../services/api";
@@ -44,7 +44,7 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
     }
 
     let unsubscribe: (() => void) | undefined = undefined;
-    if (isFirebaseEnabled && s && db) {
+    if (isFirestoreEnabled && s && db) {
       const docRef = doc(db, "applicants", s);
       unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
@@ -178,10 +178,8 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
       console.error("Error saving updated applicant to REST API:", apiErr);
     }
     
-    // Update in Firebase Firestore WITH fileDataUrl so MAMC admin can view the images.
-    // Firestore limit is 1MB PER DOCUMENT (not total), and each compressed image is ~100-300KB,
-    // so 4 docs per applicant is well within the limit.
-    if (isFirebaseEnabled && session) {
+    // Optional Firestore synchronization when explicitly enabled.
+    if (isFirestoreEnabled && session) {
       try {
         await saveDocumentGeneric("applicants", session, updated); // full data with fileDataUrl
         console.log("Updated live applicant profile (with images) in Firestore!");

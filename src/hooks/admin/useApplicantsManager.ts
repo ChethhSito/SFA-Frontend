@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { isFirebaseEnabled, db } from "../../firebase/config";
+import { isFirestoreEnabled, db } from "../../firebase/config";
 import { saveDocumentGeneric } from "../../firebase/firestore";
 import { collection, onSnapshot } from "firebase/firestore";
 import {
@@ -25,17 +25,7 @@ export function stripFileDataUrls(applicantsList: any[]): any[] {
 export function useApplicantsManager(
   onAdmissionTrigger?: (updatedList: any[]) => void
 ) {
-  const [applicants, setApplicants] = useState<any[]>(() => {
-    const savedApps = localStorage.getItem("sfa_applicants");
-    if (savedApps) {
-      try {
-        return JSON.parse(savedApps);
-      } catch (err) {
-        console.error("parsing local sfa_applicants", err);
-      }
-    }
-    return [];
-  });
+  const [applicants, setApplicants] = useState<any[]>([]);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,60 +34,16 @@ export function useApplicantsManager(
     setLoading(true);
     fetchApplicants()
       .then((apiApps) => {
-        if (apiApps && apiApps.length > 0) {
-          setApplicants((prev) => {
-            const merged = [...prev];
-            apiApps.forEach((a) => {
-              const index = merged.findIndex((m) => m.dni === a.dni || m.applicantCode === a.applicantCode);
-              if (index >= 0) {
-                const localItem = merged[index];
-                let localDocStatus: any = null;
-                try {
-                  const raw = localStorage.getItem(`sfa_doc_status_${localItem.dni}`);
-                  if (raw) localDocStatus = JSON.parse(raw);
-                } catch (e) {}
-
-                let localPayStatus: string | null = null;
-                try {
-                  localPayStatus = localStorage.getItem(`sfa_payment_status_${localItem.dni}`);
-                } catch (e) {}
-
-                const paymentStatus = (localItem.paymentStatus === "Validado" || localPayStatus === "Validado" || a.paymentStatus === "Validado") 
-                  ? "Validado" 
-                  : (a.paymentStatus || localItem.paymentStatus || "Pendiente");
-                const folderStatus = (localItem.folderStatus === "Approved" || a.folderStatus === "Approved" || localItem.folderStatus === "Enrolled" || a.folderStatus === "Enrolled")
-                  ? (localItem.folderStatus === "Enrolled" || a.folderStatus === "Enrolled" ? "Enrolled" : "Approved")
-                  : (a.folderStatus || localItem.folderStatus || "Pending");
-                const admitted = localItem.admitted === true || localItem.admitted === "ADMITIDO" || a.admitted === true || a.admitted === "ADMITIDO";
-                
-                const localDocs = { ...(localItem.docs || {}), ...(localDocStatus || {}) };
-                const apiDocs = a.docs || {};
-                const mergedDocs = { ...apiDocs, ...localDocs };
-                for (const key of ["dniFile", "certificadoFile", "partidaFile", "fotoFile"]) {
-                  if (localDocs[key]?.status === "Validado" || apiDocs[key]?.status === "Validado") {
-                    mergedDocs[key] = {
-                      ...(apiDocs[key] || {}),
-                      ...(localDocs[key] || {}),
-                      status: "Validado"
-                    };
-                  }
-                }
-
-                merged[index] = { 
-                  ...a, 
-                  ...localItem, 
-                  paymentStatus, 
-                  folderStatus, 
-                  admitted: admitted ? "ADMITIDO" : (a.admitted || localItem.admitted),
-                  docs: mergedDocs 
-                };
-              } else {
-                merged.push(a);
-              }
-            });
-            localStorage.setItem("sfa_applicants", JSON.stringify(stripFileDataUrls(merged)));
-            return merged;
-          });
+        if (!apiApps) throw new Error("No se pudo consultar postulantes");
+        setApplicants(apiApps);
+        localStorage.setItem("sfa_applicants", JSON.stringify(stripFileDataUrls(apiApps)));
+        if (apiApps.length === 0) {
+          localStorage.removeItem("sfa_session_postulante");
+          for (const key of Object.keys(localStorage)) {
+            if (key.startsWith("sfa_doc_status_") || key.startsWith("sfa_payment_status_")) {
+              localStorage.removeItem(key);
+            }
+          }
         }
       })
       .catch((err) => {
@@ -107,7 +53,7 @@ export function useApplicantsManager(
       .finally(() => setLoading(false));
 
     let unsubscribeApplicants: (() => void) | undefined = undefined;
-    if (isFirebaseEnabled && db) {
+    if (isFirestoreEnabled && db) {
       try {
         const colRef = collection(db, "applicants");
         unsubscribeApplicants = onSnapshot(
@@ -217,7 +163,7 @@ export function useApplicantsManager(
       onAdmissionTrigger(updatedList);
     }
 
-    // Persist to REST API backend and Firestore concurrently
+    // Persist to the local REST API; Firestore is optional.
     for (const app of updatedList) {
       const cleanDoc = stripFileDataUrls([app])[0];
       try {
@@ -226,7 +172,7 @@ export function useApplicantsManager(
         console.warn(`[Backend API] Could not persist applicant ${app.dni}:`, err);
       }
 
-      if (isFirebaseEnabled) {
+      if (isFirestoreEnabled) {
         try {
           const targetId = app.id || app.dni;
           saveDocumentGeneric("applicants", targetId, cleanDoc);

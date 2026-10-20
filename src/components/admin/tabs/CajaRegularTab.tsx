@@ -86,11 +86,7 @@ export const CajaRegularTab: React.FC<CajaRegularTabProps> = ({
                     const matchesPeriod =
                       !selectedPeriodId ||
                       selectedPeriodId === "all" ||
-                      !app ||
-                      app.periodId === selectedPeriodId ||
-                      !app.periodId ||
-                      app.periodId === "1" ||
-                      app.periodId === "p1";
+                      app?.periodId === selectedPeriodId;
                     const isAdmittedOrEnrolled =
                       enr.academicStatus === "ADMITIDO" ||
                       enr.academicStatus === "MATRICULADO" ||

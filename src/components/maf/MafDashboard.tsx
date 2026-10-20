@@ -13,7 +13,7 @@ import {
   Layers,
   ArrowLeft
 } from "lucide-react";
-import { fetchApplicants, fetchEnrollments } from "../../services/api";
+import { fetchAdmissionPeriods, fetchApplicants, fetchEnrollments } from "../../services/api";
 import { MafConcept, MafObligation, MafExoneration, MafAuditLog, SupportTicket } from "./mafTypes";
 import { defaultConcepts, syncObligationsToMamcAndMge } from "./mafUtils";
 import { AddConceptModal } from "./modals/AddConceptModal";
@@ -181,32 +181,21 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
     // Automatic Sync of MAMC & MGE Payments
     const syncMamcPayments = async () => {
       try {
-        let apps: any[] = [];
-        let enrolls: any[] = [];
-
-        const savedApps = localStorage.getItem("sfa_applicants");
-        if (savedApps) apps = JSON.parse(savedApps);
-
-        const savedEnrolls = localStorage.getItem("sfa_enrollments");
-        if (savedEnrolls) enrolls = JSON.parse(savedEnrolls);
-
-        const apiApps = await fetchApplicants();
-        if (apiApps && Array.isArray(apiApps) && apiApps.length > 0) {
-          apiApps.forEach((a) => {
-            if (!apps.some((x) => x.dni === a.dni)) apps.push(a);
-          });
-        }
-
-        const apiEnrolls = await fetchEnrollments();
-        if (apiEnrolls && Array.isArray(apiEnrolls) && apiEnrolls.length > 0) {
-          apiEnrolls.forEach((e) => {
-            if (!enrolls.some((x) => (x.id && x.id === (e as any).id) || x.studentDni === e.studentDni)) enrolls.push(e);
-          });
-        }
+        const [apiApps, apiEnrolls, periods] = await Promise.all([
+          fetchApplicants(), fetchEnrollments(), fetchAdmissionPeriods(),
+        ]);
+        if (!apiApps || !apiEnrolls) throw new Error("No se pudieron consultar postulantes y matrículas en la API local");
+        const apps: any[] = apiApps;
+        const enrolls: any[] = apiEnrolls;
+        const appDnis = new Set(apps.map(app => app.dni));
+        const enrollmentDnis = new Set(enrolls.map(enrollment => enrollment.studentDni));
 
         setObligations((prevObls) => {
-          const updatedObls = [...prevObls];
-          let changed = false;
+          const updatedObls = prevObls.filter(ob =>
+            (!ob.id.startsWith("OBL-ADM-") || appDnis.has(ob.studentDni)) &&
+            (!ob.id.startsWith("OBL-MAT-") || enrollmentDnis.has(ob.studentDni))
+          );
+          let changed = updatedObls.length !== prevObls.length;
 
           apps.forEach((app) => {
             const dni = app.dni;
@@ -231,7 +220,7 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
                 amount: 120,
                 discount: 0,
                 finalAmount: 120,
-                period: app.admissionPeriod || "2026-I",
+                period: periods?.find(period => period.id === app.periodId)?.name || app.periodId || "Sin período",
                 status,
                 dateCreated: app.createdAt || new Date().toISOString().split("T")[0],
                 voucherRegistered: status === "Validado" || status === "En Proceso" || !!app.voucherCode || !!app.paymentVoucher,

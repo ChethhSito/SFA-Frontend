@@ -6,6 +6,7 @@ import { careersDetail } from "./portalData";
 import { PortalHeader, PortalTab } from "./PortalHeader";
 import { PortalFooter } from "./PortalFooter";
 import { PortalSuccessModal } from "./PortalSuccessModal";
+import { openAdmissionPeriod } from "../../utils/admissionPeriod";
 import { HomeTab } from "./tabs/HomeTab";
 import { NosotrosTab } from "./tabs/NosotrosTab";
 import { ProgramasTab } from "./tabs/ProgramasTab";
@@ -24,12 +25,8 @@ export default function PortalHome({
   onLogout,
   admissionPeriods = []
 }: PortalHomeProps) {
-  // Dynamic active/matching period check using current date validation
-  const activePeriod = admissionPeriods.find(p => p.status === "APERTURADO" || p.isActive) ||
-    admissionPeriods.find(p => p.status !== "CERRADO" && p.status !== "PENDIENTE") ||
-    admissionPeriods[0];
-
-  const displayPeriod = activePeriod || admissionPeriods[0];
+  const activePeriod = openAdmissionPeriod(admissionPeriods);
+  const admissionLabel = activePeriod?.name || "Sin convocatoria abierta";
 
   // Check if user has an active intranet session stored in localStorage
   const { activeSessionRole, activeSessionName } = (() => {
@@ -116,6 +113,11 @@ export default function PortalHome({
     setSubmitSuccessMsg("");
     setFormError("");
 
+    if (!activePeriod) {
+      setFormError("No hay una convocatoria de admisión abierta dentro de sus fechas de preinscripción.");
+      return;
+    }
+
     if (!/^\d{8}$/.test(dniInput)) {
       setFormError("El DNI debe contener exactamente 8 dígitos numéricos.");
       return;
@@ -161,7 +163,7 @@ export default function PortalHome({
         paymentOperation: "",
         examStatus: "No Programado" as const,
         admitted: false,
-        periodId: displayPeriod?.id || activePeriod?.id || admissionPeriods[0]?.id || "1",
+        periodId: activePeriod.id,
         folderStatus: "Pending" as const,
         password: tempPass,
         registeredAt: new Date().toISOString().split("T")[0]
@@ -171,7 +173,11 @@ export default function PortalHome({
       const progName = activeProg ? activeProg.name : "Programa Seleccionado";
 
       const created = await createApplicant(newApplicantPayload);
-      const generatedApplicantCode = created?.applicantCode || dniInput;
+      if (!created) {
+        setFormError("No se pudo registrar la preinscripción en MongoDB. Revise la convocatoria e inténtelo nuevamente.");
+        return;
+      }
+      const generatedApplicantCode = created.applicantCode || dniInput;
 
       if (emailInput && emailInput.trim()) {
         sendTransactionalWelcomeEmail({
@@ -196,12 +202,12 @@ export default function PortalHome({
       });
 
       setSubmitSuccessMsg(
-        `¡Pre-inscripción registrada con éxito! Código Oficial de Postulante: ${generatedApplicantCode}. Sus credenciales de acceso han sido enviadas a su correo electrónico (${emailInput}).`
+        `¡Preinscripción registrada! Código de postulante: ${generatedApplicantCode}. Conserve sus credenciales para ingresar a la intranet.`
       );
 
       try {
         const newApplicantObj = {
-          id: created?.id || `APP-${Date.now()}`,
+          id: created.id || `APP-${Date.now()}`,
           applicantCode: generatedApplicantCode,
           dni: dniInput,
           name: nameInput.trim(),
@@ -251,6 +257,7 @@ export default function PortalHome({
 
       {/* Header & Topbar Component */}
       <PortalHeader
+        admissionLabel={admissionLabel}
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
         setSelectedProgramId={setSelectedProgramId}
@@ -275,6 +282,8 @@ export default function PortalHome({
           >
             {currentTab === "inicio" && (
               <HomeTab
+                admissionLabel={admissionLabel}
+                registrationOpen={Boolean(activePeriod)}
                 setCurrentTab={setCurrentTab}
                 setSelectedProgramId={setSelectedProgramId}
                 setProgramSelection={setProgramSelection}
@@ -296,6 +305,8 @@ export default function PortalHome({
 
             {currentTab === "admision" && (
               <AdmisionTab
+                admissionLabel={admissionLabel}
+                registrationOpen={Boolean(activePeriod)}
                 dniInput={dniInput}
                 setDniInput={setDniInput}
                 nameInput={nameInput}
@@ -341,6 +352,7 @@ export default function PortalHome({
 
       {/* Footer Component */}
       <PortalFooter
+        admissionLabel={admissionLabel}
         setCurrentTab={setCurrentTab}
         setSelectedProgramId={setSelectedProgramId}
         onEnterIntranet={onEnterIntranet}

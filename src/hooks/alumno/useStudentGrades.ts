@@ -9,17 +9,7 @@ import {
 } from "../../services/api";
 
 export function useStudentGrades() {
-  const [studentsData, setStudentsData] = useState<any>(() => {
-    const saved = localStorage.getItem("sfa_students");
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return {};
-  });
+  const [studentsData, setStudentsData] = useState<any>({});
 
   const [cycleStatuses, setCycleStatuses] = useState<any>({});
 
@@ -59,6 +49,10 @@ export function useStudentGrades() {
           setStudentsData(studentMap);
           setCycleStatuses(cyclesMap);
           localStorage.setItem("sfa_students", JSON.stringify(studentMap));
+          if (apiStudents.length === 0) {
+            localStorage.removeItem("sfa_cycle_statuses");
+            localStorage.removeItem("sfa_cycles");
+          }
         }
       })
       .catch((err) => {

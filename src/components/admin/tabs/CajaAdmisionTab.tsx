@@ -34,10 +34,7 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
     const matchesPeriod =
       !selectedPeriodId ||
       selectedPeriodId === "all" ||
-      app.periodId === selectedPeriodId ||
-      !app.periodId ||
-      app.periodId === "1" ||
-      app.periodId === "p1";
+      app.periodId === selectedPeriodId;
     return matchesPeriod;
   });
 
@@ -158,7 +155,9 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
                         )}
                       </td>
                       <td className="p-4 text-center">
-                        {app.paymentStatus === "Pendiente" ? (
+                        {!app.paymentOperation && !app.paymentVoucherUrl ? (
+                          <span className="text-[10px] font-semibold text-slate-500">Sin pago registrado</span>
+                        ) : app.paymentStatus === "Pendiente" ? (
                           <div className="flex gap-1.5 justify-center">
                             <Button
                               onClick={() => handleApproveApplicantPayment(app.dni, true)}
