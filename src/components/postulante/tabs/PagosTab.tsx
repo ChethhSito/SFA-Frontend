@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { 
-  CreditCard, ArrowRight, CheckCircle2, Clock, Check, Landmark, Store, Smartphone, Headset, MessageSquare, Upload 
+  CreditCard, ArrowRight, CheckCircle2, Clock, Check, Landmark, Store, Smartphone, Headset, MessageSquare, Upload, RefreshCw 
 } from "lucide-react";
 import PageTransition from "../../ui/PageTransition";
 import { Applicant } from "../../../types";
@@ -38,6 +38,7 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
   triggerPreview,
   setActiveTab,
 }) => {
+  const [isEditingPayment, setIsEditingPayment] = useState(false);
   const storedVoucherUrl = applicant.paymentVoucherUrl || (applicant.dni ? localStorage.getItem(`sfa_voucher_data_${applicant.dni}`) : null) || undefined;
   const isVoucherType = Boolean(
     applicant.paymentType === "voucher" ||
@@ -105,6 +106,9 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
 
           <button 
             onClick={() => {
+              if (effectivePaymentStatus === "Pendiente") {
+                setIsEditingPayment(true);
+              }
               const formEl = document.getElementById("form-registro-pago");
               if (formEl) {
                 formEl.scrollIntoView({ behavior: "smooth" });
@@ -183,11 +187,21 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
                   Su pago de derecho de admisión por S/. 120.00 ha sido aprobado de manera oficial por Tesorería. ¡Puede continuar con su expediente y asignación de aula de examen!
                 </p>
               </div>
-            ) : effectivePaymentStatus === "Pendiente" ? (
+            ) : (effectivePaymentStatus === "Pendiente" && !isEditingPayment) ? (
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-slate-700 text-xs text-left font-semibold space-y-3">
-                <p className="text-amber-800 font-bold uppercase text-[11px] tracking-wide leading-none flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-amber-600" /> Validación de Pago en Curso
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-amber-800 font-bold uppercase text-[11px] tracking-wide leading-none flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-amber-600" /> Validación de Pago en Curso
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingPayment(true)}
+                    className="py-1 px-2.5 bg-white hover:bg-amber-100/70 border border-amber-300 text-[#8B0020] font-black text-[10px] uppercase rounded-lg shadow-2xs transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                  >
+                    <RefreshCw className="w-3 h-3 text-[#8B0020]" />
+                    <span>Modificar Pago</span>
+                  </button>
+                </div>
                 {storedVoucherUrl ? (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -219,12 +233,35 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
                 ) : (
                   <p className="text-[11px]">Su número de operación ingresado: <span className="font-mono font-bold text-slate-900">{applicant.paymentOperation || "No registrado"}</span></p>
                 )}
-                <p className="text-[11px] text-slate-600 font-medium leading-normal">
-                  La oficina de Tesorería está verificando su comprobante. Por favor espere a que su estado sea actualizado a 'Validado'.
-                </p>
+                <div className="pt-2 border-t border-amber-200/80 flex items-center justify-between gap-2">
+                  <p className="text-[11px] text-slate-600 font-medium leading-normal">
+                    La oficina de Tesorería está verificando su comprobante.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingPayment(true)}
+                    className="text-[10px] font-bold text-[#8B0020] hover:underline cursor-pointer uppercase tracking-wider shrink-0"
+                  >
+                    ¿Cambiar Comprobante?
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-4 font-bold text-xs text-slate-700">
+                {isEditingPayment && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between gap-2 text-xs">
+                    <span className="text-[11px] text-amber-900 font-bold">
+                      Modificando comprobante o código de pago registrado
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingPayment(false)}
+                      className="text-[10px] font-black text-slate-600 hover:text-slate-900 underline uppercase cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
                 {applicant.paymentStatus === "Observado" && (
                   <div className="p-4 bg-red-50/80 border border-red-200 rounded-xl text-slate-750 text-xs text-left font-semibold">
                     <p className="text-red-750 font-extrabold uppercase text-[10px] tracking-wide mb-1 leading-none">Operación Observada por Tesorería</p>
@@ -238,9 +275,15 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
                 )}
 
                 {/* Submission form area */}
-                <form onSubmit={handleSubmitPaymentVoucher} className="space-y-4">
+                <form 
+                  onSubmit={(e) => {
+                    handleSubmitPaymentVoucher(e);
+                    setIsEditingPayment(false);
+                  }} 
+                  className="space-y-4"
+                >
                   <h4 className="text-[10px] font-black text-[#8B0020] uppercase tracking-wider block mb-1">
-                    Seleccione la Forma de Registro de Su Pago
+                    {isEditingPayment ? "Actualice la Forma de Registro de Su Pago" : "Seleccione la Forma de Registro de Su Pago"}
                   </h4>
 
                   {/* Interactive Toggle tabs */}
