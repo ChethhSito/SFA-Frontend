@@ -132,6 +132,31 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
     } catch (e) {
       console.warn("Could not read doc status from localStorage:", e);
     }
+
+    // Rehydrate individual fileDataUrl and voucher data from localStorage
+    if (applicantToRender?.docs) {
+      const rehydratedDocs = { ...applicantToRender.docs } as any;
+      for (const k of ["dniFile", "certificadoFile", "partidaFile", "fotoFile"]) {
+        if (rehydratedDocs[k] && !rehydratedDocs[k].fileDataUrl) {
+          try {
+            const cachedUrl = localStorage.getItem(`sfa_file_data_${currentDni}_${k}`);
+            if (cachedUrl) {
+              rehydratedDocs[k] = { ...rehydratedDocs[k], fileDataUrl: cachedUrl };
+            }
+          } catch (e) {}
+        }
+      }
+      applicantToRender.docs = rehydratedDocs;
+    }
+
+    if (applicantToRender && !applicantToRender.paymentVoucherUrl) {
+      try {
+        const cachedVoucher = localStorage.getItem(`sfa_voucher_data_${currentDni}`);
+        if (cachedVoucher) {
+          applicantToRender.paymentVoucherUrl = cachedVoucher;
+        }
+      } catch (e) {}
+    }
   }
 
 
@@ -140,8 +165,7 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
     onUpdateApplicant(updated);
     setLiveApplicant(updated);
 
-    // Save doc status/fileName to dedicated localStorage key (without heavy base64)
-    // This guarantees the postulante sees their uploaded docs after refresh
+    // Save doc status/fileName and cache base64 images per-document
     if (updated.docs) {
       const docsForStorage: any = {};
       for (const [key, val] of Object.entries(updated.docs)) {
@@ -151,11 +175,26 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
           fileName: d.fileName,
           observations: d.observations
         };
+        if (d.fileDataUrl) {
+          try {
+            localStorage.setItem(`sfa_file_data_${updated.dni}_${key}`, d.fileDataUrl);
+          } catch (e) {
+            console.warn(`Could not save file data for ${key}:`, e);
+          }
+        }
       }
       try {
         localStorage.setItem(`sfa_doc_status_${updated.dni}`, JSON.stringify(docsForStorage));
       } catch (e) {
         console.warn("Could not save doc status to localStorage:", e);
+      }
+    }
+
+    if (updated.paymentVoucherUrl) {
+      try {
+        localStorage.setItem(`sfa_voucher_data_${updated.dni}`, updated.paymentVoucherUrl);
+      } catch (e) {
+        console.warn("Could not save payment voucher url to localStorage:", e);
       }
     }
 

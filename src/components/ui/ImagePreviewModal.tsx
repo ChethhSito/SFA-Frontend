@@ -20,6 +20,7 @@ interface ImagePreviewModalProps {
     fileDataUrl?: string;
     fileName?: string;
     docLabel?: string;
+    docKey?: string;
     docStatus?: string;
     isVoucher?: boolean;
   };
@@ -55,6 +56,52 @@ export default function ImagePreviewModal({
     fileType === "receipt" ? "receipt" : "file"
   );
 
+  const isPersonalDocument = Boolean(
+    metadata?.docKey ||
+    title.toLowerCase().includes("dni") ||
+    title.toLowerCase().includes("certificado") ||
+    title.toLowerCase().includes("partida") ||
+    title.toLowerCase().includes("foto") ||
+    title.toLowerCase().includes("expediente")
+  );
+
+  const canToggleReceipt = !isPersonalDocument && (
+    fileType === "receipt" ||
+    Boolean(metadata?.isVoucher || title.toLowerCase().includes("voucher") || title.toLowerCase().includes("recibo"))
+  );
+
+  // Attempt to resolve file data URL from props, localStorage cache or fallback
+  const resolvedFileDataUrl = React.useMemo(() => {
+    if (metadata?.fileDataUrl) return metadata.fileDataUrl;
+    if (safeDni && metadata?.docKey) {
+      try {
+        const stored = localStorage.getItem(`sfa_file_data_${safeDni}_${metadata.docKey}`);
+        if (stored) return stored;
+      } catch (e) {}
+    }
+    if (safeDni && (metadata?.isVoucher || title.toLowerCase().includes("voucher"))) {
+      try {
+        const storedVoucher = localStorage.getItem(`sfa_voucher_data_${safeDni}`);
+        if (storedVoucher) return storedVoucher;
+      } catch (e) {}
+    }
+    // Also try docKey derived from title
+    if (safeDni) {
+      const derivedKey = title.toLowerCase().includes("dni") ? "dniFile"
+        : title.toLowerCase().includes("certificado") ? "certificadoFile"
+        : title.toLowerCase().includes("partida") ? "partidaFile"
+        : title.toLowerCase().includes("foto") ? "fotoFile"
+        : null;
+      if (derivedKey) {
+        try {
+          const stored = localStorage.getItem(`sfa_file_data_${safeDni}_${derivedKey}`);
+          if (stored) return stored;
+        } catch (e) {}
+      }
+    }
+    return null;
+  }, [metadata?.fileDataUrl, metadata?.docKey, metadata?.isVoucher, safeDni, title]);
+
   React.useEffect(() => {
     if (isOpen) {
       if (fileType === "receipt") {
@@ -63,19 +110,11 @@ export default function ImagePreviewModal({
         setActiveTabMode("file");
       }
     }
-  }, [isOpen, fileType, metadata?.fileDataUrl, fileName]);
+  }, [isOpen, fileType, resolvedFileDataUrl, fileName]);
 
   const isPdf = Boolean(
-    metadata?.fileDataUrl?.startsWith("data:application/pdf") ||
+    resolvedFileDataUrl?.startsWith("data:application/pdf") ||
     fileName?.toLowerCase().endsWith(".pdf")
-  );
-
-  const canToggleReceipt = Boolean(
-    metadata?.transactionId ||
-    metadata?.amount ||
-    title.toLowerCase().includes("voucher") ||
-    title.toLowerCase().includes("recibo") ||
-    metadata?.concept
   );
 
   const handlePrint = () => {
@@ -228,20 +267,20 @@ export default function ImagePreviewModal({
                ============================================== */
             <div className="w-full max-w-md bg-white p-6 shadow-sm border border-slate-250 rounded-xl relative overflow-hidden text-slate-800">
 
-              {metadata?.fileDataUrl ? (
+              {resolvedFileDataUrl ? (
                 <div className="flex flex-col items-center justify-center p-2 bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
                   {isPdf ? (
                     <iframe
-                      src={metadata.fileDataUrl}
+                      src={resolvedFileDataUrl}
                       title={title}
                       className="w-full h-[380px] rounded border border-slate-200"
                     />
                   ) : (
                     <img
-                      src={metadata.fileDataUrl}
+                      src={resolvedFileDataUrl}
                       alt={title}
                       referrerPolicy="no-referrer"
-                      className="max-w-full max-h-[350px] object-contain rounded shadow-xs border border-slate-300"
+                      className="max-w-full max-h-[380px] object-contain rounded shadow-xs border border-slate-300"
                     />
                   )}
                 </div>

@@ -177,24 +177,65 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
                 <p className="text-amber-800 font-bold uppercase text-[11px] tracking-wide leading-none flex items-center gap-1.5">
                   <Clock className="w-4 h-4 text-amber-600" /> Validación de Pago en Curso
                 </p>
-                {applicant.paymentType === "voucher" || applicant.paymentVoucherUrl ? (
-                  <div className="space-y-2">
-                    <p className="text-[11px]">Comprobante adjuntado: <span className="font-mono font-black text-slate-900">{applicant.paymentVoucherFileName || "voucher_comprobante.jpg"}</span></p>
-                    {applicant.paymentVoucherUrl && (
-                      <div className="p-2 bg-white rounded-lg border border-slate-200 inline-block">
-                        <span className="text-[9px] text-slate-400 font-black block mb-1 uppercase">Voucher Enviado:</span>
-                        <img 
-                          src={applicant.paymentVoucherUrl} 
-                          alt="Voucher depositado" 
-                          className="max-h-28 object-contain rounded-md border border-slate-100 cursor-pointer hover:opacity-90 transition-opacity" 
-                          onClick={() => triggerPreview("Voucher Registrado", applicant.paymentVoucherFileName || "voucher.jpg", "image", { fileDataUrl: applicant.paymentVoucherUrl })}
-                        />
+                {(() => {
+                  const storedVoucherUrl = applicant.paymentVoucherUrl || (applicant.dni ? localStorage.getItem(`sfa_voucher_data_${applicant.dni}`) : null) || undefined;
+                  const isImageVoucher = Boolean(
+                    applicant.paymentType === "voucher" ||
+                    storedVoucherUrl ||
+                    (applicant.paymentVoucherFileName && /\.(png|jpg|jpeg|webp)$/i.test(applicant.paymentVoucherFileName)) ||
+                    (applicant.paymentOperation && /\.(png|jpg|jpeg|webp)$/i.test(applicant.paymentOperation))
+                  );
+                  const displayFileName = applicant.paymentVoucherFileName || (isImageVoucher ? applicant.paymentOperation : "") || "voucher_comprobante.jpg";
+
+                  if (isImageVoucher) {
+                    return (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[11px]">Comprobante adjuntado: <span className="font-mono font-black text-slate-900">{displayFileName}</span></p>
+                          <button
+                            type="button"
+                            onClick={() => triggerPreview("Voucher Registrado", displayFileName, "image", { 
+                              fileDataUrl: storedVoucherUrl,
+                              isVoucher: true
+                            })}
+                            className="text-[#8B0020] hover:underline text-[10px] font-bold cursor-pointer uppercase tracking-wider"
+                          >
+                            Ver Comprobante
+                          </button>
+                        </div>
+                        {storedVoucherUrl ? (
+                          <div className="p-2 bg-white rounded-lg border border-slate-200 inline-block shadow-2xs">
+                            <span className="text-[9px] text-slate-400 font-black block mb-1 uppercase tracking-wider">Vista Previa:</span>
+                            <img 
+                              src={storedVoucherUrl} 
+                              alt="Voucher depositado" 
+                              className="max-h-32 max-w-[240px] object-contain rounded-md border border-slate-100 cursor-pointer hover:opacity-90 transition-opacity" 
+                              onClick={() => triggerPreview("Voucher Registrado", displayFileName, "image", { 
+                                fileDataUrl: storedVoucherUrl,
+                                isVoucher: true
+                              })}
+                            />
+                          </div>
+                        ) : (
+                          <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-[10px] text-slate-600 flex items-center justify-between">
+                            <span>Archivo de imagen registrado en su cuenta de postulante.</span>
+                            <button
+                              type="button"
+                              onClick={() => triggerPreview("Voucher Registrado", displayFileName, "image", { isVoucher: true })}
+                              className="px-2 py-1 bg-white border border-slate-300 rounded font-bold hover:bg-slate-100"
+                            >
+                              Abrir Vista
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-[11px]">Su número de operación ingresado: <span className="font-mono font-bold text-slate-900">{applicant.paymentOperation || "No registrado"}</span></p>
-                )}
+                    );
+                  }
+
+                  return (
+                    <p className="text-[11px]">Su número de operación ingresado: <span className="font-mono font-bold text-slate-900">{applicant.paymentOperation || "No registrado"}</span></p>
+                  );
+                })()}
                 <p className="text-[11px] text-slate-600 font-medium leading-normal">
                   La oficina de Tesorería está verificando su comprobante. Por favor espere a que su estado sea actualizado a 'Validado'.
                 </p>
@@ -395,7 +436,7 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
               Historial de Transacciones del Postulante
             </h3>
             <p className="text-[10px] text-slate-400 font-bold mt-1">
-              * El pago inicial por Prospecto de Admisión se valida automáticamente al registrar su cuenta virtual.
+              * Registro oficial de transacciones y validaciones gestionadas por la Oficina de Tesorería.
             </p>
           </div>
         </div>
@@ -413,81 +454,75 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
               </tr>
             </thead>
             <tbody className="divide-y text-[11px] bg-white divide-slate-100">
-              <tr className="hover:bg-slate-50/60 transition-colors">
-                <td className="p-3.5 pl-5 text-slate-500">12/03/2026</td>
-                <td className="p-3.5 font-mono font-bold text-slate-800">#TRX-9921</td>
-                <td className="p-3.5 font-bold text-slate-900">Prospecto de Admisión Regular</td>
-                <td className="p-3.5 text-slate-900 font-extrabold font-mono">S/. 30.00</td>
-                <td className="p-3.5">
-                  <span className="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider">
-                    Validado
-                  </span>
-                </td>
-                <td className="p-3.5 pr-5">
-                  <span 
-                    onClick={() => triggerPreview("Recibo de Prospecto", "TRX-9921", "receipt", { 
-                      amount: "S/. 30.00", 
-                      concept: "Prospecto de Admisión Regular", 
-                      date: "12/03/2026", 
-                      transactionId: "TRX-9921",
-                      dni: applicant.dni,
-                      studentName: applicant.name,
-                      studentLastName: applicant.lastName
-                    })}
-                    className="text-[#8B0020] hover:underline font-extrabold cursor-pointer"
-                  >
-                    Ver Recibo
-                  </span>
-                </td>
-              </tr>
-
-              <tr className="hover:bg-slate-50/60 transition-colors">
-                <td className="p-3.5 pl-5 text-slate-500">{paymentDate}</td>
-                <td className="p-3.5 font-mono font-bold text-slate-800">
-                  {applicant.paymentStatus === "No Pagado" ? "Sin registrar" : (applicant.paymentOperation || "No registrado")}
-                </td>
-                <td className="p-3.5 font-bold text-slate-900">Derecho de Examen Ordinario 2026</td>
-                <td className="p-3.5 text-slate-900 font-extrabold font-mono">S/. 120.00</td>
-                <td className="p-3.5">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-                    applicant.paymentStatus === "Validado"
-                      ? "bg-emerald-100 text-emerald-800"
-                      : applicant.paymentStatus === "Pendiente"
-                        ? "bg-amber-100 text-amber-800 animate-pulse"
-                        : applicant.paymentStatus === "Observado"
-                          ? "bg-red-50 text-red-700 font-extrabold border border-red-200"
-                          : applicant.paymentStatus === "Rechazado"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-slate-100 text-slate-400"
-                  }`}>
-                    {applicant.paymentStatus === "No Pagado" ? "Sin Enviar" : applicant.paymentStatus}
-                  </span>
-                </td>
-                <td className="p-3.5 pr-5">
-                  {applicant.paymentStatus === "Validado" ? (
-                    <span 
-                      onClick={() => triggerPreview("Recibo de Examen de Admisión", applicant.paymentOperation || "PRE-620323", "receipt", { 
-                        amount: "S/. 120.00", 
-                        concept: "Derecho de Examen Ordinario 2026", 
-                        date: paymentDate, 
-                        transactionId: applicant.paymentOperation,
-                        dni: applicant.dni,
-                        studentName: applicant.name,
-                        studentLastName: applicant.lastName
-                      })}
-                      className="text-[#8B0020] hover:underline font-extrabold cursor-pointer"
-                    >
-                      Ver Recibo
+              {applicant.paymentStatus === "No Pagado" && !applicant.paymentOperation && !applicant.paymentVoucherFileName ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-slate-400 font-medium">
+                    No cuenta con transacciones registradas todavía. Complete el formulario superior para declarar su comprobante de pago.
+                  </td>
+                </tr>
+              ) : (
+                <tr className="hover:bg-slate-50/60 transition-colors">
+                  <td className="p-3.5 pl-5 text-slate-500">{paymentDate}</td>
+                  <td className="p-3.5 font-mono font-bold text-slate-800">
+                    {applicant.paymentOperation || applicant.paymentVoucherFileName || "No registrado"}
+                  </td>
+                  <td className="p-3.5 font-bold text-slate-900">Derecho de Examen Ordinario 2026</td>
+                  <td className="p-3.5 text-slate-900 font-extrabold font-mono">S/. 120.00</td>
+                  <td className="p-3.5">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                      applicant.paymentStatus === "Validado"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : applicant.paymentStatus === "Pendiente"
+                          ? "bg-amber-100 text-amber-800 animate-pulse"
+                          : applicant.paymentStatus === "Observado"
+                            ? "bg-red-50 text-red-700 font-extrabold border border-red-200"
+                            : applicant.paymentStatus === "Rechazado"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-slate-100 text-slate-400"
+                    }`}>
+                      {applicant.paymentStatus === "No Pagado" ? "Sin Enviar" : applicant.paymentStatus}
                     </span>
-                  ) : applicant.paymentStatus === "Observado" ? (
-                    <span className="text-red-700 font-bold">Observado</span>
-                  ) : applicant.paymentStatus === "No Pagado" ? (
-                    <span className="text-slate-400 font-bold">Pendiente</span>
-                  ) : (
-                    <span className="text-slate-500 font-bold">En Revisión</span>
-                  )}
-                </td>
-              </tr>
+                  </td>
+                  <td className="p-3.5 pr-5">
+                    {applicant.paymentStatus === "Validado" ? (
+                      <span 
+                        onClick={() => triggerPreview("Recibo de Examen de Admisión", applicant.paymentOperation || "PRE-620323", "receipt", { 
+                          amount: "S/. 120.00", 
+                          concept: "Derecho de Examen Ordinario 2026", 
+                          date: paymentDate, 
+                          transactionId: applicant.paymentOperation || "PRE-620323",
+                          dni: applicant.dni,
+                          studentName: applicant.name,
+                          studentLastName: applicant.lastName
+                        })}
+                        className="text-[#8B0020] hover:underline font-extrabold cursor-pointer"
+                      >
+                        Ver Recibo
+                      </span>
+                    ) : applicant.paymentStatus === "Observado" ? (
+                      <span className="text-red-700 font-bold">Observado</span>
+                    ) : applicant.paymentStatus === "Pendiente" ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-amber-600 font-bold">En Revisión</span>
+                        {(applicant.paymentVoucherUrl || (applicant.dni && localStorage.getItem(`sfa_voucher_data_${applicant.dni}`)) || applicant.paymentVoucherFileName || (applicant.paymentOperation && /\.(png|jpg|jpeg|webp)$/i.test(applicant.paymentOperation))) && (
+                          <button
+                            type="button"
+                            onClick={() => triggerPreview("Voucher Registrado", applicant.paymentVoucherFileName || applicant.paymentOperation || "voucher.jpg", "image", { 
+                              fileDataUrl: applicant.paymentVoucherUrl || (applicant.dni ? localStorage.getItem(`sfa_voucher_data_${applicant.dni}`) : undefined) || undefined,
+                              isVoucher: true
+                            })}
+                            className="text-[#8B0020] hover:underline font-bold text-[10px] cursor-pointer"
+                          >
+                            Ver Voucher
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-slate-400 font-medium">Sin comprobante</span>
+                    )}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

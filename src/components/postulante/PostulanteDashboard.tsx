@@ -163,10 +163,12 @@ export default function PostulanteDashboard({
       studentName: applicant.name,
       studentLastName: applicant.lastName,
       programName: prg,
-      transactionId: applicant.paymentOperation || "PRE-620323",
-      amount: "S/. 120.00",
-      date: paymentDate,
-      concept: "Derecho de Examen Ordinario 2026",
+      ...(fileType === "receipt" || customMeta?.isVoucher ? {
+        transactionId: applicant.paymentOperation || "PRE-620323",
+        amount: "S/. 120.00",
+        date: paymentDate,
+        concept: "Derecho de Examen Ordinario 2026",
+      } : {}),
       ...customMeta
     });
     setPreviewOpen(true);
@@ -320,6 +322,12 @@ export default function PostulanteDashboard({
       }
     };
 
+    try {
+      localStorage.setItem(`sfa_file_data_${applicant.dni}_${docKey}`, dataUrl);
+    } catch (e) {
+      console.warn("Could not cache fileDataUrl in localStorage:", e);
+    }
+
     onUpdateApplicant(updatedApplicant);
     notify(`¡Documento "${filename}" enviado a validación por secretaría!`, "success");
   };
@@ -354,6 +362,13 @@ export default function PostulanteDashboard({
         paymentVoucherFileName: stagedVoucherFile,
         paymentVoucherUrl: stagedVoucherPreview
       };
+
+      try {
+        localStorage.setItem(`sfa_voucher_data_${applicant.dni}`, stagedVoucherPreview);
+      } catch (e) {
+        console.warn("Could not cache voucher url in localStorage:", e);
+      }
+
       onUpdateApplicant(updatedApplicant);
       setStagedVoucherFile("");
       setStagedVoucherPreview("");
