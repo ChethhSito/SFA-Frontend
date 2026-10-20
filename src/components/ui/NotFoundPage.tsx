@@ -22,7 +22,12 @@ export function NotFoundPage({ onGoToPortal }: NotFoundPageProps) {
       </p>
       {onGoToPortal && (
         <button
-          onClick={onGoToPortal}
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              window.history.pushState({}, "", "/");
+            }
+            onGoToPortal();
+          }}
           className="py-3.5 px-8 bg-[#9F062A] hover:bg-[#800521] text-white font-extrabold rounded-xl text-xs uppercase tracking-wider transition-all shadow-md hover:shadow-lg active:scale-95 cursor-pointer"
         >
           Volver al Portal Principal

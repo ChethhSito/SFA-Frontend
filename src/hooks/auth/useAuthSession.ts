@@ -18,9 +18,19 @@ if (typeof window !== "undefined") {
 export function useAuthSession() {
   const [currentUser, setCurrentUser] = useState<{ role: Role; identifier: string }>(() => {
     if (typeof window !== "undefined") {
-      const path = window.location.pathname;
-      if (path === "/ingresar" || path === "/login" || window.location.search.includes("login")) {
+      const rawPath = window.location.pathname.toLowerCase().replace(/\/$/, "");
+      if (rawPath === "/ingresar" || rawPath === "/login" || window.location.search.includes("login")) {
         return { role: "login", identifier: "" };
+      }
+      if (rawPath === "/404") {
+        return { role: "404" as any, identifier: "" };
+      }
+      if (rawPath !== "" && rawPath !== "/") {
+        const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
+        const hasSession = roles.some((r) => Boolean(localStorage.getItem(`sfa_session_${r}`)));
+        if (!hasSession) {
+          return { role: "404" as any, identifier: "" };
+        }
       }
     }
     const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
