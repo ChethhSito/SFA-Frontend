@@ -682,20 +682,42 @@ export default function AdminDashboard({
             return `${y}-${m}-${r}`;
           };
 
-          const preEnrollStart = new Date(baseDate);
+          let preEnrollStart = new Date(baseDate);
           preEnrollStart.setDate(baseDate.getDate() - 35);
-          const preEnrollEnd = new Date(baseDate);
+          let preEnrollEnd = new Date(baseDate);
           preEnrollEnd.setDate(baseDate.getDate() - 21);
 
-          const examDate = new Date(baseDate);
+          let examDate = new Date(baseDate);
           examDate.setDate(baseDate.getDate() - 20);
-          const resultsDate = new Date(baseDate);
+          let resultsDate = new Date(baseDate);
           resultsDate.setDate(baseDate.getDate() - 19);
 
-          const enrollStart = new Date(baseDate);
+          let enrollStart = new Date(baseDate);
           enrollStart.setDate(baseDate.getDate() - 10);
-          const enrollEnd = new Date(baseDate);
+          let enrollEnd = new Date(baseDate);
           enrollEnd.setDate(baseDate.getDate() - 3);
+
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          // Si el cronograma proyectado resulta anterior a la fecha actual, asegurar fechas coherentes y vigentes
+          if (preEnrollEnd < today || baseDate <= today) {
+            preEnrollStart = new Date(today);
+            preEnrollEnd = new Date(today);
+            preEnrollEnd.setDate(today.getDate() + 25);
+
+            examDate = new Date(preEnrollEnd);
+            examDate.setDate(preEnrollEnd.getDate() + 5);
+
+            resultsDate = new Date(examDate);
+            resultsDate.setDate(examDate.getDate() + 1);
+
+            enrollStart = new Date(resultsDate);
+            enrollStart.setDate(resultsDate.getDate() + 2);
+
+            enrollEnd = new Date(enrollStart);
+            enrollEnd.setDate(enrollStart.getDate() + 10);
+          }
 
           setNewPeriodPreEnrollmentStartDate(formatDate(preEnrollStart));
           setNewPeriodPreEnrollmentEndDate(formatDate(preEnrollEnd));
@@ -703,6 +725,7 @@ export default function AdminDashboard({
           setNewPeriodResultsPublicationDate(formatDate(resultsDate));
           setNewPeriodEnrollmentStartDate(formatDate(enrollStart));
           setNewPeriodEnrollmentEndDate(formatDate(enrollEnd));
+
         }
       }
     } else {
