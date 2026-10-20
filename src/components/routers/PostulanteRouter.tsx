@@ -158,13 +158,36 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
       applicantToRender.docs = rehydratedDocs;
     }
 
-    if (applicantToRender && !applicantToRender.paymentVoucherUrl) {
+    if (applicantToRender) {
+      let cachedVoucher: string | null = null;
       try {
-        const cachedVoucher = localStorage.getItem(`sfa_voucher_data_${currentDni}`);
-        if (cachedVoucher) {
-          applicantToRender.paymentVoucherUrl = cachedVoucher;
-        }
+        cachedVoucher = localStorage.getItem(`sfa_voucher_data_${currentDni}`);
       } catch (e) {}
+
+      const effectiveVoucherUrl = applicantToRender.paymentVoucherUrl || cachedVoucher || undefined;
+      if (effectiveVoucherUrl) {
+        applicantToRender.paymentVoucherUrl = effectiveVoucherUrl;
+      }
+
+      // Si el pago no está validado por tesorería y fue declarado como voucher pero no existe imagen física:
+      // figura estrictamente como No Pagado (como si no hubiera enviado aún) para permitir el registro real
+      if (applicantToRender.paymentStatus !== "Validado") {
+        const isVoucherSubmission = applicantToRender.paymentType === "voucher" ||
+          Boolean(applicantToRender.paymentVoucherFileName) ||
+          Boolean(applicantToRender.paymentOperation && /\.(png|jpg|jpeg|webp)$/i.test(applicantToRender.paymentOperation));
+
+        if (isVoucherSubmission && !effectiveVoucherUrl) {
+          applicantToRender.paymentStatus = "No Pagado";
+          applicantToRender.paymentOperation = undefined;
+          applicantToRender.paymentVoucherFileName = undefined;
+          applicantToRender.paymentVoucherUrl = undefined;
+          applicantToRender.paymentType = undefined;
+          try {
+            localStorage.removeItem(`sfa_payment_status_${currentDni}`);
+            localStorage.removeItem(`sfa_voucher_data_${currentDni}`);
+          } catch (e) {}
+        }
+      }
     }
   }
 

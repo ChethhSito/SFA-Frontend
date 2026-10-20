@@ -205,6 +205,28 @@ export default function PostulanteDashboard({
   const globalProgressPercentage = Math.round((approvedCount / totalDocs) * 100);
   const isActuallyAdmitted = applicant.admitted === true || applicant.admitted === "ADMITIDO";
 
+  // Normalizar pago si se declaró voucher pero no existe archivo físico de imagen
+  const storedVoucher = applicant.paymentVoucherUrl || (applicant.dni ? localStorage.getItem(`sfa_voucher_data_${applicant.dni}`) : null) || undefined;
+  const isVoucherType = Boolean(
+    applicant.paymentType === "voucher" ||
+    Boolean(applicant.paymentVoucherFileName) ||
+    Boolean(applicant.paymentOperation && /\.(png|jpg|jpeg|webp)$/i.test(applicant.paymentOperation))
+  );
+
+  const effectiveApplicant: Applicant = (applicant.paymentStatus !== "Validado" && isVoucherType && !storedVoucher)
+    ? {
+        ...applicant,
+        paymentStatus: "No Pagado",
+        paymentOperation: undefined,
+        paymentVoucherFileName: undefined,
+        paymentVoucherUrl: undefined,
+        paymentType: undefined
+      }
+    : {
+        ...applicant,
+        paymentVoucherUrl: storedVoucher || applicant.paymentVoucherUrl
+      };
+
   // Compress image helper
   const compressAndResizeImage = (file: File, callback: (resizedDataUrl: string) => void) => {
     const reader = new FileReader();
@@ -520,7 +542,7 @@ export default function PostulanteDashboard({
         {/* ACTIVE TAB CONTENT RENDER */}
         {activeTab === "dashboard" && (
           <DashboardMainTab
-            applicant={applicant}
+            applicant={effectiveApplicant}
             currentProgram={currentProgram}
             globalProgressPercentage={globalProgressPercentage}
             approvedCount={approvedCount}
@@ -531,7 +553,7 @@ export default function PostulanteDashboard({
 
         {activeTab === "documentos" && (
           <DocumentosTab
-            applicant={applicant}
+            applicant={effectiveApplicant}
             approvedCount={approvedCount}
             totalDocs={totalDocs}
             globalProgressPercentage={globalProgressPercentage}
@@ -545,7 +567,7 @@ export default function PostulanteDashboard({
 
         {activeTab === "pagos" && (
           <PagosTab
-            applicant={applicant}
+            applicant={effectiveApplicant}
             paymentDate={paymentDate}
             paymentVoucher={paymentVoucher}
             setPaymentVoucher={setPaymentVoucher}
@@ -564,7 +586,7 @@ export default function PostulanteDashboard({
 
         {activeTab === "resultados" && (
           <ResultadosTab
-            applicant={applicant}
+            applicant={effectiveApplicant}
             currentProgram={currentProgram}
             isActuallyAdmitted={isActuallyAdmitted}
             approvedCount={approvedCount}
@@ -577,7 +599,7 @@ export default function PostulanteDashboard({
 
         {activeTab === "soporte" && (
           <SoporteTab
-            applicant={applicant}
+            applicant={effectiveApplicant}
             onUpdateApplicant={onUpdateApplicant}
             supportCategory={supportCategory}
             setSupportCategory={setSupportCategory}
