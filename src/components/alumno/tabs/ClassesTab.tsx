@@ -8,6 +8,8 @@ import {
 import { CourseMaterial, CourseAssignment, CourseEvaluation, AcademicProgram, StudentPersonalData } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
 import Toast, { ToastNotice } from "../../ui/Toast";
+import { Card, CardHeader, CardTitle, CardContent } from "../../ui/Card";
+import PageHeader from "../../ui/PageHeader";
 
 interface ClassesTabProps {
   attendance: AttendanceRecord[];
@@ -63,20 +65,6 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   const classesCoursesData = enrichedCourses;
   const activeCourse = classesCoursesData.find(c => c.name === selectedCourseDetail);
   const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
-
-  const Card = ({ children, className = "" }: any) => <div className={`bg-white rounded-xl border border-slate-100 p-6 shadow-xs ${className}`}>{children}</div>;
-  const CardHeader = ({ children, className = "" }: any) => <div className={`space-y-1.5 ${className}`}>{children}</div>;
-  const CardTitle = ({ children, className = "" }: any) => <h3 className={`font-semibold leading-none tracking-tight ${className}`}>{children}</h3>;
-  const CardContent = ({ children, className = "" }: any) => <div className={`pt-0 ${className}`}>{children}</div>;
-  const PageHeader = ({ title, subtitle, icon }: any) => (
-    <div className="flex items-center gap-3 border-b pb-4 text-left">
-      {icon}
-      <div>
-        <h2 className="text-lg font-bold text-slate-900 font-display">{title}</h2>
-        {subtitle && <p className="text-xs text-slate-500 font-semibold">{subtitle}</p>}
-      </div>
-    </div>
-  );
 
   const renderCourseIcon = (iconName: string, className = "w-4 h-4") => {
     switch (iconName) {
