@@ -16,7 +16,7 @@ interface DocenteRouterProps {
   onReloadAttendance: () => Promise<boolean>;
   studentsList: { [dni: string]: StudentPersonalData };
   enrollments?: Enrollment[];
-  onUpdateMaterials: (updated: CourseMaterial[]) => void;
+  onUpdateMaterials: (updated: CourseMaterial[]) => Promise<boolean>;
   onUpdateAssignments: (updated: CourseAssignment[]) => Promise<boolean>;
   onUpdateAttendance: (updated: AttendanceRecord[]) => Promise<boolean>;
   onLogout: () => void;

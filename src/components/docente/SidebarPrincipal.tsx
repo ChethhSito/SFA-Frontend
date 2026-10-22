@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { 
   Users, BookOpen, Clock, FileText, CheckCircle, 
-  Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronDown, ChevronRight, Settings, BarChart3, Megaphone, FileSpreadsheet
+  Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronDown, ChevronRight, Settings, BarChart3, Megaphone, FileSpreadsheet, LibraryBig
 } from "lucide-react";
 import { Course, Teacher } from "../../types";
 import Badge from "../ui/Badge";
@@ -53,9 +53,12 @@ export default function SidebarPrincipal({
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: "cursos", label: "Mis Cursos", icon: <BookOpen className="w-4 h-4" /> },
+    { id: "horario", label: "Mi Horario", icon: <Clock className="w-4 h-4" /> },
     { id: "control_asistencia", label: "Control de Asistencia", icon: <Users className="w-4 h-4" /> },
     { id: "avisos_reportes", label: "Avisos y Reportes", icon: <Megaphone className="w-4 h-4" /> },
     { id: "evaluaciones_cursos", label: "Evaluaciones de Cursos", icon: <FileSpreadsheet className="w-4 h-4" /> },
+    { id: "guias", label: "Guías y Reglamentos", icon: <LibraryBig className="w-4 h-4" /> },
+    { id: "calendar", label: "Calendario Académico", icon: <Calendar className="w-4 h-4" /> },
     { id: "configuracion", label: "Configuración", icon: <Settings className="w-4 h-4" /> },
   ];
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { 
   fetchCourseMaterials, 
   uploadCourseMaterial, 
+  deleteCourseMaterial,
   fetchCourseAssignments, 
   createCourseAssignment,
   updateCourseAssignment,
@@ -27,7 +28,7 @@ export function useMaterialUpload() {
   useEffect(() => {
     fetchCourseMaterials()
       .then((apiMats) => {
-        if (apiMats && Array.isArray(apiMats) && apiMats.length > 0) {
+        if (Array.isArray(apiMats)) {
           setMaterials(apiMats);
           localStorage.setItem("sfa_materials", JSON.stringify(apiMats));
         }
@@ -46,21 +47,26 @@ export function useMaterialUpload() {
       .finally(() => setAssignmentsLoading(false));
   }, []);
 
-  const handleUpdateMaterials = async (updatedList: any[]) => {
-    setMaterials(updatedList);
-    try {
-      localStorage.setItem("sfa_materials", JSON.stringify(updatedList));
-    } catch (e) {
-      console.warn("[localStorage] Could not save sfa_materials:", e);
+  const handleUpdateMaterials = async (updatedList: any[]): Promise<boolean> => {
+    const added = updatedList.find((item) => !materials.some((previous) => previous.id === item.id));
+    const removed = materials.find((item) => !updatedList.some((next) => next.id === item.id));
+    if (added) {
+      const { courseId, title, fileName, contentBase64, mimeType } = added;
+      const response = await uploadCourseMaterial({ courseId, title, fileName, contentBase64, mimeType });
+      if (!response) return false;
+      const next = [...materials, { ...response, id: response._id || response.id }];
+      setMaterials(next);
+      localStorage.setItem("sfa_materials", JSON.stringify(next));
+      return true;
     }
-    const latestItem = updatedList[updatedList.length - 1];
-    if (latestItem) {
-      try {
-        await uploadCourseMaterial(latestItem);
-      } catch (err) {
-        console.warn("[API Error] Could not save material to DB:", err);
-      }
+    if (removed) {
+      if (!await deleteCourseMaterial(removed.id)) return false;
+      const next = materials.filter((item) => item.id !== removed.id);
+      setMaterials(next);
+      localStorage.setItem("sfa_materials", JSON.stringify(next));
+      return true;
     }
+    return true;
   };
 
   const handleUpdateAssignments = async (updatedList: any[]): Promise<boolean> => {

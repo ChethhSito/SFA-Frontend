@@ -10,19 +10,21 @@ interface Props {
   courseId: string;
   week: number;
   observations: WeeklyObservation[];
-  onAddObservation: (text: string, type: "General" | "Incidencia" | "Acuerdo") => void;
-  onDeleteObservation: (id: string) => void;
+  onAddObservation: (text: string, type: "General" | "Incidencia" | "Acuerdo") => Promise<boolean>;
+  onDeleteObservation: (id: string) => Promise<void>;
 }
 
 export function ObservacionManager({ courseId, week, observations, onAddObservation, onDeleteObservation }: Props) {
   const [text, setText] = useState("");
   const [type, setType] = useState<"General" | "Incidencia" | "Acuerdo">("General");
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim()) return;
-    onAddObservation(text, type);
-    setText("");
+    if (!text.trim() || saving) return;
+    setSaving(true);
+    try { if (await onAddObservation(text, type)) setText(""); }
+    finally { setSaving(false); }
   };
 
   const getBadgeVariant = (t: string): "danger" | "warning" | "brand" => {
@@ -74,8 +76,8 @@ export function ObservacionManager({ courseId, week, observations, onAddObservat
                 />
               </div>
 
-              <Button type="submit" variant="primary" fullWidth className="font-black text-[10px] py-3 uppercase tracking-wider bg-[#8B0026] text-white">
-                <Save className="w-4 h-4 mr-1.5" /> Registrar Nota
+              <Button type="submit" disabled={saving} variant="primary" fullWidth className="font-black text-[10px] py-3 uppercase tracking-wider bg-[#8B0026] text-white">
+                <Save className="w-4 h-4 mr-1.5" /> {saving ? "Guardando..." : "Registrar Nota"}
               </Button>
             </form>
           </CardContent>

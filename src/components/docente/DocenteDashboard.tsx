@@ -3,7 +3,7 @@ import {
   Users, BookOpen, Clock, FileText, CheckCircle,
   Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronRight, BarChart3, Settings, AlertCircle, RefreshCw, FileSpreadsheet, Megaphone
 } from "lucide-react";
-import { Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, StudentPersonalData, Teacher, Enrollment } from "../../types";
+import { Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, StudentPersonalData, Teacher, Enrollment, MpaPeriod, MpaAcademicGroup, MpaProgramTask, MpaCourse, MpaClassroom, MpaShift } from "../../types";
 
 // Reusable Custom Design System Components
 import Button from "../ui/Button";
@@ -28,6 +28,11 @@ import EvaluacionesManager from "./EvaluacionesManager";
 import ControlAsistenciaPrincipal from "./ControlAsistenciaPrincipal";
 import EvaluacionesCursosPrincipal from "./EvaluacionesCursosPrincipal";
 import AvisosReportesPrincipal from "./AvisosReportesPrincipal";
+import GuidesLibrary from "../shared/GuidesLibrary";
+import AcademicCalendarBoard from "../shared/AcademicCalendarBoard";
+import TeacherScheduleTab, { TeacherScheduleData } from "./TeacherScheduleTab";
+import { fetchMpaCollection } from "../../services/mpaApi";
+import { fileToBase64, fetchCourseObservations, createCourseObservation, deleteCourseObservation } from "../../services/api";
 
 interface DocenteDashboardProps {
   teacherDni: string;
@@ -42,10 +47,53 @@ interface DocenteDashboardProps {
   onReloadAttendance: () => Promise<boolean>;
   studentsList: { [dni: string]: StudentPersonalData };
   enrollments?: Enrollment[];
-  onUpdateMaterials: (mats: CourseMaterial[]) => void;
+  onUpdateMaterials: (mats: CourseMaterial[]) => Promise<boolean>;
   onUpdateAssignments: (asgs: CourseAssignment[]) => Promise<boolean>;
   onUpdateAttendance: (att: AttendanceRecord[]) => Promise<boolean>;
   onLogout: () => void;
+}
+
+const DASHBOARD_COURSES_PER_PAGE = 2;
+const DIRECTORY_COURSES_PER_PAGE = 3;
+const SCHEDULE_DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+function scheduleMinutes(value?: string): number {
+  const match = value?.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!match) return Number.MAX_SAFE_INTEGER;
+  let hour = Number(match[1]);
+  if (match[3]) hour = (hour % 12) + (match[3].toUpperCase() === "PM" ? 12 : 0);
+  return hour * 60 + Number(match[2]);
+}
+
+function CoursePagination({ page, total, pageSize, onPageChange }: {
+  page: number;
+  total: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+}) {
+  const totalPages = Math.ceil(total / pageSize);
+  if (totalPages <= 1) return null;
+
+  return (
+    <nav aria-label="Paginación de cursos" className="flex flex-wrap items-center justify-between gap-3 pt-3">
+      <span className="text-xs font-semibold text-slate-500">
+        Mostrando {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} de {total} cursos
+      </span>
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={() => onPageChange(page - 1)} disabled={page === 1}
+          className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 hover:bg-slate-50">
+          Anterior
+        </button>
+        <span className="min-w-16 text-center text-xs font-bold text-slate-700" aria-live="polite">
+          {page} de {totalPages}
+        </span>
+        <button type="button" onClick={() => onPageChange(page + 1)} disabled={page === totalPages}
+          className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 hover:bg-slate-50">
+          Siguiente
+        </button>
+      </div>
+    </nav>
+  );
 }
 
 export default function DocenteDashboard({
@@ -69,6 +117,33 @@ export default function DocenteDashboard({
   // Main Selection States
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("dashboard"); // "dashboard" | "cursos" | "control_asistencia" | "avisos_reportes" | "evaluaciones_cursos" | "configuracion" | "curso"
+  const [dashboardCoursePage, setDashboardCoursePage] = useState(1);
+  const [directoryCoursePage, setDirectoryCoursePage] = useState(1);
+  const [scheduleData, setScheduleData] = useState<TeacherScheduleData | null>(null);
+  const [scheduleLoading, setScheduleLoading] = useState(true);
+  const [scheduleError, setScheduleError] = useState("");
+
+  const reloadTeacherSchedule = useCallback(async () => {
+    setScheduleLoading(true);
+    setScheduleError("");
+    try {
+      const [periods, groups, tasks, mpaCourses, classrooms, shifts] = await Promise.all([
+        fetchMpaCollection<MpaPeriod>("periods"),
+        fetchMpaCollection<MpaAcademicGroup>("groups"),
+        fetchMpaCollection<MpaProgramTask>("tasks"),
+        fetchMpaCollection<MpaCourse>("courses"),
+        fetchMpaCollection<MpaClassroom>("classrooms"),
+        fetchMpaCollection<MpaShift>("shifts"),
+      ]);
+      setScheduleData({ periods, groups, tasks, courses: mpaCourses, classrooms, shifts });
+    } catch (error) {
+      setScheduleError(error instanceof Error ? error.message : "No se pudo consultar el horario de MPA.");
+    } finally {
+      setScheduleLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void reloadTeacherSchedule(); }, [reloadTeacherSchedule]);
 
   // Weekly Syllabus States (active when selectedCourseId !== null)
   const [activeSection, setActiveSection] = useState<CourseSection>("general");
@@ -106,6 +181,17 @@ export default function DocenteDashboard({
   ) || (teacherDni === "docente" || !teacherDni ? (allTeachers.find((t) => t.careerId === "electronica") || allTeachers[0] || null) : null);
 
   const effectiveTeacherDni = currentTeacher?.dni || teacherDni;
+  const teacherMpaTasks = scheduleData?.tasks.filter((task) =>
+    task.teacherDni === effectiveTeacherDni && scheduleData.groups.some((group) => group.id === task.groupId),
+  ) || [];
+  const teacherPeriodIds = new Set(teacherMpaTasks.map((task) => scheduleData?.groups.find((group) => group.id === task.groupId)?.periodId));
+  const teacherPeriods = scheduleData?.periods.filter((period) => teacherPeriodIds.has(period.id)) || [];
+  const schedulePeriod = teacherPeriods.find((period) => period.isActive)
+    || [...teacherPeriods].sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+  const currentTeacherSessions = teacherMpaTasks.filter((task) =>
+    scheduleData?.groups.find((group) => group.id === task.groupId)?.periodId === schedulePeriod?.id,
+  ).sort((a, b) => SCHEDULE_DAYS.indexOf(a.dayOfWeek || "") - SCHEDULE_DAYS.indexOf(b.dayOfWeek || "")
+    || scheduleMinutes(a.startTime) - scheduleMinutes(b.startTime));
 
   // Filter courses assigned to this specific teacher (supporting multiple professors per course)
   const teacherCourses = allCourses.filter((c) => {
@@ -125,6 +211,18 @@ export default function DocenteDashboard({
     }
     return false;
   });
+  const dashboardPageCount = Math.max(1, Math.ceil(teacherCourses.length / DASHBOARD_COURSES_PER_PAGE));
+  const directoryPageCount = Math.max(1, Math.ceil(teacherCourses.length / DIRECTORY_COURSES_PER_PAGE));
+  const safeDashboardCoursePage = Math.min(dashboardCoursePage, dashboardPageCount);
+  const safeDirectoryCoursePage = Math.min(directoryCoursePage, directoryPageCount);
+  const dashboardCourses = teacherCourses.slice(
+    (safeDashboardCoursePage - 1) * DASHBOARD_COURSES_PER_PAGE,
+    safeDashboardCoursePage * DASHBOARD_COURSES_PER_PAGE
+  );
+  const directoryCourses = teacherCourses.slice(
+    (safeDirectoryCoursePage - 1) * DIRECTORY_COURSES_PER_PAGE,
+    safeDirectoryCoursePage * DIRECTORY_COURSES_PER_PAGE
+  );
   const selectedCourse = allCourses.find((c) => c.id === selectedCourseId) || null;
 
   useEffect(() => {
@@ -155,26 +253,21 @@ export default function DocenteDashboard({
     }
   }, [studentsList]);
 
-  // 1. STATE: Weekly Observations per course & week (clean state, purging mock IDs)
-  const [weeklyObservations, setWeeklyObservations] = useState<{ [key: string]: WeeklyObservation[] }>(() => {
-    const saved = localStorage.getItem("sfa_weekly_observations");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        delete parsed["cur-elec-1-1"];
-        delete parsed["cur-elec-1-4"];
-        return parsed;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return {};
-  });
-
-  // Save observations status in localStorage
+  const [weeklyObservations, setWeeklyObservations] = useState<WeeklyObservation[]>([]);
+  const [observationsLoading, setObservationsLoading] = useState(false);
   useEffect(() => {
-    localStorage.setItem("sfa_weekly_observations", JSON.stringify(weeklyObservations));
-  }, [weeklyObservations]);
+    if (!selectedCourseId || activeSection !== "week" || selectedWeekOption !== "observaciones") return;
+    let current = true;
+    setObservationsLoading(true);
+    fetchCourseObservations(selectedCourseId, selectedWeek).then((items) => {
+      if (current) {
+        setWeeklyObservations(items || []);
+        setObservationsLoading(false);
+        if (!items) notify("No se pudieron cargar las observaciones.", false);
+      }
+    });
+    return () => { current = false; };
+  }, [selectedCourseId, selectedWeek, selectedWeekOption, activeSection]);
 
   const [notice, setNotice] = useState<ToastNotice | null>(null);
   const closeNotice = useCallback(() => setNotice(null), []);
@@ -207,31 +300,43 @@ export default function DocenteDashboard({
     return assignments.filter((a) => {
       if (a.courseId !== selectedCourseId) return false;
       const weekPattern = `[Semana ${selectedWeek}]`;
-      return a.title.startsWith(weekPattern);
+      return a.kind !== "assessment" && a.title.startsWith(weekPattern);
     });
   };
 
   // Actions: Publish material
-  const handlePublishMaterial = (title: string, fileName: string, type: string) => {
-    if (!selectedCourseId) return;
+  const handlePublishMaterial = async (title: string, file: File) => {
+    if (!selectedCourseId) return false;
+    if (!file.size || file.size > 10 * 1024 * 1024) { notify("El archivo debe tener como máximo 10 MB.", false); return false; }
+    let contentBase64: string;
+    try { contentBase64 = await fileToBase64(file); }
+    catch { notify("No se pudo leer el archivo.", false); return false; }
     const newMaterial: CourseMaterial = {
       id: `mat-${Date.now()}`,
       courseId: selectedCourseId,
-      title: `[Semana ${selectedWeek}] ${title} (${type})`,
+      title: `[Semana ${selectedWeek}] ${title}`,
       date: new Date().toISOString().split("T")[0],
-      fileName: fileName
+      fileName: file.name,
+      contentBase64,
+      mimeType: file.type || "application/octet-stream",
     };
-    onUpdateMaterials([...materials, newMaterial]);
+    const saved = await onUpdateMaterials([...materials, newMaterial]);
+    notify(saved ? "Material y archivo guardados en el servidor." : "No se pudo subir el material.", saved);
+    return saved;
   };
 
   // Actions: Delete material
-  const handleDeleteMaterial = (id: string) => {
-    onUpdateMaterials(materials.filter((m) => m.id !== id));
+  const handleDeleteMaterial = async (id: string) => {
+    const saved = await onUpdateMaterials(materials.filter((m) => m.id !== id));
+    notify(saved ? "Material eliminado." : "No se pudo eliminar el material.", saved);
   };
 
   // Actions: Publish assignment
-  const handlePublishAssignment = async (title: string, desc: string, dueDate: string, attachment?: string, rubric?: string) => {
+  const handlePublishAssignment = async (title: string, desc: string, dueDate: string, attachment?: File, rubric?: string) => {
     if (!selectedCourseId) return;
+    if (attachment && (!attachment.size || attachment.size > 10 * 1024 * 1024)) {
+      notify("El adjunto debe tener como máximo 10 MB.", false); return false;
+    }
     const newAsg: CourseAssignment = {
       id: `asg-${Date.now()}`,
       courseId: selectedCourseId,
@@ -240,8 +345,14 @@ export default function DocenteDashboard({
       dueDate: dueDate,
       submissions: []
     };
-    if (attachment) (newAsg as any).attachment = attachment;
-    if (rubric) (newAsg as any).rubric = rubric;
+    if (attachment) {
+      try {
+        newAsg.attachment = attachment.name;
+        newAsg.contentBase64 = await fileToBase64(attachment);
+        newAsg.mimeType = attachment.type || "application/octet-stream";
+      } catch { notify("No se pudo leer el archivo adjunto.", false); return false; }
+    }
+    if (rubric) newAsg.rubric = rubric;
 
     const saved = await onUpdateAssignments([...assignments, newAsg]);
     notify(saved ? "Tarea guardada en el servidor." : "No se pudo guardar la tarea.", saved);
@@ -255,29 +366,19 @@ export default function DocenteDashboard({
   };
 
   // Actions: Add observation
-  const handleAddObservation = (text: string, type: "General" | "Incidencia" | "Acuerdo") => {
-    if (!selectedCourseId) return;
-    const key = `${selectedCourseId}-${selectedWeek}`;
-    const newObs: WeeklyObservation = {
-      id: `obs-${Date.now()}`,
-      text: text,
-      date: new Date().toLocaleDateString("es-PE"),
-      type: type
-    };
-    setWeeklyObservations((prev) => ({
-      ...prev,
-      [key]: [newObs, ...(prev[key] || [])]
-    }));
+  const handleAddObservation = async (text: string, type: "General" | "Incidencia" | "Acuerdo") => {
+    if (!selectedCourseId) return false;
+    const saved = await createCourseObservation({ courseId: selectedCourseId, week: selectedWeek, text, type });
+    if (saved) setWeeklyObservations((prev) => [{ ...saved, id: saved._id || saved.id }, ...prev]);
+    notify(saved ? "Observación guardada en el servidor." : "No se pudo guardar la observación.", !!saved);
+    return !!saved;
   };
 
   // Actions: Delete observation
-  const handleDeleteObservation = (id: string) => {
-    if (!selectedCourseId) return;
-    const key = `${selectedCourseId}-${selectedWeek}`;
-    setWeeklyObservations((prev) => ({
-      ...prev,
-      [key]: (prev[key] || []).filter((obs) => obs.id !== id)
-    }));
+  const handleDeleteObservation = async (id: string) => {
+    const deleted = await deleteCourseObservation(id);
+    if (deleted) setWeeklyObservations((prev) => prev.filter((obs) => obs.id !== id));
+    notify(deleted ? "Observación eliminada." : "No se pudo eliminar la observación.", deleted);
   };
 
   // Helper to calculate course specific stats
@@ -348,31 +449,39 @@ export default function DocenteDashboard({
 
   const globalStats = getGlobalStats();
 
-  // Handler for custom weekly schedules per course (derived dynamically)
+  // Course schedule is sourced from the same MPA programming as Mi Horario.
   const getCourseSchedulesList = (courseCode: string) => {
-    const found = courses.find((c) => c.code === courseCode || c.id === courseCode);
-    if (found && found.schedule) {
-      const parts = found.schedule.split(" • ");
-      if (parts.length >= 2) {
-        return parts.map((part) => {
-          const isLab = part.toLowerCase().includes("lab");
-          const type = isLab ? "Laboratorio" : "Teoría";
-          const dayMatch = part.match(/^(Lunes|Martes|Miércoles|Jueves|Viernes)/i);
-          const day = dayMatch ? dayMatch[1] : "Lunes";
-          const timeMatch = part.match(/\d{2}:\d{2}\s*(?:AM|PM)\s*-\s*\d{2}:\d{2}\s*(?:AM|PM)/i);
-          const timeStr = timeMatch ? timeMatch[0] : "08:00 AM - 11:30 AM";
-          const [start, end] = timeStr.split(" - ");
-          const classRoomMatch = part.match(/\((?:Teoría|Lab):\s*([^)]+)\)/i);
-          const classroom = classRoomMatch ? classRoomMatch[1] : (found.classroom || "Aula Regular");
-          return { type, day, start: start || "08:00 AM", end: end || "11:30 AM", classroom, freq: "Semanal" };
-        });
-      }
-    }
-    const cr = found?.classroom || "Aula Regular";
-    return [
-      { type: "Teoría", day: "Lunes", start: "08:00 AM", end: "10:15 AM", classroom: cr, freq: "Semanal" },
-      { type: "Laboratorio", day: "Miércoles", start: "10:30 AM", end: "01:00 PM", classroom: cr, freq: "Semanal" }
-    ];
+    const mpaCourse = scheduleData?.courses.find((course) => course.code === courseCode);
+    if (!mpaCourse) return [];
+    return currentTeacherSessions.filter((task) => task.courseId === mpaCourse.id)
+      .map((task) => ({
+        type: task.sessionType,
+        day: task.dayOfWeek || "Sin día",
+        start: task.startTime || "",
+        end: task.endTime || "",
+        classroom: scheduleData?.classrooms.find((classroom) => classroom.id === task.classroomId)?.name || task.classroomId,
+        group: scheduleData?.groups.find((group) => group.id === task.groupId)?.name || task.groupId,
+        freq: "Semanal",
+      }));
+  };
+  const getCourseScheduleSummary = (courseCode: string) => {
+    const rows = getCourseSchedulesList(courseCode);
+    return rows.length ? rows.map((row) => `${row.day} ${row.start} - ${row.end} (${row.group})`).join(" • ") : "Sin programación en MPA para el período seleccionado";
+  };
+  const getCourseWithSchedule = (course: Course): Course => {
+    const rows = getCourseSchedulesList(course.code);
+    if (!rows.length) return course;
+    const teacherName = currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : course.teacherName;
+    return {
+      ...course,
+      group: [...new Set(rows.map((row) => row.group))].join(', '),
+      classroom: [...new Set(rows.map((row) => row.classroom))].join(', '),
+      schedule: getCourseScheduleSummary(course.code),
+      startDate: schedulePeriod?.startDate || course.startDate,
+      endDate: schedulePeriod?.endDate || course.endDate,
+      teacherName,
+      teachers: teacherName ? [{ dni: effectiveTeacherDni, name: teacherName }] : course.teachers,
+    };
   };
 
   return (
@@ -579,7 +688,8 @@ export default function DocenteDashboard({
                     </div>
                   </CardHeader>
                   <CardContent className="p-5 font-sans space-y-3">
-                    {teacherCourses.map((c) => {
+                    {dashboardCourses.map((rawCourse) => {
+                      const c = getCourseWithSchedule(rawCourse);
                       return (
                         <div
                           key={c.id}
@@ -606,7 +716,7 @@ export default function DocenteDashboard({
                             <div className="text-[11px] text-slate-500 font-bold space-y-1 md:self-end">
                               <p><span className="text-slate-400">Aula/Lab:</span> <span className="text-[#8B0026] uppercase font-extrabold">{c.classroom}</span></p>
                               <p><span className="text-slate-400">Alumnos:</span> <span className="text-slate-800">{c.studentCount || ROSTER.length || 0} Alumnos</span></p>
-                              <p><span className="text-slate-400">Horario:</span> <span className="text-slate-800">{c.schedule}</span></p>
+                              <p><span className="text-slate-400">Horario MPA:</span> <span className="text-slate-800">{getCourseScheduleSummary(c.code)}</span></p>
                               <p><span className="text-slate-400">Fechas:</span> <span className="text-slate-800 font-mono">{c.startDate || "06/04/2026"} al {c.endDate || "24/07/2026"}</span></p>
                             </div>
                           </div>
@@ -629,6 +739,11 @@ export default function DocenteDashboard({
                         </div>
                       );
                     })}
+                    {teacherCourses.length === 0 && (
+                      <p className="py-6 text-center text-sm text-slate-500">No tiene cursos asignados.</p>
+                    )}
+                    <CoursePagination page={safeDashboardCoursePage} total={teacherCourses.length}
+                      pageSize={DASHBOARD_COURSES_PER_PAGE} onPageChange={setDashboardCoursePage} />
                   </CardContent>
                 </Card>
 
@@ -638,17 +753,17 @@ export default function DocenteDashboard({
                   <Card className="text-left border border-slate-150">
                     <CardHeader>
                       <div>
-                        <CardTitle>Próximas Sesiones programadas</CardTitle>
-                        <CardDescription>Horarios lectivos de clases presenciales</CardDescription>
+                        <CardTitle>Sesiones semanales programadas</CardTitle>
+                        <CardDescription>Asignaciones registradas en MPA {schedulePeriod ? `· ${schedulePeriod.name}` : ""}</CardDescription>
                       </div>
                     </CardHeader>
                     <CardContent className="p-5 text-xs text-slate-700 font-bold space-y-2.5 font-sans">
-                      {teacherCourses.length === 0 ? (
+                      {currentTeacherSessions.length === 0 ? (
                         <p className="text-slate-400 text-[11px] font-medium py-3 text-center">
-                          No registra sesiones lectivas programadas para el periodo activo.
+                          No registra sesiones lectivas en MPA para este período.
                         </p>
                       ) : (
-                        teacherCourses.slice(0, 4).map((c, idx) => {
+                        currentTeacherSessions.slice(0, 4).map((task, idx) => {
                           const borderColors = ["border-[#8B0026]", "border-amber-500", "border-blue-500", "border-emerald-500"];
                           const badgeColors = [
                             "bg-[#8B0026]/10 text-[#8B0026]",
@@ -656,18 +771,18 @@ export default function DocenteDashboard({
                             "bg-blue-500/10 text-blue-700",
                             "bg-emerald-500/10 text-emerald-700"
                           ];
-                          const dayBadge = c.schedule?.split(" ")[0] || "Lectivo";
-                          const timeInfo = c.schedule?.includes(" ") ? c.schedule.substring(c.schedule.indexOf(" ") + 1) : (c.schedule || "Horario regular");
+                          const mpaCourse = scheduleData?.courses.find((course) => course.id === task.courseId);
+                          const classroom = scheduleData?.classrooms.find((room) => room.id === task.classroomId);
                           return (
-                            <div key={c.id || c.code} className={`p-2 bg-slate-50 border-l-4 ${borderColors[idx % borderColors.length]} rounded flex justify-between items-center`}>
+                            <div key={task.id} className={`p-2 bg-slate-50 border-l-4 ${borderColors[idx % borderColors.length]} rounded flex justify-between items-center`}>
                               <div className="min-w-0 flex-1 pr-2">
-                                <span className="block font-black text-slate-900 leading-tight truncate">{c.name}</span>
+                                <span className="block font-black text-slate-900 leading-tight truncate">{mpaCourse?.name || task.courseId}</span>
                                 <span className="text-[10px] text-slate-400 mt-1 block truncate">
-                                  {c.classroom || "Aula regular"} • {timeInfo}
+                                  {classroom?.name || task.classroomId} • {task.startTime} - {task.endTime}
                                 </span>
                               </div>
                               <span className={`text-[9px] ${badgeColors[idx % badgeColors.length]} font-black h-max px-2 py-0.5 rounded font-mono uppercase shrink-0`}>
-                                {dayBadge}
+                                {task.dayOfWeek}
                               </span>
                             </div>
                           );
@@ -712,7 +827,8 @@ export default function DocenteDashboard({
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {teacherCourses.map((c) => {
+                {directoryCourses.map((rawCourse) => {
+                  const c = getCourseWithSchedule(rawCourse);
                   const stats = getCourseAggregates(c.id);
                   return (
                     <Card key={c.id} className="border border-slate-150 shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between">
@@ -750,7 +866,7 @@ export default function DocenteDashboard({
                         </div>
                         <div className="flex justify-between border-b pb-1.5">
                           <span className="text-slate-400 font-semibold">Horario:</span>
-                          <span className="text-slate-900">{c.schedule}</span>
+                          <span className="text-slate-900">{getCourseScheduleSummary(c.code)}</span>
                         </div>
                         <div className="flex justify-between border-b pb-1.5">
                           <span className="text-slate-400 font-semibold">Fecha de Inicio:</span>
@@ -778,6 +894,18 @@ export default function DocenteDashboard({
                   );
                 })}
               </div>
+              {teacherCourses.length === 0 && (
+                <p className="py-6 text-center text-sm text-slate-500">No tiene cursos asignados.</p>
+              )}
+              <CoursePagination page={safeDirectoryCoursePage} total={teacherCourses.length}
+                pageSize={DIRECTORY_COURSES_PER_PAGE} onPageChange={setDirectoryCoursePage} />
+            </PageTransition>
+          )}
+
+          {selectedCourseId === null && activeTab === "horario" && (
+            <PageTransition id="teacher-schedule-tab">
+              <TeacherScheduleTab teacherDni={effectiveTeacherDni} data={scheduleData}
+                loading={scheduleLoading} error={scheduleError} onReload={() => void reloadTeacherSchedule()} />
             </PageTransition>
           )}
 
@@ -811,6 +939,18 @@ export default function DocenteDashboard({
               <EvaluacionesCursosPrincipal studentsList={studentsList} enrollments={enrollments} assignments={assignments} onUpdateAssignments={onUpdateAssignments}
                 courses={teacherCourses}
               />
+            </PageTransition>
+          )}
+
+          {selectedCourseId === null && activeTab === "guias" && (
+            <PageTransition id="teacher-guides-tab">
+              <GuidesLibrary audience="teacher" />
+            </PageTransition>
+          )}
+
+          {selectedCourseId === null && activeTab === "calendar" && (
+            <PageTransition id="teacher-calendar-tab">
+              <AcademicCalendarBoard />
             </PageTransition>
           )}
 
@@ -859,7 +999,7 @@ export default function DocenteDashboard({
               {activeSection === "general" && (
                 <PageTransition id="curso-general" className="space-y-6">
                   <ResumenCurso
-                    course={selectedCourse}
+                    course={getCourseWithSchedule(selectedCourse)}
                     {...getCourseAggregates(selectedCourseId)}
                   />
                 </PageTransition>
@@ -899,6 +1039,10 @@ export default function DocenteDashboard({
                             <span className="text-slate-400 font-semibold">Aula / Laboratorio:</span>
                             <span className="text-[#8B0026] uppercase font-extrabold">{sch.classroom}</span>
                           </div>
+                          <div className="flex justify-between border-b pb-1.5">
+                            <span className="text-slate-400 font-semibold">Grupo:</span>
+                            <span className="text-slate-900 uppercase font-extrabold">{sch.group}</span>
+                          </div>
                           <div className="flex justify-between">
                             <span className="text-slate-400 font-semibold">Frecuencia de Repetición:</span>
                             <span className="text-slate-900 uppercase font-black tracking-wide text-[10.5px]">{sch.freq}</span>
@@ -906,6 +1050,9 @@ export default function DocenteDashboard({
                         </CardContent>
                       </Card>
                     ))}
+                    {getCourseSchedulesList(selectedCourse.code).length === 0 && (
+                      <p className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">Esta asignatura no tiene horario registrado para este docente en MPA.</p>
+                    )}
                   </div>
                 </PageTransition>
               )}
@@ -982,7 +1129,7 @@ export default function DocenteDashboard({
                       <ObservacionManager
                         courseId={selectedCourseId}
                         week={selectedWeek}
-                        observations={weeklyObservations[`${selectedCourseId}-${selectedWeek}`] || []}
+                        observations={observationsLoading ? [] : weeklyObservations}
                         onAddObservation={handleAddObservation}
                         onDeleteObservation={handleDeleteObservation}
                       />

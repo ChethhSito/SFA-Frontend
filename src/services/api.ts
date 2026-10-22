@@ -401,14 +401,58 @@ export async function saveCourseAttendance(courseId: string, date: string, statu
 
 export async function fetchCourseMaterials(courseId?: string): Promise<any[] | null> {
   const query = courseId ? `?courseId=${courseId}` : "";
-  return fetchJson<any[]>(`/courses/materials/list${query}`);
+  const list = await fetchJson<any[]>(`/courses/materials/list${query}`);
+  return list?.map((item) => ({ ...item, id: item._id || item.id })) ?? null;
 }
 
-export async function uploadCourseMaterial(material: { courseId: string; title: string; fileName: string; date: string }): Promise<any | null> {
+export async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+export function courseFileUrl(kind: 'materials' | 'evidences' | 'assignments', id: string): string {
+  return `${API_BASE_URL}/courses/${kind}/${encodeURIComponent(id)}/file`;
+}
+
+export async function uploadCourseMaterial(material: { courseId: string; title: string; fileName: string; contentBase64: string; mimeType: string }): Promise<any | null> {
   return fetchJson<any>("/courses/materials/upload", {
     method: "POST",
     body: JSON.stringify(material)
   });
+}
+
+export async function deleteCourseMaterial(id: string): Promise<boolean> {
+  return !!(await fetchJson<{ success: boolean }>(`/courses/materials/${encodeURIComponent(id)}`, { method: 'DELETE' }))?.success;
+}
+
+export async function fetchCourseEvidences(courseId: string, week: number): Promise<any[] | null> {
+  const list = await fetchJson<any[]>(`/courses/evidences/list?courseId=${encodeURIComponent(courseId)}&week=${week}`);
+  return list?.map((item) => ({ ...item, id: item._id || item.id })) ?? null;
+}
+
+export async function uploadCourseEvidence(evidence: { courseId: string; week: number; category: string; title: string; fileName: string; contentBase64: string; mimeType: string }): Promise<any | null> {
+  return fetchJson<any>('/courses/evidences/upload', { method: 'POST', body: JSON.stringify(evidence) });
+}
+
+export async function deleteCourseEvidence(id: string): Promise<boolean> {
+  return !!(await fetchJson<{ success: boolean }>(`/courses/evidences/${encodeURIComponent(id)}`, { method: 'DELETE' }))?.success;
+}
+
+export async function fetchCourseObservations(courseId: string, week: number): Promise<any[] | null> {
+  const list = await fetchJson<any[]>(`/courses/observations/list?courseId=${encodeURIComponent(courseId)}&week=${week}`);
+  return list?.map((item) => ({ ...item, id: item._id || item.id })) ?? null;
+}
+
+export async function createCourseObservation(observation: { courseId: string; week: number; type: string; text: string }): Promise<any | null> {
+  return fetchJson<any>('/courses/observations', { method: 'POST', body: JSON.stringify(observation) });
+}
+
+export async function deleteCourseObservation(id: string): Promise<boolean> {
+  return !!(await fetchJson<{ success: boolean }>(`/courses/observations/${encodeURIComponent(id)}`, { method: 'DELETE' }))?.success;
 }
 
 export async function fetchCourseAssignments(courseId?: string): Promise<any[] | null> {
@@ -425,7 +469,7 @@ export async function deleteCourseAssignment(id: string): Promise<{ success: boo
   return fetchJson<{ success: boolean }>(`/courses/assignments/${id}`, { method: 'DELETE' });
 }
 
-export async function createCourseAssignment(assignment: { courseId: string; title: string; description: string; dueDate: string }): Promise<any | null> {
+export async function createCourseAssignment(assignment: { courseId: string; title: string; description: string; dueDate: string; attachment?: string; rubric?: string; contentBase64?: string; mimeType?: string }): Promise<any | null> {
   return fetchJson<any>("/courses/assignments/create", {
     method: "POST",
     body: JSON.stringify(assignment)

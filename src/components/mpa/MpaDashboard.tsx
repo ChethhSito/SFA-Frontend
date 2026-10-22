@@ -23,6 +23,7 @@ import { GroupsTab } from "./tabs/GroupsTab";
 import { ProgramTab } from "./tabs/ProgramTab";
 import { ReportsTab } from "./tabs/ReportsTab";
 import { SupportTab } from "./tabs/SupportTab";
+import AcademicCalendarBoard from "../shared/AcademicCalendarBoard";
 
 interface MpaDashboardProps {
   onLogout: () => void;
@@ -32,7 +33,7 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
   // Navigation tabs of MPA
   const [activeTab, setActiveTab] = useState<
     "periods" | "careers" | "courses" | "curriculum" | "teachers" |
-    "classrooms" | "shifts" | "groups" | "program" | "reports" | "support"
+    "classrooms" | "shifts" | "groups" | "program" | "reports" | "support" | "calendar"
   >("periods");
 
   // State collections
@@ -140,16 +141,17 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
             title: "MÓDULOS DE PLANIFICACIÓN",
             items: [
               { label: "1. Períodos Académicos", icon: <Calendar className="w-4 h-4" />, route: "periods", active: activeTab === "periods" },
-              { label: "2. Gestión de Carreras", icon: <GraduationCap className="w-4 h-4" />, route: "careers", active: activeTab === "careers" },
-              { label: "3. Gestión de Cursos", icon: <BookOpen className="w-4 h-4" />, route: "courses", active: activeTab === "courses" },
-              { label: "4. Mallas Curriculares", icon: <Layers className="w-4 h-4" />, route: "curriculum", active: activeTab === "curriculum" },
-              { label: "5. Gestión de Docentes", icon: <User className="w-4 h-4" />, route: "teachers", active: activeTab === "teachers" },
-              { label: "6. Gestión de Aulas", icon: <MapPin className="w-4 h-4" />, route: "classrooms", active: activeTab === "classrooms" },
-              { label: "7. Gestión de Turnos", icon: <Clock className="w-4 h-4" />, route: "shifts", active: activeTab === "shifts" },
-              { label: "8. Grupos Académicos", icon: <Users className="w-4 h-4" />, route: "groups", active: activeTab === "groups" },
-              { label: "9. Programación Académica", icon: <Clipboard className="w-4 h-4" />, route: "program", active: activeTab === "program" },
-              { label: "10. Reportes", icon: <BarChart3 className="w-4 h-4" />, route: "reports", active: activeTab === "reports" },
-              { label: "11. Soporte Técnico", icon: <HelpCircle className="w-4 h-4" />, route: "support", active: activeTab === "support" }
+              { label: "2. Calendario Académico", icon: <Calendar className="w-4 h-4" />, route: "calendar", active: activeTab === "calendar" },
+              { label: "3. Gestión de Carreras", icon: <GraduationCap className="w-4 h-4" />, route: "careers", active: activeTab === "careers" },
+              { label: "4. Gestión de Cursos", icon: <BookOpen className="w-4 h-4" />, route: "courses", active: activeTab === "courses" },
+              { label: "5. Mallas Curriculares", icon: <Layers className="w-4 h-4" />, route: "curriculum", active: activeTab === "curriculum" },
+              { label: "6. Gestión de Docentes", icon: <User className="w-4 h-4" />, route: "teachers", active: activeTab === "teachers" },
+              { label: "7. Gestión de Aulas", icon: <MapPin className="w-4 h-4" />, route: "classrooms", active: activeTab === "classrooms" },
+              { label: "8. Gestión de Turnos", icon: <Clock className="w-4 h-4" />, route: "shifts", active: activeTab === "shifts" },
+              { label: "9. Grupos Académicos", icon: <Users className="w-4 h-4" />, route: "groups", active: activeTab === "groups" },
+              { label: "10. Programación Académica", icon: <Clipboard className="w-4 h-4" />, route: "program", active: activeTab === "program" },
+              { label: "11. Reportes", icon: <BarChart3 className="w-4 h-4" />, route: "reports", active: activeTab === "reports" },
+              { label: "12. Soporte Técnico", icon: <HelpCircle className="w-4 h-4" />, route: "support", active: activeTab === "support" }
             ]
           }
         ]}
@@ -181,16 +183,17 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
           <div className="text-left">
             <h1 className="text-base font-black text-slate-900 tracking-tight leading-none uppercase">
               {activeTab === "periods" && "1. Gestión de Períodos Académicos"}
-              {activeTab === "careers" && "2. Gestión de Carreras"}
-              {activeTab === "courses" && "3. Gestión de Cursos"}
-              {activeTab === "curriculum" && "4. Gestión de Mallas Curriculares"}
-              {activeTab === "teachers" && "5. Gestión de Docentes"}
-              {activeTab === "classrooms" && "6. Gestión de Aulas"}
-              {activeTab === "shifts" && "7. Gestión de Turnos y Horarios"}
-              {activeTab === "groups" && "8. Gestión de Grupos Académicos"}
-              {activeTab === "program" && "9. Programación Académica por Horas Reales"}
-              {activeTab === "reports" && "10. Reportes y Horarios Consolidados"}
-              {activeTab === "support" && "11. Soporte Técnico"}
+              {activeTab === "calendar" && "2. Calendario Académico"}
+              {activeTab === "careers" && "3. Gestión de Carreras"}
+              {activeTab === "courses" && "4. Gestión de Cursos"}
+              {activeTab === "curriculum" && "5. Gestión de Mallas Curriculares"}
+              {activeTab === "teachers" && "6. Gestión de Docentes"}
+              {activeTab === "classrooms" && "7. Gestión de Aulas"}
+              {activeTab === "shifts" && "8. Gestión de Turnos y Horarios"}
+              {activeTab === "groups" && "9. Gestión de Grupos Académicos"}
+              {activeTab === "program" && "10. Programación Académica por Horas Reales"}
+              {activeTab === "reports" && "11. Reportes y Horarios Consolidados"}
+              {activeTab === "support" && "12. Soporte Técnico"}
             </h1>
             <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-1">
               IESTP San Francisco de Asís • Cuenta Planificación Académica (MPA)
@@ -327,6 +330,10 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
 
             {activeTab === "support" && (
               <SupportTab />
+            )}
+
+            {activeTab === "calendar" && (
+              <div className="p-5 md:p-8"><AcademicCalendarBoard editable periods={periods} /></div>
             )}
           </AnimatePresence>
           )}

@@ -25,7 +25,7 @@ export const RegistroTransaccionesTab: React.FC<RegistroTransaccionesTabProps> =
                 Registro de Solicitudes y Obligaciones de Cobro Académico
               </CardTitle>
               <CardDescription>
-                Cada vez que un módulo (MAMC de Admisión o MGE de Alumnos) genera un trámite, se crea un registro de obligación en MAF. Use esta opción para agregar una obligación de forma manual.
+                Las solicitudes del estudiante llegan aquí desde su portal. La creación manual queda disponible para una llamada del apoderado, vinculada a un estudiante registrado.
               </CardDescription>
             </div>
             <div>
@@ -59,6 +59,9 @@ export const RegistroTransaccionesTab: React.FC<RegistroTransaccionesTabProps> =
                     <td className="px-4 py-3">
                       <div className="font-extrabold text-slate-900 uppercase">{ab.studentName}</div>
                       <div className="text-[10px] text-slate-400 font-bold block">DNI: {ab.studentDni} | Periodo: {ab.period}</div>
+                      {ab.source && <div className="text-[10px] text-indigo-700 font-semibold">Origen: {ab.source === "estudiante" ? "Portal del estudiante" : "Llamada del apoderado"}</div>}
+                      {ab.source === "llamada_apoderado" && ab.requestedBy && <div className="text-[10px] text-slate-500">Solicitó: {ab.requestedBy}{ab.contactPhone ? ` · ${ab.contactPhone}` : ""}</div>}
+                      {ab.requestReason && <div className="text-[10px] text-slate-500">Motivo: {ab.requestReason}</div>}
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-semibold text-slate-805">{ab.conceptName}</div>
