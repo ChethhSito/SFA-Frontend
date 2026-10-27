@@ -26,7 +26,15 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
   studentGroup,
   studentCourses = []
 }) => {
-  const currentPeriod = "I Periodo (2026-I)";
+  const currentPeriod = mpaPlanningData?.periods?.find((period: any) => period.id === studentGroup?.periodId)?.name || "Período académico";
+  const scheduledGroups = [...new Set(studentTasks.map((task: any) =>
+    mpaPlanningData?.groups?.find((group: any) => group.id === task.groupId)?.name || task.groupId,
+  ))];
+  const scheduledShifts = [...new Set(studentTasks.map((task: any) => {
+    const hour = Number(task.startTime?.match(/^(\d{1,2})/)?.[1]);
+    const afternoon = /PM/i.test(task.startTime || "");
+    return afternoon ? (hour >= 6 && hour < 12 ? "Noche" : "Tarde") : "Mañana";
+  }))];
 
   // Find next class dynamically from studentTasks
   const nextTask = studentTasks && studentTasks.length > 0 ? studentTasks[0] : null;
@@ -46,7 +54,7 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
         <div className="absolute top-0 right-0 w-64 h-full bg-linear-gradient(135deg,transparent,rgba(255,255,255,0.05)) transform skew-x-12" />
         <div className="relative z-10 space-y-2 max-w-2xl">
           <span className="text-[10px] bg-red-900/60 text-amber-300 font-extrabold px-3 py-1 rounded-full uppercase tracking-widest inline-block border border-red-700/50">
-            Portal del Estudiante • Periodo 2026-I
+            Portal del Estudiante • {currentPeriod}
           </span>
           <h2 className="text-2xl md:text-3.5xl font-black font-display tracking-tight leading-none pt-1">
             ¡Bienvenido de vuelta, {personalData.name}!
@@ -84,9 +92,9 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
               <span className="text-[#9F062A] block font-bold text-sm mt-0.5">{currentPeriod}</span>
             </div>
             <div>
-              <span className="text-[9px] text-slate-400 uppercase block font-bold">Grupo / Sección</span>
+              <span className="text-[9px] text-slate-400 uppercase block font-bold">Grupos / Secciones</span>
               <span className="text-slate-800 block font-bold text-sm mt-0.5 truncate">
-                {studentGroup?.name || "Ciclo I - Turno " + (enrollment.shift || "Mañana")}
+                {scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || "Ciclo I - Turno " + (enrollment.shift || "Mañana")}
               </span>
             </div>
             <div className="col-span-2 md:col-span-1 bg-amber-50 rounded-lg p-2.5 flex items-center gap-2 border border-amber-100 shrink-0">
@@ -110,7 +118,7 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
               <span className="text-xs text-emerald-600 font-bold">Al día</span>
             </div>
             <p className="text-[11px] text-slate-500 font-medium mt-2 leading-relaxed">
-              No tienes pagos pendientes para el ciclo lectivo 2026-I. ¡Matrícula y cuotas institucionales al día!
+              No tienes pagos pendientes para {currentPeriod}. ¡Matrícula y cuotas institucionales al día!
             </p>
           </div>
 
@@ -182,7 +190,7 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800">Semana Inaugural de Clases • Ciclo I (2026-I)</h4>
+                    <h4 className="text-xs font-bold text-slate-800">Semana Inaugural de Clases • {currentPeriod}</h4>
                     <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
                       No registra tareas pendientes de entrega. Asista puntualmente a sus talleres según su horario semanal asignado.
                     </p>
@@ -212,12 +220,12 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
             <div className="pt-2">
               <div className="flex items-center gap-2 mb-1">
                 <div className="h-2 w-2 rounded-full bg-emerald-600 shrink-0" />
-                <h4 className="text-xs font-bold text-slate-800 leading-tight">Matrícula Oficial 2026-I Regularizada</h4>
+                <h4 className="text-xs font-bold text-slate-800 leading-tight">Matrícula Oficial {currentPeriod} Regularizada</h4>
               </div>
               <p className="text-[10px] text-slate-500 leading-normal font-semibold pl-4">
                 Su matrícula académica en Ciclo I y asignación de sección han sido completadas con conformidad de Secretaría General.
               </p>
-              <span className="text-[9px] text-slate-400 font-bold block mt-1 pl-4">Semestre 2026-I</span>
+              <span className="text-[9px] text-slate-400 font-bold block mt-1 pl-4">{currentPeriod}</span>
             </div>
 
             <div className="pt-3">
@@ -226,7 +234,7 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
                 <h4 className="text-xs font-bold text-slate-800 leading-tight">Programación de Talleres y Aulas</h4>
               </div>
               <p className="text-[10px] text-slate-500 leading-normal font-semibold pl-4">
-                Su horario de clases para el turno {enrollment.shift || "Mañana"} se encuentra sincronizado con el Módulo de Planificación Académica.
+                Su horario de clases en {scheduledShifts.length ? scheduledShifts.join(", ") : enrollment.shift || "Mañana"} se encuentra sincronizado con el Módulo de Planificación Académica.
               </p>
               <span className="text-[9px] text-slate-400 font-bold block mt-1 pl-4">Campus Central</span>
             </div>

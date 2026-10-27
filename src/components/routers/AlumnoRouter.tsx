@@ -167,6 +167,8 @@ export default function AlumnoRouter({
     academicStatus: isEnrolled ? "MATRICULADO" : (foundEnr?.academicStatus || "ADMITIDO"),
     shift: foundEnr?.shift || appRecord?.shift || "Mañana",
     groupId: foundEnr?.groupId || appRecord?.groupId,
+    courseGroupAssignments: foundEnr?.courseGroupAssignments || [],
+    registeredCourses: foundEnr?.registeredCourses,
     docs: mergedDocs,
     paymentStatus: isEnrolled ? "Validado" : (foundEnr?.paymentStatus || appRecord?.paymentStatus || "No Pagado"),
     paymentOperation: foundEnr?.paymentOperation || appRecord?.paymentOperation || (isEnrolled ? `OP-MATR-2026-${currentDni ? currentDni.slice(-4) : "0001"}` : "")

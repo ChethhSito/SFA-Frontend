@@ -11,6 +11,7 @@ import { WelcomeTab } from "./tabs/WelcomeTab";
 import { ProfileTab } from "./tabs/ProfileTab";
 import { ClassesTab } from "./tabs/ClassesTab";
 import { ScheduleTab } from "./tabs/ScheduleTab";
+import CourseEnrollmentTab from "./tabs/CourseEnrollmentTab";
 import { AttendanceTab } from "./tabs/AttendanceTab";
 import { ClosureTab } from "./tabs/ClosureTab";
 import { GradesTab } from "./tabs/GradesTab";
@@ -59,7 +60,7 @@ export default function AlumnoDashboard({
   onLogout
 }: AlumnoDashboardProps) {
   const { programs: ACADEMIC_PROGRAMS, courses: catalogCourses } = useAcademicCatalog();
-  const [activeTab, setActiveTab] = useState<"welcome" | "profile" | "classes" | "schedule" | "attendance" | "closure" | "notas" | "secretaria" | "guias" | "calendar">("welcome");
+  const [activeTab, setActiveTab] = useState<"welcome" | "profile" | "classes" | "schedule" | "attendance" | "closure" | "notas" | "secretaria" | "guias" | "calendar" | "enrollment">("welcome");
   
   // Profile edit form fields
   const [profileForm, setProfileForm] = useState<StudentPersonalData>({ ...personalData });
@@ -165,6 +166,10 @@ export default function AlumnoDashboard({
       const groupsRaw = localStorage.getItem("mpa_db_groups");
       const teachersRaw = localStorage.getItem("mpa_db_teachers");
       const classroomsRaw = localStorage.getItem("mpa_db_classrooms");
+      const periodsRaw = localStorage.getItem("mpa_db_periods");
+      const shiftsRaw = localStorage.getItem("mpa_db_shifts");
+      const curriculumRaw = localStorage.getItem("mpa_db_curriculum");
+      const versionsRaw = localStorage.getItem("mpa_db_curriculum_versions");
 
       return {
         tasks: tasksRaw ? JSON.parse(tasksRaw) : [],
@@ -172,11 +177,15 @@ export default function AlumnoDashboard({
         schedules: schedulesRaw ? JSON.parse(schedulesRaw) : [],
         groups: groupsRaw ? JSON.parse(groupsRaw) : [],
         teachers: teachersRaw ? JSON.parse(teachersRaw) : [],
-        classrooms: classroomsRaw ? JSON.parse(classroomsRaw) : []
+        classrooms: classroomsRaw ? JSON.parse(classroomsRaw) : [],
+        periods: periodsRaw ? JSON.parse(periodsRaw) : [],
+        shifts: shiftsRaw ? JSON.parse(shiftsRaw) : [],
+        curriculum: curriculumRaw ? JSON.parse(curriculumRaw) : [],
+        curriculumVersions: versionsRaw ? JSON.parse(versionsRaw) : []
       };
     } catch (e) {
       console.error("Error loading MPA data in AlumnoDashboard:", e);
-      return { tasks: [], courses: [], schedules: [], groups: [], teachers: [], classrooms: [] };
+      return { tasks: [], courses: [], schedules: [], groups: [], teachers: [], classrooms: [], periods: [], shifts: [], curriculum: [], curriculumVersions: [] };
     }
   });
 
@@ -185,7 +194,9 @@ export default function AlumnoDashboard({
     fetchMpaCollections().then((data) => {
       if (!current) return;
       setMpaPlanningData({ tasks: data.tasks, courses: data.courses, schedules: data.schedules,
-        groups: data.groups, teachers: data.teachers, classrooms: data.classrooms });
+        groups: data.groups, teachers: data.teachers, classrooms: data.classrooms,
+        periods: data.periods, shifts: data.shifts,
+        curriculum: data.curriculum, curriculumVersions: data.curriculum_versions });
     }).catch((error) => console.error("Error loading MPA data from local API:", error));
     return () => { current = false; };
   }, []);
@@ -202,11 +213,20 @@ export default function AlumnoDashboard({
     ) || mpaPlanningData.groups.find((g: any) => g.careerId === enrollment.programId && g.cycle === 1) || mpaPlanningData.groups[0];
   }, [enrollment, mpaPlanningData]);
 
-  // Retrieve tasks (schedule sessions) assigned to this group
+  // The main group supplies regular courses; individual course assignments may use another shift.
   const studentTasks = useMemo(() => {
     if (!studentGroup) return [];
-    return mpaPlanningData.tasks.filter((t: any) => t.groupId === studentGroup.id);
-  }, [studentGroup, mpaPlanningData]);
+    if (enrollment.registeredCourses) {
+      return mpaPlanningData.tasks.filter((task: any) => enrollment.registeredCourses?.some(
+        (item) => item.courseId === task.courseId && item.groupId === task.groupId,
+      ));
+    }
+    const extraAssignments = enrollment.courseGroupAssignments || [];
+    return mpaPlanningData.tasks.filter((task: any) =>
+      extraAssignments.some((item) => item.courseId === task.courseId && item.groupId === task.groupId)
+      || (task.groupId === studentGroup.id && !extraAssignments.some((item) => item.courseId === task.courseId)),
+    );
+  }, [studentGroup, mpaPlanningData, enrollment.courseGroupAssignments, enrollment.registeredCourses]);
 
   // Build dynamic courses list combining MAMC/MPA Malla and Programación
   const dynamicMpaCourses = useMemo(() => {
@@ -242,7 +262,7 @@ export default function AlumnoDashboard({
         teacherDni: primaryTask?.teacherDni || "docente",
         teacherName: teacherFullName,
         career: enrollment.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad",
-        group: studentGroup?.name || "Grupo A",
+        group: mpaPlanningData.groups.find((group: any) => group.id === primaryTask?.groupId)?.name || studentGroup?.name || "Grupo A",
         cycle: "Ciclo I",
         startDate: "2026-08-18",
         endDate: "2026-12-15",
@@ -277,7 +297,7 @@ export default function AlumnoDashboard({
       }));
   }, [catalogCourses, enrollment.programId, enrollment.shift, studentGroup]);
 
-  const studentCourses = dynamicMpaCourses.length > 0 
+  const studentCourses = enrollment.registeredCourses ? dynamicMpaCourses : dynamicMpaCourses.length > 0
     ? dynamicMpaCourses 
     : (ciclo1Courses.length > 0 ? ciclo1Courses : courses.filter((c: any) => c.careerId === enrollment.programId || c.career === currentProgram?.name));
 
@@ -356,6 +376,12 @@ export default function AlumnoDashboard({
           {
             title: "ACADÉMICO",
             items: [
+              {
+                label: "Matrícula de Cursos",
+                icon: <BookOpen className="w-4 h-4" />,
+                route: "enrollment",
+                active: activeTab === "enrollment"
+              },
               {
                 label: "Mi Horario",
                 icon: <Calendar className="w-4 h-4" />,
@@ -491,13 +517,17 @@ export default function AlumnoDashboard({
               />
             )}
 
+            {activeTab === "enrollment" && (
+              <CourseEnrollmentTab enrollment={enrollment} studentGroup={studentGroup}
+                data={mpaPlanningData} onSaved={onUpdateEnrollment} />
+            )}
+
             {activeTab === "schedule" && (
               <ScheduleTab
                 personalData={personalData}
                 currentProgram={currentProgram}
                 studentTasks={studentTasks}
                 mpaPlanningData={mpaPlanningData}
-                enrollment={enrollment}
                 studentGroup={studentGroup}
               />
             )}
