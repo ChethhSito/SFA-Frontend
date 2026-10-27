@@ -1,12 +1,15 @@
 import { AttendanceRecord } from "../../../types";
 import { studentAttendanceRecords } from "../../../utils/attendance";
-import React from "react";
+import React, { useState } from "react";
 import { 
   Zap, Cpu, Sliders, Award, ChevronRight, ChevronDown, BookOpen, Clock, CheckCircle2, 
   Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark
 } from "lucide-react";
 import { CourseMaterial, CourseAssignment, CourseEvaluation, AcademicProgram, StudentPersonalData } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
+import Toast, { ToastNotice } from "../../ui/Toast";
+import { Card, CardHeader, CardTitle, CardContent } from "../../ui/Card";
+import PageHeader from "../../ui/PageHeader";
 import { courseFileUrl } from "../../../services/api";
 
 const COURSE_WEEKS = 16;
@@ -64,20 +67,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 }) => {
   const classesCoursesData = enrichedCourses;
   const activeCourse = classesCoursesData.find(c => c.name === selectedCourseDetail);
-
-  const Card = ({ children, className = "" }: any) => <div className={`bg-white rounded-xl border border-slate-100 p-6 shadow-xs ${className}`}>{children}</div>;
-  const CardHeader = ({ children, className = "" }: any) => <div className={`space-y-1.5 ${className}`}>{children}</div>;
-  const CardTitle = ({ children, className = "" }: any) => <h3 className={`font-semibold leading-none tracking-tight ${className}`}>{children}</h3>;
-  const CardContent = ({ children, className = "" }: any) => <div className={`pt-0 ${className}`}>{children}</div>;
-  const PageHeader = ({ title, subtitle, icon }: any) => (
-    <div className="flex items-center gap-3 border-b pb-4 text-left">
-      {icon}
-      <div>
-        <h2 className="text-lg font-bold text-slate-900 font-display">{title}</h2>
-        {subtitle && <p className="text-xs text-slate-500 font-semibold">{subtitle}</p>}
-      </div>
-    </div>
-  );
+  const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
 
   const renderCourseIcon = (iconName: string, className = "w-4 h-4") => {
     switch (iconName) {
@@ -285,8 +275,11 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
       return a;
     });
     onUpdateAssignments(updated);
-    
-    alert(`¡Archivo "${customFileName}" subido exitosamente a la plataforma educativa como evidencia para la evaluación!`);
+    setToastNotice({
+      id: Date.now(),
+      message: `Archivo "${customFileName}" subido exitosamente a la plataforma educativa como evidencia.`,
+      kind: "success",
+    });
   };
 
   const toggleWeekExpandedLocal = (wNum: number) => {
@@ -679,10 +672,28 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                                 <span className="text-[10px] text-slate-400 font-bold block mt-0.5">Archivo: <span className="font-mono text-blue-600 underline">{m.fileName}</span></span>
                               </div>
                             </div>
-                            {m.storedFileName ? <a href={courseFileUrl('materials', m.id)}
-                              className="bg-[#800521]/10 hover:bg-[#800521] text-[#800521] hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all">
-                              Descargar
-                            </a> : <span className="text-xs text-slate-500">Archivo no disponible</span>}
+                            {m.storedFileName ? (
+                              <a
+                                href={courseFileUrl('materials', m.id)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="bg-[#800521]/10 hover:bg-[#800521] text-[#800521] hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all inline-flex items-center"
+                              >
+                                Descargar
+                              </a>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setToastNotice({
+                                  id: Date.now(),
+                                  message: `El archivo ${m.fileName} no está alojado en el servidor institucional.`,
+                                  kind: "info",
+                                })}
+                                className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all"
+                              >
+                                No disponible
+                              </button>
+                            )}
                           </div>
                         );
                       })}
@@ -777,7 +788,11 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                                         if (input && input.value.trim()) {
                                           handleSimulateHWUpload(asg.id, input.value);
                                         } else {
-                                          alert("Por favor digite un nombre de archivo válido.");
+                                          setToastNotice({
+                                            id: Date.now(),
+                                            message: "Por favor digite un nombre de archivo válido.",
+                                            kind: "warning",
+                                          });
                                         }
                                       }}
                                       className="bg-[#800521] hover:bg-[#9F062A] text-white h-10 px-4 rounded text-[10.5px] font-black uppercase cursor-pointer select-none"
@@ -906,6 +921,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           );
         })()}
       </div>
+
+      {toastNotice && (
+        <Toast notice={toastNotice} onClose={() => setToastNotice(null)} />
+      )}
     </PageTransition>
   );
 };

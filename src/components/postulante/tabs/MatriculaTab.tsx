@@ -309,8 +309,8 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = React.memo(({
                 <div className="flex justify-end pt-2">
                   <Button
                     variant="outline"
-                    onClick={() => alert("Descargando Ficha Oficial de Matrícula...")}
-                    className="text-xs uppercase font-black tracking-wider border-emerald-300 hover:bg-emerald-50 text-emerald-800 flex items-center gap-1.5"
+                    onClick={() => window.print()}
+                    className="text-xs uppercase font-black tracking-wider border-emerald-300 hover:bg-emerald-50 text-emerald-800 flex items-center gap-1.5 cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" /> Descargar Ficha de Matrícula
                   </Button>

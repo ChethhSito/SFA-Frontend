@@ -6,6 +6,7 @@ import {
 } from "../../../types";
 import { MpaCurriculumVersion } from "../tabs/CurriculumTab";
 import Button from "../../ui/Button";
+import AlertBox from "../../ui/AlertBox";
 import { calculateEndTime, parseTimeToMinutes, hoursOverlap, getTeacherSpecialties } from "../mpaUtils";
 
 interface ProgramTaskFormProps {
@@ -57,6 +58,8 @@ export const ProgramTaskForm: React.FC<ProgramTaskFormProps> = ({
 
   const [teacherSearchQuery, setTeacherSearchQuery] = useState("");
   const [teacherSpecialtyFilter, setTeacherSpecialtyFilter] = useState("all");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
   const getDocenteName = (dni: string) => {
     const t = teachers.find(x => x.dni === dni);
@@ -69,20 +72,29 @@ export const ProgramTaskForm: React.FC<ProgramTaskFormProps> = ({
         <h3 className="text-xs font-black text-[#9F062A] uppercase tracking-wider">Programar Horario por Horas Reales</h3>
         <p className="text-[11px] text-slate-500 font-semibold mt-1">Asigne sesiones de aprendizaje detallando horas exactas, manteniendo consistencia y previniendo cruces.</p>
       </div>
+
+      {formError && (
+        <AlertBox variant="danger" title="Error en Validación de Programación" message={formError} />
+      )}
+      {formSuccess && (
+        <AlertBox variant="success" title="Programación Exitosa" message={formSuccess} />
+      )}
       
       <form 
         onSubmit={(e) => {
           e.preventDefault();
+          setFormError(null);
+          setFormSuccess(null);
           const computedEnd = calculateEndTime(formTask.startTime, formTask.pedagogicalHours || 3, pedagogicalHourDuration);
           
           if (!formTask.groupId || !formTask.courseId || !formTask.teacherDni || !formTask.classroomId || !formTask.dayOfWeek || !formTask.startTime || !computedEnd) {
-            alert("Por favor complete todos los parámetros obligatorios (*) y asegure que la Hora de Inicio sea válida.");
+            setFormError("Por favor complete todos los parámetros obligatorios (*) y asegure que la Hora de Inicio sea válida.");
             return;
           }
 
           const group = groups.find(g => g.id === formTask.groupId);
           if (!group) {
-            alert("Grupo académico no seleccionado.");
+            setFormError("Grupo académico no seleccionado.");
             return;
           }
 
@@ -91,13 +103,13 @@ export const ProgramTaskForm: React.FC<ProgramTaskFormProps> = ({
           const room = classrooms.find(r => r.id === formTask.classroomId);
 
           if (!course || !teacher || !room) {
-            alert("Curso, Docente o Aula no válidos.");
+            setFormError("Curso, Docente o Aula no válidos.");
             return;
           }
 
           const statusVal = teacher.status || "Disponible";
           if (statusVal === "Licencia" || statusVal === "Inactivo") {
-            alert(`Error: El docente "${teacher.lastName}, ${teacher.name}" no está disponible para programación (Estado actual: ${statusVal}).`);
+            setFormError(`El docente "${teacher.lastName}, ${teacher.name}" no está disponible para programación (Estado actual: ${statusVal}).`);
             return;
           }
 
@@ -115,31 +127,31 @@ export const ProgramTaskForm: React.FC<ProgramTaskFormProps> = ({
 
           if (formTask.sessionType === "Teoría") {
             if (programmedTheory >= reqTheory) {
-              alert("Las horas de teoría definidas para este curso ya fueron cubiertas.");
+              setFormError("Las horas de teoría definidas para este curso ya fueron cubiertas.");
               return;
             }
             if (programmedTheory + inputHours > reqTheory) {
-              alert(`Las horas de teoría definidas para este curso ya fueron cubiertas. Límite: ${reqTheory} hrs, Programado: ${programmedTheory} hrs, Intentando programar: ${inputHours} hrs.`);
+              setFormError(`Las horas de teoría definidas para este curso ya fueron cubiertas. Límite: ${reqTheory} hrs, Programado: ${programmedTheory} hrs, Intentando programar: ${inputHours} hrs.`);
               return;
             }
           } else if (formTask.sessionType === "Laboratorio") {
             if (programmedLab >= reqLab) {
-              alert("Las horas de laboratorio definidas para este curso ya fueron cubiertas.");
+              setFormError("Las horas de laboratorio definidas para este curso ya fueron cubiertas.");
               return;
             }
             if (programmedLab + inputHours > reqLab) {
-              alert(`Las horas de laboratorio definidas para este curso ya fueron cubiertas. Límite: ${reqLab} hrs, Programado: ${programmedLab} hrs, Intentando programar: ${inputHours} hrs.`);
+              setFormError(`Las horas de laboratorio definidas para este curso ya fueron cubiertas. Límite: ${reqLab} hrs, Programado: ${programmedLab} hrs, Intentando programar: ${inputHours} hrs.`);
               return;
             }
           }
 
           if (formTask.sessionType === "Laboratorio" && room.type !== "Laboratorio") {
-            alert(`Error de Infraestructura: El curso requiere un aula de tipo "Laboratorio" para sesiones prácticas. El ambiente "${room.name}" es de tipo "${room.type}".`);
+            setFormError(`Error de Infraestructura: El curso requiere un aula de tipo "Laboratorio" para sesiones prácticas. El ambiente "${room.name}" es de tipo "${room.type}".`);
             return;
           }
 
           if (room.capacity < group.capacity) {
-            alert(`Conflicto de Capacidad: El aula "${room.name}" tiene capacidad para ${room.capacity} estudiantes, pero el grupo asignado "${group.name}" requiere capacidad para de ${group.capacity} alumnos.`);
+            setFormError(`Conflicto de Capacidad: El aula "${room.name}" tiene capacidad para ${room.capacity} estudiantes, pero el grupo asignado "${group.name}" requiere capacidad para ${group.capacity} alumnos.`);
             return;
           }
 
@@ -151,7 +163,7 @@ export const ProgramTaskForm: React.FC<ProgramTaskFormProps> = ({
             const shiftMinEnd = parseTimeToMinutes(shift.endTime);
 
             if (taskMinStart < shiftMinStart || taskMinEnd > shiftMinEnd) {
-              alert(`Error de Turno: El turno asignado al Grupo Académico es "${shift.name}" (${shift.startTime} - ${shift.endTime}). La sesión programada ingresada (${formTask.startTime} - ${computedEnd}) supera los límites establecidos para este turno.`);
+              setFormError(`Error de Turno: El turno asignado al Grupo Académico es "${shift.name}" (${shift.startTime} - ${shift.endTime}). La sesión programada ingresada (${formTask.startTime} - ${computedEnd}) supera los límites establecidos para este turno.`);
               return;
             }
           }
@@ -167,17 +179,17 @@ export const ProgramTaskForm: React.FC<ProgramTaskFormProps> = ({
 
             if (tStart && tEnd && hoursOverlap(currentDay, currentStart, currentEnd, tDay, tStart, tEnd)) {
               if (t.teacherDni === formTask.teacherDni) {
-                alert(`Conflicto de Docente: El docente "${teacher.lastName}, ${teacher.name}" ya cuenta con otra sesión programada el ${currentDay} de ${tStart} a ${tEnd}.`);
+                setFormError(`Conflicto de Docente: El docente "${teacher.lastName}, ${teacher.name}" ya cuenta con otra sesión programada el ${currentDay} de ${tStart} a ${tEnd}.`);
                 return;
               }
 
               if (t.classroomId === formTask.classroomId) {
-                alert(`Conflicto de Aula: El ambiente físico "${room.name}" ya se encuentra reservado el ${currentDay} de ${tStart} a ${tEnd}.`);
+                setFormError(`Conflicto de Aula: El ambiente físico "${room.name}" ya se encuentra reservado el ${currentDay} de ${tStart} a ${tEnd}.`);
                 return;
               }
 
               if (t.groupId === formTask.groupId) {
-                alert(`Conflicto de Grupo: El Grupo Académico "${group.name}" ya tiene clases el ${currentDay} de ${tStart} a ${tEnd}.`);
+                setFormError(`Conflicto de Grupo: El Grupo Académico "${group.name}" ya tiene clases el ${currentDay} de ${tStart} a ${tEnd}.`);
                 return;
               }
             }
@@ -217,7 +229,7 @@ export const ProgramTaskForm: React.FC<ProgramTaskFormProps> = ({
             pedagogicalHours: 3
           });
 
-          alert("¡Sesión programada con éxito!");
+          setFormSuccess("¡Sesión programada con éxito en el cronograma institucional!");
         }}
         className="space-y-4 text-xs font-semibold"
       >

@@ -11,9 +11,10 @@ interface TeachersTabProps {
   tasks: MpaProgramTask[];
   saveDb: (key: string, value: any, setter: Function) => void;
   setTeachers: React.Dispatch<React.SetStateAction<any[]>>;
+  notify?: (message: string, kind?: "success" | "error" | "warning" | "info") => void;
 }
 
-export function TeachersTab({ teachers, careers, tasks, saveDb, setTeachers }: TeachersTabProps) {
+export function TeachersTab({ teachers, careers, tasks, saveDb, setTeachers, notify }: TeachersTabProps) {
   const [formTeacher, setFormTeacher] = useState({
     dni: "",
     name: "",
@@ -37,12 +38,12 @@ export function TeachersTab({ teachers, careers, tasks, saveDb, setTeachers }: T
               e.preventDefault();
               if (!formTeacher.name || !formTeacher.dni) return;
               if (teacherSelectedSpecialties.length === 0) {
-                alert("Por favor seleccione o agregue al menos una especialidad.");
+                notify?.("Por favor seleccione o agregue al menos una especialidad.", "warning");
                 return;
               }
               const exist = teachers.some(t => t.dni === formTeacher.dni);
               if (exist) {
-                alert("Ya existe un docente registrado con ese DNI.");
+                notify?.("Ya existe un docente registrado con ese DNI.", "warning");
                 return;
               }
               const next = [...teachers, { 
@@ -313,7 +314,7 @@ export function TeachersTab({ teachers, careers, tasks, saveDb, setTeachers }: T
                           onClick={() => {
                             const hasScheduledSessions = tasks.some(t => t.teacherDni === item.dni);
                             if (hasScheduledSessions) {
-                              alert("No se puede eliminar la cuenta de este docente porque tiene sesiones programadas en el sistema. Modifique su estado de disponibilidad en su lugar.");
+                              notify?.("No se puede eliminar la cuenta de este docente porque tiene sesiones programadas en el sistema. Modifique su estado de disponibilidad en su lugar.", "warning");
                               return;
                             }
                             const next = teachers.filter(t => t.dni !== item.dni);

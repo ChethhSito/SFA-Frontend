@@ -10,9 +10,10 @@ interface ClassroomsTabProps {
   tasks: MpaProgramTask[];
   saveDb: (key: string, value: any, setter: Function) => void;
   setClassrooms: React.Dispatch<React.SetStateAction<MpaClassroom[]>>;
+  notify?: (message: string, kind?: "success" | "error" | "warning" | "info") => void;
 }
 
-export function ClassroomsTab({ classrooms, careers, tasks, saveDb, setClassrooms }: ClassroomsTabProps) {
+export function ClassroomsTab({ classrooms, careers, tasks, saveDb, setClassrooms, notify }: ClassroomsTabProps) {
   const [formRoom, setFormRoom] = useState<{
     id: string;
     name: string;
@@ -180,7 +181,7 @@ export function ClassroomsTab({ classrooms, careers, tasks, saveDb, setClassroom
                         onClick={() => {
                           const hasScheduled = tasks.some(t => t.classroomId === item.id);
                           if (hasScheduled) {
-                            alert("No se puede eliminar el aula porque está ocupada por programación activa.");
+                            notify?.("No se puede eliminar el aula porque está ocupada por programación activa.", "warning");
                             return;
                           }
                           const next = classrooms.filter(r => r.id !== item.id);

@@ -5,6 +5,7 @@ import { ROSTER } from "../DocenteTypes";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import Button from "../../ui/Button";
 import PageHeader from "../../ui/PageHeader";
+import Toast, { ToastNotice } from "../../ui/Toast";
 
 interface Props {
   courseId: string;
@@ -17,6 +18,7 @@ interface Props {
 export function CalificacionManager({ courseId, week, assignment, grades, onSaveGrade }: Props) {
   const [editingGrades, setEditingGrades] = useState<{ [key: string]: string }>({});
   const [editingFeedbacks, setEditingFeedbacks] = useState<{ [key: string]: string }>({});
+  const [notice, setNotice] = useState<ToastNotice | null>(null);
 
   const handleSave = (dni: string) => {
     const rawGrade = editingGrades[dni] || grades[dni]?.grade?.toString() || "";
@@ -24,7 +26,11 @@ export function CalificacionManager({ courseId, week, assignment, grades, onSave
     const parsedGrade = parseInt(rawGrade, 10);
 
     if (isNaN(parsedGrade) || parsedGrade < 0 || parsedGrade > 20) {
-      alert("Por favor ingrese una nota válida entre 0 y 20 de la escala nominal oficial.");
+      setNotice({
+        id: Date.now(),
+        message: "Por favor ingrese una nota válida entre 0 y 20 de la escala nominal oficial.",
+        kind: "warning",
+      });
       return;
     }
 
@@ -134,6 +140,8 @@ export function CalificacionManager({ courseId, week, assignment, grades, onSave
           )}
         </CardContent>
       </Card>
+
+      {notice && <Toast notice={notice} onClose={() => setNotice(null)} />}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   MpaSchedule, MpaClassroom, MpaAcademicGroup, MpaProgramTask 
 } from "../../types";
 import Sidebar from "../ui/Sidebar";
+import Toast, { ToastNotice, ToastKind } from "../ui/Toast";
 import { MPA_KEYS, MpaKey, fetchMpaCollections, fetchMpaCollection, saveMpaCollection } from "../../services/mpaApi";
 import { useConflictDetector } from "../../hooks/mpa/useConflictDetector";
 
@@ -50,7 +51,12 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
   const [tasks, setTasks] = useState<MpaProgramTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncError, setSyncError] = useState("");
+  const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
   const pendingSaves = useRef<Partial<Record<MpaKey, Promise<unknown>>>>({});
+
+  const notify = (message: string, kind: ToastKind = "info") => {
+    setToastNotice({ id: Date.now(), message, kind });
+  };
 
   const { conflicts, hasConflicts, conflictCount, orphanCount } = useConflictDetector(tasks, courses, groups);
 
@@ -212,6 +218,7 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
                 periods={periods}
                 saveDb={saveDb}
                 setPeriods={setPeriods}
+                notify={notify}
               />
             )}
 
@@ -223,6 +230,7 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
                 tasks={tasks}
                 saveDb={saveDb}
                 setCareers={setCareers}
+                notify={notify}
               />
             )}
 
@@ -234,6 +242,7 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
                 tasks={tasks}
                 saveDb={saveDb}
                 setCourses={setCourses}
+                notify={notify}
               />
             )}
 
@@ -256,6 +265,7 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
                 tasks={tasks}
                 saveDb={saveDb}
                 setTeachers={setTeachers}
+                notify={notify}
               />
             )}
 
@@ -266,6 +276,7 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
                 tasks={tasks}
                 saveDb={saveDb}
                 setClassrooms={setClassrooms}
+                notify={notify}
               />
             )}
 
@@ -293,6 +304,7 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
                 teachers={teachers}
                 saveDb={saveDb}
                 setGroups={setGroups}
+                notify={notify}
               />
             )}
 
@@ -325,11 +337,12 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
                 courses={courses}
                 teachers={teachers}
                 classrooms={classrooms}
+                notify={notify}
               />
             )}
 
             {activeTab === "support" && (
-              <SupportTab />
+              <SupportTab notify={notify} />
             )}
 
             {activeTab === "calendar" && (
@@ -339,6 +352,10 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
           )}
         </div>
       </main>
+
+      {toastNotice && (
+        <Toast notice={toastNotice} onClose={() => setToastNotice(null)} />
+      )}
     </div>
   );
 }

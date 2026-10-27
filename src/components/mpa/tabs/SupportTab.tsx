@@ -10,7 +10,11 @@ export interface SupportTicket {
   reply?: string;
 }
 
-export function SupportTab() {
+export interface SupportTabProps {
+  notify?: (message: string, kind?: "success" | "error" | "warning" | "info") => void;
+}
+
+export function SupportTab({ notify }: SupportTabProps = {}) {
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>(() => {
     const saved = localStorage.getItem("mpa_support_tickets");
     return saved ? JSON.parse(saved) : [
@@ -42,7 +46,7 @@ export function SupportTab() {
     localStorage.setItem("mpa_support_tickets", JSON.stringify(next));
     setNewTicketSubject("");
     setNewTicketText("");
-    alert("Consulta de Soporte Técnico enviada a la Secretaría del Local.");
+    notify?.("Consulta de Soporte Técnico enviada a la Secretaría del Local.", "success");
   };
 
   return (

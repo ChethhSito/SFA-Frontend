@@ -572,11 +572,16 @@ export default function AdminDashboard({
           fotoFile: { status: "No Enviado" as const }
         };
         const currentDoc = docsObj[docKey] || { status: "No Enviado" as const };
+        const storedFileDataUrl = typeof window !== "undefined"
+          ? localStorage.getItem(`sfa_file_data_${applicantDni}_${docKey}`)
+          : null;
+        const effectiveDataUrl = currentDoc.fileDataUrl || storedFileDataUrl || undefined;
 
         const updatedDocs = {
           ...docsObj,
           [docKey]: {
             ...currentDoc,
+            fileDataUrl: effectiveDataUrl,
             status: status as any,
             observations: status === "Observado" ? (observations || "") : undefined
           }
@@ -1018,6 +1023,7 @@ export default function AdminDashboard({
             setPostulantesClassroomFilter={setPostulantesClassroomFilter}
             onUpdateApplicants={onUpdateApplicants}
             renderPeriodSelector={renderPeriodSelector}
+            notify={notify}
           />
         )}
 
@@ -1029,6 +1035,7 @@ export default function AdminDashboard({
             selectedPeriodId={selectedPeriodId}
             onUpdateApplicants={onUpdateApplicants}
             renderPeriodSelector={renderPeriodSelector}
+            notify={notify}
           />
         )}
 
@@ -1112,6 +1119,7 @@ export default function AdminDashboard({
             adminSupportReply={adminSupportReply}
             setAdminSupportReply={setAdminSupportReply}
             onUpdateApplicants={onUpdateApplicants}
+            notify={notify}
           />
         )}
 
@@ -1149,6 +1157,7 @@ export default function AdminDashboard({
         handleValidateApplicantDocument={handleValidateApplicantDocument}
         handleUpdateFolderStatus={handleUpdateFolderStatus}
         sanitizePeriodName={sanitizePeriodName}
+        notify={notify}
       />
 
       {/* Image Previewer Modal */}

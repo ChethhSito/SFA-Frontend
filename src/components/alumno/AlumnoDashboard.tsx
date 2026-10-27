@@ -6,6 +6,7 @@ import { Enrollment, StudentPersonalData, Course, CourseMaterial, CourseAssignme
 import { useAcademicCatalog } from "../../context/AcademicCatalogContext";
 import { motion, AnimatePresence } from "motion/react";
 import Sidebar from "../ui/Sidebar";
+import Toast, { ToastNotice } from "../ui/Toast";
 
 import { WelcomeTab } from "./tabs/WelcomeTab";
 import { ProfileTab } from "./tabs/ProfileTab";
@@ -150,9 +151,15 @@ export default function AlumnoDashboard({
     } catch (e) {}
   };
 
+  const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
+
+  const notify = (message: string, kind: ToastNotice["kind"] = "info") => {
+    setToastNotice({ id: Date.now(), message, kind });
+  };
+
   const handlePayInvoice = () => {
     setIsPaidInvoice(true);
-    alert("Simulación: ¡Pago de S/. 450.00 realizado satisfactoriamente mediante pasarela virtual de pagos! Su cuenta está al día.");
+    notify("Pago de S/. 450.00 realizado satisfactoriamente mediante pasarela virtual de pagos. Su cuenta está al día.", "success");
   };
 
   const currentProgram = ACADEMIC_PROGRAMS.find((p) => p.id === enrollment.programId);
@@ -592,6 +599,10 @@ export default function AlumnoDashboard({
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {toastNotice && (
+        <Toast notice={toastNotice} onClose={() => setToastNotice(null)} />
+      )}
     </div>
   );
 }

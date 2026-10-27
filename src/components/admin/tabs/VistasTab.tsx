@@ -11,6 +11,7 @@ interface VistasTabProps {
   selectedPeriodId: string;
   onUpdateApplicants: (apps: Applicant[]) => void;
   renderPeriodSelector: () => React.ReactNode;
+  notify?: (message: string, kind?: "success" | "error" | "warning" | "info") => void;
 }
 
 export const VistasTab: React.FC<VistasTabProps> = ({
@@ -19,6 +20,7 @@ export const VistasTab: React.FC<VistasTabProps> = ({
   selectedPeriodId,
   onUpdateApplicants,
   renderPeriodSelector,
+  notify,
 }) => {
   const activeApps = applicants.filter((app) => 
     !selectedPeriodId || 
@@ -277,11 +279,11 @@ export const VistasTab: React.FC<VistasTabProps> = ({
                                 onUpdateApplicants(updatedList);
 
                                 if (val === "admitido") {
-                                  alert(`El ingresante ${app.name} ${app.lastName} ahora figura con el resultado ADMITIDO.`);
+                                  notify?.(`El ingresante ${app.name} ${app.lastName} ahora figura con el resultado ADMITIDO.`, "success");
                                 } else if (val === "no_admitido") {
-                                  alert(`El postulante ${app.name} ${app.lastName} ha sido calificado como NO ADMITIDO.`);
+                                  notify?.(`El postulante ${app.name} ${app.lastName} ha sido calificado como NO ADMITIDO.`, "warning");
                                 } else {
-                                  alert(`El postulante ${app.name} ${app.lastName} queda en estado PENDIENTE.`);
+                                  notify?.(`El postulante ${app.name} ${app.lastName} queda en estado PENDIENTE.`, "info");
                                 }
                               }}
                               className="text-[11px] font-sans font-extrabold uppercase tracking-wider bg-white border border-slate-300 rounded-md px-3 py-1.5 text-slate-800 shadow-3xs cursor-pointer focus:outline-none focus:border-[#9F062A]"

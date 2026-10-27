@@ -151,7 +151,6 @@ Proceso 2026-I • Chincha Alta, Perú.
         setTimeout(() => {
           if (btn) btn.innerText = "Descargar Constancia Oficial";
           onClose();
-          alert(`¡Constancia de Admisión guardada como 'Constancia_Admision_SFA_${applicant.dni}.txt'!`);
         }, 1000);
       }, 1200);
     }, 1200);

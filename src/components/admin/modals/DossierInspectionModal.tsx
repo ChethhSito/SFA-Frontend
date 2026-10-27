@@ -20,6 +20,7 @@ interface DossierInspectionModalProps {
   ) => void;
   handleUpdateFolderStatus: (applicantDni: string, status: "Pending" | "Observed" | "Approved" | "Enrolled") => void;
   sanitizePeriodName: (name?: string) => string;
+  notify?: (message: string, kind?: "success" | "error" | "warning" | "info") => void;
 }
 
 export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
@@ -35,6 +36,7 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
   handleValidateApplicantDocument,
   handleUpdateFolderStatus,
   sanitizePeriodName,
+  notify,
 }) => {
   if (!selectedDossierAppDni) return null;
 
@@ -56,13 +58,44 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
     ? "Validado"
     : (app.paymentStatus || "Pendiente");
 
-  const appDocs = {
-    dniFile: { status: "No Enviado" as const },
-    certificadoFile: { status: "No Enviado" as const },
-    partidaFile: { status: "No Enviado" as const },
-    fotoFile: { status: "No Enviado" as const },
-    ...(app.docs || {}),
-    ...(localDocStatus || {})
+  const rawAppDocs = app.docs || {};
+  const appDocs: Record<"dniFile" | "certificadoFile" | "partidaFile" | "fotoFile", any> = {
+    dniFile: {
+      status: "No Enviado" as const,
+      ...(rawAppDocs.dniFile || {}),
+      ...(localDocStatus?.dniFile || {}),
+      fileDataUrl:
+        rawAppDocs.dniFile?.fileDataUrl ||
+        (typeof window !== "undefined" ? localStorage.getItem(`sfa_file_data_${app.dni}_dniFile`) : null) ||
+        undefined,
+    },
+    certificadoFile: {
+      status: "No Enviado" as const,
+      ...(rawAppDocs.certificadoFile || {}),
+      ...(localDocStatus?.certificadoFile || {}),
+      fileDataUrl:
+        rawAppDocs.certificadoFile?.fileDataUrl ||
+        (typeof window !== "undefined" ? localStorage.getItem(`sfa_file_data_${app.dni}_certificadoFile`) : null) ||
+        undefined,
+    },
+    partidaFile: {
+      status: "No Enviado" as const,
+      ...(rawAppDocs.partidaFile || {}),
+      ...(localDocStatus?.partidaFile || {}),
+      fileDataUrl:
+        rawAppDocs.partidaFile?.fileDataUrl ||
+        (typeof window !== "undefined" ? localStorage.getItem(`sfa_file_data_${app.dni}_partidaFile`) : null) ||
+        undefined,
+    },
+    fotoFile: {
+      status: "No Enviado" as const,
+      ...(rawAppDocs.fotoFile || {}),
+      ...(localDocStatus?.fotoFile || {}),
+      fileDataUrl:
+        rawAppDocs.fotoFile?.fileDataUrl ||
+        (typeof window !== "undefined" ? localStorage.getItem(`sfa_file_data_${app.dni}_fotoFile`) : null) ||
+        undefined,
+    },
   };
 
   const isAllValid = 
@@ -187,11 +220,15 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                           </span>
                           <button
                             type="button"
-                            onClick={() =>
+                            onClick={() => {
+                              const storedDataUrl = typeof window !== "undefined"
+                                ? localStorage.getItem(`sfa_file_data_${app.dni}_${item.key}`)
+                                : null;
+                              const effectiveUrl = docState.fileDataUrl || storedDataUrl || null;
                               triggerAdminPreview(
                                 item.label + " - " + `${app.name} ${app.lastName}`.trim().toUpperCase(),
                                 docState.fileName || `${item.key}.jpg`,
-                                docState.fileDataUrl ? "image" : "receipt",
+                                "image",
                                 {
                                   dni: app.dni,
                                   studentName: app.name,
@@ -199,13 +236,15 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                                   fullName: `${app.name} ${app.lastName}`.trim(),
                                   programName: app.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad",
                                   docLabel: item.label,
+                                  docKey: item.key,
                                   fileName: docState.fileName,
-                                  fileDataUrl: docState.fileDataUrl,
+                                  fileDataUrl: effectiveUrl,
                                   docStatus: docState.status,
                                   date: new Date().toISOString().split("T")[0],
+                                  isVoucher: false,
                                 }
-                              )
-                            }
+                              );
+                            }}
                             className="inline-flex items-center gap-1.5 uppercase font-extrabold text-[10px] tracking-wider bg-slate-900 hover:bg-[#9F062A] text-white px-3 py-1.5 rounded-lg border border-transparent shadow-3xs transition-all cursor-pointer"
                           >
                             <Eye className="w-3.5 h-3.5" />
@@ -261,7 +300,7 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                             type="button"
                             onClick={() => {
                               if (!currentObsText.trim()) {
-                                alert("Por favor ingrese el motivo de observación para este requisito.");
+                                notify?.("Por favor ingrese el motivo de observación para este requisito.", "warning");
                                 return;
                               }
                               handleValidateApplicantDocument(app.dni, item.key, "Observado", currentObsText.trim());
@@ -410,7 +449,7 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                           key={opt.id}
                           onClick={() => {
                             if (opt.id === "Observed" && !(folderObservationInput[app.dni] || "").trim()) {
-                              alert("Por favor ingrese una observacion antes de marcar la carpeta como observada.");
+                              notify?.("Por favor ingrese una observación antes de marcar la carpeta como observada.", "warning");
                               return;
                             }
                             handleUpdateFolderStatus(app.dni, opt.id);

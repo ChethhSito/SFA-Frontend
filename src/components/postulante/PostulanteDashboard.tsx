@@ -12,6 +12,7 @@ import Sidebar from "../ui/Sidebar";
 import PageHeader from "../ui/PageHeader";
 import AlertBox from "../ui/AlertBox";
 import ImagePreviewModal from "../ui/ImagePreviewModal";
+import { Toast, ToastNotice, ToastKind } from "../ui";
 
 // Modular Sub-components for Postulante Dashboard
 import ConstanciaModal from "./modals/ConstanciaModal";
@@ -42,6 +43,10 @@ export default function PostulanteDashboard({
   const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   // Active Navigation Tab State
   const [activeTab, setActiveTab] = useState<"dashboard" | "documentos" | "pagos" | "resultados" | "soporte" | "matricula">("dashboard");
+  const [toast, setToast] = useState<ToastNotice | null>(null);
+  const notify = (message: string, kind: ToastKind = "info") => {
+    setToast({ id: Date.now(), message, kind });
+  };
 
   const getFormattedDate = (isoDate?: string, fallback: string = "12/03/2026") => {
     if (!isoDate) return fallback;
@@ -158,20 +163,36 @@ export default function PostulanteDashboard({
       studentName: applicant.name,
       studentLastName: applicant.lastName,
       programName: prg,
-      transactionId: applicant.paymentOperation || "PRE-620323",
-      amount: "S/. 120.00",
-      date: paymentDate,
-      concept: "Derecho de Examen Ordinario 2026",
+      ...(fileType === "receipt" || customMeta?.isVoucher ? {
+        transactionId: applicant.paymentOperation || "PRE-620323",
+        amount: "S/. 120.00",
+        date: paymentDate,
+        concept: "Derecho de Examen Ordinario 2026",
+      } : {}),
       ...customMeta
     });
     setPreviewOpen(true);
   };
 
+  const getDoc = (key: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile") => {
+    const raw = applicant.docs?.[key];
+    const cachedUrl = raw?.fileDataUrl || (applicant.dni ? localStorage.getItem(`sfa_file_data_${applicant.dni}_${key}`) : null) || undefined;
+    if (!cachedUrl) {
+      return { status: "No Enviado" as const, fileName: undefined, fileDataUrl: undefined };
+    }
+    return {
+      status: (raw?.status && raw.status !== "No Enviado") ? raw.status : ("Pendiente" as const),
+      fileName: raw?.fileName,
+      fileDataUrl: cachedUrl,
+      observations: raw?.observations
+    };
+  };
+
   const currentDocs = {
-    dniFile: applicant.docs?.dniFile || { status: "No Enviado" as const },
-    certificadoFile: applicant.docs?.certificadoFile || { status: "No Enviado" as const },
-    partidaFile: applicant.docs?.partidaFile || { status: "No Enviado" as const },
-    fotoFile: applicant.docs?.fotoFile || { status: "No Enviado" as const }
+    dniFile: getDoc("dniFile"),
+    certificadoFile: getDoc("certificadoFile"),
+    partidaFile: getDoc("partidaFile"),
+    fotoFile: getDoc("fotoFile")
   };
 
   const totalDocs = 4;
@@ -183,6 +204,28 @@ export default function PostulanteDashboard({
 
   const globalProgressPercentage = Math.round((approvedCount / totalDocs) * 100);
   const isActuallyAdmitted = applicant.admitted === true || applicant.admitted === "ADMITIDO";
+
+  // Normalizar pago si se declaró voucher pero no existe archivo físico de imagen
+  const storedVoucher = applicant.paymentVoucherUrl || (applicant.dni ? localStorage.getItem(`sfa_voucher_data_${applicant.dni}`) : null) || undefined;
+  const isVoucherType = Boolean(
+    applicant.paymentType === "voucher" ||
+    Boolean(applicant.paymentVoucherFileName) ||
+    Boolean(applicant.paymentOperation && /\.(png|jpg|jpeg|webp)$/i.test(applicant.paymentOperation))
+  );
+
+  const effectiveApplicant: Applicant = (applicant.paymentStatus !== "Validado" && isVoucherType && !storedVoucher)
+    ? {
+        ...applicant,
+        paymentStatus: "No Pagado",
+        paymentOperation: undefined,
+        paymentVoucherFileName: undefined,
+        paymentVoucherUrl: undefined,
+        paymentType: undefined
+      }
+    : {
+        ...applicant,
+        paymentVoucherUrl: storedVoucher || applicant.paymentVoucherUrl
+      };
 
   // Compress image helper
   const compressAndResizeImage = (file: File, callback: (resizedDataUrl: string) => void) => {
@@ -273,7 +316,7 @@ export default function PostulanteDashboard({
       filename = stagedDniFile;
       dataUrl = stagedDniPreview;
       if (!filename) {
-        alert("Por favor, seleccione una imagen para la Copia de DNI primero.");
+        notify("Por favor, seleccione una imagen para la Copia de DNI primero.", "warning");
         return;
       }
       setStagedDniFile("");
@@ -281,7 +324,7 @@ export default function PostulanteDashboard({
       filename = stagedCertFile;
       dataUrl = stagedCertPreview;
       if (!filename) {
-        alert("Por favor, seleccione una imagen para el Certificado de Secundaria primero.");
+        notify("Por favor, seleccione una imagen para el Certificado de Secundaria primero.", "warning");
         return;
       }
       setStagedCertFile("");
@@ -289,7 +332,7 @@ export default function PostulanteDashboard({
       filename = stagedPartidaFile;
       dataUrl = stagedPartidaPreview;
       if (!filename) {
-        alert("Por favor, seleccione una imagen para la Partida de Nacimiento primero.");
+        notify("Por favor, seleccione una imagen para la Partida de Nacimiento primero.", "warning");
         return;
       }
       setStagedPartidaFile("");
@@ -297,7 +340,7 @@ export default function PostulanteDashboard({
       filename = stagedFotoFile;
       dataUrl = stagedFotoPreview;
       if (!filename) {
-        alert("Por favor, seleccione una imagen para la Foto primero.");
+        notify("Por favor, seleccione una imagen para la Foto primero.", "warning");
         return;
       }
       setStagedFotoFile("");
@@ -315,15 +358,21 @@ export default function PostulanteDashboard({
       }
     };
 
+    try {
+      localStorage.setItem(`sfa_file_data_${applicant.dni}_${docKey}`, dataUrl);
+    } catch (e) {
+      console.warn("Could not cache fileDataUrl in localStorage:", e);
+    }
+
     onUpdateApplicant(updatedApplicant);
-    alert(`¡Documento "${filename}" enviado a validación por secretaría!`);
+    notify(`¡Documento "${filename}" enviado a validación por secretaría!`, "success");
   };
 
   const handleSubmitPaymentVoucher = (e: React.FormEvent) => {
     e.preventDefault();
     if (paymentType === "number") {
       if (!paymentVoucher.trim()) {
-        alert("Por favor ingrese el número de operación bancaria de su pago.");
+        notify("Por favor ingrese el número de operación bancaria de su pago.", "warning");
         return;
       }
       const updatedApplicant: Applicant = {
@@ -335,10 +384,10 @@ export default function PostulanteDashboard({
         paymentVoucherUrl: undefined
       };
       onUpdateApplicant(updatedApplicant);
-      alert("¡Número de operación de pago ingresado correctamente! Estado actualizado a Pendiente de validación bancaria.");
+      notify("¡Número de operación de pago ingresado correctamente! Estado actualizado a Pendiente de validación bancaria.", "success");
     } else {
       if (!stagedVoucherPreview) {
-        alert("Por favor seleccione la imagen de su voucher de pago primero.");
+        notify("Por favor seleccione la imagen de su voucher de pago primero.", "warning");
         return;
       }
       const updatedApplicant: Applicant = {
@@ -349,10 +398,17 @@ export default function PostulanteDashboard({
         paymentVoucherFileName: stagedVoucherFile,
         paymentVoucherUrl: stagedVoucherPreview
       };
+
+      try {
+        localStorage.setItem(`sfa_voucher_data_${applicant.dni}`, stagedVoucherPreview);
+      } catch (e) {
+        console.warn("Could not cache voucher url in localStorage:", e);
+      }
+
       onUpdateApplicant(updatedApplicant);
       setStagedVoucherFile("");
       setStagedVoucherPreview("");
-      alert("¡Voucher de pago enviado correctamente! Estado actualizado a Pendiente de validación por Tesorería.");
+      notify("¡Voucher de pago enviado correctamente! Estado actualizado a Pendiente de validación por Tesorería.", "success");
     }
   };
 
@@ -376,7 +432,7 @@ export default function PostulanteDashboard({
 
     if (matriculaPaymentType === "number") {
       if (!matriculaVoucher.trim()) {
-        alert("Por favor ingrese el número de operación de su depósito de matrícula.");
+        notify("Por favor ingrese el número de operación de su depósito de matrícula.", "warning");
         return;
       }
       const updatedEnr: Enrollment = {
@@ -389,10 +445,10 @@ export default function PostulanteDashboard({
       };
       if (onUpdateEnrollment) onUpdateEnrollment(updatedEnr);
       setIsEditingMatricula(false);
-      alert("¡Operación de matrícula enviada! La oficina de caja (MAMC) validará el abono de S/. 250.00 a la brevedad.");
+      notify("¡Operación de matrícula enviada! La oficina de caja validará el abono de S/. 250.00 a la brevedad.", "success");
     } else {
       if (!stagedMatriculaPreview) {
-        alert("Por favor seleccione la foto de su voucher de depósito de matrícula.");
+        notify("Por favor seleccione la foto de su voucher de depósito de matrícula.", "warning");
         return;
       }
       const updatedEnr: Enrollment = {
@@ -407,7 +463,7 @@ export default function PostulanteDashboard({
       setIsEditingMatricula(false);
       setStagedMatriculaFile("");
       setStagedMatriculaPreview("");
-      alert("¡Foto de voucher de matrícula enviada! La oficina de caja (MAMC) verificará el comprobante.");
+      notify("¡Foto de voucher de matrícula enviada! La oficina de caja verificará el comprobante.", "success");
     }
   };
 
@@ -486,7 +542,7 @@ export default function PostulanteDashboard({
         {/* ACTIVE TAB CONTENT RENDER */}
         {activeTab === "dashboard" && (
           <DashboardMainTab
-            applicant={applicant}
+            applicant={effectiveApplicant}
             currentProgram={currentProgram}
             globalProgressPercentage={globalProgressPercentage}
             approvedCount={approvedCount}
@@ -497,7 +553,7 @@ export default function PostulanteDashboard({
 
         {activeTab === "documentos" && (
           <DocumentosTab
-            applicant={applicant}
+            applicant={effectiveApplicant}
             approvedCount={approvedCount}
             totalDocs={totalDocs}
             globalProgressPercentage={globalProgressPercentage}
@@ -511,7 +567,7 @@ export default function PostulanteDashboard({
 
         {activeTab === "pagos" && (
           <PagosTab
-            applicant={applicant}
+            applicant={effectiveApplicant}
             paymentDate={paymentDate}
             paymentVoucher={paymentVoucher}
             setPaymentVoucher={setPaymentVoucher}
@@ -530,7 +586,7 @@ export default function PostulanteDashboard({
 
         {activeTab === "resultados" && (
           <ResultadosTab
-            applicant={applicant}
+            applicant={effectiveApplicant}
             currentProgram={currentProgram}
             isActuallyAdmitted={isActuallyAdmitted}
             approvedCount={approvedCount}
@@ -543,7 +599,7 @@ export default function PostulanteDashboard({
 
         {activeTab === "soporte" && (
           <SoporteTab
-            applicant={applicant}
+            applicant={effectiveApplicant}
             onUpdateApplicant={onUpdateApplicant}
             supportCategory={supportCategory}
             setSupportCategory={setSupportCategory}
@@ -703,6 +759,11 @@ export default function PostulanteDashboard({
         fileType={previewFileType}
         metadata={previewMetadata}
       />
+
+      {/* ACTION TOAST NOTIFICATIONS */}
+      {toast && (
+        <Toast notice={toast} onClose={() => setToast(null)} />
+      )}
     </div>
   );
 }

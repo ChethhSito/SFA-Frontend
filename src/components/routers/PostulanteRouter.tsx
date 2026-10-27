@@ -132,6 +132,63 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
     } catch (e) {
       console.warn("Could not read doc status from localStorage:", e);
     }
+
+    // Rehydrate individual fileDataUrl and voucher data from localStorage
+    if (applicantToRender?.docs) {
+      const rehydratedDocs = { ...applicantToRender.docs } as any;
+      for (const k of ["dniFile", "certificadoFile", "partidaFile", "fotoFile"]) {
+        let cachedUrl: string | null = null;
+        try {
+          cachedUrl = localStorage.getItem(`sfa_file_data_${currentDni}_${k}`);
+        } catch (e) {}
+
+        const finalUrl = rehydratedDocs[k]?.fileDataUrl || cachedUrl;
+        if (finalUrl) {
+          rehydratedDocs[k] = { ...rehydratedDocs[k], fileDataUrl: finalUrl };
+        } else {
+          // Si no hay archivo de imagen fisica, figura estrictamente como No Enviado
+          rehydratedDocs[k] = {
+            status: "No Enviado",
+            fileName: undefined,
+            fileDataUrl: undefined,
+            observations: rehydratedDocs[k]?.observations
+          };
+        }
+      }
+      applicantToRender.docs = rehydratedDocs;
+    }
+
+    if (applicantToRender) {
+      let cachedVoucher: string | null = null;
+      try {
+        cachedVoucher = localStorage.getItem(`sfa_voucher_data_${currentDni}`);
+      } catch (e) {}
+
+      const effectiveVoucherUrl = applicantToRender.paymentVoucherUrl || cachedVoucher || undefined;
+      if (effectiveVoucherUrl) {
+        applicantToRender.paymentVoucherUrl = effectiveVoucherUrl;
+      }
+
+      // Si el pago no está validado por tesorería y fue declarado como voucher pero no existe imagen física:
+      // figura estrictamente como No Pagado (como si no hubiera enviado aún) para permitir el registro real
+      if (applicantToRender.paymentStatus !== "Validado") {
+        const isVoucherSubmission = applicantToRender.paymentType === "voucher" ||
+          Boolean(applicantToRender.paymentVoucherFileName) ||
+          Boolean(applicantToRender.paymentOperation && /\.(png|jpg|jpeg|webp)$/i.test(applicantToRender.paymentOperation));
+
+        if (isVoucherSubmission && !effectiveVoucherUrl) {
+          applicantToRender.paymentStatus = "No Pagado";
+          applicantToRender.paymentOperation = undefined;
+          applicantToRender.paymentVoucherFileName = undefined;
+          applicantToRender.paymentVoucherUrl = undefined;
+          applicantToRender.paymentType = undefined;
+          try {
+            localStorage.removeItem(`sfa_payment_status_${currentDni}`);
+            localStorage.removeItem(`sfa_voucher_data_${currentDni}`);
+          } catch (e) {}
+        }
+      }
+    }
   }
 
 
@@ -140,8 +197,7 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
     onUpdateApplicant(updated);
     setLiveApplicant(updated);
 
-    // Save doc status/fileName to dedicated localStorage key (without heavy base64)
-    // This guarantees the postulante sees their uploaded docs after refresh
+    // Save doc status/fileName and cache base64 images per-document
     if (updated.docs) {
       const docsForStorage: any = {};
       for (const [key, val] of Object.entries(updated.docs)) {
@@ -151,11 +207,26 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
           fileName: d.fileName,
           observations: d.observations
         };
+        if (d.fileDataUrl) {
+          try {
+            localStorage.setItem(`sfa_file_data_${updated.dni}_${key}`, d.fileDataUrl);
+          } catch (e) {
+            console.warn(`Could not save file data for ${key}:`, e);
+          }
+        }
       }
       try {
         localStorage.setItem(`sfa_doc_status_${updated.dni}`, JSON.stringify(docsForStorage));
       } catch (e) {
         console.warn("Could not save doc status to localStorage:", e);
+      }
+    }
+
+    if (updated.paymentVoucherUrl) {
+      try {
+        localStorage.setItem(`sfa_voucher_data_${updated.dni}`, updated.paymentVoucherUrl);
+      } catch (e) {
+        console.warn("Could not save payment voucher url to localStorage:", e);
       }
     }
 
