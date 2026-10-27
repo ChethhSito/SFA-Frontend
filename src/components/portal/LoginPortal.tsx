@@ -155,11 +155,11 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
         district?: string;
         province?: string;
       };
-      // Validate password against applicant custom password
+      // Validate password against applicant custom password or standard 123 / clave123
       const expectedPassword = matchedApp.password || "clave123";
-      if (pTrim !== expectedPassword) {
+      if (pTrim !== expectedPassword && pTrim !== "123" && pTrim !== "clave123") {
         setIsSubmitting(false);
-        setErrorMessage("Contraseña de postulante matriculado incorrecta. Intente con su contraseña registrada.");
+        setErrorMessage("Contraseña incorrecta. Ingrese con su clave registrada o '123'.");
         return;
       }
 

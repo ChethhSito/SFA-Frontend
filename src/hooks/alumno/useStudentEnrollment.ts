@@ -34,6 +34,14 @@ export function useStudentEnrollment() {
     } catch (e) {
       console.warn("[localStorage] Could not save sfa_enrollments:", e);
     }
+    if (Array.isArray(updatedList)) {
+      for (const enr of updatedList) {
+        if (!enr.studentDni) continue;
+        apiUpdateEnrollment(enr.studentDni, enr).catch(() => {
+          apiCreateEnrollment(enr).catch((err) => console.warn("Could not sync enrollment to API:", err));
+        });
+      }
+    }
   };
 
   const saveConfirmedEnrollment = (saved: any) => {
