@@ -1,29 +1,36 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Upload, Trash2 } from "lucide-react";
 import { CourseMaterial } from "../../../types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import Button from "../../ui/Button";
 import PageHeader from "../../ui/PageHeader";
+import { courseFileUrl } from "../../../services/api";
 
 interface Props {
   courseId: string;
   week: number;
   materials: CourseMaterial[];
-  onPublishMaterial: (title: string, fileName: string, type: string) => void;
-  onDeleteMaterial: (id: string) => void;
+  onPublishMaterial: (title: string, file: File) => Promise<boolean>;
+  onDeleteMaterial: (id: string) => Promise<void>;
 }
 
 export function MaterialManager({ courseId, week, materials, onPublishMaterial, onDeleteMaterial }: Props) {
   const [title, setTitle] = useState("");
-  const [fileName, setFileName] = useState("");
-  const [fileType, setFileType] = useState("PDF");
+  const [file, setFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !fileName) return;
-    onPublishMaterial(title, fileName, fileType);
-    setTitle("");
-    setFileName("");
+    if (!title.trim() || !file || saving) return;
+    setSaving(true);
+    try {
+      if (await onPublishMaterial(title.trim(), file)) {
+        setTitle("");
+        setFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    } finally { setSaving(false); }
   };
 
   const getFileIconColor = (type: string) => {
@@ -68,35 +75,19 @@ export function MaterialManager({ courseId, week, materials, onPublishMaterial, 
               </div>
 
               <div>
-                <label className="block text-slate-500 uppercase text-[9.5px] tracking-wide mb-1">Tipo de Archivo</label>
-                <select
-                  value={fileType}
-                  onChange={(e) => setFileType(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border rounded-md font-semibold text-slate-800 focus:outline-[#8B0026]"
-                >
-                  <option value="PDF">Documento PDF (.pdf)</option>
-                  <option value="Word">Documento Word (.docx)</option>
-                  <option value="PowerPoint">Diapositiva PowerPoint (.pptx)</option>
-                  <option value="Excel">Hoja de Cálculo Excel (.xlsx)</option>
-                  <option value="Video">Grabación de Clase / Video (.mp4)</option>
-                  <option value="Enlace">Enlace Externo / Web URL</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-500 uppercase text-[9.5px] tracking-wide mb-1">Nombre Simulado de Archivo</label>
+                <label className="block text-slate-500 uppercase text-[9.5px] tracking-wide mb-1">Archivo real (máximo 10 MB)</label>
                 <input
-                  type="text"
+                  type="file"
+                  ref={fileInputRef}
                   required
-                  placeholder="Ej: guia_laboratorio3_automatizacion.pdf"
-                  value={fileName}
-                  onChange={(e) => setFileName(e.target.value)}
+                  accept=".pdf,.docx,.pptx,.xlsx,.png,.jpg,.jpeg,.mp4"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
                   className="w-full px-3 py-2 border rounded-md font-mono text-slate-800 focus:outline-[#8B0026]"
                 />
               </div>
 
-              <Button type="submit" variant="primary" fullWidth className="font-black text-[10px] py-3 uppercase tracking-wider bg-[#8B0026] text-white">
-                <Upload className="w-4 h-4 mr-1.5" /> Publicar Material
+              <Button type="submit" disabled={saving} variant="primary" fullWidth className="font-black text-[10px] py-3 uppercase tracking-wider bg-[#8B0026] text-white">
+                <Upload className="w-4 h-4 mr-1.5" /> {saving ? "Subiendo..." : "Publicar Material"}
               </Button>
             </form>
           </CardContent>
@@ -126,7 +117,7 @@ export function MaterialManager({ courseId, week, materials, onPublishMaterial, 
                       <div className="min-w-0 text-left">
                         <span className="font-extrabold text-slate-900 block truncate text-xs">{mat.title}</span>
                         <span className="text-[10px] text-slate-400 font-bold block mt-0.5">
-                          Archivo: <span className="font-mono underline text-blue-600">{mat.fileName}</span> • Publicado: {mat.date}
+                          Archivo: {mat.storedFileName ? <a href={courseFileUrl('materials', mat.id)} className="font-mono underline text-blue-600">{mat.fileName}</a> : <span className="font-mono">{mat.fileName} (registro antiguo sin archivo)</span>} • Publicado: {mat.date}
                         </span>
                       </div>
                     </div>

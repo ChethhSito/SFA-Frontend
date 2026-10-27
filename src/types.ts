@@ -164,10 +164,19 @@ export interface CourseMaterial {
   title: string;
   date: string;
   fileName: string;
+    contentBase64?: string;
+    mimeType?: string;
+    fileSize?: number;
+    storedFileName?: string;
 }
 
 export interface CourseAssignment {
   kind?: "assignment" | "assessment";
+    attachment?: string;
+    rubric?: string;
+    contentBase64?: string;
+    mimeType?: string;
+    storedFileName?: string;
   id: string;
   courseId: string;
   title: string;

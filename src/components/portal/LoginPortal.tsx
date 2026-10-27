@@ -7,7 +7,7 @@ import { motion } from "motion/react";
 import { isFirestoreEnabled } from "../../firebase/config";
 import { loginWithEmailAndPassword } from "../../firebase/auth";
 import { listCollectionGeneric } from "../../firebase/firestore";
-import { fetchApplicants, fetchApplicantByDni, fetchEnrollments, fetchUsers } from "../../services/api";
+import { fetchApplicants, fetchApplicantByDni, fetchEnrollments, fetchStudents, fetchUsers } from "../../services/api";
 
 interface LoginPortalProps {
   onBack: () => void;
@@ -81,6 +81,14 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     setIsSubmitting(true);
 
     const currentEnrollments = await fetchEnrollments();
+    const apiStudents = await fetchStudents();
+    const studentRecords = apiStudents
+      ? Object.fromEntries(apiStudents.filter((student: any) => student.dni).map((student: any) => [student.dni, student]))
+      : localStudents;
+    if (apiStudents) {
+      setLocalStudents(studentRecords);
+      localStorage.setItem("sfa_students", JSON.stringify(studentRecords));
+    }
     const isDniMatriculado = (dni: string) => {
       const matchedEnroll = currentEnrollments?.find((e: any) => e.studentDni === dni);
       return !!(matchedEnroll && matchedEnroll.academicStatus === "MATRICULADO");
@@ -90,10 +98,10 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
       if (uTrim === "alumno" || uTrim === "luis.castillo@iestpsfa.edu.pe") {
         return "12345678";
       }
-      if (localStudents[uTrim]) {
-        return localStudents[uTrim].dni;
+      if (studentRecords[uTrim]) {
+        return studentRecords[uTrim].dni;
       }
-      const foundSt = Object.values(localStudents).find((st: any) => st.dni === uTrim || st.email?.toLowerCase() === uTrim) as any;
+      const foundSt = Object.values(studentRecords).find((st: any) => st.dni === uTrim || st.email?.toLowerCase() === uTrim) as any;
       return foundSt ? foundSt.dni : "";
     })();
 
@@ -262,8 +270,8 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
       detectedIdentifier = (uTrim === "docente") ? "99887766" : (uTrim.includes("@") ? (uTrim.includes("rosa") ? "44567891" : uTrim.includes("enrique") ? "20202020" : "99887766") : uTrim);
     }
     // 3. Check Alumno (dynamic lookup in localStudents - ONLY IF MATRICULADO)
-    else if (isInputStudentMatriculado && (uTrim === "alumno" || uTrim === "luis.castillo@iestpsfa.edu.pe" || localStudents[uTrim] || Object.values(localStudents).some((st: any) => st.dni === uTrim || st.email?.toLowerCase() === uTrim))) {
-      const studentList = Object.values(localStudents);
+    else if (isInputStudentMatriculado && (uTrim === "alumno" || uTrim === "luis.castillo@iestpsfa.edu.pe" || studentRecords[uTrim] || Object.values(studentRecords).some((st: any) => st.dni === uTrim || st.email?.toLowerCase() === uTrim))) {
+      const studentList = Object.values(studentRecords);
       if (studentList.length === 0) {
         setIsSubmitting(false);
         setErrorMessage("No existen alumnos matriculados en el sistema actualmente. Registre y matricule un alumno primero en el MAMC.");
@@ -299,7 +307,7 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
         detectedIdentifier = matchedTeach.dni;
       } else if (isDniMatriculado(uTrim)) {
         // Then check in students if they are matriculado
-        const studentList = Object.values(localStudents);
+        const studentList = Object.values(studentRecords);
         const matchedSt: any = studentList.find((st: any) => st.dni === uTrim);
         if (matchedSt) {
           detectedRole = "alumno";

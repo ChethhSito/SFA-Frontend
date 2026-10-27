@@ -14,7 +14,8 @@ import {
   Layers,
   ArrowLeft
 } from "lucide-react";
-import { fetchAdmissionPeriods, fetchApplicants, fetchEnrollments } from "../../services/api";
+import { fetchAdmissionPeriods, fetchApplicants, fetchEnrollments, fetchStudentByDni } from "../../services/api";
+import { createServiceRequest, fetchServiceRequests, ServiceConceptCode, ServiceRequest, updateServiceRequestPayment } from "../../services/serviceRequests";
 import { MafConcept, MafObligation, MafExoneration, MafAuditLog, SupportTicket } from "./mafTypes";
 import { defaultConcepts, syncObligationsToMamcAndMge } from "./mafUtils";
 import { AddConceptModal } from "./modals/AddConceptModal";
@@ -35,6 +36,33 @@ interface MafDashboardProps {
   onLogout: () => void;
 }
 
+function obligationFromRequest(request: ServiceRequest): MafObligation {
+  return {
+    id: request.id,
+    studentDni: request.studentDni,
+    studentName: request.studentName,
+    conceptCode: request.conceptCode,
+    conceptName: request.conceptName,
+    amount: request.amount,
+    discount: 0,
+    finalAmount: request.amount,
+    period: request.period || "Sin período",
+    status: request.status,
+    dateCreated: request.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+    source: request.source,
+    requestReason: request.reason,
+    requestedBy: request.requestedBy,
+    contactPhone: request.contactPhone,
+    voucherRegistered: !!request.paymentOperation,
+    ...(request.paymentOperation ? { voucherDetails: {
+      operationNumber: request.paymentOperation,
+      bankName: request.bankName || "Banco de la Nación",
+      paymentDate: request.paymentDate || "",
+      amountPaid: request.amountPaid || request.amount,
+    } } : {}),
+  };
+}
+
 export default function MafDashboard({ onLogout }: MafDashboardProps) {
   // Navigation State
   const [activeTab, setActiveTab] = useState<
@@ -47,6 +75,7 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
   // Core Entity States
   const [concepts, setConcepts] = useState<MafConcept[]>([]);
   const [obligations, setObligations] = useState<MafObligation[]>([]);
+  const [verifiedStudentDni, setVerifiedStudentDni] = useState("");
   const [exonerations, setExonerations] = useState<MafExoneration[]>([]);
   const [auditLogs, setAuditLogs] = useState<MafAuditLog[]>([]);
 
@@ -92,7 +121,9 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
     studentDni: "",
     studentName: "",
     conceptId: "",
-    period: "2026-I",
+    period: "",
+    requestedBy: "",
+    contactPhone: "",
   });
 
   const [selectedObligationId, setSelectedObligationId] = useState<string | null>(null);
@@ -160,6 +191,18 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
       localStorage.setItem("maf_audit_logs", JSON.stringify(updated));
       return updated;
     });
+  };
+
+  const refreshServiceRequests = async () => {
+    const requests = await fetchServiceRequests();
+    setObligations(current => {
+      const byId = new Map(current.map(item => [item.id, item]));
+      requests.forEach(request => byId.set(request.id, obligationFromRequest(request)));
+      const next = Array.from(byId.values());
+      localStorage.setItem("maf_obligations", JSON.stringify(next));
+      return next;
+    });
+    return requests.length;
   };
 
   // Initialization & LocalStorage Load
@@ -313,6 +356,7 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
     };
 
     syncMamcPayments();
+    void refreshServiceRequests().catch(error => console.error("No se pudieron cargar las solicitudes de estudiantes en MAF:", error));
   }, []);
 
   // Save on updates helper
@@ -322,6 +366,22 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
   };
 
   const handleObligationsUpdate = (updated: MafObligation[]) => {
+    updated.filter(item => item.id.startsWith("SOL-")).forEach(item => {
+      const previous = obligations.find(old => old.id === item.id);
+      const operation = item.voucherDetails?.operationNumber || "";
+      if (previous && (previous.status !== item.status || (previous.voucherDetails?.operationNumber || "") !== operation)) {
+        void updateServiceRequestPayment(item.id, {
+          status: item.status,
+          paymentOperation: operation,
+          paymentDate: item.voucherDetails?.paymentDate || "",
+          amountPaid: item.voucherDetails?.amountPaid || 0,
+          bankName: item.voucherDetails?.bankName || "",
+        }).catch(error => {
+          console.error("No se pudo sincronizar el estado de la solicitud:", error);
+          triggerNotification("El estado se guardó solo en este navegador; compruebe la conexión con el servidor.", "warning");
+        });
+      }
+    });
     setObligations(updated);
     localStorage.setItem("maf_obligations", JSON.stringify(updated));
     syncObligationsToMamcAndMge(updated);
@@ -396,33 +456,31 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
   };
 
   // Obligation Form Handlers
-  const handleCreateObligation = (e: React.FormEvent) => {
+  const handleCreateObligation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!obligationForm.studentDni || !obligationForm.studentName || !obligationForm.conceptId) {
-      triggerNotification("Por favor, rellene todos los campos requeridos.", "warning");
+    if (verifiedStudentDni !== obligationForm.studentDni || !obligationForm.conceptId || !obligationForm.requestedBy.trim()) {
+      triggerNotification("Primero identifique a un estudiante registrado mediante su DNI.", "warning");
       return;
     }
 
     const matchedConcept = concepts.find(c => c.id === obligationForm.conceptId);
-    if (!matchedConcept) return;
-
-    const existingEx = exonerations.find(ex => ex.studentDni === obligationForm.studentDni && ex.conceptCode === matchedConcept.code);
-    const discount = existingEx ? (matchedConcept.amount * (existingEx.percentage / 100)) : 0;
-    const finalAmt = matchedConcept.amount - discount;
-
-    const newObl: MafObligation = {
-      id: "obl-" + Math.floor(1000 + Math.random() * 9000),
-      studentDni: obligationForm.studentDni,
-      studentName: obligationForm.studentName,
-      conceptCode: matchedConcept.code,
-      conceptName: matchedConcept.name,
-      amount: matchedConcept.amount,
-      discount,
-      finalAmount: finalAmt,
-      period: obligationForm.period,
-      status: finalAmt === 0 ? "Exonerado" : "Pendiente",
-      dateCreated: new Date().toISOString().split("T")[0]
-    };
+    if (!matchedConcept || !["ADM01", "MAT01", "CER01", "CON01", "SUB01", "CAR01"].includes(matchedConcept.code)) return;
+    let newObl: MafObligation;
+    try {
+      const request = await createServiceRequest({
+        studentDni: obligationForm.studentDni,
+        conceptCode: matchedConcept.code as ServiceConceptCode,
+        source: "llamada_apoderado",
+        period: obligationForm.period,
+        reason: "Solicitud recibida por llamada del apoderado",
+        requestedBy: obligationForm.requestedBy.trim(),
+        contactPhone: obligationForm.contactPhone.trim(),
+      });
+      newObl = obligationFromRequest(request);
+    } catch (error) {
+      triggerNotification(error instanceof Error ? error.message : "No se pudo crear la solicitud.", "warning");
+      return;
+    }
 
     const nextObls = [newObl, ...obligations];
     handleObligationsUpdate(nextObls);
@@ -435,7 +493,8 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
 
     triggerNotification(`Obligación de pago generada con éxito.`);
     setShowAddObligationModal(false);
-    setObligationForm({ studentDni: "", studentName: "", conceptId: "", period: "2026-I" });
+    setVerifiedStudentDni("");
+    setObligationForm({ studentDni: "", studentName: "", conceptId: "", period: "", requestedBy: "", contactPhone: "" });
   };
 
   // Register Voucher (Pago) Handler
@@ -678,33 +737,18 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
 
   // Helper autofills for forms
   const setFormStudentByDni = (dni: string) => {
-    let text = dni.trim();
-    setObligationForm(prev => ({ ...prev, studentDni: text }));
-    if (text.length === 8) {
-      const savedStudents = localStorage.getItem("sfa_students");
-      const savedApplicants = localStorage.getItem("sfa_applicants");
-      let foundName = "";
-
-      if (savedStudents) {
-        try {
-          const list = JSON.parse(savedStudents);
-          if (list[text]) foundName = `${list[text].lastName}, ${list[text].name}`;
-        } catch (e) {}
+    const text = dni.trim();
+    setVerifiedStudentDni("");
+    setObligationForm(prev => ({ ...prev, studentDni: text, studentName: "" }));
+    if (!/^\d{8}$/.test(text)) return;
+    void fetchStudentByDni(text).then(student => {
+      if (!student || student.active === false) {
+        triggerNotification("No se encontró un estudiante activo con ese DNI.", "warning");
+        return;
       }
-
-      if (!foundName && savedApplicants) {
-        try {
-          const list = JSON.parse(savedApplicants);
-          const ap = list.find((a: any) => a.dni === text);
-          if (ap) foundName = `${ap.lastName}, ${ap.name}`;
-        } catch (e) {}
-      }
-
-      if (foundName) {
-        setObligationForm(prev => ({ ...prev, studentName: foundName }));
-        triggerNotification(`Estudiante identificado: ${foundName}`, "info");
-      }
-    }
+      setVerifiedStudentDni(text);
+      setObligationForm(prev => prev.studentDni === text ? { ...prev, studentName: `${student.name} ${student.lastName}`.trim() } : prev);
+    });
   };
 
   const setFormExonerationDni = (dni: string) => {
@@ -881,10 +925,9 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
 
           <div className="flex items-center gap-2.5">
             <button
-              onClick={() => {
-                addAuditLog("Manual Database Sync", "Sincronización forzada de transacciones académicas a través de guardado en disco.", "info");
-                triggerNotification("¡Bases de datos financieras sincronizadas con éxito!");
-              }}
+              onClick={() => void refreshServiceRequests().then(count => {
+                triggerNotification(`${count} solicitud(es) de estudiantes consultadas en la base local.`);
+              }).catch(() => triggerNotification("No se pudieron consultar las solicitudes en la base local.", "warning"))}
               className="p-2 border border-slate-250 bg-white rounded-lg hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
             >
               <RefreshCw className="w-3.5 h-3.5" />

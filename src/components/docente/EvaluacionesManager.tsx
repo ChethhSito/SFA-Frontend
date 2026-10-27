@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function EvaluacionesManager({ students, courseId, week, assignments, onUpdateAssignments }: Props) {
-  const evaluations = useMemo(() => assignments.filter((item) => item.courseId === courseId && item.title.startsWith(`[Semana ${week}]`)), [assignments, courseId, week]);
+  const evaluations = useMemo(() => assignments.filter((item) => item.courseId === courseId && item.kind === "assessment" && item.title.startsWith(`[Semana ${week}]`)), [assignments, courseId, week]);
   const [selectedId, setSelectedId] = useState("");
   const selected = evaluations.find((item) => item.id === selectedId) || evaluations[0];
   const [title, setTitle] = useState("");

@@ -15,6 +15,10 @@ import { ScheduleTab } from "./tabs/ScheduleTab";
 import { AttendanceTab } from "./tabs/AttendanceTab";
 import { ClosureTab } from "./tabs/ClosureTab";
 import { GradesTab } from "./tabs/GradesTab";
+import { ProceduresTab } from "./tabs/ProceduresTab";
+import GuidesLibrary from "../shared/GuidesLibrary";
+import AcademicCalendarBoard from "../shared/AcademicCalendarBoard";
+import { fetchMpaCollections } from "../../services/mpaApi";
 
 interface AlumnoDashboardProps {
   studentDni: string;
@@ -56,7 +60,7 @@ export default function AlumnoDashboard({
   onLogout
 }: AlumnoDashboardProps) {
   const { programs: ACADEMIC_PROGRAMS, courses: catalogCourses } = useAcademicCatalog();
-  const [activeTab, setActiveTab] = useState<"welcome" | "profile" | "classes" | "schedule" | "attendance" | "closure" | "notas">("welcome");
+  const [activeTab, setActiveTab] = useState<"welcome" | "profile" | "classes" | "schedule" | "attendance" | "closure" | "notas" | "secretaria" | "guias" | "calendar">("welcome");
   
   // Profile edit form fields
   const [profileForm, setProfileForm] = useState<StudentPersonalData>({ ...personalData });
@@ -160,7 +164,7 @@ export default function AlumnoDashboard({
   const currentProgram = ACADEMIC_PROGRAMS.find((p) => p.id === enrollment.programId);
 
   // Dynamic integration of MAMC curriculum and MPA academic programming / schedule
-  const mpaPlanningData = useMemo(() => {
+  const [mpaPlanningData, setMpaPlanningData] = useState(() => {
     try {
       const tasksRaw = localStorage.getItem("mpa_db_tasks");
       const coursesRaw = localStorage.getItem("mpa_db_courses");
@@ -181,6 +185,16 @@ export default function AlumnoDashboard({
       console.error("Error loading MPA data in AlumnoDashboard:", e);
       return { tasks: [], courses: [], schedules: [], groups: [], teachers: [], classrooms: [] };
     }
+  });
+
+  useEffect(() => {
+    let current = true;
+    fetchMpaCollections().then((data) => {
+      if (!current) return;
+      setMpaPlanningData({ tasks: data.tasks, courses: data.courses, schedules: data.schedules,
+        groups: data.groups, teachers: data.teachers, classrooms: data.classrooms });
+    }).catch((error) => console.error("Error loading MPA data from local API:", error));
+    return () => { current = false; };
   }, []);
 
   // Map student shift and career to find their registered group in MPA
@@ -303,6 +317,7 @@ export default function AlumnoDashboard({
       classroom: c.classroom || "Aula Virtual",
       credits: c.credits,
       schedule: c.schedule,
+      teacherName: c.teacherName,
       group: c.group || studentGroup?.name || "Grupo A",
       curriculum: c.curriculum || "Diseño Curricular 2026",
       studentCount: c.studentCount || 30,
@@ -355,6 +370,12 @@ export default function AlumnoDashboard({
                 active: activeTab === "schedule"
               },
               {
+                label: "Calendario Académico",
+                icon: <Calendar className="w-4 h-4" />,
+                route: "calendar",
+                active: activeTab === "calendar"
+              },
+              {
                 label: "Mis Cursos",
                 icon: <BookOpen className="w-4 h-4" />,
                 route: "classes",
@@ -387,26 +408,18 @@ export default function AlumnoDashboard({
                 label: "Trámites de Secretaría",
                 icon: <FileText className="w-4 h-4" />,
                 route: "secretaria",
-                active: false
+                active: activeTab === "secretaria"
               },
               {
-                label: "Guías Académicas",
+                label: "Guías y Reglamentos",
                 icon: <HelpCircle className="w-4 h-4" />,
                 route: "guias",
-                active: false
+                active: activeTab === "guias"
               }
             ]
           }
         ]}
-        onItemClick={(route) => {
-          if (route === "secretaria") {
-            notify("Sección de trámites de secretaría académica SFA online en preparación.", "info");
-          } else if (route === "guias") {
-            notify("Abriendo repositorio de guías para el estudiante.", "info");
-          } else {
-            setActiveTab(route as any);
-          }
-        }}
+        onItemClick={(route) => setActiveTab(route as typeof activeTab)}
         onLogout={onLogout}
       />
 
@@ -549,6 +562,10 @@ export default function AlumnoDashboard({
                 setSelectedCourseDetail={setSelectedCourseDetail}
               />
             )}
+
+            {activeTab === "secretaria" && <ProceduresTab studentDni={studentDni} period="" />}
+            {activeTab === "guias" && <GuidesLibrary audience="student" />}
+            {activeTab === "calendar" && <AcademicCalendarBoard preferredPeriodId={studentGroup?.periodId} />}
           </motion.div>
         </AnimatePresence>
       </main>

@@ -1,15 +1,16 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { CourseAssignment } from "../../../types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import Button from "../../ui/Button";
 import PageHeader from "../../ui/PageHeader";
+import { courseFileUrl } from "../../../services/api";
 
 interface Props {
   courseId: string;
   week: number;
   assignments: CourseAssignment[];
-  onPublishAssignment: (title: string, desc: string, dueDate: string, attachment?: string, rubric?: string) => Promise<boolean | undefined>;
+  onPublishAssignment: (title: string, desc: string, dueDate: string, attachment?: File, rubric?: string) => Promise<boolean | undefined>;
   onDeleteAssignment: (id: string) => void;
 }
 
@@ -17,9 +18,10 @@ export function TareaManager({ courseId, week, assignments, onPublishAssignment,
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [attachment, setAttachment] = useState("");
+  const [attachment, setAttachment] = useState<File | null>(null);
   const [rubric, setRubric] = useState("");
   const [saving, setSaving] = useState(false);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +34,8 @@ export function TareaManager({ courseId, week, assignments, onPublishAssignment,
     setTitle("");
     setDescription("");
     setDueDate("");
-    setAttachment("");
+    setAttachment(null);
+    if (attachmentInputRef.current) attachmentInputRef.current.value = "";
     setRubric("");
   };
 
@@ -92,10 +95,10 @@ export function TareaManager({ courseId, week, assignments, onPublishAssignment,
               <div>
                 <label className="block text-slate-500 uppercase text-[9px] mb-1 font-black">Archivo de Guía Adjunta (Opcional)</label>
                 <input
-                  type="text"
-                  placeholder="Ej: guia_rubrica_lab1.pdf"
-                  value={attachment}
-                  onChange={(e) => setAttachment(e.target.value)}
+                  type="file"
+                  ref={attachmentInputRef}
+                  accept=".pdf,.docx,.pptx,.xlsx,.png,.jpg,.jpeg"
+                  onChange={(e) => setAttachment(e.target.files?.[0] || null)}
                   className="w-full px-3 py-2 border rounded-md font-mono text-slate-800 focus:outline-[#8B0026]"
                 />
               </div>
@@ -148,10 +151,10 @@ export function TareaManager({ courseId, week, assignments, onPublishAssignment,
                             Rúbrica: {(asg as any).rubric}
                           </span>
                         )}
-                        {(asg as any).attachment && (
-                          <span className="bg-blue-50 text-blue-700 border border-blue-100 py-0.5 px-2.5 rounded-full font-mono">
-                            Adjunto: {(asg as any).attachment}
-                          </span>
+                        {asg.attachment && (
+                          asg.storedFileName ? <a href={courseFileUrl('assignments', asg.id)} className="bg-blue-50 text-blue-700 underline border border-blue-100 py-0.5 px-2.5 rounded-full font-mono">
+                            Descargar: {asg.attachment}
+                          </a> : <span className="text-slate-500">Adjunto antiguo sin archivo: {asg.attachment}</span>
                         )}
                       </div>
                     </div>

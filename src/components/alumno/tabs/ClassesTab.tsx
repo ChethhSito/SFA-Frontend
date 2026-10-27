@@ -10,6 +10,9 @@ import PageTransition from "../../ui/PageTransition";
 import Toast, { ToastNotice } from "../../ui/Toast";
 import { Card, CardHeader, CardTitle, CardContent } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
+import { courseFileUrl } from "../../../services/api";
+
+const COURSE_WEEKS = 16;
 
 interface ClassesTabProps {
   attendance: AttendanceRecord[];
@@ -140,7 +143,12 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
         {/* Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {classesCoursesData.map((courseItem) => {
-            const averageGrade = courseItem.code === "EE-101" ? "16.8" : courseItem.code === "EE-403" ? "15.0" : "15.5";
+            const courseIds = courseItem.attendanceCourseIds || [courseItem.id];
+            const grades = assignments.filter((assignment) => courseIds.includes(assignment.courseId))
+              .flatMap((assignment) => assignment.submissions || [])
+              .filter((submission) => submission.studentDni === studentDni && submission.grade !== undefined)
+              .map((submission) => Number(submission.grade));
+            const averageGrade = grades.length ? (grades.reduce((sum, grade) => sum + grade, 0) / grades.length).toFixed(1) : "NR";
             return (
               <Card key={courseItem.id} className="border border-slate-200/80 shadow-xs flex flex-col justify-between overflow-hidden bg-white hover:shadow-md transition-all duration-200">
                 <div className="p-5 border-b border-slate-100 bg-slate-50/40 space-y-2 text-left">
@@ -179,8 +187,8 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                     </span>
                   </div>
                   <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-400 font-semibold uppercase text-[10px]">Cant. Alumnos:</span>
-                    <span className="text-slate-850 font-bold">{courseItem.studentCount || 5} Matriculados</span>
+                    <span className="text-slate-400 font-semibold uppercase text-[10px]">Capacidad del grupo:</span>
+                    <span className="text-slate-850 font-bold">{courseItem.studentCount || 0} cupos</span>
                   </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="text-slate-400 font-semibold uppercase text-[10px]">Horario:</span>
@@ -219,19 +227,19 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     if (code === "EE-101") return "cur-elec-1"; 
     if (code === "EE-403") return "cur-elec-2"; 
     if (code === "EE-502") return "cur-elec-3"; 
-    return "cur-elec-1";
+    return code;
   };
 
   const activeCourseDbId = getMappedCourseId(activeCourse.code);
 
   const filteredDBMaterials = materials.filter(m => {
-    const courseMatches = m.courseId === activeCourse.id || m.courseId === activeCourseDbId;
+    const courseMatches = activeCourse.attendanceCourseIds?.includes(m.courseId) || m.courseId === activeCourse.id || m.courseId === activeCourseDbId;
     return courseMatches && (m.title.includes(`[Semana ${selectedClassWeek}]`) || m.title.includes(`Semana ${selectedClassWeek}`));
   });
 
   const filteredDBAssignments = assignments.filter(a => {
-    const courseMatches = a.courseId === activeCourse.id || a.courseId === activeCourseDbId;
-    return courseMatches && (a.title.includes(`[Semana ${selectedClassWeek}]`) || a.title.includes(`Semana ${selectedClassWeek}`) || selectedClassWeek === 1);
+    const courseMatches = activeCourse.attendanceCourseIds?.includes(a.courseId) || a.courseId === activeCourse.id || a.courseId === activeCourseDbId;
+    return courseMatches && a.kind !== "assessment" && (a.title.includes(`[Semana ${selectedClassWeek}]`) || a.title.includes(`Semana ${selectedClassWeek}`));
   });
 
   const fallbackAssignments = filteredDBAssignments.length > 0 ? filteredDBAssignments : [
@@ -246,23 +254,6 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
       submissions: []
     }
   ];
-
-  const getFallbackMaterialsForWeek = (week: number, name: string, code: string) => {
-    return [
-      {
-        id: `fmat-1-${week}`,
-        title: `Lectura Obligatoria: Fundamentos de ${name} (Semana ${week})`,
-        date: `2026-05-${10 + week}`,
-        fileName: `silabo_lectura_semana_${week}_${code.toLowerCase()}.pdf`
-      },
-      {
-        id: `fmat-2-${week}`,
-        title: `Diapositivas de Clase: Aplicaciones Críticas y Guía Práctica`,
-        date: `2026-05-${12 + week}`,
-        fileName: `slides_presentacion_semanal_v${week}.pptx`
-      }
-    ];
-  };
 
   const handleSimulateHWUpload = (asgId: string, customFileName: string) => {
     if (!customFileName.trim()) return;
@@ -295,7 +286,15 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     setExpandedStudentWeeks(prev => ({ ...prev, [wNum]: !prev[wNum] }));
   };
 
-  const averageGrade = activeCourse.code === "EE-101" ? "16.8" : activeCourse.code === "EE-403" ? "15.0" : "15.5";
+  const courseResourceIds = activeCourse.attendanceCourseIds || [activeCourse.id];
+  const courseGrades = assignments.filter((assignment) => courseResourceIds.includes(assignment.courseId))
+    .flatMap((assignment) => assignment.submissions || [])
+    .filter((submission) => submission.studentDni === studentDni && submission.grade !== undefined)
+    .map((submission) => Number(submission.grade));
+  const averageGrade = courseGrades.length ? (courseGrades.reduce((sum, grade) => sum + grade, 0) / courseGrades.length).toFixed(1) : "NR";
+  const courseMaterialsCount = materials.filter((material) => courseResourceIds.includes(material.courseId)).length;
+  const courseTasksCount = assignments.filter((assignment) => courseResourceIds.includes(assignment.courseId) && assignment.kind !== "assessment").length;
+  const courseGradesCount = assignments.filter((assignment) => courseResourceIds.includes(assignment.courseId) && assignment.submissions?.some((submission) => submission.studentDni === studentDni && submission.grade !== undefined)).length;
 
   return (
     <PageTransition id="classes-workspace" className="flex flex-col md:flex-row gap-6 items-start text-left">
@@ -345,7 +344,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           <div className="py-2 space-y-1">
             <span className="text-[9.5px] text-slate-400 font-bold uppercase tracking-wider block px-2.5 pb-1">Desarrollo por Semanas</span>
             
-            {Array.from({ length: 12 }, (_, idx) => idx + 1).map((wNum) => {
+            {Array.from({ length: COURSE_WEEKS }, (_, idx) => idx + 1).map((wNum) => {
               const isExpanded = !!expandedStudentWeeks[wNum];
               const isActiveWeek = activeCourseSection === "week" && selectedClassWeek === wNum;
               return (
@@ -451,29 +450,25 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs text-left">
-                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Alumnos Inscritos</span>
-                <span className="text-lg font-black text-slate-800 block mt-1.5">{activeCourse.studentCount || 5} Matriculados</span>
-                <span className="text-[8.5px] text-amber-600 font-bold block mt-0.5 uppercase tracking-wide">● 100% activos</span>
+                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Capacidad del grupo</span>
+                <span className="text-lg font-black text-slate-800 block mt-1.5">{activeCourse.studentCount || 0} cupos</span>
               </div>
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs text-left">
                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Materiales Activos</span>
-                <span className="text-lg font-black text-[#800521] block mt-1.5">24 archivos</span>
-                <span className="text-[8.5px] text-slate-450 font-bold block mt-0.5">Syllabus publicado</span>
+                <span className="text-lg font-black text-[#800521] block mt-1.5">{courseMaterialsCount} {courseMaterialsCount === 1 ? "archivo" : "archivos"}</span>
               </div>
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs text-left">
                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Tareas Publicadas</span>
-                <span className="text-lg font-black text-slate-800 block mt-1.5">12 talleres / tareas</span>
-                <span className="text-[8.5px] text-slate-450 font-bold block mt-0.5">Con rúbricas activas</span>
+                <span className="text-lg font-black text-slate-800 block mt-1.5">{courseTasksCount} tareas</span>
               </div>
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs text-left">
                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Notas Registradas</span>
-                <span className="text-lg font-black text-slate-800 block mt-1.5">3 parciales</span>
-                <span className="text-[8.5px] text-slate-450 font-bold block mt-0.5">En registro auxiliar</span>
+                <span className="text-lg font-black text-slate-800 block mt-1.5">{courseGradesCount} notas</span>
               </div>
               <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs text-left col-span-2 md:col-span-1">
                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Promedio Parcial</span>
                 <span className="text-lg font-black text-emerald-700 block mt-1.5">{averageGrade} / 20</span>
-                <span className="text-[8.5px] text-emerald-600 font-bold block mt-0.5 uppercase tracking-wide">● Situación: Aprobado</span>
+                <span className="text-[8.5px] text-emerald-600 font-bold block mt-0.5 uppercase tracking-wide">{courseGrades.length ? "Notas registradas" : "Sin calificaciones"}</span>
               </div>
             </div>
 
@@ -493,10 +488,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                     { k: "Malla / Diseño Curricular:", v: activeCourse.curriculum || "Diseño Curricular 2026" },
                     { k: "Créditos Académicos:", v: `${activeCourse.credits} Créditos Oficiales` },
                     { k: "Aula o Laboratorio:", v: activeCourse.classroom },
-                    { k: "Cantidad de Alumnos:", v: `${activeCourse.studentCount || 5} Alumnos Matriculados` },
+                    { k: "Capacidad del grupo:", v: `${activeCourse.studentCount || 0} cupos` },
                     { k: "Horario Lectivo Oficial:", v: activeCourse.schedule },
                     { k: "Rango de Semestre:", v: "2026-04-06 / 2026-07-24 (Regular)" },
-                    { k: "Catedrático Titular:", v: activeCourse.code.startsWith("EE") ? "Ing. César Augusto Valdivia Rojas" : "Ing. Carlos Mendoza Sánchez" }
+                    { k: "Docente asignado:", v: activeCourse.teacherName || "Por asignar" }
                   ].map((row, rIdx) => (
                     <div key={rIdx} className="flex justify-between py-2.5">
                       <span className="text-slate-400 font-bold uppercase text-[10px]">{row.k}</span>
@@ -521,8 +516,8 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 </div>
 
                 <div className="space-y-1 text-slate-600 text-[11px] font-bold leading-normal">
-                  <p className="text-slate-800 font-black uppercase text-[10.5px]">Rendimiento Óptimo</p>
-                  <p className="text-slate-400 font-semibold">Su desempeño para este curso está en el rango superior del semestre.</p>
+                  <p className="text-slate-800 font-black uppercase text-[10.5px]">{courseGrades.length ? "Rendimiento registrado" : "Sin calificaciones"}</p>
+                  <p className="text-slate-400 font-semibold">{courseGrades.length ? "Promedio de sus calificaciones registradas en esta asignatura." : "El promedio aparecerá cuando el docente registre sus notas."}</p>
                 </div>
               </div>
             </div>
@@ -603,10 +598,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-xs">
                   <span className="font-extrabold text-slate-800 block mb-3 uppercase text-[10.5px] tracking-wide">
-                    Matriz Trimestral de Trabajos y Evaluaciones Continuas
+                    Matriz Semestral de Trabajos y Evaluaciones Continuas
                   </span>
                   <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map((w) => {
+                    {Array.from({ length: COURSE_WEEKS }, (_, i) => i + 1).map((w) => {
                       const hasGrade = w < 4;
                       const gr = hasGrade ? (w === 1 ? 16 : w === 2 ? 17 : 18) : "NR";
                       return (
@@ -656,13 +651,14 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 })()}
 
                 {selectedClassWeekOption === "materiales" && (() => {
-                  const mats = filteredDBMaterials.length > 0 ? filteredDBMaterials : getFallbackMaterialsForWeek(selectedClassWeek, activeCourse.name, activeCourse.code);
+                  const mats = filteredDBMaterials;
                   return (
                     <div className="space-y-3">
                       <div className="bg-amber-50 text-amber-900 border border-amber-100 p-3 rounded-lg text-[11px] font-bold flex items-center gap-2">
                         <BookOpen className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                         <span>Recursos académicos oficiales para la sesión académica de la <strong>Semana {selectedClassWeek}</strong>.</span>
                       </div>
+                      {mats.length === 0 && <p className="rounded-lg border p-4 text-sm text-slate-500">El docente aún no ha publicado materiales para esta semana.</p>}
                       {mats.map((m: any) => {
                         const fileExtension = m.fileName.split('.').pop()?.toUpperCase() || "PDF";
                         return (
@@ -676,16 +672,28 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                                 <span className="text-[10px] text-slate-400 font-bold block mt-0.5">Archivo: <span className="font-mono text-blue-600 underline">{m.fileName}</span></span>
                               </div>
                             </div>
-                            <button
-                              onClick={() => setToastNotice({
-                                id: Date.now(),
-                                message: `Descargando material didáctico: ${m.fileName}`,
-                                kind: "info",
-                              })}
-                              className="bg-[#800521]/10 hover:bg-[#800521] text-[#800521] hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all cursor-pointer select-none"
-                            >
-                              Descargar
-                            </button>
+                            {m.storedFileName ? (
+                              <a
+                                href={courseFileUrl('materials', m.id)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="bg-[#800521]/10 hover:bg-[#800521] text-[#800521] hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all inline-flex items-center"
+                              >
+                                Descargar
+                              </a>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setToastNotice({
+                                  id: Date.now(),
+                                  message: `El archivo ${m.fileName} no está alojado en el servidor institucional.`,
+                                  kind: "info",
+                                })}
+                                className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all"
+                              >
+                                No disponible
+                              </button>
+                            )}
                           </div>
                         );
                       })}
@@ -717,7 +725,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                             <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-[10px] font-bold text-slate-600 space-y-1.5 font-sans">
                               <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" /> <span className="text-slate-400">Fecha Límite:</span> <span className="text-slate-800 font-extrabold">{asg.dueDate}</span></div>
                               {asg.rubric && <div className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5 text-amber-500 shrink-0" /> <span className="text-slate-400">Rúbrica de Evaluación:</span> <span className="text-slate-800 font-black">{asg.rubric}</span></div>}
-                              {asg.attachment && <div className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" /> <span className="text-slate-400">Guía de Apoyo:</span> <span className="text-blue-600 underline font-mono">{asg.attachment}</span></div>}
+                              {asg.attachment && <div className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" /> <span className="text-slate-400">Guía de Apoyo:</span> {asg.storedFileName ? <a href={courseFileUrl('assignments', asg.id)} className="text-blue-600 underline font-mono">{asg.attachment}</a> : <span className="text-slate-500 font-mono">{asg.attachment} (no disponible)</span>}</div>}
                             </div>
 
                             <div className="pt-2 border-t border-slate-100 space-y-3">

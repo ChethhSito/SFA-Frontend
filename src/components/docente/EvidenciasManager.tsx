@@ -3,6 +3,7 @@ import { Upload, FileText, Image, Trash2, Info, CheckCircle } from "lucide-react
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/Card";
 import Button from "../ui/Button";
 import PageHeader from "../ui/PageHeader";
+import { courseFileUrl, deleteCourseEvidence, fetchCourseEvidences, fileToBase64, uploadCourseEvidence } from "../../services/api";
 
 interface EvidenciaItem {
   id: string;
@@ -23,24 +24,23 @@ export default function EvidenciasManager({ courseId, week }: EvidenciasManagerP
   const [category, setCategory] = useState<"Fotografia" | "Reporte" | "Laboratorio" | "Actividad">("Laboratorio");
   const [customTitle, setCustomTitle] = useState("");
   const [isDragActive, setIsDragActive] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load from localStorage on mount
   useEffect(() => {
-    const key = `sfa_evidencias_${courseId}_w${week}`;
-    const saved = localStorage.getItem(key);
-    if (saved) {
-      setEvidenceList(JSON.parse(saved));
-    } else {
-      setEvidenceList([]);
-    }
+    let current = true;
+    setLoading(true);
+    setEvidenceList([]);
+    fetchCourseEvidences(courseId, week).then((items) => {
+      if (!current) return;
+      setEvidenceList(items || []);
+      setError(items ? "" : "No se pudieron cargar las evidencias.");
+      setLoading(false);
+    });
+    return () => { current = false; };
   }, [courseId, week]);
-
-  const saveEvidences = (updated: EvidenciaItem[]) => {
-    setEvidenceList(updated);
-    const key = `sfa_evidencias_${courseId}_w${week}`;
-    localStorage.setItem(key, JSON.stringify(updated));
-  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -52,18 +52,25 @@ export default function EvidenciasManager({ courseId, week }: EvidenciasManagerP
     }
   };
 
-  const processFile = (file: File) => {
+  const processFile = async (file: File) => {
+    if (saving) return;
+    if (!file.size || file.size > 10 * 1024 * 1024 || !/\.(pdf|docx|pptx|xlsx|png|jpe?g|mp4)$/i.test(file.name)) {
+      setError("Seleccione un archivo permitido de máximo 10 MB.");
+      return;
+    }
     const titleText = customTitle.trim() || `Evidencia académica de clase`;
-    const newEv: EvidenciaItem = {
-      id: `ev-${Date.now()}`,
-      category: category,
-      title: titleText,
-      fileName: file.name,
-      fileSize: (file.size / (1024 * 1024)).toFixed(1) + " MB",
-      date: new Date().toLocaleDateString("es-PE")
-    };
-    saveEvidences([newEv, ...evidenceList]);
-    setCustomTitle("");
+    setSaving(true);
+    setError("");
+    try {
+      const contentBase64 = await fileToBase64(file);
+      const saved = await uploadCourseEvidence({ courseId, week, category, title: titleText,
+        fileName: file.name, contentBase64, mimeType: file.type || "application/octet-stream" });
+      if (!saved) { setError("No se pudo subir la evidencia. Intente nuevamente."); return; }
+      setEvidenceList((previous) => [{ ...saved, id: saved._id || saved.id,
+        fileSize: (saved.fileSize / (1024 * 1024)).toFixed(1) + " MB" }, ...previous]);
+      setCustomTitle("");
+    } catch { setError("No se pudo leer o subir el archivo."); }
+    finally { setSaving(false); if (fileInputRef.current) fileInputRef.current.value = ""; }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -72,13 +79,13 @@ export default function EvidenciasManager({ courseId, week }: EvidenciasManagerP
     setIsDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processFile(e.dataTransfer.files[0]);
+      void processFile(e.dataTransfer.files[0]);
     }
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      processFile(e.target.files[0]);
+      void processFile(e.target.files[0]);
     }
   };
 
@@ -88,9 +95,9 @@ export default function EvidenciasManager({ courseId, week }: EvidenciasManagerP
     }
   };
 
-  const handleDelete = (id: string) => {
-    const filtered = evidenceList.filter((item) => item.id !== id);
-    saveEvidences(filtered);
+  const handleDelete = async (id: string) => {
+    if (!await deleteCourseEvidence(id)) { setError("No se pudo eliminar la evidencia."); return; }
+    setEvidenceList((previous) => previous.filter((item) => item.id !== id));
   };
 
   const getCategoryTheme = (cat: string) => {
@@ -110,6 +117,7 @@ export default function EvidenciasManager({ courseId, week }: EvidenciasManagerP
 
   return (
     <div id="evidencias-section" className="space-y-6 text-left">
+      {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <PageHeader
         title={`Semana ${week}: Archivo Histórico de Evidencias`}
         subtitle="Almacene el testimonio fotográfico y documental de las clases dictadas para sustentar avance silábico de acreditación."
@@ -169,6 +177,8 @@ export default function EvidenciasManager({ courseId, week }: EvidenciasManagerP
                   <input
                     ref={fileInputRef}
                     type="file"
+                    accept=".pdf,.docx,.pptx,.xlsx,.png,.jpg,.jpeg,.mp4"
+                    disabled={saving}
                     onChange={handleFileInputChange}
                     className="hidden"
                   />
@@ -197,7 +207,7 @@ export default function EvidenciasManager({ courseId, week }: EvidenciasManagerP
             <CardDescription>Documentación acumulada para auditoría de acreditación institucional</CardDescription>
           </CardHeader>
           <CardContent className="p-5 space-y-3">
-            {evidenceList.length === 0 ? (
+            {loading ? <p className="p-8 text-center text-slate-500">Cargando evidencias...</p> : evidenceList.length === 0 ? (
               <div className="p-12 text-center text-slate-450 italic font-bold">
                 <p>No se registran archivos de evidencia para esta semana.</p>
                 <p className="text-[10px] text-slate-400 font-semibold mt-1">Cargue capturas o reportes fotográficos en la sección izquierda.</p>
@@ -227,17 +237,15 @@ export default function EvidenciasManager({ courseId, week }: EvidenciasManagerP
                             Subido: {item.date}
                           </span>
                         </div>
-                        <h5 className="font-extrabold text-slate-900 leading-snug uppercase pt-0.5" title={item.title}>
-                          {item.title}
-                        </h5>
+                        <a href={courseFileUrl('evidences', item.id)} className="font-extrabold text-blue-700 underline leading-snug uppercase pt-0.5 block" title={`Descargar ${item.fileName}`}>{item.title}</a>
                         <span className="text-[10px] text-slate-500 font-bold block truncate font-mono">
-                          Archivo: {item.fileName} • Tamaño: {item.fileSize}
+                          Archivo: {item.fileName} • Tamaño: {typeof item.fileSize === 'number' ? (item.fileSize / (1024 * 1024)).toFixed(1) + ' MB' : item.fileSize}
                         </span>
                       </div>
                     </div>
 
                     <button
-                      onClick={() => handleDelete(item.id)}
+                      onClick={() => { void handleDelete(item.id); }}
                       className="p-1.5 text-slate-400 hover:text-red-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
                       title="Eliminar evidencia"
                     >
