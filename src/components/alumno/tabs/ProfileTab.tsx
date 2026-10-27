@@ -482,25 +482,28 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       <tr className="hover:bg-slate-50">
-                        <td className="py-3 font-mono text-[11px] text-[#800521]">{enrollment.paymentOperation || `OP-MATR-2026-${personalData.dni.slice(-4)}`}</td>
+                        <td className="py-3 font-mono text-[11px] text-[#800521]">
+                          {enrollment.paymentOperation || (enrollment.paymentType === "voucher" ? "VOUCHER ADJUNTO" : "SIN OPERACIÓN")}
+                        </td>
                         <td className="py-3">Matrícula Semestral 2026-I (Ciclo I)</td>
                         <td className="py-3 font-bold">S/. 250.00</td>
-                        <td className="py-3 text-slate-400">01/03/2026</td>
-                        <td className="py-3 text-right">
-                          <span className="bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded text-[9px] uppercase border border-emerald-200 inline-flex items-center gap-1">
-                            <Check className="w-3 h-3" /> Aprobado en Caja
-                          </span>
+                        <td className="py-3 text-slate-400">
+                          {enrollment.registeredAt?.slice(0, 10) || new Date().toISOString().slice(0, 10)}
                         </td>
-                      </tr>
-                      <tr className="hover:bg-slate-50">
-                        <td className="py-3 font-mono text-[11px] text-[#800521]">OP-ADM-2026-{personalData.dni.slice(-4)}</td>
-                        <td className="py-3">Derecho de Examen Ordinario de Admisión</td>
-                        <td className="py-3 font-bold">S/. 120.00</td>
-                        <td className="py-3 text-slate-400">12/02/2026</td>
                         <td className="py-3 text-right">
-                          <span className="bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded text-[9px] uppercase border border-emerald-200 inline-flex items-center gap-1">
-                            <Check className="w-3 h-3" /> Aprobado en Caja
-                          </span>
+                          {enrollment.paymentStatus === "Validado" ? (
+                            <span className="bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded text-[9px] uppercase border border-emerald-200 inline-flex items-center gap-1">
+                              <Check className="w-3 h-3" /> Aprobado en Caja
+                            </span>
+                          ) : enrollment.paymentStatus === "Rechazado" || enrollment.paymentStatus === "Observado" ? (
+                            <span className="bg-red-50 text-red-700 font-bold px-2 py-0.5 rounded text-[9px] uppercase border border-red-200 inline-flex items-center gap-1">
+                              <XCircle className="w-3 h-3" /> Observado
+                            </span>
+                          ) : (
+                            <span className="bg-amber-50 text-amber-700 font-bold px-2 py-0.5 rounded text-[9px] uppercase border border-amber-200 inline-flex items-center gap-1">
+                              <Clock className="w-3 h-3" /> En Revisión
+                            </span>
+                          )}
                         </td>
                       </tr>
                     </tbody>

@@ -20,10 +20,7 @@ export function useFinanceManager(
         console.error("Error reading sfa_finance_transactions:", e);
       }
     }
-    return [
-      { id: "tx-1", studentDni: "12345678", concept: "Matrícula 2026-I", amount: 250, date: "2026-03-01", status: "APROBADO" },
-      { id: "tx-2", studentDni: "87654321", concept: "Prospecto de Admisión", amount: 100, date: "2026-03-05", status: "APROBADO" }
-    ];
+    return [];
   });
 
   const [loading, setLoading] = useState<boolean>(false);

@@ -95,8 +95,11 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     };
 
     const studentDniForInput = (() => {
-      if (uTrim === "alumno" || uTrim === "luis.castillo@iestpsfa.edu.pe") {
-        return "12345678";
+      if (uTrim === "alumno") {
+        const firstEnrolled = currentEnrollments?.find((e: any) => e.academicStatus === "MATRICULADO");
+        if (firstEnrolled?.studentDni) return firstEnrolled.studentDni;
+        const firstStudent = Object.values(studentRecords)[0] as any;
+        if (firstStudent?.dni) return firstStudent.dni;
       }
       if (studentRecords[uTrim]) {
         return studentRecords[uTrim].dni;
