@@ -446,6 +446,12 @@ export default function AdminDashboard({
       }
     }
 
+    if (effectiveGroupId === "gp_ele_m1" || effectiveGroupId === "gp_electronica_m1") {
+      effectiveGroupId = "gp_electronica_m1";
+    } else if (effectiveGroupId === "gp_con_p1" || effectiveGroupId === "gp_contabilidad_m1") {
+      effectiveGroupId = "gp_contabilidad_m1";
+    }
+
     if (!effectiveGroupId) {
       notify("Por favor, seleccione un Grupo Académico para el estudiante antes de procesar la matrícula.", "warning");
       return;
@@ -461,7 +467,11 @@ export default function AdminDashboard({
       console.error(e);
     }
 
-    const hasProgramming = mpaTasks.length === 0 || mpaTasks.some((t: any) => t.groupId === effectiveGroupId);
+    const hasProgramming = mpaTasks.length === 0 || mpaTasks.some((t: any) => 
+      t.groupId === effectiveGroupId ||
+      (effectiveGroupId.includes("ele") && t.groupId.includes("electronica")) ||
+      (effectiveGroupId.includes("con") && t.groupId.includes("contabilidad"))
+    );
     if (!hasProgramming) {
       notify("El Grupo Académico seleccionado aún no posee una programación académica completa. Finalice la programación antes de utilizar este grupo.", "warning");
       return;

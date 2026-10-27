@@ -200,7 +200,11 @@ export default function AlumnoDashboard({
   // Map student shift and career to find their registered group in MPA
   const studentGroup = useMemo(() => {
     if (enrollment.groupId) {
-      const found = mpaPlanningData.groups.find((g: any) => g.id === enrollment.groupId);
+      const found = mpaPlanningData.groups.find((g: any) => 
+        g.id === enrollment.groupId ||
+        (enrollment.groupId.includes("ele") && g.id.includes("electronica")) ||
+        (enrollment.groupId.includes("con") && g.id.includes("contabilidad"))
+      );
       if (found) return found;
     }
     const shiftMapped = enrollment.shift === "Mañana" ? "sh_m" : enrollment.shift === "Tarde" ? "sh_t" : "sh_n";
@@ -212,7 +216,11 @@ export default function AlumnoDashboard({
   // Retrieve tasks (schedule sessions) assigned to this group
   const studentTasks = useMemo(() => {
     if (!studentGroup) return [];
-    return mpaPlanningData.tasks.filter((t: any) => t.groupId === studentGroup.id);
+    return mpaPlanningData.tasks.filter((t: any) => 
+      t.groupId === studentGroup.id ||
+      (studentGroup.id.includes("ele") && t.groupId.includes("electronica")) ||
+      (studentGroup.id.includes("con") && t.groupId.includes("contabilidad"))
+    );
   }, [studentGroup, mpaPlanningData]);
 
   // Build dynamic courses list combining MAMC/MPA Malla and Programación
