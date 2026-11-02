@@ -3,7 +3,7 @@ import {
   Calendar, CreditCard, Users, GraduationCap, CheckSquare, Compass, FileText
 } from "lucide-react";
 import { Applicant, Enrollment, StudentPersonalData, Classroom, Teacher, Graduation, AdmissionPeriod, Course, CourseAssignment, AttendanceRecord, MpaPeriod } from "../../types";
-import { createAdmissionPeriod, updateAdmissionPeriod, deleteAdmissionPeriod } from "../../services/api";
+import { createAdmissionPeriod, updateAdmissionPeriod, deleteAdmissionPeriod, createEnrollment, updateEnrollment, updateApplicant } from "../../services/api";
 import { MPA_KEYS, fetchMpaCollections, fetchMpaCollection } from "../../services/mpaApi";
 
 // Reusable Custom Design System Components
@@ -446,6 +446,12 @@ export default function AdminDashboard({
       }
     }
 
+    if (effectiveGroupId === "gp_ele_m1" || effectiveGroupId === "gp_electronica_m1") {
+      effectiveGroupId = "gp_electronica_m1";
+    } else if (effectiveGroupId === "gp_con_p1" || effectiveGroupId === "gp_contabilidad_m1") {
+      effectiveGroupId = "gp_contabilidad_m1";
+    }
+
     if (!effectiveGroupId) {
       notify("Por favor, seleccione un Grupo Académico para el estudiante antes de procesar la matrícula.", "warning");
       return;
@@ -461,7 +467,11 @@ export default function AdminDashboard({
       console.error(e);
     }
 
-    const hasProgramming = mpaTasks.length === 0 || mpaTasks.some((t: any) => t.groupId === effectiveGroupId);
+    const hasProgramming = mpaTasks.length === 0 || mpaTasks.some((t: any) => 
+      t.groupId === effectiveGroupId ||
+      (effectiveGroupId.includes("ele") && t.groupId.includes("electronica")) ||
+      (effectiveGroupId.includes("con") && t.groupId.includes("contabilidad"))
+    );
     if (!hasProgramming) {
       notify("El Grupo Académico seleccionado aún no posee una programación académica completa. Finalice la programación antes de utilizar este grupo.", "warning");
       return;
@@ -530,6 +540,16 @@ export default function AdminDashboard({
     
     onUpdateApplicants(updatedApps);
     onUpdateEnrollments(updatedEnrList);
+
+    // Direct REST API synchronization to MongoDB Atlas
+    const finalEnrollmentItem = updatedEnrList.find(e => e.studentDni === studentDni);
+    if (finalEnrollmentItem) {
+      updateEnrollment(studentDni, finalEnrollmentItem).catch(() => {
+        createEnrollment(finalEnrollmentItem).catch(err => console.warn("Error creating enrollment via REST API:", err));
+      });
+    }
+    updateApplicant(studentDni, { folderStatus: "Enrolled", admitted: true }).catch(err => console.warn("Error updating applicant via REST API:", err));
+
     notify("Postulante admisionado matriculado con éxito en el Ciclo I.", "success");
   };
 

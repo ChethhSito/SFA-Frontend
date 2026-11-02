@@ -211,7 +211,11 @@ export default function AlumnoDashboard({
   // Map student shift and career to find their registered group in MPA
   const studentGroup = useMemo(() => {
     if (enrollment.groupId) {
-      const found = mpaPlanningData.groups.find((g: any) => g.id === enrollment.groupId);
+      const found = mpaPlanningData.groups.find((g: any) => 
+        g.id === enrollment.groupId ||
+        (enrollment.groupId.includes("ele") && g.id.includes("electronica")) ||
+        (enrollment.groupId.includes("con") && g.id.includes("contabilidad"))
+      );
       if (found) return found;
     }
     const shiftMapped = enrollment.shift === "Mañana" ? "sh_m" : enrollment.shift === "Tarde" ? "sh_t" : "sh_n";
