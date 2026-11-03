@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, AlertTriangle, CheckCircle } from "lucide-react";
+import { ShieldCheck, AlertTriangle } from "lucide-react";
 import Button from "../../ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import PageTransition from "../../ui/PageTransition";
@@ -12,7 +12,6 @@ interface ValidacionPagosTabProps {
   setStatusFilter: (filter: string) => void;
   vouchersPorValidar: number;
   handleOpenObservePayment: (oblId: string) => void;
-  handleApprovePayment: (oblId: string) => void;
   onBankConfirmed: (ids: string[], fileName: string) => void;
 }
 
@@ -22,7 +21,6 @@ export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
   setStatusFilter,
   vouchersPorValidar,
   handleOpenObservePayment,
-  handleApprovePayment,
   onBankConfirmed
 }) => {
   const filteredList = obligations.filter(ob =>
@@ -41,7 +39,7 @@ export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
                 Auditoría e Inspección de Comprobantes Bancarios Registrados
               </CardTitle>
               <CardDescription>
-                Compare los vouchers virtuales y números de operación con el extracto de cuenta bancaria del IESTP. Apruebe para dar conformidad o declare observado para notificar corrección.
+                Compare los vouchers con el reporte simulado del Banco de la Nación. Solo la importación de coincidencias confirma el pago; puede observar un voucher para solicitar corrección.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2.5">
@@ -119,12 +117,6 @@ export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
                               className="bg-red-50 text-red-700 hover:bg-red-100 font-black text-[9.5px] uppercase tracking-wide px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer"
                             >
                               <AlertTriangle className="w-3.5 h-3.5" /> Observar
-                            </Button>
-                            <Button
-                              onClick={() => handleApprovePayment(ob.id)}
-                              className="bg-emerald-600 text-white hover:bg-emerald-700 font-black text-[9.5px] uppercase tracking-wide px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer shadow-sm"
-                            >
-                              <CheckCircle className="w-3.5 h-3.5" /> Validar Pago
                             </Button>
                           </div>
                         ) : (

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FileText, RefreshCw } from 'lucide-react';
-import { createServiceRequest, fetchServiceRequests, ServiceRequest, StudentProcedureCode, submitServiceRequestVoucher } from '../../../services/serviceRequests';
+import { createServiceRequest, fetchServiceRequests, ServiceRequest, StudentProcedureCode, submitServiceRequestVoucher, serviceRequestResultUrl } from '../../../services/serviceRequests';
+import { readMafState } from '../../../services/mafState';
 
 const procedures: { code: StudentProcedureCode; title: string; amount: number; why: string }[] = [
   { code: 'CER01', title: 'Certificado de Estudios Oficial', amount: 50,
@@ -11,6 +12,7 @@ const procedures: { code: StudentProcedureCode; title: string; amount: number; w
 
 export function ProceduresTab({ studentDni, period }: { studentDni: string; period: string }) {
   const [items, setItems] = useState<ServiceRequest[]>([]);
+  const [rates, setRates] = useState<Record<string, number>>({});
   const [selected, setSelected] = useState<StudentProcedureCode>('CER01');
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,8 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
   };
 
   useEffect(() => { void reload(); }, [studentDni]);
+  useEffect(() => { void readMafState<{ code: string; amount: number }>('concepts').then(list =>
+    setRates(Object.fromEntries(list.map(item => [item.code, item.amount])))).catch(() => {}); }, []);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -92,7 +96,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       {procedures.map(item => <div key={item.code} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <p className="font-bold text-slate-900">{item.title}</p>
         <p className="text-sm text-slate-600 mt-2">{item.why}</p>
-        <p className="text-sm font-bold text-[#9F062A] mt-3">Tasa: S/ {item.amount.toFixed(2)}</p>
+        <p className="text-sm font-bold text-[#9F062A] mt-3">Tasa: S/ {(rates[item.code] || item.amount).toFixed(2)}</p>
       </div>)}
     </div>
 
@@ -101,7 +105,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       <p className="text-xs text-slate-600">Se vinculará al DNI {studentDni}. Podrás consultar su estado aquí.</p>
       <label className="block text-sm font-semibold text-slate-700">Trámite
         <select className="mt-1 w-full rounded-lg border border-slate-300 p-2.5 bg-white" value={selected} onChange={e => setSelected(e.target.value as StudentProcedureCode)}>
-          {procedures.map(item => <option key={item.code} value={item.code}>{item.title} — S/ {item.amount.toFixed(2)}</option>)}
+          {procedures.map(item => <option key={item.code} value={item.code}>{item.title} — S/ {(rates[item.code] || item.amount).toFixed(2)}</option>)}
         </select>
       </label>
       <p className="text-sm text-slate-600">{procedure.why}</p>
@@ -124,6 +128,8 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
             <span className="font-bold text-slate-700">{item.status}</span>
           </div>
           {item.paymentOperation && <p className="text-xs text-slate-600">Voucher comunicado: {item.paymentOperation}. MAF aún debe contrastarlo con el banco si el estado es En Proceso.</p>}
+          {item.deliveryStatus === 'Emitido' && <a href={serviceRequestResultUrl(item.id, studentDni)} className="inline-block text-sm font-bold text-[#9F062A] underline">Descargar documento: {item.resultFileName || 'PDF'}</a>}
+          {item.status === 'Validado' && item.deliveryStatus !== 'Emitido' && <p className="text-xs text-emerald-700">Pago validado; Secretaría prepara el documento.</p>}
           {(item.status === 'Pendiente' || item.status === 'Observado') && <button type="button" onClick={() => startVoucher(item)} className="rounded-lg border border-[#9F062A] px-3 py-2 text-xs font-bold text-[#9F062A]">{item.status === 'Observado' ? 'Corregir datos del voucher' : 'Registrar mi voucher'}</button>}
           {voucher.requestId === item.id && <form onSubmit={saveVoucher} className="rounded-lg bg-slate-50 border border-slate-200 p-4 space-y-3 max-w-lg">
             <p className="text-xs text-slate-600">Copia los datos de tu comprobante del Banco de la Nación. Registrarlo no confirma el pago: MAF lo validará con el reporte bancario.</p>

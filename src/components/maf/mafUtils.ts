@@ -1,4 +1,4 @@
-import { MafConcept, MafObligation, MafExoneration, MafAuditLog } from "./mafTypes";
+import { MafConcept, MafObligation } from "./mafTypes";
 
 export const defaultConcepts: MafConcept[] = [
   { id: "c1", code: "ADM01", name: "Derecho de Examen de Admisión Ordinario", amount: 120, description: "Tasa general obligatoria para registro y rendición del examen de admisión", category: "Admisión", active: true },
@@ -6,7 +6,9 @@ export const defaultConcepts: MafConcept[] = [
   { id: "c3", code: "CER01", name: "Certificado de Estudios Oficial", amount: 50, description: "Trámite de expedición de expediente de calificaciones certificadas", category: "Trámites", active: true },
   { id: "c4", code: "CON01", name: "Constancia de Matrícula Institucional", amount: 30, description: "Constancia con validez institucional de matrícula vigente", category: "Trámites", active: true },
   { id: "c5", code: "SUB01", name: "Derecho de Examen de Subsanación", amount: 45, description: "Subsanación académica por curso desaprobado", category: "Servicios", active: true },
-  { id: "c6", code: "CAR01", name: "Duplicado de Carné de Estudiante", amount: 15, description: "Reposición de credencial física de estudiante por pérdida", category: "Trámites", active: true }
+  { id: "c6", code: "CAR01", name: "Duplicado de Carné de Estudiante", amount: 15, description: "Reposición de credencial física de estudiante por pérdida", category: "Trámites", active: true },
+  { id: "c7", code: "DOC01", name: "Constancia de Trabajo Docente", amount: 30, description: "Constancia de vínculo laboral docente", category: "Trámites", active: true },
+  { id: "c8", code: "DOC02", name: "Certificado de Servicios Docentes", amount: 50, description: "Certificado de servicios prestados", category: "Trámites", active: true }
 ];
 
 export const syncObligationsToMamcAndMge = (updated: MafObligation[]) => {
@@ -23,7 +25,6 @@ export const syncObligationsToMamcAndMge = (updated: MafObligation[]) => {
           if (match.status === "Validado") nextStatus = "Validado";
           else if (match.status === "Observado") nextStatus = "Rechazado";
           else if (match.status === "Pendiente") nextStatus = "Pendiente";
-          else if (match.status === "Exonerado") nextStatus = "Validado";
 
           if (enr.paymentStatus !== nextStatus) {
             modified = true;

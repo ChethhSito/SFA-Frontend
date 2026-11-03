@@ -76,7 +76,6 @@ export const RegistroTransaccionesTab: React.FC<RegistroTransaccionesTabProps> =
                         ab.status === "Validado" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
                         ab.status === "En Proceso" ? "bg-blue-50 text-blue-700 border border-blue-100" :
                         ab.status === "Observado" ? "bg-red-50 text-red-700 border border-red-150 animate-pulse" :
-                        ab.status === "Exonerado" ? "bg-purple-100 text-purple-800 border border-purple-150" :
                         "bg-amber-100 text-amber-800 border border-amber-200"
                       }`}>
                         {ab.status}

@@ -18,7 +18,7 @@ export const AuditoriaTab: React.FC<AuditoriaTabProps> = ({ auditLogs }) => {
             Registro de Auditoría Integral (Log de Actividades del MAF)
           </CardTitle>
           <CardDescription>
-            Registro inmutable e intransferible de todas las transacciones financieras, aprobaciones de caja, exoneraciones dictadas y de las tasas ingresadas en el sistema.
+            Historial de movimientos financieros, conciliaciones y cambios de tasas registrados en el sistema.
           </CardDescription>
         </CardHeader>
 

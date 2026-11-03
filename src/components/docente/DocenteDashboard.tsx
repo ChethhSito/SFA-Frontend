@@ -30,6 +30,7 @@ import EvaluacionesCursosPrincipal from "./EvaluacionesCursosPrincipal";
 import AvisosReportesPrincipal from "./AvisosReportesPrincipal";
 import GuidesLibrary from "../shared/GuidesLibrary";
 import AcademicCalendarBoard from "../shared/AcademicCalendarBoard";
+import TeacherProceduresTab from "./TeacherProceduresTab";
 import TeacherScheduleTab, { TeacherScheduleData } from "./TeacherScheduleTab";
 import { fetchMpaCollection } from "../../services/mpaApi";
 import { fileToBase64, fetchCourseObservations, createCourseObservation, deleteCourseObservation } from "../../services/api";
@@ -953,6 +954,8 @@ export default function DocenteDashboard({
               <AcademicCalendarBoard />
             </PageTransition>
           )}
+
+          {selectedCourseId === null && activeTab === "tramites" && <TeacherProceduresTab teacherDni={effectiveTeacherDni} />}
 
           {/* TAB 6: CONFIGURACION PERSONAL */}
           {selectedCourseId === null && activeTab === "configuracion" && (

@@ -59,6 +59,7 @@ export default function SidebarPrincipal({
     { id: "evaluaciones_cursos", label: "Evaluaciones de Cursos", icon: <FileSpreadsheet className="w-4 h-4" /> },
     { id: "guias", label: "Guías y Reglamentos", icon: <LibraryBig className="w-4 h-4" /> },
     { id: "calendar", label: "Calendario Académico", icon: <Calendar className="w-4 h-4" /> },
+    { id: "tramites", label: "Mis Trámites", icon: <FileText className="w-4 h-4" /> },
     { id: "configuracion", label: "Configuración", icon: <Settings className="w-4 h-4" /> },
   ];
 

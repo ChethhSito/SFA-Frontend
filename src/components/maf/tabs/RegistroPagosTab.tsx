@@ -109,26 +109,25 @@ export const RegistroPagosTab: React.FC<RegistroPagosTabProps> = ({
                           o.status === "Validado" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
                           o.status === "En Proceso" ? "bg-blue-50 text-blue-700 border border-blue-100" :
                           o.status === "Observado" ? "bg-red-50 text-red-700 border border-red-150 animate-pulse" :
-                          o.status === "Exonerado" ? "bg-purple-50 text-purple-700 border border-purple-100" :
                           "bg-amber-50 text-amber-700 border border-amber-100"
                         }`}>
                           {o.status}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        {o.status === "Pendiente" || o.status === "Observado" ? (
+                        {(o.status === "Pendiente" || o.status === "Observado") && o.source === 'llamada_apoderado' ? (
                           <Button
                             onClick={() => handleOpenRegisterVoucher(o.id)}
                             className="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[10px] tracking-wide uppercase px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer ml-auto"
                           >
-                            <Plus className="w-3.5 h-3.5" /> Registrar Pago
+                            <Plus className="w-3.5 h-3.5" /> Registrar voucher de llamada
                           </Button>
                         ) : o.voucherRegistered ? (
                           <div className="text-[10px] text-slate-500 font-bold">
                             Voucher #{o.voucherDetails?.operationNumber}
                           </div>
                         ) : (
-                          <span className="text-[10px] text-slate-400 font-bold">No Aplica</span>
+                          <span className="text-[10px] text-slate-400 font-bold">Esperando voucher del portal</span>
                         )}
                       </td>
                     </tr>
