@@ -17,7 +17,7 @@ export const RegistroTransaccionesTab: React.FC<RegistroTransaccionesTabProps> =
   setShowAddObligationModal
 }) => {
   const sorted = newestObligations(obligations);
-  const pagination = usePagination(sorted, 10, sorted[0]?.id);
+  const pagination = usePagination(sorted, 10, sorted[0]?.id, 'sfa_maf_page_size');
   return (
     <PageTransition id="registro_transacciones" className="space-y-6">
       <Card>

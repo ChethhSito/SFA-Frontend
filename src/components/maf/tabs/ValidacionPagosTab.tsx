@@ -28,7 +28,7 @@ export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
   const filteredList = newestVouchers(obligations.filter(ob =>
     statusFilter === "todos" ? ob.voucherRegistered : ob.status === statusFilter
   ));
-  const pagination = usePagination(filteredList, 10, `${statusFilter}:${filteredList[0]?.id}`);
+  const pagination = usePagination(filteredList, 10, `${statusFilter}:${filteredList[0]?.id}`, 'sfa_maf_page_size');
 
   return (
     <PageTransition id="validacion_pagos" className="space-y-6">

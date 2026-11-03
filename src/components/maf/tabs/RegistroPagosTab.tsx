@@ -20,7 +20,7 @@ export const RegistroPagosTab: React.FC<RegistroPagosTabProps> = ({
   handleOpenRegisterVoucher
 }) => {
   const sorted = newestObligations(filteredObligations);
-  const pagination = usePagination(sorted, 10, `${searchQuery}:${sorted[0]?.id}`);
+  const pagination = usePagination(sorted, 10, `${searchQuery}:${sorted[0]?.id}`, 'sfa_maf_page_size');
   return (
     <PageTransition id="registro_pagos" className="space-y-6">
       <div className="bg-white p-6 border border-slate-205 rounded-2xl relative shadow-xs overflow-hidden">

@@ -25,7 +25,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
   const [voucherFeedback, setVoucherFeedback] = useState('');
   const [voucherError, setVoucherError] = useState('');
   const sortedItems = [...items].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
-  const pagination = usePagination(sortedItems, 5, sortedItems[0]?.id);
+  const pagination = usePagination(sortedItems, 5, sortedItems[0]?.id, 'sfa_student_requests_page_size');
 
   const reload = async () => {
     setLoading(true);

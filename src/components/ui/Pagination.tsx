@@ -1,8 +1,20 @@
 import { useEffect, useState } from 'react';
 
-export function usePagination<T>(items: T[], initialPageSize = 10, resetKey?: string) {
+const pageSizes = [5, 10, 20, 50];
+
+function savedPageSize(storageKey: string | undefined, fallback: number): number {
+  if (!storageKey || typeof window === 'undefined') return fallback;
+  try {
+    const value = Number(window.localStorage.getItem(storageKey));
+    return pageSizes.includes(value) ? value : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function usePagination<T>(items: T[], initialPageSize = 10, resetKey?: string, storageKey?: string) {
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(initialPageSize);
+  const [pageSize, setPageSize] = useState(() => savedPageSize(storageKey, initialPageSize));
   useEffect(() => { setPage(1); }, [resetKey]);
   const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
   const currentPage = Math.min(page, pageCount);
@@ -13,7 +25,14 @@ export function usePagination<T>(items: T[], initialPageSize = 10, resetKey?: st
     pageSize,
     pageCount,
     setPage,
-    setPageSize: (size: number) => { setPageSize(size); setPage(1); },
+    setPageSize: (size: number) => {
+      if (!pageSizes.includes(size)) return;
+      setPageSize(size);
+      setPage(1);
+      if (storageKey) {
+        try { window.localStorage.setItem(storageKey, String(size)); } catch { /* La paginación sigue funcionando sin almacenamiento. */ }
+      }
+    },
   };
 }
 
@@ -38,7 +57,7 @@ export function Pagination({ total, page, pageSize, pageCount, onPageChange, onP
     <div className="flex flex-wrap items-center gap-3">
       <label className="flex items-center gap-2">Mostrar
         <select aria-label={`Cantidad de ${label} por página`} value={pageSize} onChange={event => onPageSizeChange(Number(event.target.value))} className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 font-semibold text-slate-800">
-          {[5, 10, 20, 50].map(size => <option key={size} value={size}>{size}</option>)}
+          {pageSizes.map(size => <option key={size} value={size}>{size}</option>)}
         </select>
         {label} por página
       </label>
