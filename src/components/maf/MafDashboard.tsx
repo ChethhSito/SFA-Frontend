@@ -47,6 +47,8 @@ function obligationFromRequest(request: ServiceRequest): MafObligation {
     period: request.period || "Sin período",
     status: request.status,
     dateCreated: request.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+    createdAt: request.createdAt,
+    voucherRegisteredAt: request.paymentOperation ? (request.voucherRegisteredAt || request.updatedAt) : undefined,
     source: request.source,
     requestReason: request.reason,
     requestedBy: request.requestedBy,
@@ -554,6 +556,7 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
           ...o,
           status: "En Proceso" as const,
           voucherRegistered: true,
+          voucherRegisteredAt: new Date().toISOString(),
           voucherDetails: {
             operationNumber: voucherForm.operationNumber,
             bankName: voucherForm.bankName,

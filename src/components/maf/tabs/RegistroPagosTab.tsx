@@ -3,6 +3,8 @@ import { CreditCard, Layers, Search, Plus } from "lucide-react";
 import Button from "../../ui/Button";
 import PageTransition from "../../ui/PageTransition";
 import { MafObligation } from "../mafTypes";
+import { newestObligations } from "../obligationOrder";
+import { Pagination, usePagination } from "../../ui/Pagination";
 
 interface RegistroPagosTabProps {
   filteredObligations: MafObligation[];
@@ -17,6 +19,8 @@ export const RegistroPagosTab: React.FC<RegistroPagosTabProps> = ({
   setSearchQuery,
   handleOpenRegisterVoucher
 }) => {
+  const sorted = newestObligations(filteredObligations);
+  const pagination = usePagination(sorted, 10, `${searchQuery}:${sorted[0]?.id}`);
   return (
     <PageTransition id="registro_pagos" className="space-y-6">
       <div className="bg-white p-6 border border-slate-205 rounded-2xl relative shadow-xs overflow-hidden">
@@ -88,7 +92,7 @@ export const RegistroPagosTab: React.FC<RegistroPagosTabProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredObligations.map((o) => (
+                  pagination.items.map((o) => (
                     <tr key={o.id} className="hover:bg-slate-50/50 transition-all">
                       <td className="px-4 py-3.5">
                         <div className="font-extrabold text-slate-900 uppercase">{o.studentName}</div>
@@ -136,6 +140,7 @@ export const RegistroPagosTab: React.FC<RegistroPagosTabProps> = ({
               </tbody>
             </table>
           </div>
+          <Pagination total={sorted.length} page={pagination.page} pageSize={pagination.pageSize} pageCount={pagination.pageCount} onPageChange={pagination.setPage} onPageSizeChange={pagination.setPageSize} label="obligaciones" />
         </div>
       </div>
     </PageTransition>

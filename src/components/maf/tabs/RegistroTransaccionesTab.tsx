@@ -4,6 +4,8 @@ import Button from "../../ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import PageTransition from "../../ui/PageTransition";
 import { MafObligation } from "../mafTypes";
+import { newestObligations } from "../obligationOrder";
+import { Pagination, usePagination } from "../../ui/Pagination";
 
 interface RegistroTransaccionesTabProps {
   obligations: MafObligation[];
@@ -14,6 +16,8 @@ export const RegistroTransaccionesTab: React.FC<RegistroTransaccionesTabProps> =
   obligations,
   setShowAddObligationModal
 }) => {
+  const sorted = newestObligations(obligations);
+  const pagination = usePagination(sorted, 10, sorted[0]?.id);
   return (
     <PageTransition id="registro_transacciones" className="space-y-6">
       <Card>
@@ -53,7 +57,7 @@ export const RegistroTransaccionesTab: React.FC<RegistroTransaccionesTabProps> =
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-                {obligations.map((ab) => (
+                {pagination.items.map((ab) => (
                   <tr key={ab.id} className="hover:bg-slate-50/50 transition-all">
                     <td className="px-4 py-3 font-mono font-black text-slate-900">{ab.id}</td>
                     <td className="px-4 py-3">
@@ -86,6 +90,7 @@ export const RegistroTransaccionesTab: React.FC<RegistroTransaccionesTabProps> =
               </tbody>
             </table>
           </div>
+          <Pagination total={sorted.length} page={pagination.page} pageSize={pagination.pageSize} pageCount={pagination.pageCount} onPageChange={pagination.setPage} onPageSizeChange={pagination.setPageSize} label="solicitudes" />
         </CardContent>
       </Card>
     </PageTransition>

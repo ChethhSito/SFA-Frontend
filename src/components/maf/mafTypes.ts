@@ -20,6 +20,8 @@ export interface MafObligation {
   period: string;
   status: "Pendiente" | "En Proceso" | "Validado" | "Observado";
   dateCreated: string;
+  createdAt?: string;
+  voucherRegisteredAt?: string;
   source?: "estudiante" | "docente" | "llamada_apoderado";
   requestReason?: string;
   requestedBy?: string;

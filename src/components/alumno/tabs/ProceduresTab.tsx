@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FileText, RefreshCw } from 'lucide-react';
 import { createServiceRequest, fetchServiceRequests, ServiceRequest, StudentProcedureCode, submitServiceRequestVoucher, serviceRequestResultUrl } from '../../../services/serviceRequests';
 import { readMafState } from '../../../services/mafState';
+import { Pagination, usePagination } from '../../ui/Pagination';
 
 const procedures: { code: StudentProcedureCode; title: string; amount: number; why: string }[] = [
   { code: 'CER01', title: 'Certificado de Estudios Oficial', amount: 50,
@@ -23,6 +24,8 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
   const [voucherSaving, setVoucherSaving] = useState(false);
   const [voucherFeedback, setVoucherFeedback] = useState('');
   const [voucherError, setVoucherError] = useState('');
+  const sortedItems = [...items].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  const pagination = usePagination(sortedItems, 5, sortedItems[0]?.id);
 
   const reload = async () => {
     setLoading(true);
@@ -122,7 +125,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       {voucherFeedback && <p role="status" className="text-sm text-emerald-700 mt-3">{voucherFeedback}</p>}
       {voucherError && <p role="alert" className="text-sm text-red-700 mt-3">{voucherError}</p>}
       {loading ? <p className="text-sm text-slate-500 mt-3">Cargando...</p> : items.length === 0 ? <p className="text-sm text-slate-500 mt-3">Aún no tienes solicitudes.</p> :
-        <ul className="divide-y divide-slate-100 mt-3">{items.map(item => <li key={item.id} className="py-4 text-sm space-y-3">
+        <ul className="divide-y divide-slate-100 mt-3">{pagination.items.map(item => <li key={item.id} className="py-4 text-sm space-y-3">
           <div className="flex flex-wrap justify-between gap-2">
             <div><p className="font-semibold">{item.conceptName}</p><p className="text-xs text-slate-500">{item.id} · S/ {item.amount.toFixed(2)}</p></div>
             <span className="font-bold text-slate-700">{item.status}</span>
@@ -150,6 +153,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
             </div>
           </form>}
         </li>)}</ul>}
+      {!loading && items.length > 0 && <Pagination total={items.length} page={pagination.page} pageSize={pagination.pageSize} pageCount={pagination.pageCount} onPageChange={pagination.setPage} onPageSizeChange={pagination.setPageSize} label="solicitudes" />}
     </div>
   </section>;
 }

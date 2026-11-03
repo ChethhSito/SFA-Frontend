@@ -5,6 +5,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../..
 import PageTransition from "../../ui/PageTransition";
 import { MafObligation } from "../mafTypes";
 import { BankReconciliationPanel } from "../BankReconciliationPanel";
+import { newestVouchers } from "../obligationOrder";
+import { Pagination, usePagination } from "../../ui/Pagination";
 
 interface ValidacionPagosTabProps {
   obligations: MafObligation[];
@@ -23,9 +25,10 @@ export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
   handleOpenObservePayment,
   onBankConfirmed
 }) => {
-  const filteredList = obligations.filter(ob =>
+  const filteredList = newestVouchers(obligations.filter(ob =>
     statusFilter === "todos" ? ob.voucherRegistered : ob.status === statusFilter
-  );
+  ));
+  const pagination = usePagination(filteredList, 10, `${statusFilter}:${filteredList[0]?.id}`);
 
   return (
     <PageTransition id="validacion_pagos" className="space-y-6">
@@ -79,7 +82,7 @@ export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredList.map((ob) => (
+                  pagination.items.map((ob) => (
                     <tr key={ob.id} className="hover:bg-slate-55/60 transition-all">
                       <td className="px-4 py-3.5">
                         <div className="font-extrabold text-slate-900 uppercase">{ob.studentName}</div>
@@ -131,6 +134,7 @@ export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
               </tbody>
             </table>
           </div>
+          <Pagination total={filteredList.length} page={pagination.page} pageSize={pagination.pageSize} pageCount={pagination.pageCount} onPageChange={pagination.setPage} onPageSizeChange={pagination.setPageSize} label="vouchers" />
         </CardContent>
       </Card>
     </PageTransition>

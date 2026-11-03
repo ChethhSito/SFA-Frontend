@@ -24,6 +24,8 @@ export interface ServiceRequest {
   deliveryStatus?: 'Pendiente' | 'Emitido';
   resultFileName?: string;
   createdAt: string;
+  updatedAt?: string;
+  voucherRegisteredAt?: string;
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
