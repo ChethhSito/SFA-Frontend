@@ -90,10 +90,37 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
     }
   };
   return <section className="space-y-6">
-    <header>
-      <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2"><FileText className="w-6 h-6 text-[#9F062A]" /> Trámites de Secretaría</h1>
-      <p className="text-sm text-slate-600 mt-2">Solicita un documento asociado a tu ficha de estudiante. La solicitud genera una obligación de pago en MAF. Después de pagar en el Banco de la Nación, registra aquí los datos de tu voucher. MAF comprobará el pago con el reporte del banco antes de validarlo.</p>
-    </header>
+    <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-6">
+      <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1.5">
+          <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+            PORTAL DEL ESTUDIANTE • MESA DE PARTES DIGITAL
+          </span>
+          <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+            Trámites de Secretaría
+          </h2>
+          <p className="text-xs text-white/90 font-medium max-w-2xl">
+            Emisión de certificados, constancias oficiales de matrícula y seguimiento de expedientes validados por Secretaría General y MAF.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="text-left bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
+            <span className="text-[9px] text-amber-400 font-extrabold block uppercase mb-0.5 tracking-wider">Período Lectivo</span>
+            <span className="text-xs font-black text-white font-mono">{period || "2026 - I"}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => void reload()}
+            className="bg-white hover:bg-amber-50 text-slate-900 font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-2 select-none cursor-pointer transition-all shadow-md border border-white/30"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-[#800521]" />
+            <span>Actualizar Solicitudes</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div className="grid gap-4 md:grid-cols-2">
       {procedures.map(item => <div key={item.code} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

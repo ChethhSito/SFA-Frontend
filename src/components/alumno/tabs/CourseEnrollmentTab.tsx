@@ -92,12 +92,29 @@ export default function CourseEnrollmentTab({ enrollment, studentGroup, data, on
   };
 
   return <section className="space-y-5 text-left">
-    <header className="rounded-2xl bg-[#800521] p-6 text-white shadow-sm">
-      <div className="flex items-center gap-3"><BookOpenCheck className="h-7 w-7 text-amber-300" /><div>
-        <h1 className="text-xl font-black">Matrícula de cursos</h1>
-        <p className="mt-1 text-sm text-rose-50">Seleccione las asignaturas y grupos de su malla para el período académico.</p>
-      </div></div>
-    </header>
+    <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-6">
+      <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1.5">
+          <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+            PORTAL DEL ESTUDIANTE • MATRÍCULA ACADÉMICA
+          </span>
+          <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+            Matrícula de Cursos
+          </h2>
+          <p className="text-xs text-white/90 font-medium max-w-2xl">
+            Seleccione las asignaturas y grupos de su malla para el período lectivo. La programación se consolida con el horario general.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="text-left bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
+            <span className="text-[9px] text-amber-400 font-extrabold block uppercase mb-0.5 tracking-wider">Período</span>
+            <span className="text-xs font-black text-white font-mono">{period?.name || studentGroup?.periodId || "2026 - I"}</span>
+          </div>
+        </div>
+      </div>
+    </div>
     {!studentGroup ? <p className="rounded-xl border bg-white p-5 text-sm text-slate-700">Aún no tiene un grupo académico asignado. Solicite su asignación a Secretaría Académica.</p> : <>
       <div className="grid gap-3 sm:grid-cols-4">
         <div className="rounded-xl border bg-white p-4"><p className="text-xs font-bold uppercase text-slate-500">Período</p><p className="mt-1 font-black">{period?.name || studentGroup.periodId}</p></div>

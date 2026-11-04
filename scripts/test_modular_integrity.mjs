@@ -96,6 +96,23 @@ function scanNoNativeDialogs(dir) {
 
 const dialogViolations = scanNoNativeDialogs("src");
 assert(dialogViolations.length === 0, `0 llamadas a alert() o prompt() nativos en src/ (detectadas: ${dialogViolations.length})`);
+// 2.4 Verificar que todas las pestañas de Alumno usan el color institucional #800521
+const alumnoTabFiles = [
+  "src/components/alumno/tabs/ScheduleTab.tsx",
+  "src/components/alumno/tabs/ClosureTab.tsx",
+  "src/components/alumno/tabs/ProceduresTab.tsx",
+  "src/components/alumno/tabs/CourseEnrollmentTab.tsx",
+  "src/components/alumno/tabs/ProfileTab.tsx",
+  "src/components/alumno/tabs/AttendanceTab.tsx",
+  "src/components/alumno/tabs/GradesTab.tsx",
+  "src/components/alumno/tabs/WelcomeTab.tsx",
+  "src/components/alumno/tabs/ClassesTab.tsx"
+];
+for (const tab of alumnoTabFiles) {
+  const code = fs.readFileSync(tab, "utf8");
+  assert(code.includes("#800521"), `Pestaña ${tab.split('/').pop()} implementa estilo institucional #800521`);
+}
+
 if (dialogViolations.length > 0) {
   console.error("  Violaciones:", dialogViolations);
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, Clock3, LayoutGrid, ListFilter, MapPin, Printer, UserRound } from "lucide-react";
+import { BookOpen, CalendarDays, Clock3, LayoutGrid, ListFilter, MapPin, Printer, UserRound } from "lucide-react";
 import { AcademicProgram, MpaAcademicGroup, MpaClassroom, MpaCourse, MpaPeriod, MpaProgramTask, MpaShift, StudentPersonalData } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
 
@@ -66,21 +66,33 @@ export function ScheduleTab({ personalData, currentProgram, studentTasks = [], m
   };
 
   return <PageTransition id="schedule" className="space-y-6 text-left">
-    <header className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div>
-        <div className="flex items-center gap-2 text-xs font-bold text-[#800521]"><CalendarDays className="h-4 w-4" />{period?.name || "Horario académico"}</div>
-        <h2 className="mt-1 text-xl font-black text-slate-900">Horario semanal de {personalData.name} {personalData.lastName}</h2>
-        <p className="mt-1 text-sm text-slate-600">{currentProgram?.name || "Programa académico"} · {groupNames.length ? groupNames.join(" · ") : studentGroup?.name || "Grupo por asignar"}</p>
-        <p className="mt-1 text-xs text-slate-500">Se muestran las sesiones de tus grupos y asignaturas, en cualquier turno.</p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs font-bold">
-          <button type="button" aria-pressed={viewMode === "matrix"} onClick={() => setViewMode("matrix")} className={`flex items-center gap-1 rounded px-3 py-1.5 ${viewMode === "matrix" ? "bg-[#800521] text-white" : "text-slate-600"}`}><LayoutGrid className="h-3.5 w-3.5" />Semana</button>
-          <button type="button" aria-pressed={viewMode === "cards"} onClick={() => setViewMode("cards")} className={`flex items-center gap-1 rounded px-3 py-1.5 ${viewMode === "cards" ? "bg-[#800521] text-white" : "text-slate-600"}`}><ListFilter className="h-3.5 w-3.5" />Por días</button>
+    <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-6">
+      <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1.5">
+          <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+            PORTAL DEL ESTUDIANTE • PROGRAMACIÓN SEMANAL
+          </span>
+          <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+            Mi Horario Académico
+          </h2>
+          <p className="text-xs text-white/90 font-medium max-w-2xl">
+            {currentProgram?.name || "Programa Académico"} • {groupNames.length ? groupNames.join(" · ") : studentGroup?.name || "Grupo Regular"} • Sesiones oficiales sincronizadas con MPA.
+          </p>
         </div>
-        <button type="button" onClick={() => window.print()} className="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700"><Printer className="h-3.5 w-3.5" />Imprimir / Guardar PDF</button>
+
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex rounded-xl border border-white/20 bg-black/30 p-1 text-xs font-bold shadow-inner">
+            <button type="button" aria-pressed={viewMode === "matrix"} onClick={() => setViewMode("matrix")} className={`flex items-center gap-1 rounded-lg px-3 py-1.5 transition-all cursor-pointer ${viewMode === "matrix" ? "bg-white text-slate-900 shadow-xs" : "text-white/80 hover:text-white"}`}><LayoutGrid className="h-3.5 w-3.5 text-[#800521]" />Semana</button>
+            <button type="button" aria-pressed={viewMode === "cards"} onClick={() => setViewMode("cards")} className={`flex items-center gap-1 rounded-lg px-3 py-1.5 transition-all cursor-pointer ${viewMode === "cards" ? "bg-white text-slate-900 shadow-xs" : "text-white/80 hover:text-white"}`}><ListFilter className="h-3.5 w-3.5 text-[#800521]" />Por días</button>
+          </div>
+          <button type="button" onClick={() => window.print()} className="bg-white hover:bg-amber-50 text-slate-900 font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-2 select-none cursor-pointer transition-all shadow-md border border-white/30">
+            <Printer className="w-3.5 h-3.5 text-[#800521]" />
+            <span>Imprimir Horario</span>
+          </button>
+        </div>
       </div>
-    </header>
+    </div>
 
     {!sessions.length ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-600">Tu grupo todavía no tiene sesiones programadas en MPA.</div> : <>
       <div className="grid gap-3 sm:grid-cols-3">
