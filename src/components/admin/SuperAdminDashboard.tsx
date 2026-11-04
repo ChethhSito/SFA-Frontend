@@ -18,6 +18,7 @@ import ConfirmModal from "../ui/ConfirmModal";
 interface SuperAdminDashboardProps {
   onLogout: () => void;
   onSwitchRole?: (role: Role, identifier: string) => void;
+  onGoToPortal?: () => void;
 }
 
 const DEFAULT_SYSTEM_USERS: SystemUser[] = [
@@ -95,7 +96,9 @@ const DEFAULT_SYSTEM_USERS: SystemUser[] = [
   }
 ];
 
-export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdminDashboardProps) {
+export default function SuperAdminDashboard({ onLogout, onSwitchRole,
+  onGoToPortal
+}: SuperAdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<"usuarios" | "matriz" | "auditoria">("usuarios");
   const [users, setUsers] = useState<SystemUser[]>(() => {
     try {
@@ -387,6 +390,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
         ]}
         onItemClick={(r) => setActiveTab(r as any)}
         onLogout={onLogout}
+        onGoToPortal={onGoToPortal}
       />
 
       {/* Main Content Area */}

@@ -32,6 +32,7 @@ import { SoporteTab } from "./tabs/SoporteTab";
 
 interface MafDashboardProps {
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
 function obligationFromRequest(request: ServiceRequest): MafObligation {
@@ -65,7 +66,7 @@ function obligationFromRequest(request: ServiceRequest): MafObligation {
   };
 }
 
-export default function MafDashboard({ onLogout }: MafDashboardProps) {
+export default function MafDashboard({ onLogout, onGoToPortal }: MafDashboardProps) {
   // Navigation State
   const [activeTab, setActiveTab] = useState<
     "registro_pagos" | "validacion_pagos" | "estados_pago" | "catalogo_tasas" | "registro_transacciones" | "resultados" | "auditoria" | "soporte"
@@ -825,6 +826,15 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
               <RefreshCw className="w-3.5 h-3.5" />
               Sincronizar
             </button>
+            {onGoToPortal && (
+              <button
+                onClick={onGoToPortal}
+                className="px-4 py-2 bg-white hover:bg-red-50 text-slate-700 hover:text-[#9F062A] font-black text-[10px] uppercase tracking-wider rounded-lg transition-all border border-slate-200/80 flex items-center gap-2 cursor-pointer shadow-2xs"
+              >
+                <Home className="w-3.5 h-3.5 text-[#9F062A]" />
+                Portal Principal
+              </button>
+            )}
             <button
               onClick={onLogout}
               className="px-4 py-2 hover:bg-red-50 text-red-650 font-black text-[10px] uppercase tracking-wider rounded-lg transition-all border border-red-200/50 flex items-center gap-2 cursor-pointer"

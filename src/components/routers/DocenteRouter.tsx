@@ -20,6 +20,7 @@ interface DocenteRouterProps {
   onUpdateAssignments: (updated: CourseAssignment[]) => Promise<boolean>;
   onUpdateAttendance: (updated: AttendanceRecord[]) => Promise<boolean>;
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
 export default function DocenteRouter({
@@ -37,7 +38,8 @@ export default function DocenteRouter({
   attendanceLoading,
   attendanceError,
   onReloadAttendance,
-  onLogout
+  onLogout,
+  onGoToPortal
 }: DocenteRouterProps) {
   const [session, setSession] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,6 +102,7 @@ export default function DocenteRouter({
       onUpdateAssignments={onUpdateAssignments}
       onUpdateAttendance={onUpdateAttendance}
       onLogout={onLogout}
+      onGoToPortal={onGoToPortal}
     />
   );
 }

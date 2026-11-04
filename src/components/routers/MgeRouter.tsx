@@ -33,6 +33,7 @@ interface MgeRouterProps {
   onUpdateAttendance: (att: AttendanceRecord[]) => Promise<boolean>;
   onUpdateGraduations: (grads: Graduation[]) => void;
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
 export default function MgeRouter(props: MgeRouterProps) {
@@ -117,6 +118,7 @@ export default function MgeRouter(props: MgeRouterProps) {
       onUpdateAttendance={props.onUpdateAttendance}
       onUpdateGraduations={props.onUpdateGraduations}
       onLogout={props.onLogout}
+      onGoToPortal={props.onGoToPortal}
     />
   );
 }

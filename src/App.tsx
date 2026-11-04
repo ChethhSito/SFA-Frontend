@@ -208,6 +208,7 @@ export default function App() {
           onUpdateEnrollment={handleUpdateEnrollment}
           onUpdateAssignments={handleUpdateAssignments}
           onLogout={handleLogout}
+            onGoToPortal={handleGoPortal}
         />
       )}
 
@@ -229,6 +230,7 @@ export default function App() {
           onUpdateAssignments={handleUpdateAssignments}
           onUpdateAttendance={handleUpdateAttendance}
           onLogout={handleLogout}
+          onGoToPortal={handleGoPortal}
         />
       )}
 
@@ -237,6 +239,7 @@ export default function App() {
         <SuperAdminRouter
           onLogout={handleLogout}
           onSwitchRole={handleLoginSuccess}
+          onGoToPortal={handleGoPortal}
         />
       )}
 
@@ -264,7 +267,7 @@ export default function App() {
           onUpdateAssignments={handleUpdateAssignments}
           onUpdateAttendance={handleUpdateAttendance}
           onLogout={handleLogout}
-          onGoToPortal={() => setCurrentUser({ role: "portal", identifier: "" })}
+          onGoToPortal={handleGoPortal}
         />
       )}
 
@@ -272,6 +275,7 @@ export default function App() {
       {currentUser.role === "mpa" && (
         <MpaRouter
           onLogout={handleLogout}
+          onGoToPortal={handleGoPortal}
         />
       )}
 
@@ -306,6 +310,7 @@ export default function App() {
           onUpdateAttendance={handleUpdateAttendance}
           onUpdateGraduations={handleUpdateGraduations}
           onLogout={handleLogout}
+          onGoToPortal={handleGoPortal}
         />
       )}
 
@@ -313,6 +318,7 @@ export default function App() {
       {currentUser.role === "maf" && (
         <MafRouter
           onLogout={handleLogout}
+          onGoToPortal={handleGoPortal}
         />
       )}
 

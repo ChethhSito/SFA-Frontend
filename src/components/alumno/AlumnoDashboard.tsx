@@ -39,6 +39,7 @@ interface AlumnoDashboardProps {
   onUpdateEnrollment: (enroll: Enrollment) => void;
   onUpdateAssignments: (asgs: CourseAssignment[]) => void;
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
 export default function AlumnoDashboard({
@@ -58,7 +59,8 @@ export default function AlumnoDashboard({
   onUpdatePersonal,
   onUpdateEnrollment,
   onUpdateAssignments,
-  onLogout
+  onLogout,
+  onGoToPortal
 }: AlumnoDashboardProps) {
   const { programs: ACADEMIC_PROGRAMS, courses: catalogCourses } = useAcademicCatalog();
   const [activeTab, setActiveTab] = useState<"welcome" | "profile" | "classes" | "schedule" | "attendance" | "closure" | "notas" | "secretaria" | "guias" | "calendar" | "enrollment">("welcome");
@@ -451,6 +453,7 @@ export default function AlumnoDashboard({
         ]}
         onItemClick={(route) => setActiveTab(route as typeof activeTab)}
         onLogout={onLogout}
+        onGoToPortal={onGoToPortal}
       />
 
       {/* MAIN VIEWPORT SCROLL AREA */}

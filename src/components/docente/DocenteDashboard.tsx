@@ -52,6 +52,7 @@ interface DocenteDashboardProps {
   onUpdateAssignments: (asgs: CourseAssignment[]) => Promise<boolean>;
   onUpdateAttendance: (att: AttendanceRecord[]) => Promise<boolean>;
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
 const DASHBOARD_COURSES_PER_PAGE = 2;
@@ -113,7 +114,8 @@ export default function DocenteDashboard({
   attendanceLoading,
   attendanceError,
   onReloadAttendance,
-  onLogout
+  onLogout,
+  onGoToPortal
 }: DocenteDashboardProps) {
   // Main Selection States
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -511,6 +513,7 @@ export default function DocenteDashboard({
             setSelectedCourseId(null);
           }}
           onLogout={onLogout}
+          onGoToPortal={onGoToPortal}
         />
       </div>
 
@@ -631,7 +634,8 @@ export default function DocenteDashboard({
             activeTab={activeTab === "curso" ? "cursos" : activeTab}
             setActiveTab={setActiveTab}
             onLogout={onLogout}
-          />
+          onGoToPortal={onGoToPortal}
+        />
         </div>
       )}
 

@@ -28,9 +28,10 @@ import AcademicCalendarBoard from "../shared/AcademicCalendarBoard";
 
 interface MpaDashboardProps {
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
-export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
+export default function MpaDashboard({ onLogout, onGoToPortal }: MpaDashboardProps) {
   // Navigation tabs of MPA
   const [activeTab, setActiveTab] = useState<
     "periods" | "careers" | "courses" | "curriculum" | "teachers" |
@@ -163,6 +164,7 @@ export default function MpaDashboard({ onLogout }: MpaDashboardProps) {
         ]}
         onItemClick={(route: any) => setActiveTab(route)}
         onLogout={onLogout}
+        onGoToPortal={onGoToPortal}
       />
 
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50 min-w-0">

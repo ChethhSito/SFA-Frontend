@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { 
   Users, BookOpen, Clock, FileText, CheckCircle, 
-  Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronDown, ChevronRight, Settings, BarChart3, Megaphone, FileSpreadsheet, LibraryBig
+  Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, Home, GraduationCap, ChevronDown, ChevronRight, Settings, BarChart3, Megaphone, FileSpreadsheet, LibraryBig
 } from "lucide-react";
 import { Course, Teacher } from "../../types";
 import Badge from "../ui/Badge";
@@ -15,6 +15,7 @@ export interface SidebarPrincipalProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
 export default function SidebarPrincipal({
@@ -25,7 +26,8 @@ export default function SidebarPrincipal({
   onSelectCourse,
   activeTab,
   setActiveTab,
-  onLogout
+  onLogout,
+  onGoToPortal
 }: SidebarPrincipalProps) {
   // Dynamic teacher details from props
   const teacherName = teacher ? `${teacher.name} ${teacher.lastName}` : "Docente Titular";
@@ -143,8 +145,17 @@ export default function SidebarPrincipal({
         </div>
       </div>
 
-      {/* Logout Action Bar */}
-      <div className="p-4 border-t border-slate-100 bg-slate-50/40 shrink-0">
+      {/* Footer Action Bar */}
+      <div className="p-4 border-t border-slate-100 bg-slate-50/40 shrink-0 space-y-1.5">
+        {onGoToPortal && (
+          <button
+            onClick={onGoToPortal}
+            className="w-full py-2.5 px-3 rounded-xl bg-white hover:bg-red-50 text-slate-700 hover:text-[#9F062A] text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 tracking-wider border border-slate-200/60 shadow-2xs cursor-pointer"
+          >
+            <Home className="w-4 h-4 shrink-0 text-[#9F062A]" />
+            <span>Portal Principal</span>
+          </button>
+        )}
         <button
           onClick={onLogout}
           className="w-full py-2.5 px-3 rounded-xl bg-transparent hover:bg-rose-50 text-slate-600 hover:text-[#8B0026] text-xs font-black uppercase transition-all flex items-center justify-center gap-2 tracking-wider border border-transparent hover:border-red-100 cursor-pointer"
