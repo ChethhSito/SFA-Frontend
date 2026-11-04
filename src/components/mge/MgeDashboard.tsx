@@ -667,42 +667,99 @@ export default function MgeDashboard({
 
       {/* Main viewport */}
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-50 min-w-0">
-        <header className="bg-white border-b border-slate-200/80 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
-          <div className="text-left">
-            <h1 className="text-base font-black text-slate-900 tracking-tight leading-none uppercase">
-              {activeSubTab === "estudiantes" && "1. Padrón General de Estudiantes"}
-              {activeSubTab === "matricula_gral" && "2. Matrícula General y Asignación de Turnos"}
-              {activeSubTab === "pagos" && "3. Auditoría de Pagos de Matrícula"}
-              {activeSubTab === "notas" && "4. Registro y Calificación de Notas"}
-              {activeSubTab === "asistencias" && "5. Control de Asistencias Diarias"}
-              {activeSubTab === "historial" && "6. Historial Académico y Récord de Notas"}
-              {activeSubTab === "constancias" && "7. Expedición de Constancias y Certificados"}
-              {activeSubTab === "reportes" && "8. Reportes Estadísticos Consolidados"}
-              {activeSubTab === "riesgo_ia" && "9. Riesgo Académico IA • Detección Temprana y Deserción"}
-            </h1>
-            <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-1">
-              IESTP San Francisco de Asís • Cuenta Gestión de Estudiantes (MGE)
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-200">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Ciclo Activo:</span>
-              <span className="text-xs font-black text-slate-800">
-                {activePeriodName}
-              </span>
+        <header className="relative bg-[#800521] text-white rounded-none border-b-4 border-amber-500 p-6 md:p-7 shadow-md text-left shrink-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm select-none font-mono">
+                  SISTEMA INTRANET INSTITUCIONAL • MÓDULO MGE
+                </span>
+                <span className="bg-white/10 text-white text-[10px] font-black px-2 py-0.5 rounded border border-white/20 uppercase tracking-widest font-mono">
+                  ROL: GESTIÓN DE ESTUDIANTES
+                </span>
+              </div>
+              <h1 className="text-xl md:text-2xl font-black text-white tracking-tight leading-tight uppercase pt-0.5">
+                {activeSubTab === "estudiantes" && "1. Padrón General de Estudiantes"}
+                {activeSubTab === "matricula_gral" && "2. Matrícula General y Asignación de Turnos"}
+                {activeSubTab === "pagos" && "3. Auditoría de Pagos de Matrícula"}
+                {activeSubTab === "notas" && "4. Registro y Calificación de Notas"}
+                {activeSubTab === "asistencias" && "5. Control de Asistencias Diarias"}
+                {activeSubTab === "historial" && "6. Historial Académico y Récord de Notas"}
+                {activeSubTab === "constancias" && "7. Expedición de Constancias y Certificados"}
+                {activeSubTab === "reportes" && "8. Reportes Estadísticos Consolidados"}
+                {activeSubTab === "riesgo_ia" && "9. Riesgo Académico IA • Detección Temprana y Deserción"}
+              </h1>
+              <p className="text-xs text-white/90 font-medium">
+                Padrón consolidado, seguimiento curricular, calificaciones y emisión de constancias oficiales.
+              </p>
             </div>
-            <span className="text-[11px] font-black text-[#9F062A] bg-[#9F062A]/10 px-3 py-1.5 rounded-lg border border-[#9F062A]/20 font-mono tracking-widest hidden sm:inline-block">
-              ROL: MGE
-            </span>
+
+            <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0">
+              <div className="flex items-center gap-2 bg-black/30 px-3.5 py-2 rounded-xl border border-white/20 shadow-inner">
+                <Calendar className="w-4 h-4 text-amber-400" />
+                <span className="text-[10.5px] font-bold text-white/80 uppercase tracking-wider">Ciclo Activo:</span>
+                <span className="text-xs font-black text-amber-300 font-mono">
+                  {activePeriodName}
+                </span>
+              </div>
+            </div>
           </div>
         </header>
 
         {/* Content area */}
         {saving ? <p role="status" className="p-3">Guardando cambios en el servidor...</p> : null}
         <fieldset disabled={saving} className="flex-1 min-h-0 min-w-0 border-0 overflow-y-auto p-4 md:p-6 custom-scrollbar">
-          {activeSubTab === "estudiantes" && (
+                  {/* MAF-Style KPI Scorecards Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-blue-600 flex items-center justify-between text-left">
+            <div>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Padrón de Estudiantes</span>
+              <p className="text-2xl font-black text-slate-900 mt-1 font-mono">{processedStudents.length}</p>
+            </div>
+            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+              <Users className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-emerald-600 flex items-center justify-between text-left">
+            <div>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Matriculados Regulares</span>
+              <p className="text-2xl font-black text-emerald-600 mt-1 font-mono">
+                {processedStudents.filter(s => s.academicStatus === "MATRICULADO").length}
+              </p>
+            </div>
+            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-purple-600 flex items-center justify-between text-left">
+            <div>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Pagos Validados</span>
+              <p className="text-2xl font-black text-purple-600 mt-1 font-mono">
+                {processedStudents.filter(s => s.paymentStatus === "Validado").length}
+              </p>
+            </div>
+            <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+              <Coins className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-amber-500 flex items-center justify-between text-left">
+            <div>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Expedientes / Alertas</span>
+              <p className="text-2xl font-black text-amber-600 mt-1 font-mono">
+                {graduations.filter(g => g.status === "EMITIDO").length || processedStudents.filter(s => s.average < 13 && s.average > 0).length}
+              </p>
+            </div>
+            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+              <Award className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
+
+        {activeSubTab === "estudiantes" && (
             sourceLoading ? <p role="status">Cargando el padrón y las matrículas...</p> : sourceError ? <p role="alert" className="text-red-700">{sourceError} Recargue para reintentar.</p> : <MgeEstudiantesTab
               filteredStudents={filteredStudents}
               searchQuery={searchQuery}

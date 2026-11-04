@@ -397,25 +397,32 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole,
       <main className="flex-1 h-screen overflow-y-auto bg-slate-100/60 p-4 lg:p-8 space-y-6">
         
         {/* Top Header */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-6 h-6 text-[#CFA020]" />
-              <h1 className="text-xl font-black uppercase tracking-wider text-white">Módulo de Administración General del Sistema</h1>
+        <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm select-none font-mono">
+                  SISTEMA INTRANET INSTITUCIONAL • SUPERADMIN
+                </span>
+              </div>
+              <h1 className="text-2xl md:text-3xl font-black uppercase tracking-wider text-white pt-0.5">
+                Módulo de Administración General del Sistema
+              </h1>
+              <p className="text-xs text-white/90 font-medium max-w-2xl">
+                Control centralizado de usuarios institucionales, roles de gestores (MAMC, MPA, MGE, MAF, Docentes) y permisos de acceso en MongoDB REST API.
+              </p>
             </div>
-            <p className="text-xs text-slate-400 font-medium">
-              Control centralizado de usuarios institucionales, roles de gestores (MAMC, MPA, MGE, MAF, Docentes) y permisos de acceso en MongoDB REST API.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={handleOpenCreateModal}
-              className="bg-[#9F062A] hover:bg-[#800421] text-white text-xs font-black uppercase tracking-wider px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-md transition-all cursor-pointer"
-            >
-              <UserPlus className="w-4 h-4" />
-              Nuevo Gestor / Usuario
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                onClick={handleOpenCreateModal}
+                className="bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-black uppercase tracking-wider px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-md transition-all cursor-pointer border border-amber-300"
+              >
+                <UserPlus className="w-4 h-4" />
+                Nuevo Gestor / Usuario
+              </Button>
+            </div>
           </div>
         </div>
 

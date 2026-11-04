@@ -782,6 +782,8 @@ export default function MafDashboard({ onLogout, onGoToPortal }: MafDashboardPro
           }
         ]}
         onItemClick={(route) => setActiveTab(route as any)}
+        onLogout={onLogout}
+        onGoToPortal={onGoToPortal}
       />
 
       {/* 2. Main content viewport areas */}
@@ -798,50 +800,41 @@ export default function MafDashboard({ onLogout, onGoToPortal }: MafDashboardPro
         )}
 
         {/* Global MAF Module Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-slate-200 pb-5 mb-6 gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded bg-amber-500 text-amber-950 font-black text-[9px] uppercase tracking-wider">
-                Consola Oficial MAF
+        <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+                SISTEMA INTRANET INSTITUCIONAL • MÓDULO MAF
               </span>
-              <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-800 font-black text-[9px] uppercase tracking-wider font-mono">
-                Source of Truth
-              </span>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-none text-white uppercase pt-0.5">
+                Módulo de Administración y Finanzas (MAF)
+              </h1>
+              <p className="text-xs text-white/90 font-medium max-w-2xl">
+                Consola Operativa y de Control de Caja, Conciliación Bancaria, Tasas Educativas y Trámites Institucionales.
+              </p>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight mt-1">
-              Módulo de Administración y Finanzas (MAF)
-            </h1>
-            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              Consola Operativa y de Control de Gastos, Matrículas, Prospectos y Trámites Institucionales.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => void refreshServiceRequests().then(count => {
-                triggerNotification(`${count} solicitud(es) de estudiantes consultadas en la base local.`);
-              }).catch(() => triggerNotification("No se pudieron consultar las solicitudes en la base local.", "warning"))}
-              className="p-2 border border-slate-250 bg-white rounded-lg hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              Sincronizar
-            </button>
-            {onGoToPortal && (
+            <div className="flex items-center gap-2.5 shrink-0">
               <button
-                onClick={onGoToPortal}
-                className="px-4 py-2 bg-white hover:bg-red-50 text-slate-700 hover:text-[#9F062A] font-black text-[10px] uppercase tracking-wider rounded-lg transition-all border border-slate-200/80 flex items-center gap-2 cursor-pointer shadow-2xs"
+                onClick={() => void refreshServiceRequests().then(count => {
+                  triggerNotification(`${count} solicitud(es) consultadas en la base de datos.`);
+                }).catch(() => triggerNotification("No se pudieron consultar las solicitudes.", "warning"))}
+                className="px-3.5 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-sm"
               >
-                <Home className="w-3.5 h-3.5 text-[#9F062A]" />
-                Portal Principal
+                <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+                Sincronizar
               </button>
-            )}
-            <button
-              onClick={onLogout}
-              className="px-4 py-2 hover:bg-red-50 text-red-650 font-black text-[10px] uppercase tracking-wider rounded-lg transition-all border border-red-200/50 flex items-center gap-2 cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Cerrar Módulo
-            </button>
+              {onGoToPortal && (
+                <button
+                  onClick={onGoToPortal}
+                  className="px-3.5 py-2 bg-white hover:bg-amber-50 text-slate-800 hover:text-[#800521] font-black text-xs uppercase tracking-wider rounded-xl transition-all border border-white/40 flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <Home className="w-3.5 h-3.5 text-[#800521]" />
+                  Portal Principal
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

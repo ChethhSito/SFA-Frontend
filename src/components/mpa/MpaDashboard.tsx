@@ -187,29 +187,47 @@ export default function MpaDashboard({ onLogout, onGoToPortal }: MpaDashboardPro
             </div>
           </div>
         )}
-        <header className="bg-white border-b border-slate-200/80 px-6 py-4 flex items-center justify-between shrink-0">
-          <div className="text-left">
-            <h1 className="text-base font-black text-slate-900 tracking-tight leading-none uppercase">
-              {activeTab === "periods" && "1. Gestión de Períodos Académicos"}
-              {activeTab === "calendar" && "2. Calendario Académico"}
-              {activeTab === "careers" && "3. Gestión de Carreras"}
-              {activeTab === "courses" && "4. Gestión de Cursos"}
-              {activeTab === "curriculum" && "5. Gestión de Mallas Curriculares"}
-              {activeTab === "teachers" && "6. Gestión de Docentes"}
-              {activeTab === "classrooms" && "7. Gestión de Aulas"}
-              {activeTab === "shifts" && "8. Gestión de Turnos y Horarios"}
-              {activeTab === "groups" && "9. Gestión de Grupos Académicos"}
-              {activeTab === "program" && "10. Programación Académica por Horas Reales"}
-              {activeTab === "reports" && "11. Reportes y Horarios Consolidados"}
-              {activeTab === "support" && "12. Soporte Técnico"}
-            </h1>
-            <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest mt-1">
-              IESTP San Francisco de Asís • Cuenta Planificación Académica (MPA)
-            </p>
+        <header className="relative bg-[#800521] text-white rounded-none border-b-4 border-amber-500 p-6 md:p-7 shadow-md text-left shrink-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm select-none font-mono">
+                  SISTEMA INTRANET INSTITUCIONAL • MÓDULO MPA
+                </span>
+                <span className="bg-white/10 text-white text-[10px] font-black px-2 py-0.5 rounded border border-white/20 uppercase tracking-widest font-mono">
+                  ROL: PLANIFICACIÓN ACADÉMICA
+                </span>
+              </div>
+              <h1 className="text-xl md:text-2xl font-black text-white tracking-tight leading-tight uppercase pt-0.5">
+                {activeTab === "periods" && "1. Gestión de Períodos Académicos"}
+                {activeTab === "calendar" && "2. Calendario Académico"}
+                {activeTab === "careers" && "3. Gestión de Carreras"}
+                {activeTab === "courses" && "4. Gestión de Cursos"}
+                {activeTab === "curriculum" && "5. Gestión de Mallas Curriculares"}
+                {activeTab === "teachers" && "6. Gestión de Docentes"}
+                {activeTab === "classrooms" && "7. Gestión de Aulas"}
+                {activeTab === "shifts" && "8. Gestión de Turnos y Horarios"}
+                {activeTab === "groups" && "9. Gestión de Grupos Académicos"}
+                {activeTab === "program" && "10. Programación Académica por Horas Reales"}
+                {activeTab === "reports" && "11. Reportes y Horarios Consolidados"}
+                {activeTab === "support" && "12. Soporte Técnico"}
+              </h1>
+              <p className="text-xs text-white/90 font-medium">
+                Consolidación de mallas curriculares, distribución de ambientes físicos, asignación docente y cruces de horario.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0">
+              <div className="flex items-center gap-2 bg-black/30 px-3.5 py-2 rounded-xl border border-white/20 shadow-inner">
+                <Calendar className="w-4 h-4 text-amber-400" />
+                <span className="text-[10.5px] font-bold text-white/80 uppercase tracking-wider">Períodos:</span>
+                <span className="text-xs font-black text-amber-300 font-mono">
+                  {periods.length} Registrados
+                </span>
+              </div>
+            </div>
           </div>
-          <span className="text-[11px] font-black text-[#9F062A] bg-[#9F062A]/10 px-3 py-1.5 rounded-lg border border-[#9F062A]/20 font-mono tracking-widest hidden sm:inline-block">
-            ROL: MPA
-          </span>
         </header>
 
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain relative">
