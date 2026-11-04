@@ -47,47 +47,77 @@ export const GradesTab: React.FC<GradesTabProps> = ({
   return (
     <PageTransition id="notas" className="space-y-6">
       {/* Header widget */}
-      <div className="bg-white rounded-xl border border-slate-100 p-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shadow-xs">
-        <div>
-          <h2 id="notas-view-main" className="text-lg font-black text-[#800521] tracking-tight uppercase font-display leading-none">Mis Calificaciones</h2>
-          <p className="text-[11px] text-slate-550 font-bold mt-1.5 uppercase tracking-wider">Calificaciones guardadas por evaluación. El promedio mostrado es simple.</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-          <div className="text-left bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-lg select-none">
-            <span className="text-[9px] text-[#800521] font-extrabold block uppercase mb-0.5 tracking-wider">Período Académico</span>
-            <span className="text-xs font-black text-slate-800">2026 - I</span>
+      <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-6">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+              PORTAL DEL ESTUDIANTE • CONTROL DE RENDIMIENTO
+            </span>
+            <h2 id="notas-view-main" className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+              Récord de Calificaciones
+            </h2>
+            <p className="text-xs text-white/90 font-medium max-w-2xl">
+              Calificaciones oficiales guardadas por evaluación. El promedio mostrado es ponderado y auditado por secretaría académica.
+            </p>
           </div>
-          <div className="text-left bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-lg select-none">
-            <span className="text-[9px] text-[#800521] font-extrabold block uppercase mb-0.5 tracking-wider">Sede Rectoral</span>
-            <span className="text-xs font-black text-slate-800">Principal</span>
+
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <div className="text-left bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
+              <span className="text-[9px] text-amber-400 font-extrabold block uppercase mb-0.5 tracking-wider">Período Académico</span>
+              <span className="text-xs font-black text-white font-mono">2026 - I</span>
+            </div>
+            <button
+              onClick={() => setShowBoletaModal(true)}
+              className="bg-white hover:bg-amber-50 text-slate-900 font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-2 select-none cursor-pointer transition-all shadow-md border border-white/30"
+            >
+              <Printer className="w-3.5 h-3.5 text-[#800521]" />
+              <span>Descargar Boleta</span>
+            </button>
           </div>
         </div>
       </div>
 
       {/* Summary row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-xs text-left">
-          <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">Promedio de notas</span>
-          <span className="text-xl font-black text-[#800521] block mt-1 font-mono">
-            {hasGrades ? calculatedAverage : "0.0"}
-          </span>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-blue-600 flex items-center justify-between text-left">
+          <div>
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Promedio de Notas</span>
+            <p className="text-2xl font-black text-slate-900 mt-1 font-mono">{hasGrades ? calculatedAverage : "0.0"}</p>
+          </div>
+          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+            <Award className="w-5 h-5" />
+          </div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-xs text-left">
-          <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">Créditos Llevados</span>
-          <span className="text-xl font-black text-[#800521] block mt-1 font-mono">
-            {totalCredits.toFixed(1)}
-          </span>
+
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-emerald-600 flex items-center justify-between text-left">
+          <div>
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Créditos Llevados</span>
+            <p className="text-2xl font-black text-emerald-600 mt-1 font-mono">{totalCredits.toFixed(1)}</p>
+          </div>
+          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+            <FileText className="w-5 h-5" />
+          </div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-xs text-left">
-          <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">Unidades Didácticas</span>
-          <span className="text-xl font-black text-slate-800 block mt-1 font-mono">{enrichedCourses.length}</span>
+
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-purple-600 flex items-center justify-between text-left">
+          <div>
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Materias en Curso</span>
+            <p className="text-2xl font-black text-purple-600 mt-1 font-mono">{enrichedCourses.length}</p>
+          </div>
+          <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+            <Sliders className="w-5 h-5" />
+          </div>
         </div>
-        <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-xs text-left">
-          <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wider block">Condición Alumno</span>
-          <span className="text-xs font-extrabold text-sky-850 bg-sky-50 px-2 py-0.5 inline-block border border-sky-100 rounded-md uppercase tracking-wider mt-1.5">
-            {hasGrades ? "REGULAR (EVALUADO)" : "MATRICULADO (EN CURSO)"}
-          </span>
+
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-amber-500 flex items-center justify-between text-left">
+          <div>
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Condición Académica</span>
+            <p className="text-xl font-black text-amber-600 mt-1 font-mono">{hasGrades && Number(calculatedAverage) >= 12.5 ? "REGULAR" : "EN CURSO"}</p>
+          </div>
+          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+            <Info className="w-5 h-5" />
+          </div>
         </div>
       </div>
 

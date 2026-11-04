@@ -509,17 +509,79 @@ export default function PostulanteDashboard({
 
       {/* MAIN DASHBOARD CONTENT AREA */}
       <main className="flex-1 overflow-y-auto bg-slate-100 p-4 sm:p-6 md:p-8 custom-scrollbar">
-        {/* TOP BAR HEADER */}
-        <PageHeader
-          title={
-            activeTab === "dashboard" ? "Resumen de Admisión" :
-              activeTab === "documentos" ? "Expediente Digital" :
-                activeTab === "pagos" ? "Estado de Pago" :
-                  activeTab === "resultados" ? "Resultados de Evaluación" :
-                    activeTab === "soporte" ? "Mesa de Ayuda" : "Matrícula de Ingresante"
-          }
-          subtitle={`Bienvenido al portal institucional, ${applicant.name}`}
-        />
+        {/* Institutional Hero Banner */}
+        <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+                SISTEMA INTRANET INSTITUCIONAL • PORTAL DEL POSTULANTE
+              </span>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-none text-white uppercase pt-0.5">
+                {activeTab === "dashboard" ? "Resumen de Admisión" :
+                  activeTab === "documentos" ? "Expediente Digital" :
+                    activeTab === "pagos" ? "Estado de Pago" :
+                      activeTab === "resultados" ? "Resultados de Evaluación" :
+                        activeTab === "soporte" ? "Mesa de Ayuda" : "Matrícula de Ingresante"}
+              </h1>
+              <p className="text-xs text-white/90 font-medium max-w-2xl">
+                Bienvenido al portal institucional, {applicant.name} {applicant.lastName}. Postulación a la carrera de {currentProgram.name}.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 bg-black/30 px-3.5 py-2 rounded-xl border border-white/20 shadow-inner shrink-0">
+              <Award className="w-4 h-4 text-amber-400" />
+              <span className="text-[10.5px] font-bold text-white/80 uppercase tracking-wider">Estado:</span>
+              <span className="text-xs font-black text-amber-300 font-mono">
+                {isActuallyAdmitted ? "ADMITIDO" : applicant.folderStatus === "Approved" ? "APROBADO" : "EN REVISIÓN"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Informative KPIs Dashboard Row (MAF style) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-blue-600 flex items-center justify-between text-left">
+            <div>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Carrera Técnica</span>
+              <p className="text-sm font-black text-slate-900 mt-1 truncate max-w-[180px]">{currentProgram.name}</p>
+            </div>
+            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+              <GraduationCap className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-emerald-600 flex items-center justify-between text-left">
+            <div>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Expediente Digital</span>
+              <p className="text-2xl font-black text-emerald-600 mt-1 font-mono">{approvedCount} / 4 Válidos</p>
+            </div>
+            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-purple-600 flex items-center justify-between text-left">
+            <div>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Pago de Admisión</span>
+              <p className="text-xl font-black text-purple-600 mt-1 font-mono">{applicant.paymentStatus || "Pendiente"}</p>
+            </div>
+            <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+              <Coins className="w-5 h-5" />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-amber-500 flex items-center justify-between text-left">
+            <div>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Condición Académica</span>
+              <p className="text-xl font-black text-amber-600 mt-1 font-mono">
+                {isActuallyAdmitted ? "ADMITIDO" : "EN EVALUACIÓN"}
+              </p>
+            </div>
+            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+              <Award className="w-5 h-5" />
+            </div>
+          </div>
+        </div>
 
 
         {/* ALERTS DISPLAY */}

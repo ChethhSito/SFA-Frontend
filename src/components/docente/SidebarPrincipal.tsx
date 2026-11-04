@@ -69,11 +69,11 @@ export default function SidebarPrincipal({
     <aside className="w-64 h-full bg-white border-r border-slate-100 flex flex-col shrink-0 select-none text-left">
       {/* SFA Logo Header */}
       <div className="p-5 flex items-center gap-3 border-b border-slate-150/40">
-        <div className="h-10 w-10 bg-[#8B0026] text-[#CFA020] rounded-xl flex items-center justify-center font-bold shadow-md shrink-0 border border-[#8B0026]/10">
+        <div className="h-10 w-10 bg-[#800521] text-[#CFA020] rounded-xl flex items-center justify-center font-bold shadow-md shrink-0 border border-[#800521]/10">
           <GraduationCap className="w-5 h-5" />
         </div>
         <div className="text-left">
-          <h1 className="text-sm font-black text-[#8B0026] tracking-tight leading-none uppercase">
+          <h1 className="text-sm font-black text-[#800521] tracking-tight leading-none uppercase">
             IESTP SFA
           </h1>
           <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wide block mt-1">
@@ -130,7 +130,7 @@ export default function SidebarPrincipal({
                   }}
                   className={`w-full text-left py-2.5 px-3 rounded-xl transition-all duration-150 flex items-center gap-3 cursor-pointer text-xs font-semibold ${
                     isActive
-                      ? "bg-[#8B0026] text-white font-bold shadow-md border border-red-900/10"
+                      ? "bg-[#800521] text-white font-bold shadow-md border border-red-900/10"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
                   }`}
                 >
@@ -158,7 +158,7 @@ export default function SidebarPrincipal({
         )}
         <button
           onClick={onLogout}
-          className="w-full py-2.5 px-3 rounded-xl bg-transparent hover:bg-rose-50 text-slate-600 hover:text-[#8B0026] text-xs font-black uppercase transition-all flex items-center justify-center gap-2 tracking-wider border border-transparent hover:border-red-100 cursor-pointer"
+          className="w-full py-2.5 px-3 rounded-xl bg-transparent hover:bg-rose-50 text-slate-600 hover:text-[#800521] text-xs font-black uppercase transition-all flex items-center justify-center gap-2 tracking-wider border border-transparent hover:border-red-100 cursor-pointer"
         >
           <LogOut className="w-4 h-4 shrink-0 text-slate-400" />
           <span>Cerrar Sesión</span>
