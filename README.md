@@ -6,7 +6,7 @@
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.x-38B2AC.svg?logo=tailwindcss)](https://tailwindcss.com/)
 [![REST API](https://img.shields.io/badge/Backend-NestJS-E0234E.svg?logo=nestjs)](https://nestjs.com/)
 
-Sistema de Gestión Académica, Admisión e Intranet Institucional del **IESTP San Francisco de Asís**. Diseñado con una arquitectura modular por dominios, interfaz moderna de alta gama y comunicación fluida con la REST API de `SFA-Backend`.
+Sistema de Gestión Académica, Admisión e Intranet Institucional del **IESTP San Francisco de Asís**. El frontend está organizado por dominios y consume la API REST de `SFA-Backend`; algunas pantallas conservan estado local como apoyo.
 
 📘 **[Ver Guía del Flujo Institucional End-to-End (FLUJO.md)](FLUJO.md)**  
 📐 **[Ver Estándar Oficial de Desarrollo Frontend (ESTANDAR_FRONTEND.md)](ESTANDAR_FRONTEND.md)**
@@ -23,9 +23,9 @@ El sistema cuenta con soporte para **8 roles institucionales y portales dedicado
 - 👨‍🏫 **Docente**: Registro de asistencia, subida de tareas, sílabos y evaluación continua.
 - ⚙️ **MAMC**: Control de caja de admisión, validación de carpetas físicas y matriculación.
 - 🏛️ **MPA (Planificación Académica)**: Editor visual de mallas curriculares, créditos y horas pedagógicas.
-- 🎓 **MGE (Gestión Estudiantil & Egresados)**: Titulación, seguimiento de egresados y trámites de grado.
+- 🎓 **MGE (Gestión Estudiantil & Egresados)**: Seguimiento de estudiantes y egresados, expedientes y registro de certificados PDF emitidos. No genera ni firma automáticamente certificados oficiales.
 - 💰 **MAF (Administración & Finanzas)**: Obligaciones, vouchers, estados de pago y conciliación de reportes bancarios.
-- 🔐 **SuperAdmin**: Control total de usuarios, asignación de roles y auditoría global del sistema.
+- 🔐 **SuperAdmin**: Gestión de usuarios y asignación de roles. La autorización por rol aún no cubre todas las rutas del backend.
 
 ---
 
@@ -41,7 +41,11 @@ En **Solicitudes de Obligaciones** crea una obligación; en **Registro de Pagos 
 
 Para el archivo ficticio ajustado de prueba, usa DNI `54793519`, concepto `CON01` (**S/ 30**), operación `308496` y fecha `2026-04-12`. El voucher puede tener el prefijo `OP-`. Deben coincidir operación, DNI, concepto, fecha y monto tanto con la obligación como con el voucher. Las demás filas sin voucher MAF no se validarán. La imagen del voucher es una referencia visual: el flujo carga el **Excel**, no la imagen.
 
-El frontend lee el archivo con `read-excel-file` y envía las filas a `POST /bank-reconciliation/preview` y `POST /bank-reconciliation/confirm`. MongoDB guarda las filas extraídas, resultados y pagos confirmados; **no almacena el `.xlsx` original**. Es una automatización de conciliación con confirmación humana, no un RPA que navegue por el portal bancario. Las obligaciones MAF siguen en `localStorage`, por lo que esta versión es para pruebas locales. La API se documenta en `http://127.0.0.1:3001/api/docs`.
+El frontend lee el archivo con `read-excel-file` y envía las filas a `POST /bank-reconciliation/preview` y `POST /bank-reconciliation/confirm`. MongoDB guarda las filas extraídas, resultados y pagos confirmados; **no almacena el `.xlsx` original**. Es una automatización de conciliación con confirmación humana, no un RPA que navegue por el portal bancario. Los catálogos, obligaciones y registros de auditoría MAF se sincronizan con la colección `maf_state` mediante `/maf-state`; el navegador conserva una copia en `localStorage`. Esta sincronización todavía requiere manejo más sólido de errores y permisos para uso institucional. La API se documenta en `http://127.0.0.1:3001/api/docs`.
+
+## 📊 Riesgo académico y documentos
+
+El indicador de riesgo de MGE se calcula en el backend mediante pesos y umbrales sobre datos académicos disponibles. Es una evaluación por reglas; el modelo de aprendizaje automático descrito en [PLAN_IA_DESERCION_PREDICTIVA.md](PLAN_IA_DESERCION_PREDICTIVA.md) sigue siendo una propuesta. Los certificados oficiales pueden registrarse con un PDF ya preparado y consultarse después; la generación y firma automáticas del PDF no están implementadas.
 
 ---
 
@@ -70,8 +74,8 @@ src/
 │   ├── mpa/              # useAcademicPlanning
 │   ├── superadmin/       # useUsersManager
 │   └── useAppData.ts     # Hook de composición global
-├── services/             # Servicios HTTP (REST API NestJS + Brevo Mail)
-└── data/                 # Datos semilla y fallbacks (mockData)
+├── services/             # Clientes HTTP para la API y servicios auxiliares
+└── firebase/             # Configuración y utilidades de Firebase
 ```
 
 ---

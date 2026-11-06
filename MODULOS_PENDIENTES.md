@@ -1,7 +1,7 @@
 # 🗺️ Roadmap de Módulos y Funcionalidades Pendientes — SFA
 
 > **IESTP San Francisco de Asís** | *Documento de Seguimiento de Desarrollo*
-> Última actualización: Octubre 2026
+> Última actualización: Noviembre 2026
 
 ---
 
@@ -56,7 +56,7 @@ Este documento define el listado de módulos y mejoras técnicas requeridas para
   - Carga manual de Excel, comparación con vouchers MAF, vista previa y confirmación humana de coincidencias.
   - Persistencia en MongoDB de filas extraídas, resultados y pagos confirmados; detección de importaciones repetidas.
 - [ ] **Conciliación institucional entre usuarios**:
-  - Trasladar obligaciones y vouchers MAF desde `localStorage` a MongoDB como fuente compartida; añadir permisos del personal de MAF.
+  - Catálogos, obligaciones y auditoría ya se sincronizan con `maf_state` en MongoDB; falta consolidar la fuente autoritativa, reintentos, validación del estado en servidor y permisos del personal de MAF.
   - Conservar el archivo Excel original y metadatos de auditoría. Integrar una fuente bancaria real solo si se dispone de acceso autorizado.
 - [ ] **Arqueo de Caja Diario**:
   - Módulo de cierre de tesorería diario para comparar pagos validados vs. cobros en caja presencial.
