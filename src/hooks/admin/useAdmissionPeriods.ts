@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AdmissionPeriod } from "../../types";
 import { fetchAdmissionPeriods } from "../../services/api";
 
 export function useAdmissionPeriods() {
   const [admissionPeriods, setAdmissionPeriods] = useState<AdmissionPeriod[]>([]);
 
-  useEffect(() => {
-    fetchAdmissionPeriods().then((apiPeriods) => {
+  const reloadAdmissionPeriods = useCallback(() => {
+    return fetchAdmissionPeriods().then((apiPeriods) => {
       if (apiPeriods) {
         const sanitized = apiPeriods.map((p: any) => ({
           ...p,
@@ -19,6 +19,13 @@ export function useAdmissionPeriods() {
       }
     }).catch(err => console.error("Error fetching REST API admission periods:", err));
   }, []);
+
+  useEffect(() => {
+    void reloadAdmissionPeriods();
+    const onFocus = () => void reloadAdmissionPeriods();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [reloadAdmissionPeriods]);
 
   const handleUpdateAdmissionPeriods = (updatedList: AdmissionPeriod[]) => {
     const sanitized = updatedList.map((p: any) => ({
@@ -34,6 +41,7 @@ export function useAdmissionPeriods() {
   return {
     admissionPeriods,
     setAdmissionPeriods,
-    handleUpdateAdmissionPeriods
+    handleUpdateAdmissionPeriods,
+    reloadAdmissionPeriods
   };
 }

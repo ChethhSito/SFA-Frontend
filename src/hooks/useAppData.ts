@@ -111,12 +111,14 @@ export function useAppData() {
     admissionPeriods: admissionPeriodsHook.admissionPeriods,
     setAdmissionPeriods: admissionPeriodsHook.setAdmissionPeriods,
     handleUpdateAdmissionPeriods: admissionPeriodsHook.handleUpdateAdmissionPeriods,
+    reloadAdmissionPeriods: admissionPeriodsHook.reloadAdmissionPeriods,
 
     // Applicants & Pre-postulante / Admisión
     applicants: applicantsHook.applicants,
     setApplicants: applicantsHook.setApplicants,
     applicantsLoading: applicantsHook.loading,
     applicantsError: applicantsHook.error,
+    reloadApplicants: applicantsHook.reloadApplicants,
     handleUpdateApplicantsFromAdmin,
     handleCreateApplicant: applicantsHook.handleCreateApplicant,
     handleUpdateApplicantByDni: applicantsHook.handleUpdateApplicantByDni,

@@ -3,6 +3,7 @@ import { XCircle, Check, ChevronRight, Compass } from "lucide-react";
 import Button from "../../ui/Button";
 import PageTransition from "../../ui/PageTransition";
 import { Applicant } from "../../../types";
+import { useApplicantPeriod, formatLongDate, formatDateRange } from "../applicantPeriod";
 
 interface DashboardMainTabProps {
   applicant: Applicant;
@@ -21,6 +22,7 @@ export const DashboardMainTab: React.FC<DashboardMainTabProps> = React.memo(({
   isActuallyAdmitted,
   setActiveTab,
 }) => {
+  const { label: periodLabel, year: periodYear, period: admissionPeriod } = useApplicantPeriod();
   return (
     <PageTransition id="dashboard" className="space-y-6">
       {/* INSTITUTIONAL HEADER BANNER */}
@@ -30,7 +32,7 @@ export const DashboardMainTab: React.FC<DashboardMainTabProps> = React.memo(({
           <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight flex flex-wrap items-center gap-3">
             ¡Hola, {applicant.name}!
             <span className="text-[11px] bg-black/30 backdrop-blur-xs text-amber-300 font-mono px-3 py-1 rounded-lg font-bold uppercase tracking-wider border border-amber-400/30">
-              CÓDIGO POSTULANTE: {applicant.applicantCode || "202610028"}
+              CÓDIGO POSTULANTE: {applicant.applicantCode || "EN ASIGNACIÓN"}
             </span>
           </h2>
           <p className="text-xs md:text-sm text-slate-200 font-medium leading-relaxed max-w-3xl">

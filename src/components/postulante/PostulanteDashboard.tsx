@@ -7,6 +7,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { Applicant, Enrollment } from "../../types";
 import { useAcademicCatalog } from "../../context/AcademicCatalogContext";
+import { ApplicantPeriodProvider, useApplicantPeriod } from "./applicantPeriod";
 
 // Design System UI Components
 import Sidebar from "../ui/Sidebar";
@@ -33,7 +34,15 @@ interface PostulanteDashboardProps {
   onUpdateEnrollment?: (updated: Enrollment) => void;
 }
 
-export default function PostulanteDashboard({
+export default function PostulanteDashboard(props: PostulanteDashboardProps) {
+  return (
+    <ApplicantPeriodProvider applicant={props.applicant}>
+      <PostulanteDashboardInner {...props} />
+    </ApplicantPeriodProvider>
+  );
+}
+
+function PostulanteDashboardInner({
   applicant,
   onUpdateApplicant,
   onLogout,
@@ -42,6 +51,7 @@ export default function PostulanteDashboard({
   onUpdateEnrollment
 }: PostulanteDashboardProps) {
   const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
+  const { label: periodLabel, year: periodYear } = useApplicantPeriod();
   // Active Navigation Tab State
   const [activeTab, setActiveTab] = useState<"dashboard" | "documentos" | "pagos" | "resultados" | "soporte" | "matricula">("dashboard");
   const [toast, setToast] = useState<ToastNotice | null>(null);
@@ -49,7 +59,7 @@ export default function PostulanteDashboard({
     setToast({ id: Date.now(), message, kind });
   };
 
-  const getFormattedDate = (isoDate?: string, fallback: string = "12/03/2026") => {
+  const getFormattedDate = (isoDate?: string, fallback: string = "") => {
     if (!isoDate) return fallback;
     if (/\d{2}\/\d{2}\/\d{4}/.test(isoDate)) return isoDate;
     const parts = isoDate.split('-');
@@ -155,7 +165,7 @@ export default function PostulanteDashboard({
   const [isConstanciaModalOpen, setIsConstanciaModalOpen] = useState(false);
 
   const triggerPreview = (title: string, fileName: string, fileType: "image" | "receipt", customMeta?: any) => {
-    const prg = ACADEMIC_PROGRAMS.find(p => p.id === applicant.programId)?.name || "Electricidad Industrial";
+    const prg = ACADEMIC_PROGRAMS.find(p => p.id === applicant.programId)?.name || applicant.programId;
     setPreviewTitle(title);
     setPreviewFileName(fileName);
     setPreviewFileType(fileType);
@@ -165,10 +175,10 @@ export default function PostulanteDashboard({
       studentLastName: applicant.lastName,
       programName: prg,
       ...(fileType === "receipt" || customMeta?.isVoucher ? {
-        transactionId: applicant.paymentOperation || "PRE-620323",
+        transactionId: applicant.paymentOperation || "Sin operación registrada",
         amount: "S/. 120.00",
         date: paymentDate,
-        concept: "Derecho de Examen Ordinario 2026",
+        concept: `Derecho de Examen Ordinario ${periodLabel || periodYear}`.trim(),
       } : {}),
       ...customMeta
     });
@@ -470,11 +480,11 @@ export default function PostulanteDashboard({
 
   const currentProgram = ACADEMIC_PROGRAMS.find(p => p.id === applicant.programId) || {
     id: applicant.programId,
-    name: "Electricidad Industrial",
-    code: "EI-2026",
-    duration: "3 años (6 Semestres)",
-    title: "Profesional Técnico en Electricidad Industrial",
-    description: "Formación integral en sistemas eléctricos industriales."
+    name: applicant.programId,
+    code: (applicant.programId || "").toUpperCase(),
+    duration: "",
+    title: "",
+    description: ""
   };
 
   // Nav items list for Sidebar
@@ -503,7 +513,7 @@ export default function PostulanteDashboard({
         onGoToPortal={onGoToPortal}
         userProfile={{
           name: `${applicant.name} ${applicant.lastName}`,
-          role: "Postulante 2026-I",
+          role: periodLabel ? `Postulante ${periodLabel}` : "Postulante",
           avatarBg: "bg-gradient-to-br from-[#8B0020] to-[#590013] text-amber-300 font-black border border-amber-400/40"
         }}
       />
@@ -535,51 +545,6 @@ export default function PostulanteDashboard({
               <span className="text-xs font-black text-amber-300 font-mono">
                 {isActuallyAdmitted ? "ADMITIDO" : applicant.folderStatus === "Approved" ? "APROBADO" : "EN REVISIÓN"}
               </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Informative KPIs Dashboard Row (MAF style) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-blue-600 flex items-center justify-between text-left">
-            <div>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Carrera Técnica</span>
-              <p className="text-sm font-black text-slate-900 mt-1 truncate max-w-[180px]">{currentProgram.name}</p>
-            </div>
-            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
-              <GraduationCap className="w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-emerald-600 flex items-center justify-between text-left">
-            <div>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Expediente Digital</span>
-              <p className="text-2xl font-black text-emerald-600 mt-1 font-mono">{approvedCount} / 4 Válidos</p>
-            </div>
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-purple-600 flex items-center justify-between text-left">
-            <div>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Pago de Admisión</span>
-              <p className="text-xl font-black text-purple-600 mt-1 font-mono">{applicant.paymentStatus || "Pendiente"}</p>
-            </div>
-            <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
-              <Coins className="w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-amber-500 flex items-center justify-between text-left">
-            <div>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Condición Académica</span>
-              <p className="text-xl font-black text-amber-600 mt-1 font-mono">
-                {isActuallyAdmitted ? "ADMITIDO" : "EN EVALUACIÓN"}
-              </p>
-            </div>
-            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
-              <Award className="w-5 h-5" />
             </div>
           </div>
         </div>

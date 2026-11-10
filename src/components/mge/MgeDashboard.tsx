@@ -710,54 +710,6 @@ export default function MgeDashboard({
         {/* Content area */}
         {saving ? <p role="status" className="p-3">Guardando cambios en el servidor...</p> : null}
         <fieldset disabled={saving} className="flex-1 min-h-0 min-w-0 border-0 overflow-y-auto p-4 md:p-6 custom-scrollbar">
-                  {/* MAF-Style KPI Scorecards Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-blue-600 flex items-center justify-between text-left">
-            <div>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Padrón de Estudiantes</span>
-              <p className="text-2xl font-black text-slate-900 mt-1 font-mono">{processedStudents.length}</p>
-            </div>
-            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
-              <Users className="w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-emerald-600 flex items-center justify-between text-left">
-            <div>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Matriculados Regulares</span>
-              <p className="text-2xl font-black text-emerald-600 mt-1 font-mono">
-                {processedStudents.filter(s => s.academicStatus === "MATRICULADO").length}
-              </p>
-            </div>
-            <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-purple-600 flex items-center justify-between text-left">
-            <div>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Pagos Validados</span>
-              <p className="text-2xl font-black text-purple-600 mt-1 font-mono">
-                {processedStudents.filter(s => s.paymentStatus === "Validado").length}
-              </p>
-            </div>
-            <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
-              <Coins className="w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-amber-500 flex items-center justify-between text-left">
-            <div>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Expedientes / Alertas</span>
-              <p className="text-2xl font-black text-amber-600 mt-1 font-mono">
-                {graduations.filter(g => g.status === "Certificado Emitido").length || processedStudents.filter(s => s.average < 13 && s.average > 0).length}
-              </p>
-            </div>
-            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
-              <Award className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
 
         {activeSubTab === "estudiantes" && (
             sourceLoading ? <p role="status">Cargando el padrón y las matrículas...</p> : sourceError ? <p role="alert" className="text-red-700">{sourceError} Recargue para reintentar.</p> : <MgeEstudiantesTab

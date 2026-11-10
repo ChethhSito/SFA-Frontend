@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { isFirestoreEnabled, db } from "../../firebase/config";
 import { saveDocumentGeneric } from "../../firebase/firestore";
 import { collection, onSnapshot } from "firebase/firestore";
@@ -30,9 +30,9 @@ export function useApplicantsManager(
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const reloadApplicants = useCallback(() => {
     setLoading(true);
-    fetchApplicants()
+    return fetchApplicants()
       .then((apiApps) => {
         if (!apiApps) throw new Error("No se pudo consultar postulantes");
         setApplicants(apiApps);
@@ -51,6 +51,12 @@ export function useApplicantsManager(
         setError("Error al cargar postulantes desde el servidor.");
       })
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    void reloadApplicants();
+    const onFocus = () => void reloadApplicants();
+    window.addEventListener("focus", onFocus);
 
     let unsubscribeApplicants: (() => void) | undefined = undefined;
     if (isFirestoreEnabled && db) {
@@ -145,11 +151,12 @@ export function useApplicantsManager(
     }
 
     return () => {
+      window.removeEventListener("focus", onFocus);
       if (unsubscribeApplicants) {
         unsubscribeApplicants();
       }
     };
-  }, []);
+  }, [reloadApplicants]);
 
   const handleUpdateApplicantsFromAdmin = async (updatedList: any[]) => {
     setApplicants(updatedList);
@@ -246,6 +253,7 @@ export function useApplicantsManager(
     handleCreateApplicant,
     handleUpdateApplicantByDni,
     handleDeleteApplicantByDni,
-    handleSendWelcomeEmail
+    handleSendWelcomeEmail,
+    reloadApplicants
   };
 }

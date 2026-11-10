@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import PageTransition from "../../ui/PageTransition";
 import { Applicant } from "../../../types";
+import { useApplicantPeriod, formatLongDate, formatDateRange } from "../applicantPeriod";
 
 interface SoporteTabProps {
   applicant: Applicant;
@@ -22,11 +23,12 @@ export const SoporteTab: React.FC<SoporteTabProps> = React.memo(({
   supportMessage,
   setSupportMessage,
 }) => {
+  const { label: periodLabel, year: periodYear, period: admissionPeriod } = useApplicantPeriod();
   return (
     <PageTransition id="soporte" className="space-y-6">
       {/* Breadcrumb path */}
       <div className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest text-left">
-        Admisión 2026 &gt; <span className="text-slate-600">Centro de Soporte y Atención</span>
+        Admisión {periodLabel || periodYear} &gt; <span className="text-slate-600">Centro de Soporte y Atención</span>
       </div>
 
       {/* Header section */}

@@ -1,6 +1,7 @@
 import React from "react";
 import { Award, XCircle, Lightbulb, Printer, Download } from "lucide-react";
 import { Applicant } from "../../../types";
+import { useApplicantPeriod, formatLongDate, formatDateRange } from "../applicantPeriod";
 
 interface ConstanciaModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ export const ConstanciaModal: React.FC<ConstanciaModalProps> = React.memo(({
   onClose,
   applicant,
 }) => {
+  const { label: periodLabel, year: periodYear, period: admissionPeriod } = useApplicantPeriod();
   if (!isOpen) return null;
 
   const handlePrint = () => {
@@ -24,7 +26,7 @@ export const ConstanciaModal: React.FC<ConstanciaModalProps> = React.memo(({
       printWindow.document.write(`
         <html>
           <head>
-            <title>Constancia Oficial de Admisión - SFA 2026</title>
+            <title>Constancia Oficial de Admisión - SFA ${periodLabel || periodYear}</title>
             <style>
               body { font-family: system-ui, -apple-system, sans-serif; background-color: white; padding: 40px; display: flex; justify-content: center; }
               #constancia { border: 6px double #9F062A; padding: 40px; max-width: 600px; background-color: #fafaf9; position: relative; }
@@ -126,7 +128,7 @@ R.M. N° 0233-80-ED • ICA - PERÚ
 ========================================
 
 CONSTANCIA OFICIAL DE ADMISIÓN DIGITAL
-N° C.O.A - 2026-${applicant.dni}
+N° C.O.A - ${periodYear}-${applicant.dni}
 
 POSTULANTE: ${applicant.lastName}, ${applicant.name}
 DOCUMENTO DNI: ${applicant.dni}
@@ -139,7 +141,7 @@ Este documento acredita haber obtenido una vacante
 de estudios en el IESTP "San Francisco de Asís"
 por el canal de Admisión Ordinaria Directa.
 Documento Oficial firmado digitalmente.
-Proceso 2026-I • Chincha Alta, Perú.
+Proceso ${periodLabel} • Villa María del Triunfo, Lima, Perú.
 ========================================
         `;
         const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
@@ -207,7 +209,7 @@ Proceso 2026-I • Chincha Alta, Perú.
                 CONSTANCIA OFICIAL DE ADMISIÓN
               </span>
               <span className="text-[10px] font-mono font-bold block mt-3 text-slate-500">
-                REGISTRO N° C.O.A - 2026-{applicant.dni}
+                REGISTRO N° C.O.A - {periodYear}-{applicant.dni}
               </span>
             </div>
 
@@ -246,7 +248,7 @@ Proceso 2026-I • Chincha Alta, Perú.
 
               <p>
                 Ha alcanzado una vacante de estudios definitiva por cumplir con la entrega de todos sus requisitos indispensables y la tasa de postulación exonerada/validada. Encontrándose con la condición oficial de 
-                <span className="text-emerald-700 font-black"> ADMITIDO(A) </span> e inscrito(a) en el período académico de ingreso general 2026-I.
+                <span className="text-emerald-700 font-black"> ADMITIDO(A) </span> e inscrito(a) en el período académico de ingreso general {periodLabel}.
               </p>
 
               <p>

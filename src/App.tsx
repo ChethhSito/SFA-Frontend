@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from "react";
+import React, { useEffect } from "react";
 import { AlertCircle } from "lucide-react";
 import { useAppData } from "./hooks/useAppData";
 import { PortalHome, LoginPortal } from "./components/portal";
@@ -42,6 +42,8 @@ export default function App() {
     graduations,
     admissionPeriods,
     setAdmissionPeriods,
+    reloadAdmissionPeriods,
+    reloadApplicants,
     handleUpdateApplicantsFromAdmin,
     handleUpdateEnrollments,
     handleCreateEnrollment,
@@ -61,6 +63,11 @@ export default function App() {
     handleLogout,
     handleLoginSuccess
   } = useAppData();
+
+  useEffect(() => {
+    void reloadApplicants?.();
+    void reloadAdmissionPeriods?.();
+  }, [currentUser.role, reloadApplicants, reloadAdmissionPeriods]);
 
   const handleEnterIntranet = () => {
     const roles = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
@@ -165,6 +172,7 @@ export default function App() {
           onEnterIntranet={handleEnterIntranet}
           onLogout={handleLogout}
           admissionPeriods={admissionPeriods}
+          onApplicantCreated={() => void reloadApplicants?.()}
         />
       )}
 

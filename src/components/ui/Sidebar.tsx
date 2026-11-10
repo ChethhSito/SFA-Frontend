@@ -89,7 +89,7 @@ export default function Sidebar({
 
   // Resolve user values
   const userName = user?.name || userProfile?.name || "Usuario";
-  const userRole = user?.role || userProfile?.role || "Postulante 2026-I";
+  const userRole = user?.role || userProfile?.role || "Usuario";
   const userStatus = user?.status || userProfile?.status || "Activo";
   const userAvatar = user?.avatar || userProfile?.avatar;
 

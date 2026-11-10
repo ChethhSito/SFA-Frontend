@@ -4,6 +4,7 @@ import { Applicant, AdmissionPeriod } from "../../../types";
 import { Card } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
 import PageTransition from "../../ui/PageTransition";
+import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 
 interface SecretariaTabProps {
   applicants: Applicant[];
@@ -34,6 +35,7 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
   setSelectedDossierAppDni,
   renderPeriodSelector,
 }) => {
+  const { programs } = useAcademicCatalog();
   return (
     <PageTransition id="secretaria" className="space-y-6">
       <PageHeader
@@ -270,14 +272,14 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
                               <span className="text-[10px] text-slate-500 font-bold block mt-1 tracking-tight">
                                 DNI: {app.dni} | Código:{" "}
                                 <span className="font-mono text-slate-800">
-                                  {app.applicantCode || "PE-2026-" + app.dni.slice(-4)}
+                                  {app.applicantCode || "Sin código"}
                                 </span>
                               </span>
                             </div>
                           </div>
                         </td>
                         <td className="p-3.5 font-bold uppercase tracking-tight text-slate-900 border-none">
-                          {app.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad"}
+                          {programs.find((p) => p.id === app.programId)?.name || app.programId}
                         </td>
                         <td className="p-3.5 border-none">
                           {effectivePaymentStatus === "Validado" ? (
@@ -288,9 +290,13 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
                             <span className="text-xs font-bold text-red-700 flex items-center gap-1">
                               <AlertTriangle className="w-3.5 h-3.5 text-red-600" /> Tasa Observada
                             </span>
-                          ) : (
+                          ) : effectivePaymentStatus === "Pendiente" ? (
                             <span className="text-xs font-bold text-amber-700 flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5 text-amber-500" /> Por revisar
+                            </span>
+                          ) : (
+                            <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5 text-slate-400" /> Sin pago registrado
                             </span>
                           )}
                         </td>

@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import PageTransition from "../../ui/PageTransition";
 import { Applicant } from "../../../types";
+import { useApplicantPeriod, formatLongDate, formatDateRange } from "../applicantPeriod";
 
 interface ResultadosTabProps {
   applicant: Applicant;
@@ -26,13 +27,14 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
   setIsConstanciaModalOpen,
   setActiveTab,
 }) => {
+  const { label: periodLabel, year: periodYear, period: admissionPeriod } = useApplicantPeriod();
   const globalProgressPercentage = Math.round((approvedCount / 4) * 100);
 
   return (
     <PageTransition id="resultados" className="space-y-4 text-left">
       {/* Breadcrumb path */}
       <div className="text-[9.5px] text-slate-400 font-bold uppercase tracking-wider">
-        Admisión 2026 &gt; <span className="text-slate-600 font-extrabold">Resultados y Constancia</span>
+        Admisión {periodLabel || periodYear} &gt; <span className="text-slate-600 font-extrabold">Resultados y Constancia</span>
       </div>
 
       {/* Header section */}
@@ -164,7 +166,7 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
                   </span>
                   <div>
                     <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Fecha de Matrícula</span>
-                    <span className="text-slate-800 text-[10.5px] font-extrabold block mt-0.5">Lunes 16 al Viernes 20 de Marzo, 2026</span>
+                    <span className="text-slate-800 text-[10.5px] font-extrabold block mt-0.5">{formatDateRange(admissionPeriod?.enrollmentStartDate, admissionPeriod?.enrollmentEndDate)}</span>
                     <span className="text-[8.5px] text-emerald-600 font-bold block mt-0.5 uppercase">Plazo Regular del Periodo</span>
                   </div>
                 </div>
@@ -268,7 +270,7 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
                   </span>
                   <div>
                     <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Fecha del Examen</span>
-                    <span className="text-slate-800 text-[10.5px] font-extrabold block mt-0.5">Domingo, 15 de Marzo de 2026</span>
+                    <span className="text-slate-800 text-[10.5px] font-extrabold block mt-0.5">{formatLongDate(admissionPeriod?.admissionDate)}</span>
                     <span className="text-[8.5px] text-amber-600 font-bold block mt-0.5 uppercase">Evaluación General Presencial</span>
                   </div>
                 </div>

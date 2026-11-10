@@ -1005,64 +1005,6 @@ export default function AdminDashboard({
           </div>
         </div>
 
-        {/* Informative KPIs Dashboard Row (MAF style) */}
-        {(() => {
-          const cohortApps = selectedPeriodId && selectedPeriodId !== "all"
-            ? applicants.filter(a => a.periodId === selectedPeriodId)
-            : applicants;
-
-          return (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-blue-600 flex items-center justify-between text-left">
-                <div>
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Postulantes Registrados</span>
-                  <p className="text-2xl font-black text-slate-900 mt-1 font-mono">{cohortApps.length}</p>
-                </div>
-                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
-                  <Users className="w-5 h-5" />
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-emerald-600 flex items-center justify-between text-left">
-                <div>
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Expedientes Aprobados</span>
-                  <p className="text-2xl font-black text-emerald-600 mt-1 font-mono">
-                    {cohortApps.filter(a => a.folderStatus === "Approved" || a.folderStatus === "Enrolled").length}
-                  </p>
-                </div>
-                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-purple-600 flex items-center justify-between text-left">
-                <div>
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Alumnos Matriculados</span>
-                  <p className="text-2xl font-black text-purple-600 mt-1 font-mono">
-                    {enrollments.filter(e => e.academicStatus === "MATRICULADO").length}
-                  </p>
-                </div>
-                <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
-                  <GraduationCap className="w-5 h-5" />
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-amber-500 flex items-center justify-between text-left">
-                <div>
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Pagos Validados</span>
-                  <p className="text-2xl font-black text-amber-600 mt-1 font-mono">
-                    {cohortApps.filter(a => a.paymentStatus === "Validado").length + enrollments.filter(e => e.paymentStatus === "Validado").length}
-                  </p>
-                </div>
-                <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
-                  <Coins className="w-5 h-5" />
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-
-        
         {/* Tab Caja / Admission payments auditing */}
         {activeTab === "caja_admision" && (
           <CajaAdmisionTab
