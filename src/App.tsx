@@ -103,10 +103,10 @@ export default function App() {
           programId: updated.programId,
           academicStatus: "ADMITIDO" as const,
           docs: {
-            dniFile: appDocs.dniFile || { status: defaultStatus, fileName: `dni_${updated.dni}.pdf` },
-            certificadoFile: appDocs.certificadoFile || { status: defaultStatus, fileName: `certificado_${updated.dni}.pdf` },
-            partidaFile: appDocs.partidaFile || { status: defaultStatus, fileName: `partida_${updated.dni}.pdf` },
-            fotoFile: appDocs.fotoFile || { status: defaultStatus, fileName: `foto_${updated.dni}.jpg` }
+            dniFile: appDocs.dniFile || { status: "No Enviado" as const },
+            certificadoFile: appDocs.certificadoFile || { status: "No Enviado" as const },
+            partidaFile: appDocs.partidaFile || { status: "No Enviado" as const },
+            fotoFile: appDocs.fotoFile || { status: "No Enviado" as const }
           },
           paymentStatus: (updated.paymentStatus === "Validado" || updated.paymentStatus === "PAGADO") ? ("Validado" as const) : ("No Pagado" as const)
         };

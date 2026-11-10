@@ -3,10 +3,7 @@ import PostulanteDashboard from "../postulante";
 import { Applicant, Enrollment } from "../../types";
 import { Lock, ArrowLeft, Loader2 } from "lucide-react";
 import Button from "../ui/Button";
-import { auth, isFirestoreEnabled, db } from "../../firebase/config";
-import { getDocumentGeneric, saveDocumentGeneric } from "../../firebase/firestore";
-import { doc, onSnapshot } from "firebase/firestore";
-import { fetchApplicantByDni, updateApplicant } from "../../services/api";
+import { fetchApplicantByDni } from "../../services/api";
 
 interface PostulanteRouterProps {
   applicants: Applicant[];
@@ -17,238 +14,136 @@ interface PostulanteRouterProps {
   onGoToPortal?: () => void;
 }
 
-export default function PostulanteRouter({ applicants, enrollments, onUpdateApplicant, onUpdateEnrollment, onLogout, onGoToPortal }: PostulanteRouterProps) {
+const DOC_KEYS = ["dniFile", "certificadoFile", "partidaFile", "fotoFile"] as const;
 
+export default function PostulanteRouter({
+  applicants,
+  enrollments,
+  onUpdateApplicant,
+  onUpdateEnrollment,
+  onLogout,
+  onGoToPortal,
+}: PostulanteRouterProps) {
   const [session, setSession] = useState<string | null>(null);
   const [liveApplicant, setLiveApplicant] = useState<Applicant | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Check local storage session
     const s = localStorage.getItem("sfa_session_postulante");
     setSession(s);
 
-    if (s) {
-      setLoading(true);
-      fetchApplicantByDni(s).then((apiApp) => {
-        if (apiApp) {
-          setLiveApplicant(apiApp);
-        }
-        setLoading(false);
-      }).catch((err) => {
-        console.error("Error fetching REST API applicant in PostulanteRouter:", err);
-        setLoading(false);
-      });
-    } else {
+    if (!s) {
       setLoading(false);
+      return;
     }
 
-    let unsubscribe: (() => void) | undefined = undefined;
-    if (isFirestoreEnabled && s && db) {
-      const docRef = doc(db, "applicants", s);
-      unsubscribe = onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          setLiveApplicant({ id: docSnap.id, ...docSnap.data() } as unknown as Applicant);
-        }
-      }, (err) => {
-        console.error("Error watching live applicant profile:", err);
-      });
-    }
+    let cancelled = false;
+    const loadFromMongo = (showSpinner: boolean) => {
+      if (showSpinner) setLoading(true);
+      fetchApplicantByDni(s)
+        .then((apiApp) => {
+          if (!cancelled && apiApp) {
+            setLiveApplicant(apiApp);
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching REST API applicant in PostulanteRouter:", err);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    };
 
+    loadFromMongo(true);
+    const onFocus = () => loadFromMongo(false);
+    window.addEventListener("focus", onFocus);
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      cancelled = true;
+      window.removeEventListener("focus", onFocus);
     };
   }, []);
 
-  // Local fallback resolve
   const currentDni = session || "";
-  let localApp = applicants.find((a) => 
-    a.id === currentDni || 
-    a.uid === currentDni || 
-    a.applicantCode === currentDni || 
-    a.dni === currentDni ||
-    (a as any)._id === currentDni
+  const localApp = applicants.find(
+    (a) =>
+      a.id === currentDni ||
+      a.uid === currentDni ||
+      a.applicantCode === currentDni ||
+      a.dni === currentDni ||
+      (a as any)._id === currentDni
   );
 
-  if (!localApp) {
-    try {
-      const savedApps = localStorage.getItem("sfa_applicants");
-      if (savedApps) {
-        const parsed = JSON.parse(savedApps);
-        localApp = parsed.find((a: any) => a.dni === currentDni || a.applicantCode === currentDni);
-      }
-    } catch (e) {}
-  }
+  let applicantToRender: Applicant | null = liveApplicant
+    ? ({ ...(localApp || {}), ...liveApplicant } as Applicant)
+    : localApp || null;
 
-  let applicantToRender: Applicant | null = liveApplicant ? { ...localApp, ...liveApplicant } as Applicant : (localApp || null);
+  if (applicantToRender) {
+    const rawDocs: any = {
+      ...(localApp?.docs || {}),
+      ...(liveApplicant?.docs || {}),
+    };
+    const normalizedDocs: any = {};
 
-  // Merge admin-validated values so stale API responses don't wipe out approvals
-  if (localApp && applicantToRender) {
-    if (localApp.paymentStatus === "Validado") {
-      applicantToRender.paymentStatus = "Validado";
-    }
-    if (localApp.folderStatus === "Approved" || localApp.folderStatus === "Enrolled") {
-      applicantToRender.folderStatus = localApp.folderStatus;
-    }
-    if (localApp.admitted) {
-      applicantToRender.admitted = true;
-    }
-    if (localApp.docs) {
-      const mergedDocs = { ...(applicantToRender.docs || {}) };
-      for (const [key, val] of Object.entries(localApp.docs)) {
-        const d = val as any;
-        if (d?.status === "Validado" || d?.status === "Observado") {
-          mergedDocs[key as keyof typeof mergedDocs] = { ...(mergedDocs[key as keyof typeof mergedDocs] || {}), ...d };
-        }
-      }
-      applicantToRender.docs = mergedDocs as any;
-    }
-  }
-
-  // Merge dedicated sfa_doc_status_${currentDni}
-  if (applicantToRender && currentDni) {
-    try {
-      const savedDocs = localStorage.getItem(`sfa_doc_status_${currentDni}`);
-      if (savedDocs) {
-        const parsed = JSON.parse(savedDocs);
-        const existingDocs = (applicantToRender as any).docs || {};
-        const statusRank: Record<string, number> = {
-          "No Enviado": 0, "Pendiente": 1, "Observado": 2, "Validado": 3
-        };
-        const mergedDocs: any = { ...existingDocs };
-        for (const [key, persisted] of Object.entries(parsed)) {
-          const live = existingDocs[key];
-          const liveRank = statusRank[live?.status || "No Enviado"] ?? 0;
-          const persistedRank = statusRank[(persisted as any)?.status || "No Enviado"] ?? 0;
-          // Priority to whichever has higher validation rank (Validado > Observado > Pendiente)
-          if (persistedRank > liveRank) {
-            mergedDocs[key] = { ...live, ...(persisted as any) };
-          }
-        }
-        applicantToRender = { ...applicantToRender, docs: mergedDocs as any } as Applicant;
-      }
-    } catch (e) {
-      console.warn("Could not read doc status from localStorage:", e);
-    }
-
-    // Rehydrate individual fileDataUrl and voucher data from localStorage
-    if (applicantToRender?.docs) {
-      const rehydratedDocs = { ...applicantToRender.docs } as any;
-      for (const k of ["dniFile", "certificadoFile", "partidaFile", "fotoFile"]) {
-        let cachedUrl: string | null = null;
-        try {
-          cachedUrl = localStorage.getItem(`sfa_file_data_${currentDni}_${k}`);
-        } catch (e) {}
-
-        const finalUrl = rehydratedDocs[k]?.fileDataUrl || cachedUrl;
-        if (finalUrl) {
-          rehydratedDocs[k] = { ...rehydratedDocs[k], fileDataUrl: finalUrl };
-        } else {
-          // Si no hay archivo de imagen fisica, figura estrictamente como No Enviado
-          rehydratedDocs[k] = {
-            status: "No Enviado",
-            fileName: undefined,
-            fileDataUrl: undefined,
-            observations: rehydratedDocs[k]?.observations
-          };
-        }
-      }
-      applicantToRender.docs = rehydratedDocs;
-    }
-
-    if (applicantToRender) {
-      let cachedVoucher: string | null = null;
+    for (const k of DOC_KEYS) {
+      const localDoc = (localApp?.docs as any)?.[k];
+      const liveDoc = (liveApplicant?.docs as any)?.[k];
+      let cachedUrl: string | null = null;
       try {
-        cachedVoucher = localStorage.getItem(`sfa_voucher_data_${currentDni}`);
+        cachedUrl = localStorage.getItem(`sfa_file_data_${applicantToRender.dni}_${k}`);
       } catch (e) {}
 
-      const effectiveVoucherUrl = applicantToRender.paymentVoucherUrl || cachedVoucher || undefined;
-      if (effectiveVoucherUrl) {
-        applicantToRender.paymentVoucherUrl = effectiveVoucherUrl;
-      }
+      const finalUrl = liveDoc?.fileDataUrl || localDoc?.fileDataUrl || cachedUrl || undefined;
+      const mergedDoc = { ...(localDoc || {}), ...(liveDoc || {}) };
 
-      // Si el pago no está validado por tesorería y fue declarado como voucher pero no existe imagen física:
-      // figura estrictamente como No Pagado (como si no hubiera enviado aún) para permitir el registro real
-      if (applicantToRender.paymentStatus !== "Validado") {
-        const isVoucherSubmission = applicantToRender.paymentType === "voucher" ||
-          Boolean(applicantToRender.paymentVoucherFileName) ||
-          Boolean(applicantToRender.paymentOperation && /\.(png|jpg|jpeg|webp)$/i.test(applicantToRender.paymentOperation));
-
-        if (isVoucherSubmission && !effectiveVoucherUrl) {
-          applicantToRender.paymentStatus = "No Pagado";
-          applicantToRender.paymentOperation = undefined;
-          applicantToRender.paymentVoucherFileName = undefined;
-          applicantToRender.paymentVoucherUrl = undefined;
-          applicantToRender.paymentType = undefined;
-          try {
-            localStorage.removeItem(`sfa_payment_status_${currentDni}`);
-            localStorage.removeItem(`sfa_voucher_data_${currentDni}`);
-          } catch (e) {}
-        }
+      if (finalUrl) {
+        normalizedDocs[k] = {
+          ...mergedDoc,
+          status:
+            mergedDoc.status && mergedDoc.status !== "No Enviado"
+              ? mergedDoc.status
+              : "Pendiente",
+          fileDataUrl: finalUrl,
+        };
+      } else {
+        // Sin imagen física real en MongoDB, figura estrictamente como No Enviado
+        normalizedDocs[k] = {
+          status: "No Enviado",
+          fileName: undefined,
+          fileDataUrl: undefined,
+          observations: mergedDoc?.observations,
+        };
       }
     }
+
+    applicantToRender = {
+      ...applicantToRender,
+      docs: normalizedDocs,
+    };
   }
 
-
   const handleUpdateLiveApplicant = async (updated: Applicant) => {
-    // Update locally immediately (full data with fileDataUrl for current session)
-    onUpdateApplicant(updated);
     setLiveApplicant(updated);
 
-    // Save doc status/fileName and cache base64 images per-document
     if (updated.docs) {
-      const docsForStorage: any = {};
-      for (const [key, val] of Object.entries(updated.docs)) {
-        const d = val as any;
-        docsForStorage[key] = {
-          status: d.status,
-          fileName: d.fileName,
-          observations: d.observations
-        };
-        if (d.fileDataUrl) {
+      for (const k of DOC_KEYS) {
+        const d = (updated.docs as any)[k];
+        if (d?.fileDataUrl) {
           try {
-            localStorage.setItem(`sfa_file_data_${updated.dni}_${key}`, d.fileDataUrl);
-          } catch (e) {
-            console.warn(`Could not save file data for ${key}:`, e);
-          }
+            localStorage.setItem(`sfa_file_data_${updated.dni}_${k}`, d.fileDataUrl);
+          } catch (e) {}
         }
-      }
-      try {
-        localStorage.setItem(`sfa_doc_status_${updated.dni}`, JSON.stringify(docsForStorage));
-      } catch (e) {
-        console.warn("Could not save doc status to localStorage:", e);
       }
     }
 
     if (updated.paymentVoucherUrl) {
       try {
         localStorage.setItem(`sfa_voucher_data_${updated.dni}`, updated.paymentVoucherUrl);
-      } catch (e) {
-        console.warn("Could not save payment voucher url to localStorage:", e);
-      }
+      } catch (e) {}
     }
 
-    // Persist to NestJS Backend (MongoDB) including fileDataUrl and voucher data
-    try {
-      await updateApplicant(updated.dni, updated as any);
-      console.log("Updated applicant in Backend REST API successfully!");
-    } catch (apiErr) {
-      console.error("Error saving updated applicant to REST API:", apiErr);
-    }
-    
-    // Optional Firestore synchronization when explicitly enabled.
-    if (isFirestoreEnabled && session) {
-      try {
-        await saveDocumentGeneric("applicants", session, updated); // full data with fileDataUrl
-        console.log("Updated live applicant profile (with images) in Firestore!");
-      } catch (err) {
-        console.error("Error saving updated applicant to Firestore:", err);
-      }
-    }
+    // Actualiza el estado global y persiste en MongoDB con fileDataUrl completo
+    onUpdateApplicant(updated);
   };
-
 
   if (loading) {
     return (
@@ -269,11 +164,11 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
           <div className="space-y-2">
             <h3 className="text-white font-black text-lg uppercase tracking-wider">Acceso Restringido</h3>
             <p className="text-slate-400 text-xs font-medium leading-relaxed">
-              Su sesión de admisión ha expirado o no se encuentra autenticado en Firebase. Por favor, vuelva a ingresar.
+              Su sesión de admisión ha expirado o no se encuentra autenticado. Por favor, vuelva a ingresar.
             </p>
           </div>
           <div className="pt-2">
-            <Button 
+            <Button
               onClick={onLogout}
               className="w-full bg-[#9F062A] hover:bg-[#800521] text-white uppercase text-xs font-bold tracking-widest rounded-lg flex items-center justify-center gap-2"
             >
@@ -286,7 +181,7 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
   }
 
   return (
-    <PostulanteDashboard 
+    <PostulanteDashboard
       applicant={applicantToRender}
       enrollments={enrollments}
       onUpdateApplicant={handleUpdateLiveApplicant}
@@ -295,5 +190,4 @@ export default function PostulanteRouter({ applicants, enrollments, onUpdateAppl
       onGoToPortal={onGoToPortal}
     />
   );
-
 }

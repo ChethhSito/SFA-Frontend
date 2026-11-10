@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FileSpreadsheet, X, FileText, CheckCircle2, AlertTriangle, Clock, Eye, XCircle, Compass } from "lucide-react";
 import { Applicant, AdmissionPeriod } from "../../../types";
+import { fetchApplicantByDni } from "../../../services/api";
 
 interface DossierInspectionModalProps {
   selectedDossierAppDni: string | null;
@@ -38,64 +39,66 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
   sanitizePeriodName,
   notify,
 }) => {
+  const [freshApp, setFreshApp] = useState<Applicant | null>(null);
+
+  useEffect(() => {
+    if (!selectedDossierAppDni) {
+      setFreshApp(null);
+      return;
+    }
+    let cancelled = false;
+    fetchApplicantByDni(selectedDossierAppDni)
+      .then((apiApp) => {
+        if (!cancelled && apiApp) {
+          setFreshApp(apiApp);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDossierAppDni]);
+
   if (!selectedDossierAppDni) return null;
 
-  const app = applicants.find((a) => a.dni === selectedDossierAppDni);
+  const baseApp = applicants.find((a) => a.dni === selectedDossierAppDni);
+  const app = freshApp && freshApp.dni === selectedDossierAppDni
+    ? ({ ...(baseApp || {}), ...freshApp, docs: { ...(baseApp?.docs || {}), ...(freshApp.docs || {}) } } as Applicant)
+    : baseApp;
   if (!app) return null;
 
-  let localDocStatus: any = null;
-  try {
-    const raw = localStorage.getItem(`sfa_doc_status_${app.dni}`);
-    if (raw) localDocStatus = JSON.parse(raw);
-  } catch (e) {}
-
-  let localPayStatus: string | null = null;
-  try {
-    localPayStatus = localStorage.getItem(`sfa_payment_status_${app.dni}`);
-  } catch (e) {}
-
-  const effectivePaymentStatus = (localPayStatus === "Validado" || app.paymentStatus === "Validado")
-    ? "Validado"
-    : (app.paymentStatus || "Pendiente");
+  const effectivePaymentStatus = app.paymentStatus || "No Pagado";
 
   const rawAppDocs = app.docs || {};
+  const buildDocEntry = (key: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile") => {
+    const raw = (rawAppDocs as any)[key] || (baseApp?.docs as any)?.[key] || {};
+    const freshRaw = (freshApp?.docs as any)?.[key] || {};
+    const storedUrl =
+      typeof window !== "undefined" ? localStorage.getItem(`sfa_file_data_${app.dni}_${key}`) : null;
+    const fileDataUrl = freshRaw.fileDataUrl || raw.fileDataUrl || storedUrl || undefined;
+    if (!fileDataUrl) {
+      return {
+        status: "No Enviado" as const,
+        fileName: undefined,
+        fileDataUrl: undefined,
+        observations: raw.observations || freshRaw.observations,
+      };
+    }
+    const mergedStatus = raw.status || freshRaw.status;
+    return {
+      ...freshRaw,
+      ...raw,
+      status: mergedStatus && mergedStatus !== "No Enviado" ? mergedStatus : ("Pendiente" as const),
+      fileName: raw.fileName || freshRaw.fileName || `${key}.jpg`,
+      fileDataUrl,
+    };
+  };
+
   const appDocs: Record<"dniFile" | "certificadoFile" | "partidaFile" | "fotoFile", any> = {
-    dniFile: {
-      status: "No Enviado" as const,
-      ...(rawAppDocs.dniFile || {}),
-      ...(localDocStatus?.dniFile || {}),
-      fileDataUrl:
-        rawAppDocs.dniFile?.fileDataUrl ||
-        (typeof window !== "undefined" ? localStorage.getItem(`sfa_file_data_${app.dni}_dniFile`) : null) ||
-        undefined,
-    },
-    certificadoFile: {
-      status: "No Enviado" as const,
-      ...(rawAppDocs.certificadoFile || {}),
-      ...(localDocStatus?.certificadoFile || {}),
-      fileDataUrl:
-        rawAppDocs.certificadoFile?.fileDataUrl ||
-        (typeof window !== "undefined" ? localStorage.getItem(`sfa_file_data_${app.dni}_certificadoFile`) : null) ||
-        undefined,
-    },
-    partidaFile: {
-      status: "No Enviado" as const,
-      ...(rawAppDocs.partidaFile || {}),
-      ...(localDocStatus?.partidaFile || {}),
-      fileDataUrl:
-        rawAppDocs.partidaFile?.fileDataUrl ||
-        (typeof window !== "undefined" ? localStorage.getItem(`sfa_file_data_${app.dni}_partidaFile`) : null) ||
-        undefined,
-    },
-    fotoFile: {
-      status: "No Enviado" as const,
-      ...(rawAppDocs.fotoFile || {}),
-      ...(localDocStatus?.fotoFile || {}),
-      fileDataUrl:
-        rawAppDocs.fotoFile?.fileDataUrl ||
-        (typeof window !== "undefined" ? localStorage.getItem(`sfa_file_data_${app.dni}_fotoFile`) : null) ||
-        undefined,
-    },
+    dniFile: buildDocEntry("dniFile"),
+    certificadoFile: buildDocEntry("certificadoFile"),
+    partidaFile: buildDocEntry("partidaFile"),
+    fotoFile: buildDocEntry("fotoFile"),
   };
 
   const isAllValid = 
@@ -166,7 +169,7 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
               <div className="grid grid-cols-1 gap-4">
                 {docsConfig.map((item) => {
                   const docState = appDocs[item.key] || { status: "No Enviado" as const };
-                  const isUploaded = Boolean(docState.fileDataUrl || (docState.fileName && docState.status !== "No Enviado"));
+                  const isUploaded = Boolean(docState.fileDataUrl);
                   const obsInputKey = `${app.dni}_${item.key}`;
                   const currentObsText = individualDocObs[obsInputKey] || "";
 
@@ -220,11 +223,18 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                           </span>
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={async () => {
                               const storedDataUrl = typeof window !== "undefined"
                                 ? localStorage.getItem(`sfa_file_data_${app.dni}_${item.key}`)
                                 : null;
-                              const effectiveUrl = docState.fileDataUrl || storedDataUrl || null;
+                              let effectiveUrl = docState.fileDataUrl || storedDataUrl || null;
+                              if (!effectiveUrl) {
+                                const reloaded = await fetchApplicantByDni(app.dni);
+                                if (reloaded) {
+                                  setFreshApp(reloaded);
+                                  effectiveUrl = (reloaded.docs as any)?.[item.key]?.fileDataUrl || null;
+                                }
+                              }
                               triggerAdminPreview(
                                 item.label + " - " + `${app.name} ${app.lastName}`.trim().toUpperCase(),
                                 docState.fileName || `${item.key}.jpg`,

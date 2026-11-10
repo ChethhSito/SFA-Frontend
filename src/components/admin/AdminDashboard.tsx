@@ -613,12 +613,6 @@ export default function AdminDashboard({
           (!updatedDocs.partidaFile || updatedDocs.partidaFile.status === "Validado" || updatedDocs.partidaFile.status === "No Enviado") && 
           updatedDocs.fotoFile.status === "Validado";
 
-        try {
-          localStorage.setItem(`sfa_doc_status_${applicantDni}`, JSON.stringify(updatedDocs));
-        } catch (e) {
-          console.warn(e);
-        }
-
         return {
           ...app,
           folderStatus: allDocsValidated ? ("Approved" as const) : ("Pending" as const),
@@ -656,17 +650,13 @@ export default function AdminDashboard({
           const docKeys: Array<"dniFile" | "certificadoFile" | "partidaFile" | "fotoFile"> = ["dniFile", "certificadoFile", "partidaFile", "fotoFile"];
           docKeys.forEach((key) => {
             const currentDoc = updatedDocs[key] || { status: "No Enviado" };
-            updatedDocs[key] = {
-              ...currentDoc,
-              status: "Validado" as const
-            };
+            if (currentDoc.fileDataUrl) {
+              updatedDocs[key] = {
+                ...currentDoc,
+                status: "Validado" as const
+              };
+            }
           });
-        }
-
-        try {
-          localStorage.setItem(`sfa_doc_status_${applicantDni}`, JSON.stringify(updatedDocs));
-        } catch (e) {
-          console.warn(e);
         }
 
         return {

@@ -54,28 +54,9 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
         const totalInPeriod = activeApplicants.length;
         const pendingF = activeApplicants.filter((a) => a.folderStatus === "Pending").length;
         const observedF = activeApplicants.filter((a) => a.folderStatus === "Observed").length;
-        const approvedF = activeApplicants.filter((a) => {
-          let folderStatus = a.folderStatus;
-          try {
-            const rawDocs = localStorage.getItem(`sfa_doc_status_${a.dni}`);
-            if (rawDocs) {
-              const parsed = JSON.parse(rawDocs);
-              if (parsed.dniFile?.status === "Validado" && parsed.certificadoFile?.status === "Validado" && parsed.fotoFile?.status === "Validado") {
-                folderStatus = "Approved";
-              }
-            }
-          } catch (e) {}
-          return folderStatus === "Approved";
-        }).length;
+        const approvedF = activeApplicants.filter((a) => a.folderStatus === "Approved").length;
         const enrolledF = activeApplicants.filter((a) => a.folderStatus === "Enrolled").length;
-        const totalRevenue = activeApplicants.filter((a) => {
-          let payStatus = a.paymentStatus;
-          try {
-            const s = localStorage.getItem(`sfa_payment_status_${a.dni}`);
-            if (s === "Validado") payStatus = "Validado";
-          } catch (e) {}
-          return payStatus === "Validado";
-        }).length * 120;
+        const totalRevenue = activeApplicants.filter((a) => a.paymentStatus === "Validado").length * 120;
 
         return (
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 text-xs font-bold font-mono">
@@ -222,37 +203,23 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white font-semibold text-slate-700">
                   {filteredApplicants.map((app) => {
-                    let localDocStatus: any = null;
-                    try {
-                      const raw = localStorage.getItem(`sfa_doc_status_${app.dni}`);
-                      if (raw) localDocStatus = JSON.parse(raw);
-                    } catch (e) {}
+                    const effectivePaymentStatus = app.paymentStatus || "No Pagado";
 
-                    let localPayStatus: string | null = null;
-                    try {
-                      localPayStatus = localStorage.getItem(`sfa_payment_status_${app.dni}`);
-                    } catch (e) {}
-
-                    const effectivePaymentStatus = (localPayStatus === "Validado" || app.paymentStatus === "Validado")
-                      ? "Validado"
-                      : (app.paymentStatus || "Pendiente");
-
-                    const rawDocs = app.docs || {};
-                    const appDocs = {
-                      dniFile: { status: "No Enviado" as const },
-                      certificadoFile: { status: "No Enviado" as const },
-                      partidaFile: { status: "No Enviado" as const },
-                      fotoFile: { status: "No Enviado" as const },
-                      ...rawDocs,
-                      ...(localDocStatus || {})
-                    };
-
+                    const rawDocs: any = app.docs || {};
                     const docsListKeys: Array<"dniFile" | "certificadoFile" | "partidaFile" | "fotoFile"> = [
                       "dniFile",
                       "certificadoFile",
                       "partidaFile",
                       "fotoFile",
                     ];
+                    const appDocs: any = {};
+                    for (const k of docsListKeys) {
+                      const d = rawDocs[k];
+                      const hasImg = Boolean(d?.fileDataUrl);
+                      appDocs[k] = hasImg
+                        ? d
+                        : { status: "No Enviado" as const };
+                    }
                     const valCount = docsListKeys.filter((k) => appDocs[k]?.status === "Validado").length;
                     const obsCount = docsListKeys.filter((k) => appDocs[k]?.status === "Observado").length;
                     const pendCount = docsListKeys.filter((k) => appDocs[k]?.status === "Pendiente").length;
