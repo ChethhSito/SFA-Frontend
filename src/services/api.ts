@@ -21,6 +21,7 @@ async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T 
         "Content-Type": "application/json",
         ...options?.headers,
         ...authorization,
+        ...(endpoint.startsWith("/users") && !endpoint.startsWith("/users/login") && !endpoint.startsWith("/users/activate") && localStorage.getItem("sfa_staff_token") ? { Authorization: `Bearer ${localStorage.getItem("sfa_staff_token")}` } : {}),
       },
     });
 
@@ -286,16 +287,25 @@ export async function fetchUsers(): Promise<SystemUser[] | null> {
   })) as SystemUser[];
 }
 
-export async function createUser(user: Partial<SystemUser>): Promise<SystemUser | null> {
+export async function createUser(user: Partial<SystemUser>): Promise<{ user: SystemUser; invitationSent: boolean } | null> {
   const item = await fetchJson<any>("/users", {
     method: "POST",
     body: JSON.stringify(user)
   });
   if (!item) return null;
-  return {
-    ...item,
-    id: item.id || item._id
-  } as SystemUser;
+  return item;
+}
+
+export async function loginStaff(identifier: string, password: string): Promise<{ token: string; user: SystemUser } | null> {
+  return fetchJson<{ token: string; user: SystemUser }>("/users/login", { method: "POST", body: JSON.stringify({ identifier, password }) });
+}
+
+export async function activateStaff(token: string, password: string): Promise<boolean> {
+  return !!(await fetchJson("/users/activate", { method: "POST", body: JSON.stringify({ token, password }) }));
+}
+
+export async function resendStaffInvitation(id: string): Promise<boolean> {
+  return !!(await fetchJson<{ invitationSent: boolean }>(`/users/${encodeURIComponent(id)}/resend-invitation`, { method: "POST" }))?.invitationSent;
 }
 
 export async function updateUser(id: string, data: Partial<SystemUser>): Promise<SystemUser | null> {

@@ -1,7 +1,9 @@
 import React from "react";
 import { MapPin, Phone, Mail } from "lucide-react";
+import type { PublicCareer } from "../../services/publicContent";
 
 interface PortalFooterProps {
+  careers: PublicCareer[];
   admissionLabel: string;
   setCurrentTab: (tab: "inicio" | "nosotros" | "programas" | "admision" | "transparencia" | "contactanos") => void;
   setSelectedProgramId: (id: string) => void;
@@ -9,6 +11,7 @@ interface PortalFooterProps {
 }
 
 export const PortalFooter: React.FC<PortalFooterProps> = ({
+  careers,
   admissionLabel,
   setCurrentTab,
   setSelectedProgramId,
@@ -39,10 +42,10 @@ export const PortalFooter: React.FC<PortalFooterProps> = ({
         </div>
 
         <div>
-          <h5 className="text-white font-extrabold uppercase tracking-wider mb-3 text-[11px]">Carreras Licenciadas</h5>
+          <h5 className="text-white font-extrabold uppercase tracking-wider mb-3 text-[11px]">Programas de estudio</h5>
           <ul className="space-y-2 text-[11px] font-medium">
-            <li><button onClick={() => { setSelectedProgramId("electronica"); setCurrentTab("programas"); }} className="hover:text-amber-300 transition-colors text-slate-200 cursor-pointer">Electricidad Industrial</button></li>
-            <li><button onClick={() => { setSelectedProgramId("contabilidad"); setCurrentTab("programas"); }} className="hover:text-amber-300 transition-colors text-slate-200 cursor-pointer">Contabilidad Financiera</button></li>
+            {careers.map(career => <li key={career.id}><button onClick={() => { setSelectedProgramId(career.id); setCurrentTab("programas"); }} className="hover:text-amber-300 transition-colors text-slate-200 cursor-pointer">{career.name}</button></li>)}
+            {careers.length === 0 && <li className="text-slate-400">Sin programas publicados</li>}
           </ul>
         </div>
 
@@ -57,9 +60,9 @@ export const PortalFooter: React.FC<PortalFooterProps> = ({
 
         <div className="space-y-2 font-medium">
           <h5 className="text-white font-extrabold uppercase tracking-wider mb-3 text-[11px]">Ubicación Institucional</h5>
-          <p className="flex items-center gap-1.5 text-slate-200"><MapPin className="w-4 h-4 text-amber-300 shrink-0" /> Av. Pachacútec Cdra. 50, Villa María del Triunfo</p>
-          <p className="flex items-center gap-1.5 text-slate-200"><Phone className="w-4 h-4 text-amber-300 shrink-0" /> (01) 500 6177</p>
-          <p className="flex items-center gap-1.5 text-slate-200"><Mail className="w-4 h-4 text-amber-300 shrink-0" /> admision@iestpsfa.edu.pe</p>
+          <p className="flex items-center gap-1.5 text-slate-200"><MapPin className="w-4 h-4 text-amber-300 shrink-0" /> Av. Prolongación Pachacútec Cdra. 50, Villa María del Triunfo</p>
+          <p className="flex items-center gap-1.5 text-slate-200"><Phone className="w-4 h-4 text-amber-300 shrink-0" /> 970 776 040</p>
+          <p className="flex items-center gap-1.5 text-slate-200"><Mail className="w-4 h-4 text-amber-300 shrink-0" /> sec.academicaiestpsfa@gmail.com</p>
         </div>
 
       </div>

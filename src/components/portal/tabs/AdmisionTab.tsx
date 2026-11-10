@@ -1,7 +1,10 @@
 import React from "react";
 import { Landmark, FileCheck, Check, CheckCircle2, AlertCircle, Loader2, Send, ArrowRight } from "lucide-react";
+import type { PublicCareer, PublicFee } from "../../../services/publicContent";
 
 interface AdmisionTabProps {
+  careers: PublicCareer[];
+  fees: PublicFee[];
   admissionLabel: string;
   registrationOpen: boolean;
   dniInput: string;
@@ -26,6 +29,8 @@ interface AdmisionTabProps {
 }
 
 export const AdmisionTab: React.FC<AdmisionTabProps> = ({
+  careers,
+  fees,
   admissionLabel,
   registrationOpen,
   dniInput,
@@ -74,24 +79,11 @@ export const AdmisionTab: React.FC<AdmisionTabProps> = ({
                 </div>
                 <div>
                   <h3 className="text-sm font-black text-slate-900 uppercase">Tasas Ordinarias de Admisión</h3>
-                  <span className="text-[10px] text-slate-500 font-medium">Aranceles oficiales aprobados por la Dirección</span>
+                  <span className="text-[10px] text-slate-500 font-medium">Montos ficticios de demostración configurados en MAF</span>
                 </div>
               </div>
 
-              <div className="space-y-3 text-xs font-semibold">
-                <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <span className="text-slate-700">Derecho de Examen de Admisión Ordinario</span>
-                  <span className="text-[#9F062A] font-black text-sm">S/. 120.00</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <span className="text-slate-700">Matrícula Semestral Regular</span>
-                  <span className="text-[#9F062A] font-black text-sm">S/. 250.00</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-emerald-50 text-emerald-900 rounded-lg border border-emerald-200">
-                  <span className="font-bold">Pensión Mensual de Enseñanza</span>
-                  <span className="font-black text-sm text-emerald-700">S/. 0.00 (Gratuito)</span>
-                </div>
-              </div>
+              <div className="space-y-3 text-xs font-semibold">{fees.length ? fees.map((fee, index) => <div key={fee.id || fee.code || index} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-200 gap-3"><span className="text-slate-700">{fee.name || fee.concept || fee.code}</span><span className="text-[#9F062A] font-black text-sm whitespace-nowrap">S/ {Number(fee.amount ?? fee.price ?? 0).toFixed(2)}</span></div>) : <p className="text-slate-600">MAF todavía no ha publicado tasas vigentes.</p>}</div>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
@@ -118,7 +110,7 @@ export const AdmisionTab: React.FC<AdmisionTabProps> = ({
             <div className="bg-rose-50 border border-rose-200 p-5 rounded-xl text-xs space-y-2 text-rose-950">
               <span className="font-extrabold uppercase text-[#9F062A] block">¿Necesitas ayuda con tu inscripción?</span>
               <p className="font-medium leading-relaxed text-slate-700">
-                Comunícate con la Secretaría de Admisión llamando al <strong>01 500 6177</strong> o escribiendo a <strong>admision@iestpsfa.edu.pe</strong>.
+                Comunícate con la institución llamando al <strong>970 776 040</strong> o escribiendo a <strong>sec.academicaiestpsfa@gmail.com</strong>.
               </p>
             </div>
 
@@ -205,8 +197,8 @@ export const AdmisionTab: React.FC<AdmisionTabProps> = ({
                         onChange={(e) => setProgramSelection(e.target.value)}
                         className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 outline-none font-medium cursor-pointer"
                       >
-                        <option value="electronica">Electricidad Industrial</option>
-                        <option value="contabilidad">Contabilidad Financiera</option>
+                        <option value="">Seleccione un programa</option>
+                        {careers.map(career => <option key={career.id} value={career.id}>{career.name}</option>)}
                       </select>
                     </div>
                   </div>

@@ -57,7 +57,7 @@ export async function parseBankReport(file: File): Promise<BankRow[]> {
 export async function bankReconciliationRequest<T>(action: 'preview' | 'confirm', fileName: string, rows: BankRow[], obligations: MafObligation[], preview?: ReconciliationPreview): Promise<T> {
   const base = (import.meta.env.VITE_API_URL as string) || 'http://127.0.0.1:3001';
   const response = await fetch(`${base}/bank-reconciliation/${action}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('sfa_staff_token') || ''}` },
     body: JSON.stringify({ fileName, rows, obligations,
       expectedFingerprint: preview?.fingerprint,
       expectedObligationIds: preview?.results.filter(r => r.status === 'coincide').map(r => r.obligationId),

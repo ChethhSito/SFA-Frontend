@@ -1,6 +1,5 @@
 import React from "react";
-import { Layers, Plus } from "lucide-react";
-import Button from "../../ui/Button";
+import { Layers } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import PageTransition from "../../ui/PageTransition";
 import { MafObligation } from "../mafTypes";
@@ -9,12 +8,10 @@ import { Pagination, usePagination } from "../../ui/Pagination";
 
 interface RegistroTransaccionesTabProps {
   obligations: MafObligation[];
-  setShowAddObligationModal: (show: boolean) => void;
 }
 
 export const RegistroTransaccionesTab: React.FC<RegistroTransaccionesTabProps> = ({
-  obligations,
-  setShowAddObligationModal
+  obligations
 }) => {
   const sorted = newestObligations(obligations);
   const pagination = usePagination(sorted, 10, sorted[0]?.id, 'sfa_maf_page_size');
@@ -29,16 +26,8 @@ export const RegistroTransaccionesTab: React.FC<RegistroTransaccionesTabProps> =
                 Registro de Solicitudes y Obligaciones de Cobro Académico
               </CardTitle>
               <CardDescription>
-                Las solicitudes del estudiante llegan aquí desde su portal. La creación manual queda disponible para una llamada del apoderado, vinculada a un estudiante registrado.
+                Consulta las solicitudes generadas por estudiantes y docentes desde sus portales.
               </CardDescription>
-            </div>
-            <div>
-              <Button
-                onClick={() => setShowAddObligationModal(true)}
-                className="bg-slate-900 text-white hover:bg-slate-800 font-black text-xs uppercase tracking-widest px-4 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-md"
-              >
-                <Plus className="w-4 h-4" /> Generar Solicitud de Pago
-              </Button>
             </div>
           </div>
         </CardHeader>
@@ -63,8 +52,7 @@ export const RegistroTransaccionesTab: React.FC<RegistroTransaccionesTabProps> =
                     <td className="px-4 py-3">
                       <div className="font-extrabold text-slate-900 uppercase">{ab.studentName}</div>
                       <div className="text-[10px] text-slate-400 font-bold block">DNI: {ab.studentDni} | Periodo: {ab.period}</div>
-                      {ab.source && <div className="text-[10px] text-indigo-700 font-semibold">Origen: {ab.source === "estudiante" ? "Portal del estudiante" : "Llamada del apoderado"}</div>}
-                      {ab.source === "llamada_apoderado" && ab.requestedBy && <div className="text-[10px] text-slate-500">Solicitó: {ab.requestedBy}{ab.contactPhone ? ` · ${ab.contactPhone}` : ""}</div>}
+                      {ab.source && <div className="text-[10px] text-indigo-700 font-semibold">Origen: {ab.source === "estudiante" ? "Portal del estudiante" : ab.source === "docente" ? "Portal del docente" : "Registro anterior"}</div>}
                       {ab.requestReason && <div className="text-[10px] text-slate-500">Motivo: {ab.requestReason}</div>}
                     </td>
                     <td className="px-4 py-3">

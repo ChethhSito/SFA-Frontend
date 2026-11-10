@@ -5,7 +5,7 @@ import {
   Settings, Filter, UserCheck, Eye, Compass, Layers, Activity, AlertCircle, Edit3, Trash2
 } from "lucide-react";
 import { SystemUser, Role } from "../../types";
-import { fetchUsers, createUser, updateUser, deleteUser } from "../../services/api";
+import { fetchUsers, createUser, updateUser, deleteUser, resendStaffInvitation } from "../../services/api";
 import Button from "../ui/Button";
 import Badge from "../ui/Badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/Card";
@@ -19,6 +19,8 @@ interface SuperAdminDashboardProps {
   onLogout: () => void;
   onSwitchRole?: (role: Role, identifier: string) => void;
 }
+
+const MANAGED_ROLES: Role[] = ['administrador', 'mpa', 'mge', 'maf', 'docente'];
 
 const DEFAULT_SYSTEM_USERS: SystemUser[] = [
   {
@@ -97,16 +99,23 @@ const DEFAULT_SYSTEM_USERS: SystemUser[] = [
 
 export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<"usuarios" | "matriz" | "auditoria">("usuarios");
-  const [users, setUsers] = useState<SystemUser[]>(() => {
-    try {
-      const saved = localStorage.getItem("sfa_system_users");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
-    return DEFAULT_SYSTEM_USERS;
-  });
+  const [users, setUsers] = useState<SystemUser[]>([]);
+  const [declaredTeachers, setDeclaredTeachers] = useState<{ dni: string; name: string; lastName: string; email?: string; status?: string }[]>([]);
+  const [publicDocs, setPublicDocs] = useState<{ id: string; title: string; url: string }[]>([]);
+  const [docTitle, setDocTitle] = useState("");
+  const [docUrl, setDocUrl] = useState("");
+  useEffect(() => {
+    const base = (import.meta.env.VITE_API_URL as string) || "http://127.0.0.1:3001";
+    fetch(`${base}/mpa/teachers`).then(response => response.ok ? response.json() : []).then(items => setDeclaredTeachers(Array.isArray(items) ? items : [])).catch(() => setDeclaredTeachers([]));
+    fetch(`${base}/public-content/transparency`).then(response => response.ok ? response.json() : []).then(items => setPublicDocs(Array.isArray(items) ? items : [])).catch(() => setPublicDocs([]));
+  }, []);
+  const publishDocument = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const base = (import.meta.env.VITE_API_URL as string) || "http://127.0.0.1:3001";
+    const response = await fetch(`${base}/public-content/transparency`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('sfa_staff_token') || ''}` }, body: JSON.stringify({ title: docTitle, url: docUrl }) }).catch(() => null);
+    if (!response?.ok) { notify('No se pudo publicar el documento. Use un enlace HTTPS válido.', 'error'); return; }
+    const item = await response.json(); setPublicDocs([item, ...publicDocs]); setDocTitle(''); setDocUrl(''); notify('Documento publicado en Transparencia.', 'success');
+  };
 
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -126,7 +135,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
     phone: "",
     role: "administrador" as Role,
     assignedModule: "MAMC - Admisión y Matrícula",
-    password: "123",
+    password: "",
   });
 
   // Reusable feedback states (Toasts y Modales de Confirmación)
@@ -155,21 +164,8 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
   useEffect(() => {
     setIsLoading(true);
     fetchUsers().then((apiUsers) => {
-      if (apiUsers && apiUsers.length > 0) {
-        setUsers((prev) => {
-          const merged = [...prev];
-          apiUsers.forEach((au) => {
-            const idx = merged.findIndex((m) => m.dni === au.dni || m.email === au.email || m.id === au.id);
-            if (idx >= 0) {
-              merged[idx] = { ...merged[idx], ...au };
-            } else {
-              merged.push(au);
-            }
-          });
-          localStorage.setItem("sfa_system_users", JSON.stringify(merged));
-          return merged;
-        });
-      }
+      if (apiUsers) setUsers(apiUsers.filter(user => MANAGED_ROLES.includes(user.role)));
+      else notify("No se pudo cargar el registro de cuentas desde MongoDB.", "error");
       setIsLoading(false);
     }).catch((err) => {
       console.error("Error fetching REST API system users:", err);
@@ -179,9 +175,6 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
 
   const saveUsersState = (newList: SystemUser[]) => {
     setUsers(newList);
-    try {
-      localStorage.setItem("sfa_system_users", JSON.stringify(newList));
-    } catch (e) {}
   };
 
   const handleOpenCreateModal = () => {
@@ -194,7 +187,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
       phone: "",
       role: "administrador",
       assignedModule: "MAMC - Admisión y Matrícula",
-      password: "123",
+      password: "",
       status: "Activo"
     });
     setIsModalOpen(true);
@@ -210,7 +203,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
       phone: usr.phone || "",
       role: usr.role,
       assignedModule: usr.assignedModule || "MAMC",
-      password: usr.password || "123",
+      password: "",
       status: usr.status
     });
     setIsModalOpen(true);
@@ -222,9 +215,6 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
     else if (role === "mge") moduleName = "MGE - Gestión de Estudiantes";
     else if (role === "maf") moduleName = "MAF - Administración y Finanzas";
     else if (role === "docente") moduleName = "Intranet Docente";
-    else if (role === "alumno") moduleName = "Intranet Alumno";
-    else if (role === "postulante") moduleName = "Portal Postulante";
-    else if (role === "superadmin") moduleName = "Administración del Sistema";
 
     setFormData((prev) => ({ ...prev, role, assignedModule: moduleName }));
   };
@@ -233,6 +223,10 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
     e.preventDefault();
     if (!formData.dni || !formData.name || !formData.email) {
       notify("Por favor complete los campos obligatorios: DNI, Nombre y Correo Institucional.", "warning");
+      return;
+    }
+    if (!['administrador', 'mpa', 'mge', 'maf', 'docente'].includes(formData.role)) {
+      notify("Solo puede crear accesos de gestores y docentes.", "warning");
       return;
     }
 
@@ -249,13 +243,12 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
         phone: formData.phone,
         role: formData.role,
         assignedModule: formData.assignedModule,
-        password: formData.password,
         status: formData.status
       };
 
-      const newList = users.map((u) => (u.id === editingUser.id ? updated : u));
-      saveUsersState(newList);
-      await updateUser(editingUser.id, updated).catch(err => console.error("Error updating user in API:", err));
+      const saved = await updateUser(editingUser.id, updated);
+      if (!saved) { notify("No se pudo guardar el cambio en MongoDB.", "error"); setIsSubmitting(false); return; }
+      saveUsersState(users.map((u) => (u.id === editingUser.id ? saved : u)));
       notify(`Usuario ${fullName} actualizado correctamente.`, "success");
     } else {
       const newUser: SystemUser = {
@@ -268,14 +261,13 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
         role: formData.role,
         assignedModule: formData.assignedModule,
         status: formData.status,
-        password: formData.password,
         createdAt: new Date().toISOString().split("T")[0]
       };
 
-      const newList = [newUser, ...users];
-      saveUsersState(newList);
-      await createUser(newUser).catch(err => console.error("Error creating user in API:", err));
-      notify(`¡Nuevo Gestor/Usuario ${fullName} registrado con éxito en el sistema!`, "success");
+      const saved = await createUser(newUser);
+      if (!saved) { notify("No se pudo crear la cuenta en MongoDB. Revise el DNI y el correo.", "error"); setIsSubmitting(false); return; }
+      saveUsersState([saved.user, ...users]);
+      notify(saved.invitationSent ? `Cuenta creada. Se envió la invitación a ${formData.email}.` : "Cuenta creada, pero el correo no se envió. Configure Brevo y reenvíe la invitación.", saved.invitationSent ? "success" : "warning");
     }
 
     setIsSubmitting(false);
@@ -283,15 +275,18 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
   };
 
   const handleToggleStatus = async (usr: SystemUser) => {
+    if (['superadmin', 'alumno', 'postulante'].includes(usr.role)) return;
+    if (usr.status === 'Pendiente') { notify('La persona debe activar su cuenta desde el correo antes de habilitarla.', 'warning'); return; }
     const nextStatus = usr.status === "Activo" ? "Bloqueado" : "Activo";
     const updated = { ...usr, status: nextStatus as any };
-    const newList = users.map((u) => (u.id === usr.id ? updated : u));
-    saveUsersState(newList);
-    await updateUser(usr.id, updated).catch(err => console.error("Error updating status in API:", err));
+    const saved = await updateUser(usr.id, updated);
+    if (!saved) { notify("No se pudo modificar el estado en MongoDB.", "error"); return; }
+    saveUsersState(users.map((u) => (u.id === usr.id ? saved : u)));
     notify(`Estado del usuario ${usr.displayName} cambiado a ${nextStatus}.`, "info");
   };
 
   const handleDeleteUser = (usr: SystemUser) => {
+    if (['superadmin', 'alumno', 'postulante'].includes(usr.role)) { notify("Esta cuenta no se gestiona desde SuperAdmin.", "warning"); return; }
     if (usr.role === "superadmin" && users.filter((u) => u.role === "superadmin").length <= 1) {
       notify("No se puede eliminar el único Super Administrador del sistema.", "warning");
       return;
@@ -305,9 +300,9 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
       cancelText: "Cancelar",
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
-        const newList = users.filter((u) => u.id !== usr.id);
-        saveUsersState(newList);
-        await deleteUser(usr.id).catch(err => console.error("Error deleting user in API:", err));
+        const removed = await deleteUser(usr.id);
+        if (!removed) { notify("No se pudo eliminar la cuenta en MongoDB.", "error"); return; }
+        saveUsersState(users.filter((u) => u.id !== usr.id));
         notify(`Usuario ${usr.displayName} eliminado del sistema.`, "success");
       }
     });
@@ -418,7 +413,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-3.5">
           <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-xs space-y-1">
-            <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">Total Usuarios</span>
+            <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">Cuentas gestionadas</span>
             <span className="text-2xl font-black text-slate-900 block">{users.length}</span>
           </div>
           <div className="bg-rose-50 border border-rose-200 p-4 rounded-xl shadow-xs space-y-1">
@@ -446,6 +441,17 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
         {/* TAB 1: GESTIÓN DE USUARIOS */}
         {activeTab === "usuarios" && (
           <PageTransition id="usuarios" className="space-y-4">
+            <div className="bg-white p-5 rounded-xl border border-slate-200">
+              <h3 className="font-black text-sm text-slate-900">Documentos de Transparencia</h3>
+              <p className="text-xs text-slate-600 mt-1">Publique enlaces oficiales HTTPS para mostrarlos en el portal público.</p>
+              <form onSubmit={publishDocument} className="flex flex-wrap gap-2 mt-4">
+                <input required maxLength={200} value={docTitle} onChange={event => setDocTitle(event.target.value)} placeholder="Título del documento" className="border rounded-lg p-2 text-xs flex-1 min-w-48" />
+                <input required type="url" pattern="https://.*" value={docUrl} onChange={event => setDocUrl(event.target.value)} placeholder="https://.../documento.pdf" className="border rounded-lg p-2 text-xs flex-1 min-w-48" />
+                <button className="bg-[#9F062A] text-white rounded-lg px-4 text-xs font-bold">Publicar</button>
+              </form>
+              <div className="mt-4 space-y-2">{publicDocs.map(doc => <div key={doc.id} className="flex items-center justify-between gap-3 text-xs border-t pt-2"><a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-[#9F062A] underline">{doc.title}</a><button onClick={async () => { const base = (import.meta.env.VITE_API_URL as string) || "http://127.0.0.1:3001"; const response = await fetch(`${base}/public-content/transparency/${encodeURIComponent(doc.id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('sfa_staff_token') || ''}` } }).catch(() => null); if (response?.ok) { setPublicDocs(publicDocs.filter(item => item.id !== doc.id)); notify('Documento retirado.', 'success'); } else notify('No se pudo retirar el documento.', 'error'); }} className="text-rose-700 font-bold">Retirar</button></div>)}</div>
+            </div>
+            <div className="bg-white p-5 rounded-xl border border-slate-200"><h3 className="font-black text-sm text-slate-900">Docentes declarados por MPA ({declaredTeachers.length})</h3><p className="text-xs text-slate-600 mt-1">MPA registra la vinculación académica; SuperAdmin habilita la cuenta de acceso por DNI.</p><div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">{declaredTeachers.map(teacher => { const account = users.find(user => user.role === 'docente' && user.dni === teacher.dni); return <div key={teacher.dni} className="border rounded-lg p-3 text-xs"><strong className="block">{teacher.name} {teacher.lastName}</strong><span className="text-slate-500">DNI {teacher.dni} · {teacher.status || 'Sin estado'}</span><p className="mt-2 font-bold text-[#9F062A]">{account ? `Acceso: ${account.status}` : 'Sin cuenta de acceso'}</p></div>; })}</div></div>
             {/* Search & Filter Bar */}
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
               <div className="relative flex-1">
@@ -468,14 +474,11 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
                     className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-[#9F062A]"
                   >
                     <option value="all">TODOS LOS ROLES</option>
-                    <option value="superadmin">Super Admin</option>
                     <option value="administrador">Gestor MAMC</option>
                     <option value="mpa">Gestor MPA</option>
                     <option value="mge">Gestor MGE</option>
                     <option value="maf">Gestor MAF</option>
                     <option value="docente">Docente</option>
-                    <option value="alumno">Alumno</option>
-                    <option value="postulante">Postulante</option>
                   </select>
                 </div>
 
@@ -489,6 +492,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
                     <option value="all">TODOS LOS ESTADOS</option>
                     <option value="Activo">Activos</option>
                     <option value="Bloqueado">Bloqueados</option>
+                    <option value="Pendiente">Invitación pendiente</option>
                   </select>
                 </div>
               </div>
@@ -535,6 +539,8 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
                           <td className="py-3.5 px-4">
                             {usr.status === "Activo" ? (
                               <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-bold text-[10px] uppercase rounded-full">Activo</span>
+                            ) : usr.status === "Pendiente" ? (
+                              <span className="px-2 py-0.5 bg-amber-100 text-amber-900 font-bold text-[10px] uppercase rounded-full">Invitación pendiente</span>
                             ) : (
                               <span className="px-2 py-0.5 bg-rose-100 text-rose-800 font-bold text-[10px] uppercase rounded-full">Bloqueado</span>
                             )}
@@ -542,7 +548,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
                           <td className="py-3.5 px-4 text-center">
                             <div className="flex items-center justify-center gap-1.5">
                               {/* Quick Switch Button */}
-                              {onSwitchRole && usr.role !== "superadmin" && (
+                              {false && onSwitchRole && usr.role !== "superadmin" && (
                                 <button
                                   onClick={() => onSwitchRole(usr.role, usr.role === "administrador" ? "mamc" : usr.role === "docente" ? "docente" : usr.role)}
                                   title="Simular/Ir al Módulo de este Usuario"
@@ -552,15 +558,17 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
                                 </button>
                               )}
 
-                              <button
+                              {!['superadmin', 'alumno', 'postulante'].includes(usr.role) && usr.status !== 'Pendiente' && <button
                                 onClick={() => handleOpenEditModal(usr)}
                                 title="Editar Usuario"
                                 className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md transition-all cursor-pointer"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
-                              </button>
+                              </button>}
 
-                              <button
+                              {usr.status === 'Pendiente' && <button onClick={async () => notify((await resendStaffInvitation(usr.id)) ? 'Invitación reenviada.' : 'No se pudo enviar la invitación.', 'info')} title="Reenviar invitación" className="p-1.5 bg-sky-50 text-sky-800 rounded-md"><RefreshCw className="w-3.5 h-3.5"/></button>}
+
+                              {!['superadmin', 'alumno', 'postulante'].includes(usr.role) && <button
                                 onClick={() => handleToggleStatus(usr)}
                                 title={usr.status === "Activo" ? "Bloquear Usuario" : "Activar Usuario"}
                                 className={`p-1.5 rounded-md transition-all cursor-pointer ${
@@ -568,15 +576,15 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
                                 }`}
                               >
                                 <Lock className="w-3.5 h-3.5" />
-                              </button>
+                              </button>}
 
-                              <button
+                              {!['superadmin', 'alumno', 'postulante'].includes(usr.role) && <button
                                 onClick={() => handleDeleteUser(usr)}
                                 title="Eliminar Usuario"
                                 className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-md transition-all cursor-pointer"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              </button>}
                             </div>
                           </td>
                         </tr>
@@ -792,28 +800,15 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole }: SuperAdm
                     onChange={(e) => handleRoleSelectChange(e.target.value as Role)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-[#9F062A] text-xs font-bold cursor-pointer"
                   >
-                    <option value="superadmin">Super Administrador (Sistema)</option>
                     <option value="administrador">Gestor MAMC (Admisión/Matrícula)</option>
                     <option value="mpa">Gestor MPA (Planificación Académica)</option>
                     <option value="mge">Gestor MGE (Gestión de Estudiantes)</option>
                     <option value="maf">Gestor MAF (Finanzas y Caja)</option>
                     <option value="docente">Docente</option>
-                    <option value="alumno">Alumno</option>
-                    <option value="postulante">Postulante</option>
                   </select>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-black uppercase text-slate-700">Contraseña *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ej. 123"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-[#9F062A] text-xs font-mono font-bold"
-                  />
-                </div>
+                <p className="text-xs text-slate-600 self-center">La persona recibirá un enlace por correo para crear su contraseña. En docentes, el DNI debe figurar como Disponible en MPA.</p>
               </div>
 
               <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">

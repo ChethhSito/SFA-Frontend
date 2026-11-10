@@ -50,8 +50,8 @@ export const ContactanosTab: React.FC<ContactanosTabProps> = ({
               </div>
               <div>
                 <h3 className="text-xs font-black text-slate-900 uppercase">Ubicación del Campus</h3>
-                <p className="text-xs text-slate-600 font-medium mt-1">Av. Pachacútec Cdra. 50, Villa María del Triunfo, Lima - Perú.</p>
-                <span className="text-[10px] text-slate-400 font-semibold block mt-1">Referencia: Altura del Paradero Pachacútec.</span>
+                <p className="text-xs text-slate-600 font-medium mt-1">Av. Prolongación Pachacútec Cdra. 50, Villa María del Triunfo, Lima - Perú.</p>
+                <span className="text-[10px] text-slate-400 font-semibold block mt-1">Villa María del Triunfo.</span>
               </div>
             </div>
 
@@ -61,7 +61,7 @@ export const ContactanosTab: React.FC<ContactanosTabProps> = ({
               </div>
               <div>
                 <h3 className="text-xs font-black text-slate-900 uppercase">Central Telefónica</h3>
-                <p className="text-xs text-slate-600 font-bold mt-1">01 500 6177</p>
+                <p className="text-xs text-slate-600 font-bold mt-1">970 776 040</p>
                 <span className="text-[10px] text-slate-500 font-medium block mt-1">Horario de atención: Lunes a Viernes de 8:00 am a 5:00 pm.</span>
               </div>
             </div>
@@ -72,7 +72,7 @@ export const ContactanosTab: React.FC<ContactanosTabProps> = ({
               </div>
               <div>
                 <h3 className="text-xs font-black text-slate-900 uppercase">Mesa de Partes Virtual</h3>
-                <p className="text-xs text-[#9F062A] font-bold mt-1">admision@iestpsfa.edu.pe</p>
+                <p className="text-xs text-[#9F062A] font-bold mt-1">sec.academicaiestpsfa@gmail.com</p>
                 <span className="text-[10px] text-slate-500 font-medium block mt-1">Recepción de solicitudes de trámites y consultas.</span>
               </div>
             </div>
@@ -144,7 +144,7 @@ export const ContactanosTab: React.FC<ContactanosTabProps> = ({
                       onChange={(e) => setContactSubject(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-300 focus:border-[#9F062A] rounded-lg px-4 py-3 text-xs text-slate-900 outline-none font-medium cursor-pointer"
                     >
-                      <option value="admision">Información sobre Admisión 2026</option>
+                      <option value="admision">Información sobre Admisión</option>
                       <option value="tramites">Trámites de Secretaría Académica</option>
                       <option value="traslados">Traslados y Convalidaciones</option>
                       <option value="otros">Otras Consultas Institucionales</option>

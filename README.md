@@ -37,9 +37,9 @@ MPA impide dos períodos activos, fechas invertidas y borrar un período vincula
 
 ## 🧾 Prueba de conciliación bancaria en MAF
 
-En **Solicitudes de Obligaciones** crea una obligación; en **Registro de Pagos (Vouchers)** registra su operación, fecha y monto. Luego abre **Validación de Pagos**, sube el consolidado `.xlsx`, pulsa **Comparar** y revisa el resultado de cada fila antes de **Confirmar e importar**. Solo las coincidencias completas pasan a **Validado**. Las tasas sin equivalencia, duplicados y diferencias quedan señalados para revisión.
+Las solicitudes se generan desde los portales del estudiante y del docente; cada solicitante registra allí la operación, fecha y monto de su voucher. MAF las consulta en **Solicitudes de Obligaciones**. En **Validación de Pagos**, sube el consolidado `.xlsx`, pulsa **Comparar** y revisa cada fila antes de **Confirmar e importar**. Solo las coincidencias completas pasan a **Validado**. Las tasas sin equivalencia, duplicados y diferencias quedan señalados para revisión.
 
-Para el archivo ficticio ajustado de prueba, usa DNI `54793519`, concepto `CON01` (**S/ 30**), operación `308496` y fecha `2026-04-12`. El voucher puede tener el prefijo `OP-`. Deben coincidir operación, DNI, concepto, fecha y monto tanto con la obligación como con el voucher. Las demás filas sin voucher MAF no se validarán. La imagen del voucher es una referencia visual: el flujo carga el **Excel**, no la imagen.
+Para el archivo ficticio ajustado de prueba, usa DNI `54793519`, concepto `CON01` (**S/ 30**), operación `308496` y fecha `2026-04-12`, siempre que exista la solicitud correspondiente en MongoDB. El voucher puede tener el prefijo `OP-`. Deben coincidir operación, DNI, concepto, fecha y monto tanto con la solicitud como con el voucher informado en el portal. Las demás filas sin voucher registrado no se validarán. La imagen del voucher es una referencia visual: el flujo carga el **Excel**, no la imagen.
 
 El frontend lee el archivo con `read-excel-file` y envía las filas a `POST /bank-reconciliation/preview` y `POST /bank-reconciliation/confirm`. MongoDB guarda las filas extraídas, resultados y pagos confirmados; **no almacena el `.xlsx` original**. Es una automatización de conciliación con confirmación humana, no un RPA que navegue por el portal bancario. Los catálogos, obligaciones y registros de auditoría MAF se sincronizan con la colección `maf_state` mediante `/maf-state`; el navegador conserva una copia en `localStorage`. Esta sincronización todavía requiere manejo más sólido de errores y permisos para uso institucional. La API se documenta en `http://127.0.0.1:3001/api/docs`.
 
@@ -119,3 +119,15 @@ Este proyecto utiliza el estándar **`[VERBO] + [OBJETO]` en español** descrito
 ---
 
 © 2026 **IESTP San Francisco de Asís** — Todos los derechos reservados.
+
+## Flujos actuales del portal y SuperAdmin
+
+- **Programas:** MPA registra una carrera activa, sus cursos y una versión curricular activa. El portal lee `/public-content/catalog`; si faltan datos, muestra el estado pendiente correspondiente. La selección de preinscripción usa el `id` real de la carrera.
+- **Tasas:** MAF guarda conceptos activos en MongoDB. Admisión muestra esos importes; la conciliación bancaria comprueba la tasa vigente del catálogo. Se necesita una sesión MAF para guardar el catálogo o confirmar un Excel.
+- **Transparencia:** SuperAdmin publica un título y enlace HTTPS de un documento oficial. El portal solo ofrece enlaces reales; sin documentos publicados muestra un estado vacío. Actualmente se enlazan archivos externos, no se cargan PDF al servidor.
+- **Contacto:** el formulario guarda la consulta en MongoDB (`public_inquiries`). No hay todavía bandeja de respuesta ni promesa de plazo de atención.
+- **Cuentas:** MPA declara docentes y sus datos académicos con estado Disponible. SuperAdmin ve ese registro, crea una cuenta por DNI y asigna el rol; los gestores también se crean allí. Brevo envía un enlace de activación de 24 horas para que cada usuario elija su clave. Si falla el correo, se informa y se puede reenviar. SuperAdmin no da de alta postulantes, alumnos ni otros superadministradores desde esta pantalla.
+
+La sesión institucional se obtiene desde `/users/login` y se usa para las acciones de gestión protegidas. El acceso heredado de postulantes y alumnos, así como varios endpoints históricos, todavía requiere una migración completa a autorización de servidor antes de operar con información real.
+La sección «Nosotros» conserva contenido editorial que debe validarse con la institución. El teléfono, correo y dirección visibles del portal se contrastaron con el sitio institucional.
+La carga de demostración del 10/11/2026 usa seis programas cuyos nombres se contrastaron con el sitio institucional. El diseño original de Inicio, Programas y Transparencia se mantiene; las tarjetas leen el catálogo en MongoDB. En la primera recarga tras este cambio se eliminan las cachés locales antiguas y se solicita iniciar sesión de nuevo. Los nombres de cursos, mallas, importes y fechas del conjunto son ficticios y se usan solo para probar la aplicación.

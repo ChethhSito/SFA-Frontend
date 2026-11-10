@@ -10,19 +10,15 @@ import {
   RefreshCw,
   Coins,
   ShieldCheck,
-  Layers,
-  ArrowLeft
+  Layers
 } from "lucide-react";
-import { fetchAdmissionPeriods, fetchApplicants, fetchEnrollments, fetchStudentByDni, updateApplicant, updateEnrollment } from "../../services/api";
-import { createServiceRequest, fetchServiceRequests, ServiceConceptCode, ServiceRequest, updateServiceRequestPayment, deliverServiceRequestResult } from "../../services/serviceRequests";
+import { fetchAdmissionPeriods, fetchApplicants, fetchEnrollments, updateApplicant, updateEnrollment } from "../../services/api";
+import { fetchServiceRequests, ServiceRequest, updateServiceRequestPayment } from "../../services/serviceRequests";
 import { MafConcept, MafObligation, MafAuditLog, SupportTicket } from "./mafTypes";
 import { defaultConcepts, syncObligationsToMamcAndMge } from "./mafUtils";
 import { readMafState, saveMafState } from "../../services/mafState";
 import { AddConceptModal } from "./modals/AddConceptModal";
-import { AddObligationModal } from "./modals/AddObligationModal";
-import { RegisterVoucherModal } from "./modals/RegisterVoucherModal";
 import { ObserveObligationModal } from "./modals/ObserveObligationModal";
-import { RegistroPagosTab } from "./tabs/RegistroPagosTab";
 import { ValidacionPagosTab } from "./tabs/ValidacionPagosTab";
 import { EstadosPagoTab } from "./tabs/EstadosPagoTab";
 import { CatalogoTasasTab } from "./tabs/CatalogoTasasTab";
@@ -68,8 +64,8 @@ function obligationFromRequest(request: ServiceRequest): MafObligation {
 export default function MafDashboard({ onLogout }: MafDashboardProps) {
   // Navigation State
   const [activeTab, setActiveTab] = useState<
-    "registro_pagos" | "validacion_pagos" | "estados_pago" | "catalogo_tasas" | "registro_transacciones" | "resultados" | "auditoria" | "soporte"
-  >("registro_pagos");
+    "validacion_pagos" | "estados_pago" | "catalogo_tasas" | "registro_transacciones" | "auditoria" | "soporte"
+  >("validacion_pagos");
 
   // Notifications State
   const [notification, setNotification] = useState<{ message: string; type: "success" | "info" | "warning" } | null>(null);
@@ -77,7 +73,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
   // Core Entity States
   const [concepts, setConcepts] = useState<MafConcept[]>([]);
   const [obligations, setObligations] = useState<MafObligation[]>([]);
-  const [verifiedStudentDni, setVerifiedStudentDni] = useState("");
   const [auditLogs, setAuditLogs] = useState<MafAuditLog[]>([]);
 
   // Search, Filter, and Modal States
@@ -86,8 +81,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
 
   // Modals visibility toggles
   const [showAddConceptModal, setShowAddConceptModal] = useState(false);
-  const [showAddObligationModal, setShowAddObligationModal] = useState(false);
-  const [showRegisterVoucherModal, setShowRegisterVoucherModal] = useState(false);
   const [showObserveModal, setShowObserveModal] = useState(false);
 
   // Reusable confirmation modal state
@@ -117,23 +110,7 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
     active: true,
   });
 
-  const [obligationForm, setObligationForm] = useState({
-    studentDni: "",
-    studentName: "",
-    conceptId: "",
-    period: "",
-    requestedBy: "",
-    contactPhone: "",
-  });
-
   const [selectedObligationId, setSelectedObligationId] = useState<string | null>(null);
-  const [voucherForm, setVoucherForm] = useState({
-    operationNumber: "",
-    bankName: "Banco de la Nación",
-    paymentDate: new Date().toISOString().split("T")[0],
-    amountPaid: 0,
-    observations: "",
-  });
 
   const [observationText, setObservationText] = useState("");
 
@@ -230,9 +207,12 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
     // Automatic Sync of MAMC & MGE Payments
     const syncMamcPayments = async () => {
       try {
-        const [apiApps, apiEnrolls, periods] = await Promise.all([
-          fetchApplicants(), fetchEnrollments(), fetchAdmissionPeriods(),
+        const [apiApps, apiEnrolls, periods, serverRates] = await Promise.all([
+          fetchApplicants(), fetchEnrollments(), fetchAdmissionPeriods(), readMafState<MafConcept>('concepts'),
         ]);
+        const catalogRates = serverRates.length ? serverRates : defaultConcepts;
+        const admissionRate = catalogRates.find(item => item.code === 'ADM01' && item.active);
+        const enrollmentRate = catalogRates.find(item => item.code === 'MAT01' && item.active);
         if (!apiApps || !apiEnrolls) throw new Error("No se pudieron consultar postulantes y matrículas en la API local");
         const apps: any[] = apiApps;
         const enrolls: any[] = apiEnrolls;
@@ -259,25 +239,25 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
               status = "En Proceso";
             }
 
-            if (!existingAdm) {
+            if (!existingAdm && admissionRate) {
               updatedObls.push({
                 id: `OBL-ADM-${dni}`,
                 studentDni: dni,
                 studentName: fullName,
                 conceptCode: "ADM01",
-                conceptName: "Derecho de Examen de Admisión Ordinario",
-                amount: 120,
+                conceptName: admissionRate.name,
+                amount: admissionRate.amount,
                 discount: 0,
-                finalAmount: 120,
+                finalAmount: admissionRate.amount,
                 period: periods?.find(period => period.id === app.periodId)?.name || app.periodId || "Sin período",
                 status,
                 dateCreated: app.createdAt || new Date().toISOString().split("T")[0],
-                voucherRegistered: status === "Validado" || status === "En Proceso" || !!app.voucherCode || !!app.paymentVoucher,
+                voucherRegistered: !!app.paymentOperation,
                 voucherDetails: {
-                  operationNumber: app.voucherCode || app.paymentVoucher || `VOUCH-${dni}`,
+                  operationNumber: app.paymentOperation || "",
                   bankName: "Banco de la Nación",
                   paymentDate: app.paymentDate || new Date().toISOString().split("T")[0],
-                  amountPaid: 120,
+                  amountPaid: admissionRate.amount,
                   observations: app.notes || "Pago registrado en portal de admisión MAMC"
                 }
               });
@@ -302,25 +282,25 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
               status = "En Proceso";
             }
 
-            if (!existingMat) {
+            if (!existingMat && enrollmentRate) {
               updatedObls.push({
                 id: `OBL-MAT-${dni}`,
                 studentDni: dni,
                 studentName: fullName,
                 conceptCode: "MAT01",
-                conceptName: "Matrícula Semestral Regular",
-                amount: 250,
+                conceptName: enrollmentRate.name,
+                amount: enrollmentRate.amount,
                 discount: 0,
-                finalAmount: 250,
-                period: enr.period || "2026-I",
+                finalAmount: enrollmentRate.amount,
+                period: enr.period || "Sin período",
                 status,
                 dateCreated: enr.enrollmentDate || new Date().toISOString().split("T")[0],
-                voucherRegistered: status === "Validado" || status === "En Proceso" || !!enr.paymentOperation,
+                voucherRegistered: !!enr.paymentOperation,
                 voucherDetails: {
-                  operationNumber: enr.paymentOperation || `VOUCH-MAT-${dni}`,
+                  operationNumber: enr.paymentOperation || "",
                   bankName: "Banco de la Nación",
                   paymentDate: enr.enrollmentDate || new Date().toISOString().split("T")[0],
-                  amountPaid: 250,
+                  amountPaid: enrollmentRate.amount,
                   observations: "Matrícula procesada en portal MAMC/MGE"
                 }
               });
@@ -463,118 +443,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
     triggerNotification("Estado del concepto actualizado.");
   };
 
-  // Obligation Form Handlers
-  const handleCreateObligation = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (verifiedStudentDni !== obligationForm.studentDni || !obligationForm.conceptId || !obligationForm.requestedBy.trim()) {
-      triggerNotification("Primero identifique a un estudiante registrado mediante su DNI.", "warning");
-      return;
-    }
-
-    const matchedConcept = concepts.find(c => c.id === obligationForm.conceptId);
-    if (!matchedConcept || !["ADM01", "MAT01", "CER01", "CON01", "SUB01", "CAR01"].includes(matchedConcept.code)) return;
-    let newObl: MafObligation;
-    try {
-      const request = await createServiceRequest({
-        studentDni: obligationForm.studentDni,
-        conceptCode: matchedConcept.code as ServiceConceptCode,
-        source: "llamada_apoderado",
-        period: obligationForm.period,
-        reason: "Solicitud recibida por llamada del apoderado",
-        requestedBy: obligationForm.requestedBy.trim(),
-        contactPhone: obligationForm.contactPhone.trim(),
-      });
-      newObl = obligationFromRequest(request);
-    } catch (error) {
-      triggerNotification(error instanceof Error ? error.message : "No se pudo crear la solicitud.", "warning");
-      return;
-    }
-
-    const nextObls = [newObl, ...obligations];
-    handleObligationsUpdate(nextObls);
-
-    addAuditLog(
-      "Crear Obligación de Pago",
-      `Se generó obligación de pago para ${newObl.studentName} por el concepto ${newObl.conceptCode} de S/.${newObl.finalAmount}.`,
-      "success"
-    );
-
-    triggerNotification(`Obligación de pago generada con éxito.`);
-    setShowAddObligationModal(false);
-    setVerifiedStudentDni("");
-    setObligationForm({ studentDni: "", studentName: "", conceptId: "", period: "", requestedBy: "", contactPhone: "" });
-  };
-
-  // Register Voucher (Pago) Handler
-  const handleOpenRegisterVoucher = (oblId: string) => {
-    const ob = obligations.find(o => o.id === oblId);
-    if (!ob) return;
-
-    setSelectedObligationId(oblId);
-    setVoucherForm({
-      operationNumber: "OP-" + Math.floor(100000 + Math.random() * 900000),
-      bankName: "Banco de la Nación",
-      paymentDate: new Date().toISOString().split("T")[0],
-      amountPaid: ob.finalAmount,
-      observations: "",
-    });
-    setShowRegisterVoucherModal(true);
-  };
-
-  const handleRegisterVoucher = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedObligationId || !voucherForm.operationNumber || voucherForm.amountPaid <= 0) {
-      triggerNotification("Por favor ingrese todos los detalles del comprobante físico.", "warning");
-      return;
-    }
-
-    const selected = obligations.find(o => o.id === selectedObligationId);
-    try {
-      if (selected?.id.startsWith('SOL-')) await updateServiceRequestPayment(selected.id, {
-        status: 'En Proceso', paymentOperation: voucherForm.operationNumber,
-        paymentDate: voucherForm.paymentDate, amountPaid: Number(voucherForm.amountPaid), bankName: voucherForm.bankName,
-      });
-      else if (selected?.conceptCode === 'ADM01') {
-        const saved = await updateApplicant(selected.studentDni, { paymentStatus: 'Pendiente', paymentOperation: voucherForm.operationNumber });
-        if (!saved) throw new Error('No se pudo guardar el voucher de admisión.');
-      } else if (selected?.conceptCode === 'MAT01') {
-        const saved = await updateEnrollment(selected.studentDni, { paymentStatus: 'Pendiente', paymentOperation: voucherForm.operationNumber });
-        if (!saved) throw new Error('No se pudo guardar el voucher de matrícula.');
-      }
-    } catch (error) {
-      triggerNotification(error instanceof Error ? error.message : 'No se pudo guardar el voucher en el servidor.', 'warning');
-      return;
-    }
-    const nextList = obligations.map(o => {
-      if (o.id === selectedObligationId) {
-        addAuditLog(
-          "Registro de Voucher",
-          `Comprobante #${voucherForm.operationNumber} registrado para la obligación de ${o.studentName} por S/.${voucherForm.amountPaid}. Estado: En Proceso de validación.`,
-          "info"
-        );
-        return {
-          ...o,
-          status: "En Proceso" as const,
-          voucherRegistered: true,
-          voucherRegisteredAt: new Date().toISOString(),
-          voucherDetails: {
-            operationNumber: voucherForm.operationNumber,
-            bankName: voucherForm.bankName,
-            paymentDate: voucherForm.paymentDate,
-            amountPaid: Number(voucherForm.amountPaid),
-            observations: voucherForm.observations,
-          }
-        };
-      }
-      return o;
-    });
-
-    handleObligationsUpdate(nextList);
-    triggerNotification("Comprobante de pago bancario registrado con éxito para validación.");
-    setShowRegisterVoucherModal(false);
-    setSelectedObligationId(null);
-  };
-
   // Validation Handlers (Approve/Reject)
   const handleOpenObservePayment = (oblId: string) => {
     setSelectedObligationId(oblId);
@@ -663,22 +531,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
     triggerNotification(`Ticket ${id} resuelto.`);
   };
 
-  // Helper autofills for forms
-  const setFormStudentByDni = (dni: string) => {
-    const text = dni.trim();
-    setVerifiedStudentDni("");
-    setObligationForm(prev => ({ ...prev, studentDni: text, studentName: "" }));
-    if (!/^\d{8}$/.test(text)) return;
-    void fetchStudentByDni(text).then(student => {
-      if (!student || student.active === false) {
-        triggerNotification("No se encontró un estudiante activo con ese DNI.", "warning");
-        return;
-      }
-      setVerifiedStudentDni(text);
-      setObligationForm(prev => prev.studentDni === text ? { ...prev, studentName: `${student.name} ${student.lastName}`.trim() } : prev);
-    });
-  };
-
   // Filtered queries helper
   const filteredObligations = obligations.filter(o => {
     const query = searchQuery.trim().toLowerCase();
@@ -720,12 +572,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
             title: "Operaciones Financieras",
             items: [
               {
-                label: "Registro de Pagos (Vouchers)",
-                icon: <CreditCard className="w-4 h-4" />,
-                route: "registro_pagos",
-                active: activeTab === "registro_pagos"
-              },
-              {
                 label: "Validación de Pagos",
                 icon: <ShieldCheck className="w-4 h-4" />,
                 route: "validacion_pagos",
@@ -759,7 +605,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
                 route: "registro_transacciones",
                 active: activeTab === "registro_transacciones"
               },
-              { label: "Resultados de Trámites", icon: <Layers className="w-4 h-4" />, route: "resultados", active: activeTab === "resultados" },
               {
                 label: "Auditoria de Movimientos",
                 icon: <History className="w-4 h-4" />,
@@ -780,7 +625,8 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
             ]
           }
         ]}
-        onItemClick={(route) => setActiveTab(route as any)}
+        onItemClick={(route) => setActiveTab(route as typeof activeTab)}
+        onLogout={onLogout}
       />
 
       {/* 2. Main content viewport areas */}
@@ -824,13 +670,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Sincronizar
-            </button>
-            <button
-              onClick={onLogout}
-              className="px-4 py-2 hover:bg-red-50 text-red-650 font-black text-[10px] uppercase tracking-wider rounded-lg transition-all border border-red-200/50 flex items-center gap-2 cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Cerrar Módulo
             </button>
           </div>
         </div>
@@ -876,15 +715,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
         </div>
 
         {/* Tab content rendering */}
-        {activeTab === "registro_pagos" && (
-          <RegistroPagosTab
-            filteredObligations={filteredObligations}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            handleOpenRegisterVoucher={handleOpenRegisterVoucher}
-          />
-        )}
-
         {activeTab === "validacion_pagos" && (
           <ValidacionPagosTab
             obligations={obligations}
@@ -923,24 +753,8 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
         {activeTab === "registro_transacciones" && (
           <RegistroTransaccionesTab
             obligations={obligations}
-            setShowAddObligationModal={setShowAddObligationModal}
           />
         )}
-
-        {activeTab === "resultados" && <section className="space-y-4 rounded-xl border bg-white p-5">
-          <h2 className="text-xl font-black">Entrega de documentos</h2>
-          <p className="text-sm text-slate-600">El pago debe estar validado con el reporte bancario. Adjunte el PDF emitido por Secretaría; el alumno o docente podrá descargarlo desde su historial.</p>
-          {obligations.filter(item => item.id.startsWith('SOL-') && item.status === 'Validado').map(item =>
-            <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 border-b py-3 text-sm">
-              <div><p className="font-bold">{item.conceptName} · {item.studentName}</p><p className="text-slate-500">{item.id} · {item.deliveryStatus === 'Emitido' ? `Emitido: ${item.resultFileName}` : 'Pendiente de emisión'}</p></div>
-              <label className="cursor-pointer rounded border px-3 py-2 font-bold text-[#800521]">Adjuntar PDF emitido<input type="file" accept="application/pdf,.pdf" className="sr-only" onChange={async e => {
-                const file = e.target.files?.[0]; if (!file) return;
-                try { await deliverServiceRequestResult(item.id, file); await refreshServiceRequests(); triggerNotification('Documento disponible para el solicitante.', 'success'); }
-                catch (error) { triggerNotification(error instanceof Error ? error.message : 'No se pudo entregar el documento.', 'warning'); }
-                e.target.value = '';
-              }} /></label>
-            </div>)}
-        </section>}
 
         {activeTab === "auditoria" && <AuditoriaTab auditLogs={auditLogs} />}
 
@@ -962,24 +776,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
         conceptForm={conceptForm}
         setConceptForm={setConceptForm}
         handleAddConcept={handleAddConcept}
-      />
-
-      <AddObligationModal
-        show={showAddObligationModal}
-        onClose={() => setShowAddObligationModal(false)}
-        concepts={concepts}
-        obligationForm={obligationForm}
-        setObligationForm={setObligationForm}
-        setFormStudentByDni={setFormStudentByDni}
-        handleCreateObligation={handleCreateObligation}
-      />
-
-      <RegisterVoucherModal
-        show={showRegisterVoucherModal}
-        onClose={() => setShowRegisterVoucherModal(false)}
-        voucherForm={voucherForm}
-        setVoucherForm={setVoucherForm}
-        handleRegisterVoucher={handleRegisterVoucher}
       />
 
       <ObserveObligationModal

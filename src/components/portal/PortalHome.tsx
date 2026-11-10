@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { AdmissionPeriod } from "../../types";
 import { createApplicant, fetchApplicantByDni, sendTransactionalWelcomeEmail } from "../../services/api";
-import { careersDetail } from "./portalData";
+import { fetchPublicCatalog, sendPublicInquiry, type PublicCatalog } from "../../services/publicContent";
 import { PortalHeader, PortalTab } from "./PortalHeader";
 import { PortalFooter } from "./PortalFooter";
 import { PortalSuccessModal } from "./PortalSuccessModal";
@@ -27,6 +27,14 @@ export default function PortalHome({
 }: PortalHomeProps) {
   const activePeriod = openAdmissionPeriod(admissionPeriods);
   const admissionLabel = activePeriod?.name || "Sin convocatoria abierta";
+  const [catalog, setCatalog] = useState<PublicCatalog | null>(null);
+  const [catalogError, setCatalogError] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    fetchPublicCatalog().then(data => { if (!cancelled) setCatalog(data); })
+      .catch(() => { if (!cancelled) setCatalogError("No se pudo cargar la información de programas y tasas."); });
+    return () => { cancelled = true; };
+  }, []);
 
   // Check if user has an active intranet session stored in localStorage
   const { activeSessionRole, activeSessionName } = (() => {
@@ -82,6 +90,7 @@ export default function PortalHome({
     applicantCode?: string;
     dni?: string;
     password?: string;
+    emailStatus?: "accepted" | "failed";
   } | null>(null);
 
   // Loading modal state during pre-enrollment submission
@@ -93,7 +102,7 @@ export default function PortalHome({
   const [lastNameInput, setLastNameInput] = useState("");
   const [emailInput, setEmailInput] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
-  const [programSelection, setProgramSelection] = useState("electronica");
+  const [programSelection, setProgramSelection] = useState("");
   const [submitSuccessMsg, setSubmitSuccessMsg] = useState("");
   const [formError, setFormError] = useState("");
 
@@ -105,7 +114,7 @@ export default function PortalHome({
   const [contactSuccessMsg, setContactSuccessMsg] = useState("");
 
   // Interactive Programs tab sub-selection
-  const [selectedProgramId, setSelectedProgramId] = useState("electronica");
+  const [selectedProgramId, setSelectedProgramId] = useState("");
 
   // Handle live admission registration via NestJS REST API → MongoDB
   const handlePreEnrollmentSubmit = async (e: React.FormEvent) => {
@@ -115,6 +124,10 @@ export default function PortalHome({
 
     if (!activePeriod) {
       setFormError("No hay una convocatoria de admisión abierta dentro de sus fechas de preinscripción.");
+      return;
+    }
+    if (!catalog?.careers.some(career => career.id === programSelection)) {
+      setFormError("Seleccione un programa vigente del catálogo académico.");
       return;
     }
 
@@ -169,7 +182,7 @@ export default function PortalHome({
         registeredAt: new Date().toISOString().split("T")[0]
       };
 
-      const activeProg = careersDetail.find(c => c.id === programSelection);
+      const activeProg = catalog.careers.find(c => c.id === programSelection);
       const progName = activeProg ? activeProg.name : "Programa Seleccionado";
 
       const created = await createApplicant(newApplicantPayload);
@@ -179,8 +192,7 @@ export default function PortalHome({
       }
       const generatedApplicantCode = created.applicantCode || dniInput;
 
-      if (emailInput && emailInput.trim()) {
-        sendTransactionalWelcomeEmail({
+      const emailSent = await sendTransactionalWelcomeEmail({
           email: emailInput.trim(),
           applicantCode: generatedApplicantCode,
           password: tempPass,
@@ -188,8 +200,7 @@ export default function PortalHome({
           dni: dniInput,
           programName: progName,
           url: `${window.location.origin}/ingresar`
-        }).catch((err) => console.warn("Notice: Email dispatch queued:", err));
-      }
+        });
 
       setSuccessModalData({
         name: nameInput,
@@ -198,11 +209,12 @@ export default function PortalHome({
         programName: progName,
         applicantCode: generatedApplicantCode,
         dni: dniInput,
-        password: tempPass
+        password: tempPass,
+        emailStatus: emailSent ? "accepted" : "failed"
       });
 
       setSubmitSuccessMsg(
-        `¡Preinscripción registrada! Código de postulante: ${generatedApplicantCode}. Conserve sus credenciales para ingresar a la intranet.`
+        `¡Preinscripción registrada! Código de postulante: ${generatedApplicantCode}. ${emailSent ? "El servicio de correo aceptó el mensaje; revise su bandeja y spam." : "No se pudo enviar el correo de confirmación; conserve las credenciales mostradas en pantalla."}`
       );
 
       try {
@@ -244,12 +256,15 @@ export default function PortalHome({
     }
   };
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setContactSuccessMsg("¡Mensaje recibido con éxito! Su solicitud ha sido remitida a Mesa de Partes Virtuales de la Secretaría Académica. Nos comunicaremos en un plazo máximo de 24 horas hábiles.");
-    setContactName("");
-    setContactEmail("");
-    setContactMessage("");
+    try {
+      await sendPublicInquiry({ name: contactName, email: contactEmail, subject: contactSubject, message: contactMessage });
+      setContactSuccessMsg("Consulta registrada. El equipo institucional podrá revisarla.");
+      setContactName(""); setContactEmail(""); setContactMessage("");
+    } catch {
+      setContactSuccessMsg("No se pudo registrar la consulta. Inténtelo nuevamente.");
+    }
   };
 
   return (
@@ -257,6 +272,7 @@ export default function PortalHome({
 
       {/* Header & Topbar Component */}
       <PortalHeader
+        careers={catalog?.careers || []}
         admissionLabel={admissionLabel}
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
@@ -282,6 +298,8 @@ export default function PortalHome({
           >
             {currentTab === "inicio" && (
               <HomeTab
+                careers={catalog?.careers || []}
+                fees={catalog?.fees || []}
                 admissionLabel={admissionLabel}
                 registrationOpen={Boolean(activePeriod)}
                 setCurrentTab={setCurrentTab}
@@ -295,6 +313,8 @@ export default function PortalHome({
 
             {currentTab === "programas" && (
               <ProgramasTab
+                catalog={catalog}
+                catalogError={catalogError}
                 selectedProgramId={selectedProgramId}
                 setSelectedProgramId={setSelectedProgramId}
                 setProgramSelection={setProgramSelection}
@@ -305,6 +325,8 @@ export default function PortalHome({
 
             {currentTab === "admision" && (
               <AdmisionTab
+                careers={catalog?.careers || []}
+                fees={catalog?.fees || []}
                 admissionLabel={admissionLabel}
                 registrationOpen={Boolean(activePeriod)}
                 dniInput={dniInput}
@@ -352,6 +374,7 @@ export default function PortalHome({
 
       {/* Footer Component */}
       <PortalFooter
+        careers={catalog?.careers || []}
         admissionLabel={admissionLabel}
         setCurrentTab={setCurrentTab}
         setSelectedProgramId={setSelectedProgramId}

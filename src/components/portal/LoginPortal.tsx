@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import { 
   Lock, User, ShieldAlert, ArrowLeft, Loader2, Eye, EyeOff 
 } from "lucide-react";
-import { Applicant, Role, SystemUser } from "../../types";
+import { Applicant, Role } from "../../types";
 import { motion } from "motion/react";
 import { isFirestoreEnabled } from "../../firebase/config";
 import { loginWithEmailAndPassword } from "../../firebase/auth";
 import { listCollectionGeneric } from "../../firebase/firestore";
-import { fetchApplicants, fetchApplicantByDni, fetchEnrollments, fetchStudents, fetchUsers } from "../../services/api";
+import { activateStaff, fetchApplicants, fetchApplicantByDni, fetchEnrollments, fetchStudents, loginStaff } from "../../services/api";
 
 interface LoginPortalProps {
   onBack: () => void;
@@ -20,6 +20,8 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activationToken, setActivationToken] = useState(() => new URLSearchParams(window.location.search).get("activation") || "");
+  const [activationPassword, setActivationPassword] = useState("");
 
   // Read current DB states to map newly pre-registered students or applicants
   const [localApplicants, setLocalApplicants] = useState<any[]>([]);
@@ -79,6 +81,16 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     }
 
     setIsSubmitting(true);
+
+    const staff = await loginStaff(uTrim, pTrim);
+    if (staff) {
+      localStorage.setItem("sfa_staff_token", staff.token);
+      ["administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf", "superadmin"].forEach(role => localStorage.removeItem(`sfa_session_${role}`));
+      localStorage.setItem(`sfa_session_${staff.user.role}`, staff.user.dni || staff.user.email);
+      setIsSubmitting(false);
+      onLoginSuccess(staff.user.role as Role, staff.user.dni || staff.user.email);
+      return;
+    }
 
     const currentEnrollments = await fetchEnrollments();
     const apiStudents = await fetchStudents();
@@ -217,63 +229,7 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
       return;
     }
 
-    // -1. Check Dynamic System Users created via SuperAdmin / MongoDB
-    const systemUsers: SystemUser[] = (await fetchUsers()) || [];
-
-    const matchedSysUser = systemUsers.find(
-      (u) =>
-        (u.email && u.email.toLowerCase() === uTrim) ||
-        (u.dni && u.dni.toLowerCase() === uTrim) ||
-        (u.id && u.id.toLowerCase() === uTrim)
-    );
-
-    let sysUserPasswordMatched = false;
-
-    if (matchedSysUser) {
-      const expectedPass = matchedSysUser.password || "123";
-      if (pTrim === expectedPass || pTrim === "123" || pTrim === "clave123" || pTrim === "docente123") {
-        detectedRole = matchedSysUser.role as Role;
-        detectedIdentifier = matchedSysUser.dni || matchedSysUser.email || matchedSysUser.id;
-        sysUserPasswordMatched = true;
-      } else {
-        setIsSubmitting(false);
-        setErrorMessage("Contraseña de usuario del sistema incorrecta.");
-        return;
-      }
-    }
-
-    // 0. Check Super Admin (Gestión de Usuarios del Sistema)
-    if (!detectedRole && (uTrim === "superadmin" || uTrim === "admin" || uTrim === "admin@iestpsfa.edu.pe" || uTrim === "superadmin@iestpsfa.edu.pe")) {
-      detectedRole = "superadmin";
-      detectedIdentifier = "superadmin";
-    }
-    // 1. Check Gestor MAMC (Admisión y Matrícula)
-    else if (!detectedRole && (uTrim === "mamc" || uTrim === "mamc@iestpsfa.edu.pe" || uTrim === "administrador")) {
-      detectedRole = "administrador";
-      detectedIdentifier = "mamc";
-    }
-    // 1.5 Check MPA (Módulo de Planificación Académica)
-    else if (!detectedRole && (uTrim === "mpa" || uTrim === "mpa@iestpsfa.edu.pe")) {
-      detectedRole = "mpa";
-      detectedIdentifier = "mpa";
-    }
-    // 1.6 Check MAF (Módulo de Administración y Finanzas)
-    else if (!detectedRole && (uTrim === "maf" || uTrim === "maf@iestpsfa.edu.pe")) {
-      detectedRole = "maf";
-      detectedIdentifier = "maf";
-    }
-    // 1.7 Check MGE (Módulo de Gestión de Estudiantes)
-    else if (!detectedRole && (uTrim === "mge" || uTrim === "mge@iestpsfa.edu.pe")) {
-      detectedRole = "mge";
-      detectedIdentifier = "mge";
-    }
-    // 2. Check Docente
-    else if (!detectedRole && (uTrim === "docente" || uTrim === "mramos@iestpsfa.edu.pe" || uTrim === "99887766" || uTrim === "enrique.gomez@iestpsfa.edu.pe" || uTrim === "20202020" || uTrim === "rosa.paredes@iestpsfa.edu.pe" || uTrim === "44567891")) {
-      detectedRole = "docente";
-      detectedIdentifier = (uTrim === "docente") ? "99887766" : (uTrim.includes("@") ? (uTrim.includes("rosa") ? "44567891" : uTrim.includes("enrique") ? "20202020" : "99887766") : uTrim);
-    }
-    // 3. Check Alumno (dynamic lookup in localStudents - ONLY IF MATRICULADO)
-    else if (isInputStudentMatriculado && (uTrim === "alumno" || uTrim === "luis.castillo@iestpsfa.edu.pe" || studentRecords[uTrim] || Object.values(studentRecords).some((st: any) => st.dni === uTrim || st.email?.toLowerCase() === uTrim))) {
+    if (isInputStudentMatriculado && (uTrim === "alumno" || uTrim === "luis.castillo@iestpsfa.edu.pe" || studentRecords[uTrim] || Object.values(studentRecords).some((st: any) => st.dni === uTrim || st.email?.toLowerCase() === uTrim))) {
       const studentList = Object.values(studentRecords);
       if (studentList.length === 0) {
         setIsSubmitting(false);
@@ -297,18 +253,7 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     }
     // 5. Check if it's an 8-digit DNI or code
     else if (/^\d{8,12}$/.test(uTrim)) {
-      // First check in teachers
-      const localTeachers = (() => {
-        try {
-          const s = localStorage.getItem("sfa_teachers");
-          return s ? JSON.parse(s) : [];
-        } catch(e) { return []; }
-      })();
-      const matchedTeach = localTeachers.find((t: any) => t.dni === uTrim);
-      if (matchedTeach) {
-        detectedRole = "docente";
-        detectedIdentifier = matchedTeach.dni;
-      } else if (isDniMatriculado(uTrim)) {
+      if (isDniMatriculado(uTrim)) {
         // Then check in students if they are matriculado
         const studentList = Object.values(studentRecords);
         const matchedSt: any = studentList.find((st: any) => st.dni === uTrim);
@@ -373,7 +318,7 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     }
 
     // Offline / Fallback login verification (for Docente, Alumno, Administrador, or when Firebase is disabled)
-    let isValidPass = sysUserPasswordMatched || pTrim === "123" || pTrim === "clave123";
+    let isValidPass = detectedRole === "alumno" && (pTrim === "123" || pTrim === "clave123");
 
     if (!isValidPass) {
       setIsSubmitting(false);
@@ -446,6 +391,14 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
  
         {/* Card Form Body */}
         <div className="p-6 sm:p-7 space-y-5 bg-white">
+          {activationToken && <form onSubmit={async event => {
+            event.preventDefault();
+            setIsSubmitting(true);
+            const ok = await activateStaff(activationToken, activationPassword);
+            setIsSubmitting(false);
+            setErrorMessage(ok ? "Cuenta activada. Ya puede iniciar sesión." : "El enlace venció o la contraseña no cumple los requisitos.");
+            if (ok) { setActivationToken(""); setActivationPassword(""); window.history.replaceState({}, "", "/ingresar"); }
+          }} className="space-y-3 mb-6 border-b pb-5"><h3 className="font-bold text-sm">Activar cuenta institucional</h3><p className="text-xs text-slate-600">Elija una contraseña de al menos 10 caracteres.</p><input type="password" minLength={10} required value={activationPassword} onChange={event => setActivationPassword(event.target.value)} className="w-full border rounded-lg p-3" placeholder="Nueva contraseña"/><button type="submit" disabled={isSubmitting} className="w-full bg-[#9F062A] text-white font-bold rounded-lg p-3">Activar cuenta</button></form>}
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
               <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">

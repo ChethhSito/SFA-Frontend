@@ -183,18 +183,18 @@ export const NosotrosTab: React.FC = () => {
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-slate-100 pb-6">
             <div>
               <span className="bg-[#9F062A] text-white text-[10px] font-mono font-bold px-3 py-1 rounded-md uppercase tracking-wider inline-block mb-1">
-                ORGANIGRAMA INSTITUCIONAL 2026
+                ESTRUCTURA REFERENCIAL
               </span>
-              <h3 className="text-2xl font-black text-slate-900 uppercase">Estructura Organizacional Oficial</h3>
-              <p className="text-xs text-slate-500 font-medium">Plana directiva y jerarquía académica del IESTP San Francisco de Asís</p>
+              <h3 className="text-2xl font-black text-slate-900 uppercase">Áreas institucionales</h3>
+              <p className="text-xs text-slate-500 font-medium">Consulta los nombres y cargos vigentes en el directorio oficial.</p>
             </div>
 
             <button
-              onClick={() => window.print()}
+              onClick={() => window.open('https://www.iestpsfa.edu.pe/autoridades', '_blank', 'noopener,noreferrer')}
               className="py-2.5 px-4 bg-slate-900 hover:bg-[#9F062A] text-white font-extrabold text-xs rounded-xl uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer shadow-xs shrink-0"
             >
               <Download className="w-4 h-4 text-amber-400" />
-              <span>Descargar Organigrama</span>
+              <span>Ver autoridades oficiales</span>
             </button>
           </div>
 
@@ -202,7 +202,7 @@ export const NosotrosTab: React.FC = () => {
             <div className="flex justify-center">
               <div className="w-64 bg-gradient-to-r from-[#9F062A] to-[#800521] text-white rounded-xl p-4 text-center shadow-lg border border-amber-400/40 relative z-20">
                 <span className="text-[10px] font-mono font-black text-amber-300 uppercase tracking-widest block">DIRECCIÓN GENERAL</span>
-                <h4 className="text-base font-black uppercase mt-0.5 text-white">Lic. Manuel Ramos</h4>
+                <h4 className="text-base font-black uppercase mt-0.5 text-white">Consultar directorio oficial</h4>
                 <span className="text-[10.5px] text-rose-100 font-medium block mt-0.5">Director General</span>
               </div>
             </div>
@@ -216,42 +216,42 @@ export const NosotrosTab: React.FC = () => {
               {[
                 {
                   headRole: "SUB-DIRECCIÓN ACADÉMICA",
-                  headName: "Mg. Rosa Elvira Huamán",
+                  headName: "Consultar directorio oficial",
                   color: "bg-slate-800 text-white border-slate-700",
                   items: [
-                    { title: "Coordinación Electricidad", name: "Ing. Jorge Toledo" },
-                    { title: "Coordinación Contabilidad", name: "Lic. Elena Morales" },
-                    { title: "Unidad de Investigación", name: "Ing. Luis Castillo" }
+                    { title: "Coordinación académica", name: "" },
+                    { title: "Programas de estudio", name: "" },
+                    { title: "Unidad de Investigación", name: "" }
                   ]
                 },
                 {
                   headRole: "SECRETARÍA ACADÉMICA",
-                  headName: "Ing. Carlos Mendoza",
+                  headName: "Consultar directorio oficial",
                   color: "bg-slate-800 text-white border-slate-700",
                   items: [
-                    { title: "Registro y Matrículas", name: "Lic. Carmen Vargas" },
-                    { title: "Certificación y Titulación", name: "Lic. Roberto Soto" },
-                    { title: "Trámite Documentario", name: "Sra. Ana Gutiérrez" }
+                    { title: "Registro y Matrículas", name: "" },
+                    { title: "Certificación y Titulación", name: "" },
+                    { title: "Trámite Documentario", name: "" }
                   ]
                 },
                 {
                   headRole: "UNIDAD ADMINISTRATIVA",
-                  headName: "Lic. Fernando Castro",
+                  headName: "Consultar directorio oficial",
                   color: "bg-slate-800 text-white border-slate-700",
                   items: [
-                    { title: "Tesorería y Caja", name: "CPC. Maria Fernández" },
-                    { title: "Recursos Humanos", name: "Lic. Javier Paredes" },
-                    { title: "Servicios Generales", name: "Sr. Pedro Morales" }
+                    { title: "Tesorería y Caja", name: "" },
+                    { title: "Recursos Humanos", name: "" },
+                    { title: "Servicios Generales", name: "" }
                   ]
                 },
                 {
                   headRole: "COORDINACIÓN ÁREAS TÉCNICAS",
-                  headName: "Ing. Patricia Alva",
+                  headName: "Consultar directorio oficial",
                   color: "bg-slate-800 text-white border-slate-700",
                   items: [
-                    { title: "Taller de Potencia PLC", name: "Ing. Víctor Ramos" },
-                    { title: "Laboratorio ERP Contable", name: "CPC. Daniel Ríos" },
-                    { title: "Prácticas EFSRT", name: "Mg. Gloria Silva" }
+                    { title: "Talleres", name: "" },
+                    { title: "Laboratorios", name: "" },
+                    { title: "Prácticas EFSRT", name: "" }
                   ]
                 }
               ].map((col, cIdx) => (
@@ -269,7 +269,7 @@ export const NosotrosTab: React.FC = () => {
                       >
                         <div className="w-3 h-0.5 bg-slate-300 absolute -left-3 top-1/2 -translate-y-1/2" />
                         <span className="text-[9px] font-bold text-slate-500 uppercase font-mono block leading-none">{sub.title}</span>
-                        <h6 className="text-[11px] font-black text-slate-900 uppercase leading-snug">{sub.name}</h6>
+                        {sub.name && <h6 className="text-[11px] font-black text-slate-900 uppercase leading-snug">{sub.name}</h6>}
                       </div>
                     ))}
                   </div>

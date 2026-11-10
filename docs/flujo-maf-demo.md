@@ -4,11 +4,11 @@ El reporte `.xlsx` representa una exportación **simulada** del Banco de la Naci
 
 ## Recorrido
 
-1. El estudiante solicita `CER01` (certificado de estudios) o `CON01` (constancia de matrícula) en **Trámites de Secretaría**. El docente solicita `DOC01` (constancia de trabajo) o `DOC02` (certificado de servicios) en **Mis Trámites**. Una llamada de apoderado puede generar una solicitud vinculada a un estudiante desde MAF.
+1. El estudiante solicita `CER01` (certificado de estudios) o `CON01` (constancia de matrícula) en **Trámites de Secretaría**. El docente solicita `DOC01` (constancia de trabajo) o `DOC02` (certificado de servicios) en **Mis Trámites**. MAF consulta estas solicitudes en **Solicitudes de Obligaciones**.
 2. El solicitante registra en su portal la operación, fecha y monto de su voucher. Este paso deja la solicitud **En Proceso**; no confirma el pago.
 3. En **MAF → Validación de Pagos**, se carga el Excel, se revisan coincidencias y observaciones, y se confirma la importación. Solo las coincidencias respaldadas por una solicitud pendiente en MongoDB pasan a **Validado**. La operación importada se registra en MongoDB para detectar duplicados.
 4. Admisión (`ADM01`) y matrícula (`MAT01`) actualizan su estado de pago en MongoDB al confirmar la conciliación. Las solicitudes de alumno y docente actualizan su estado de pago en `service_requests`.
-5. Secretaría emite el documento y lo adjunta como PDF de hasta 5 MB en **MAF → Resultados de Trámites**. El solicitante lo descarga desde su historial. El pago validado y el documento emitido son estados separados.
+5. Secretaría emite el documento. La carga y entrega del PDF corresponde a otro módulo y queda pendiente de integrar en su interfaz. El pago validado y el documento emitido son estados separados.
 
 ## Códigos para el Excel simulado
 
@@ -25,4 +25,4 @@ Las tasas se leen del catálogo persistido en MongoDB. Exoneraciones y becas ya 
 
 ## Alcance de la demostración
 
-El PDF final debe ser preparado y revisado por Secretaría. La entrega principal es el historial del portal; no se envía correo automáticamente. El Excel es la fuente bancaria simulada y puede sustituirse en el futuro por un conector de sistema externo sin alterar la separación entre voucher, conciliación y entrega.
+El PDF final debe ser preparado y revisado por Secretaría. La API conserva la capacidad de adjuntar el resultado, pero MAF ya no presenta esa pantalla; la entrega desde otro módulo aún requiere integración. No se envía correo automáticamente. El Excel es la fuente bancaria simulada y puede sustituirse en el futuro por un conector externo.
