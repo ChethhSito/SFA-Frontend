@@ -40,44 +40,7 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
         title="División de Admisiones Institucionales"
         subtitle="Gestione carpetas de admisión, audite requisitos digitales por período y resuelva incidencias de postulación."
         icon={<FileText className="w-6 h-6 text-[#9F062A]" />}
-        actions={renderPeriodSelector()}
       />
-
-      {/* 1. Academic Period Selector Banner */}
-      <div className="bg-slate-900 text-white rounded-xl p-5 md:p-6 shadow-md border-b-4 border-amber-500 relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="space-y-1 z-10">
-          <span className="text-[10px] text-amber-300 font-extrabold tracking-widest uppercase block">
-            Período de Admisión Administrado
-          </span>
-          <h3 className="text-lg md:text-xl font-black font-display tracking-tight">
-            Periodo de Admisión: {admissionPeriods.find((p) => p.id === selectedPeriodId)?.name || "Seleccione Periodo"}
-          </h3>
-          <p className="text-xs text-slate-300 font-medium">
-            Las estadísticas, filtros y postulantes mostrados corresponden únicamente a esta cohorte.
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5 z-10 bg-slate-800 p-2 rounded-lg border border-slate-700 w-full md:w-auto">
-          <label htmlFor="period-dashboard-selector" className="text-xs font-extrabold tracking-wide text-slate-300 uppercase whitespace-nowrap">
-            Periodo:
-          </label>
-          <select
-            id="period-dashboard-selector"
-            value={selectedPeriodId}
-            onChange={(e) => setSelectedPeriodId(e.target.value)}
-            className="bg-slate-950 text-white border border-slate-800 rounded-md px-3 py-1.5 text-xs font-black focus:outline-none focus:ring-1 focus:ring-amber-500 w-full md:w-auto cursor-pointer"
-          >
-            <option value="all">TODOS LOS PERIODOS ({applicants.length})</option>
-            {admissionPeriods.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} {p.status === "APERTURADO" ? "(ACTIVO)" : ""}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="absolute right-6 bottom-4 opacity-5 pointer-events-none hidden lg:block">
-          <GraduationCap className="w-32 h-32" />
-        </div>
-      </div>
 
       {/* 2. Key Dynamic Stats for selected period */}
       {(() => {

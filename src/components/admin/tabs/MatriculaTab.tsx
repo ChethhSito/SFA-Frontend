@@ -357,10 +357,6 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
             </p>
           </div>
         </div>
-
-        <div className="shrink-0 flex items-center gap-3">
-          {renderPeriodSelector()}
-        </div>
       </div>
 
       {/* 2. Barra de Métricas Rápidas (KPIs) */}

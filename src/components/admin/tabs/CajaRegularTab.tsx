@@ -33,7 +33,6 @@ export const CajaRegularTab: React.FC<CajaRegularTabProps> = ({
         title="Matrículas e Inscripciones Semestrales - Oficina de Caja"
         subtitle="Audite las tasas de S/. 250 de matrícula regular y registre la conformidad del pago de ingresantes y alumnos."
         icon={<CreditCard className="w-6 h-6" />}
-        actions={renderPeriodSelector()}
       />
 
       {/* Students matricula regular semester paid vouchers lists */}

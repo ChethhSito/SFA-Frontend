@@ -76,7 +76,6 @@ export const MatriculadosTab: React.FC<MatriculadosTabProps> = ({
         title="Padrón Oficial de Estudiantes Matriculados"
         subtitle="Consulte la nómina oficial, administre la cohorte matriculada y expida constancias oficiales de matrícula con validez institucional."
         icon={<CheckSquare className="w-6 h-6 text-emerald-600" />}
-        actions={renderPeriodSelector()}
       />
 
       <div className="space-y-6 text-left">

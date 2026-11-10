@@ -103,7 +103,6 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
         title="Postulantes Aptos (Examen de Admisión)"
         subtitle="Gestione los postulantes que ya tienen sus 5 requisitos completamente validados (4 documentos y pago S/.120 de Tasa confirmados). Asigne aulas físicas de evaluación y registre los resultados para admisión."
         icon={<Users className="w-6 h-6 text-[#9F062A]" />}
-        actions={renderPeriodSelector()}
       />
 
       <div className="space-y-6">

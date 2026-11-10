@@ -44,7 +44,6 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
         title="Derechos de Admisión - Oficina de Caja"
         subtitle="Audite los recibos financieros de postulación virtuales (Tasa S/. 120.00)."
         icon={<CreditCard className="w-6 h-6" />}
-        actions={renderPeriodSelector()}
       />
 
       {/* Applicant Admission paid vouchers list */}
