@@ -151,6 +151,30 @@ function scanUnicodeReplacementChars(dir) {
 const replacementCharFiles = scanUnicodeReplacementChars("src");
 assert(replacementCharFiles === 0, `0 archivos con caracteres corruptos \\uFFFD en src/ (detectados: ${replacementCharFiles})`);
 
+// 3.3 Blindaje contra Pantallas Blancas y Fallos de Caché (guia_blindaje_pantalla_blanca_pwa_ia.md)
+assert(rootIndexHtml.includes('id="root">') && rootIndexHtml.includes('position: fixed') && rootIndexHtml.includes('background-color: #800521'), "index.html contiene Splash Loader institucional inline dentro de #root (0ms pantalla blanca)");
+assert(rootIndexHtml.includes('rel="manifest"') && rootIndexHtml.includes('/manifest.webmanifest'), "index.html vincula manifiesto PWA manifest.webmanifest");
+
+assert(fs.existsSync("public/.htaccess"), "public/.htaccess existe para directivas de caché");
+const htaccessContent = fs.readFileSync("public/.htaccess", "utf8");
+assert(htaccessContent.includes("!^/assets/"), "public/.htaccess contiene regla !^/assets/ para evitar SyntaxError 200");
+assert(htaccessContent.includes("no-cache, no-store, must-revalidate"), "public/.htaccess contiene política no-cache para index.html y sw.js");
+
+assert(fs.existsSync("public/manifest.webmanifest"), "public/manifest.webmanifest existe");
+const manifestJson = JSON.parse(fs.readFileSync("public/manifest.webmanifest", "utf8"));
+assert(manifestJson.background_color === "#800521" && manifestJson.theme_color === "#800521", "manifest.webmanifest configurado con color institucional #800521");
+
+assert(fs.existsSync("public/sw.js"), "public/sw.js existe con estrategia de caché offline");
+const swContent = fs.readFileSync("public/sw.js", "utf8");
+assert(swContent.includes("CacheFirst") || swContent.includes("caches.open"), "public/sw.js implementa caché persistente");
+
+const mainContent = fs.readFileSync("src/main.tsx", "utf8");
+assert(mainContent.includes("vite:preloadError"), "src/main.tsx implementa manejador global vite:preloadError contra stale chunks");
+
+assert(fs.existsSync("src/utils/lazyWithRetry.ts"), "src/utils/lazyWithRetry.ts existe");
+const lazyContent = fs.readFileSync("src/utils/lazyWithRetry.ts", "utf8");
+assert(lazyContent.includes("lazyWithRetry"), "src/utils/lazyWithRetry.ts exporta lazyWithRetry");
+
 // ---------------------------------------------------------------------------
 // TEST 4: Funciones Puras, Fórmulas y Lógica Matemática
 // ---------------------------------------------------------------------------

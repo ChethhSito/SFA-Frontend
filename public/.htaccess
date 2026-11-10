@@ -1,0 +1,27 @@
+# 🛡️ Blindaje de Servidor Apache / cPanel / LiteSpeed contra Pantalla Blanca y Caché Corrupta
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  # Evita que assets no encontrados devuelvan index.html con status 200 (previene SyntaxError en JS)
+  RewriteCond %{REQUEST_URI} !^/assets/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Caché inmutable a largo plazo (1 año) para assets versionados con hash
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|webp|png|jpg|jpeg|svg|woff2?)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
+
+# Cero caché para archivos maestros de versión, Service Worker y manifiestos
+<IfModule mod_headers.c>
+  <FilesMatch "(sw\.js|workbox-.*\.js|index\.html|manifest\.webmanifest)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+</IfModule>

@@ -1,0 +1,21 @@
+{
+  "name": "IESTP San Francisco de Asís",
+  "short_name": "SFA Intranet",
+  "description": "Sistema Integrado de Gestión Académica e Intranet Institucional",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#800521",
+  "theme_color": "#800521",
+  "icons": [
+    {
+      "src": "/SFA-Logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/SFA-Logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
