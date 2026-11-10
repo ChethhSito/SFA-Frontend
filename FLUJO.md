@@ -35,9 +35,9 @@ graph TD
    - El personal de **MAMC** (*Admisión, Matriculación y Caja*) revisa la carpeta digital y física del postulante.
    - Cambia el estado del postulante a **`ADMITIDO`** (`PUT /applicants/:dni`).
 4. **Obligación, voucher y conciliación bancaria (Módulo MAF):**
-   - MAF crea o recibe una obligación y registra los datos del voucher. Esa obligación pasa a **En Proceso**; actualmente su estado se mantiene en `localStorage`.
+   - MAF crea o recibe una obligación y registra los datos del voucher. Esa obligación pasa a **En Proceso**; se sincroniza con `maf_state` en MongoDB y se conserva una copia en `localStorage`.
    - El personal carga un consolidado `.xlsx` en **Validación de Pagos**. `POST /bank-reconciliation/preview` compara operación, DNI, fecha, concepto y monto, y muestra coincidencias y diferencias. La carga no valida pagos por sí sola.
-   - Tras la revisión, `POST /bank-reconciliation/confirm` guarda en MongoDB las filas, resultados y pagos coincidentes. MAF marca esas obligaciones como **Validadas** y sincroniza el estado local usado por MAMC/MGE. Esta conciliación no matricula automáticamente al estudiante ni guarda el Excel original.
+   - Tras la revisión, `POST /bank-reconciliation/confirm` guarda en MongoDB las filas, resultados y pagos coincidentes. MAF marca esas obligaciones como **Validadas** y sincroniza `maf_state` y su copia local. Esta conciliación no matricula automáticamente al estudiante ni guarda el Excel original.
 5. **Asignación de Aula y Turno (MAMC):**
    - Se le asigna turno (*Mañana / Noche*), aula física y grupo lectivo.
 
@@ -61,14 +61,16 @@ graph TD
 
 | Módulo | Usuario / DNI | Contraseña | Descripción |
 | :--- | :--- | :--- | :--- |
-| 🔐 **SuperAdmin** | `superadmin` | `clave123` | Control total del sistema y gestión de usuarios en MongoDB. |
-| ⚙️ **MAMC** | `mamc` | `clave123` | Admisión, caja y carpetas físicas de documentos. |
-| 🏛️ **MPA** | `mpa` | `clave123` | Editor visual de mallas curriculares y cursos. |
-| 🎓 **MGE** | `mge` | `clave123` | Registro de egresados y trámites de titulación. |
-| 💰 **MAF** | `maf` | `clave123` | Tesorería, recibos de caja y estado de pagos. |
-| 👨‍🏫 **Docente** | `docente` | `clave123` | Asistencia por fecha, evaluaciones y materiales. |
-| 👨‍🎓 **Alumno** | `alumno` / `12345678` | `clave123` | Horario, récord de notas por ciclo (I al VI) y constancias. |
-| 📋 **Postulante** | `postulante` | `clave123` | Carga de expediente y consulta de resultados. |
+| 🔐 **SuperAdmin** | `superadmin` | `123` | Gestión de usuarios y roles. |
+| ⚙️ **MAMC** | `mamc` | `123` | Admisión y matrícula. |
+| 🏛️ **MPA** | `mpa` | `123` | Planificación académica. |
+| 🎓 **MGE** | `mge` | `123` | Gestión de estudiantes y egresados. |
+| 💰 **MAF** | `maf` | `123` | Obligaciones y conciliación de pagos. |
+| 👨‍🏫 **Docente** | `docente` | `123` | Asistencia, evaluaciones y materiales. |
+| 👨‍🎓 **Alumno** | DNI de alumno matriculado | Según su cuenta o flujo de prueba | Horario y avance académico. |
+| 📋 **Postulante** | DNI o código de postulante registrado | Según su cuenta o flujo de prueba | Expediente y resultados. |
+
+Estas son credenciales de demostración; la disponibilidad de alumnos y postulantes depende de los datos cargados. Ver [cuentas_reales.md](cuentas_reales.md). No usar estas claves compartidas en producción.
 
 ---
 

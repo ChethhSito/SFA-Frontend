@@ -99,7 +99,7 @@ No se calcula un indicador completo si faltan asistencia, nota, tareas vencidas,
 
 ## Alcance pendiente
 
-Para verificar asistencias, seguir [PRUEBAS_ASISTENCIAS.md](PRUEBAS_ASISTENCIAS.md); para tutoría, [PRUEBAS_TUTORIA.md](PRUEBAS_TUTORIA.md). La baja reversible, las exportaciones, el historial y la revisión de expedientes se prueban en [PRUEBAS_GESTION_REPORTES.md](PRUEBAS_GESTION_REPORTES.md). La emisión oficial de certificados y actas sigue pendiente. Los registros antiguos ya guardados en la base no se limpiaron automáticamente.
+Para verificar asistencias, seguir [PRUEBAS_ASISTENCIAS.md](PRUEBAS_ASISTENCIAS.md); para tutoría, [PRUEBAS_TUTORIA.md](PRUEBAS_TUTORIA.md). La baja reversible, las exportaciones, el historial y la revisión de expedientes se prueban en [PRUEBAS_GESTION_REPORTES.md](PRUEBAS_GESTION_REPORTES.md). Ya se puede registrar y consultar un certificado PDF emitido, según [PRUEBAS_SEGUIMIENTO_CERTIFICADOS.md](PRUEBAS_SEGUIMIENTO_CERTIFICADOS.md); su generación y firma automáticas, así como la emisión de actas, siguen pendientes. Los registros antiguos ya guardados en la base no se limpiaron automáticamente.
 
 ## Pruebas automáticas
 
