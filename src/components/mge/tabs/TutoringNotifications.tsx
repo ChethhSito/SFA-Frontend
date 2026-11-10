@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { fetchTutoringReferrals, markTutoringReferralRead, updateTutoringCase, TutoringReferral } from "../../../services/api";
 
+import MgeTablePagination from "../MgeTablePagination";
+import MgeListFilters from "../MgeListFilters";
+import { normalizeStudentSearch } from "../../../utils/studentFormValidation";
+
 const caseLabels = { PENDIENTE: "Pendiente", EN_ATENCION: "En atención", CERRADO: "Cerrado" };
-function TutoringCase({ item, onSaved }: { item: TutoringReferral; onSaved: (item: TutoringReferral) => void }) {
-  const [status, setStatus] = useState(item.status || "PENDIENTE");
-  const [responsible, setResponsible] = useState(item.responsible || "");
-  const [note, setNote] = useState("");
+type CaseDraft = { status: NonNullable<TutoringReferral["status"]>; responsible: string; note: string };
+function TutoringCase({ item, draft, onDraft, onSaved }: { item: TutoringReferral; draft: CaseDraft; onDraft: (draft: CaseDraft) => void; onSaved: (item: TutoringReferral) => void }) {
+  const { status, responsible, note } = draft;
+  const setStatus = (value: CaseDraft["status"]) => onDraft({ ...draft, status: value });
+  const setResponsible = (value: string) => onDraft({ ...draft, responsible: value });
+  const setNote = (value: string) => onDraft({ ...draft, note: value });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const save = async () => {
@@ -35,10 +41,15 @@ function TutoringCase({ item, onSaved }: { item: TutoringReferral; onSaved: (ite
 
 export default function TutoringNotifications({ refresh }: { refresh: number }) {
   const [items, setItems] = useState<TutoringReferral[]>([]);
+  const [drafts, setDrafts] = useState<Record<string, CaseDraft>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState("");
+  const [situation, setSituation] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -63,19 +74,24 @@ export default function TutoringNotifications({ refresh }: { refresh: number }) 
     finally { setSaving(false); }
   };
 
-  return <section aria-labelledby="tutoring-inbox-title" className="rounded-xl border bg-white p-5 space-y-3">
+  const words = normalizeStudentSearch(query).split(/\s+/).filter(Boolean);
+  const visible = items.filter((item) => words.every((word) => normalizeStudentSearch(item.studentName + " " + item.studentDni).includes(word)) && (!situation || (item.status || "PENDIENTE") === situation)).sort((a, b) => b.registeredAt.localeCompare(a.registeredAt));
+  const current = Math.min(page, Math.max(1, Math.ceil(visible.length / pageSize)));
+  return <section aria-labelledby="tutoring-inbox-title" className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
     <div className="flex flex-wrap justify-between gap-3">
       <h3 id="tutoring-inbox-title" className="font-bold">Notificaciones de tutoría{!loading && !error ? ` · ${items.filter((item) => !item.readAt).length} sin leer` : ""}</h3>
       <button type="button" disabled={loading || saving} onClick={() => setRetry((value) => value + 1)} className="rounded-lg bg-slate-100 px-3 py-2 disabled:opacity-50">Actualizar bandeja</button>
     </div>
     <p className="text-sm text-slate-600">Avisos internos de MGE creados al registrar una derivación. Marcar un aviso como leído no significa que el caso haya sido atendido.</p>
-    {loading ? <p role="status">Cargando notificaciones...</p> : error ? <p role="alert" className="text-red-700">{error}</p> : items.length === 0 ? <p>No hay derivaciones registradas.</p> : null}
-    {!loading && items.map((item) => <article key={item.studentDni} className="border-t pt-3 space-y-2">
-      <p className="font-semibold">{item.studentName} · {item.studentDni} · {item.readAt ? "Leído" : "Sin leer"}</p>
-      <p className="text-sm whitespace-pre-wrap break-words">{item.reason}</p>
+    <MgeListFilters label="Filtros de tutoría" query={query} onQuery={(value) => { setQuery(value); setPage(1); }} onClear={() => { setQuery(""); setSituation(""); setPage(1); }} filters={[{ label: "Situación", value: situation, onChange: (value) => { setSituation(value); setPage(1); }, options: [{ value: "", label: "Todos los casos" }, ...Object.entries(caseLabels).map(([value, label]) => ({ value, label }))] }]} />
+    {loading ? <p role="status">Cargando notificaciones...</p> : error ? <p role="alert" className="text-red-700">{error}</p> : visible.length === 0 ? <p>No hay derivaciones registradas.</p> : null}
+    {!loading && visible.slice((current - 1) * pageSize, current * pageSize).map((item) => <article key={item.studentDni} className="space-y-3 border-t border-slate-100 py-4">
+      <header className="flex flex-wrap items-start justify-between gap-3"><div><h4 className="text-sm font-semibold">{item.studentName}</h4><p className="mt-1 text-xs text-slate-500">DNI {item.studentDni} · {item.readAt ? "Leído" : "Sin leer"}</p></div><span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-800">{caseLabels[item.status || "PENDIENTE"]}</span></header>
+      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-slate-600">{item.reason}</p>
       <p className="text-xs text-slate-600">Registrado: {new Date(item.registeredAt).toLocaleString("es-PE", { timeZone: "America/Lima" })} (Lima)</p>
       {!item.readAt ? <button type="button" disabled={saving} onClick={() => { void markRead(item.studentDni); }} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-50">Marcar como leído</button> : null}
-      <div key={`${item.studentDni}-${item.revision || 0}`}><TutoringCase item={item} onSaved={(saved) => setItems((current) => current.map((row) => row.studentDni === saved.studentDni ? saved : row))} /></div>
+      <div key={`${item.studentDni}-${item.revision || 0}`}><TutoringCase item={item} draft={drafts[item.studentDni] || { status: item.status || "PENDIENTE", responsible: item.responsible || "", note: "" }} onDraft={(draft) => setDrafts((current) => ({ ...current, [item.studentDni]: draft }))} onSaved={(saved) => { setItems((current) => current.map((row) => row.studentDni === saved.studentDni ? saved : row)); setDrafts((current) => { const next = { ...current }; delete next[item.studentDni]; return next; }); }} /></div>
     </article>)}
+    {!loading ? <MgeTablePagination total={visible.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} label="casos" /> : null}
   </section>;
 }

@@ -13,6 +13,26 @@ export interface RecordedPayment {
   receiptNumber?: string;
 }
 
+export function filterMgeReport(enrollments: Enrollment[], students: ProcessedStudent[], payments: RecordedPayment[], filters: { query: string; career: string; shift: string; situation: string }) {
+  const normalize = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const words = normalize(filters.query).trim().split(/\s+/).filter(Boolean);
+  const filtered = !!(words.length || filters.career || filters.shift || filters.situation);
+  if (!filtered) return { enrollments, students, payments };
+  const byDni = new Map(students.map((student) => [student.dni, student]));
+  const matches = (dni: string, enrollment?: Enrollment) => {
+    const student = byDni.get(dni);
+    return words.every((word) => normalize(`${dni} ${student?.name || ""} ${student?.lastName || ""}`).includes(word)) &&
+      (!filters.career || (enrollment?.programId || student?.programId) === filters.career) &&
+      (!filters.shift || (enrollment?.shift || student?.shift) === filters.shift) &&
+      (!filters.situation || enrollment?.academicStatus === filters.situation);
+  };
+  const selectedEnrollments = enrollments.filter((row) => matches(row.studentDni, row));
+  const dnis = new Set(selectedEnrollments.map((row) => row.studentDni));
+  for (const student of students) if (!enrollments.some((row) => row.studentDni === student.dni) && matches(student.dni)) dnis.add(student.dni);
+  // Keep inactive students in the cohort so their historical receipts remain auditable.
+  return { enrollments: selectedEnrollments, students: students.filter((row) => dnis.has(row.dni)), payments: payments.filter((row) => dnis.has(row.studentDni)) };
+}
+
 export function summarizeMge(enrollments: Enrollment[], students: ProcessedStudent[], payments: RecordedPayment[], attendance: AttendanceRecord[], today = academicToday()) {
   const inactive = new Set(students.filter((student) => student.active === false).map((student) => student.dni));
   const activeEnrollments = enrollments.filter((row) => !inactive.has(row.studentDni));
@@ -29,7 +49,7 @@ export function summarizeMge(enrollments: Enrollment[], students: ProcessedStude
     if (!/^\d{4}-\d{2}-\d{2}$/.test(record.date) || record.date > today) continue;
     for (const [dni, status] of Object.entries(record.statusMap)) {
       if (activeDnis.has(dni) && ["Presente", "Tardanza", "Falta", "Justificado"].includes(status)) {
-        marks.set(JSON.stringify([record.courseId, record.date, dni]), status);
+        marks.set(JSON.stringify([record.programmingId ? "session" : "legacy", record.programmingId || record.courseId, record.date, dni]), status);
       }
     }
   }

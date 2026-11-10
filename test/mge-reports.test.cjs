@@ -172,3 +172,42 @@ test('MGE restores the selected submenu after a reload and ignores unknown saved
   const blocked = mount({ getItem() { throw new Error('Storage unavailable'); }, setItem() { throw new Error('Storage unavailable'); } });
   assert.equal(blocked.render().activeSubTab, 'estudiantes');
 });
+
+test('different programmed classes on one day count separately and empty sessions do not imply absence', () => {
+  const summary = reports.summarizeMge([], [{ dni: '12345678' }], [], [
+    { courseId: 'c1', programmingId: 'theory', date: '2026-10-19', statusMap: { '12345678': 'Presente' } },
+    { courseId: 'c1', programmingId: 'lab', date: '2026-10-19', statusMap: { '12345678': 'Falta' } },
+    { courseId: 'c1', programmingId: 'future', date: '2026-10-20', statusMap: {} },
+  ]);
+  assert.equal(summary.recordedMarks, 2);
+  assert.equal(summary.attendanceRate, 50);
+});
+
+
+test('report filters apply the same student cohort to enrollment, historical receipts and attendance', () => {
+  const enrollments = [
+    { studentDni: '11111111', programId: 'electric', shift: 'Mañana', academicStatus: 'MATRICULADO', paymentStatus: 'Validado' },
+    { studentDni: '22222222', programId: 'account', shift: 'Tarde', academicStatus: 'ADMITIDO', paymentStatus: 'Pendiente' },
+    { studentDni: '33333333', programId: 'electric', shift: 'Mañana', academicStatus: 'MATRICULADO', paymentStatus: 'Validado' },
+  ];
+  const students = [
+    { dni: '11111111', name: 'Diego', lastName: 'Huamán', programId: 'old-career', shift: 'Noche' },
+    { dni: '22222222', name: 'Ana', lastName: 'Ramos', programId: 'account' },
+    { dni: '33333333', name: 'Juan', lastName: 'Pérez', active: false, programId: 'electric' },
+  ];
+  const payments = students.map((student) => ({ studentDni: student.dni, concept: 'Matrícula', amount: 100, status: 'APROBADO' }));
+  const filtered = reports.filterMgeReport(enrollments, students, payments, { query: '', career: 'electric', shift: 'Mañana', situation: 'MATRICULADO' });
+  const summary = reports.summarizeMge(filtered.enrollments, filtered.students, filtered.payments, [{ courseId: 'c', date: '2026-10-19', statusMap: { '11111111': 'Presente', '22222222': 'Falta', '33333333': 'Falta' } }]);
+  assert.equal(summary.totalMatriculados, 1);
+  assert.equal(summary.totalCollected, 200, 'inactive historical receipt stays in the selected career cohort');
+  assert.equal(summary.attendanceRate, 100);
+  assert.equal(summary.recordedMarks, 1);
+  const searched = reports.filterMgeReport(enrollments, students, payments, { query: 'huaman diego', career: '', shift: '', situation: '' });
+  assert.deepEqual(Array.from(searched.payments, (row) => row.studentDni), ['11111111']);
+  const empty = reports.filterMgeReport(enrollments, students, payments, { query: '', career: 'missing', shift: '', situation: '' });
+  assert.equal(empty.enrollments.length, 0);
+  assert.equal(empty.students.length, 0);
+  assert.equal(empty.payments.length, 0);
+  const unfiltered = reports.filterMgeReport(enrollments, students, [...payments, { studentDni: 'unknown' }], { query: '  ', career: '', shift: '', situation: '' });
+  assert.equal(unfiltered.payments.length, 4, 'unfiltered reports retain all historical receipts');
+});

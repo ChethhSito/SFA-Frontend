@@ -308,3 +308,18 @@ test('certificate management uses the Firebase token while public verification e
   await app.api.verifyCertificate('12345678-1234-1234-1234-123456789abc');
   assert.equal(app.requests[1].headers.Authorization, undefined);
 });
+
+test('payment review persists the observation with the confirmed status and preserves the academic record', async () => {
+  const app = setup();
+  const original = { studentDni: '00123456', academicStatus: 'MATRICULADO', paymentStatus: 'Validado', paymentOperation: 'OP-123', programId: 'cont', shift: 'Mañana' };
+  app.render().setEnrollments([original]);
+  const confirmed = { ...original, paymentStatus: 'Observado', paymentObservations: 'La operación no coincide con el comprobante.' };
+  app.response(async () => ({ ok: true, json: async () => confirmed }));
+  await app.render().handleUpdateEnrollmentByDni(original.studentDni, { paymentStatus: 'Observado', paymentObservations: confirmed.paymentObservations });
+  const request = JSON.parse(app.requests[0].body);
+  assert.equal(request.paymentObservations, confirmed.paymentObservations);
+  assert.equal(request.paymentStatus, 'Observado');
+  assert.equal(request.academicStatus, undefined);
+  assert.equal(app.render().enrollments[0].academicStatus, 'MATRICULADO');
+  assert.equal(JSON.parse(app.storage.get('sfa_enrollments'))[0].paymentObservations, confirmed.paymentObservations);
+});

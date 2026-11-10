@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { fetchCertificateFile, fetchCertificates, IssuedCertificate, registerCertificate, revokeCertificate, verifyCertificate } from "../../../services/api";
 import { downloadFile } from "../../../utils/mgeExports";
 import { academicToday } from "../../../utils/attendance";
+import { LockKeyhole, FileUp, RefreshCw } from "lucide-react";
 
 const fingerprint = async (bytes: ArrayBuffer) => {
   if (!crypto.subtle) throw new Error("La verificación de integridad requiere HTTPS o localhost.");
@@ -11,7 +12,7 @@ function readFile(file: File) {
   return new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(",")[1]); reader.onerror = reject; reader.onabort = reject; reader.readAsDataURL(file); });
 }
 
-export default function CertificateDocuments({ dni, ready }: { dni: string; ready: boolean }) {
+export default function CertificateDocuments({ dni, ready, authRevision = 0 }: { dni: string; ready: boolean; authRevision?: number }) {
   const [items, setItems] = useState<IssuedCertificate[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -31,10 +32,10 @@ export default function CertificateDocuments({ dni, ready }: { dni: string; read
     fetchCertificates(dni).then((rows) => {
       if (!Array.isArray(rows)) throw new Error("No disponible");
       if (active) setItems(rows);
-    }).catch(() => { if (active) setLoadError("No se pudieron consultar los certificados. La cuenta Firebase necesita un claim de rol mge, administrador o superadmin."); })
+    }).catch(() => { if (active) setLoadError("No se pudieron cargar los certificados. Ingrese con su cuenta en Acceso a expedientes, arriba. Si ya ingresó, verifique los permisos de la cuenta y la conexión con el servidor."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [dni, retry]);
+  }, [dni, retry, authRevision]);
   const current = items.find((item) => item.active);
   const run = async (action: () => Promise<void>) => { if (busy) return; setBusy(true); setError(""); try { await action(); } catch (failure) { setError(failure instanceof Error ? failure.message : "No se pudo completar la operación."); } finally { setBusy(false); } };
   const register = async () => {
@@ -58,19 +59,18 @@ export default function CertificateDocuments({ dni, ready }: { dni: string; read
     if (compare) comparison = await fingerprint(await compare.arrayBuffer()) === result.sha256 ? " El PDF coincide con el archivo registrado." : " El PDF NO coincide con el archivo registrado.";
     setVerification(`Documento ${result.number}: ${result.active ? "registro vigente" : "registro revocado"}.${comparison} La firma criptográfica no se valida en este módulo.`);
   };
-  return <section className="border-t pt-4 space-y-3">
-    <h4 className="font-semibold">PDF del certificado emitido</h4>
-    <p className="text-sm text-slate-600">Adjunte el documento emitido por la institución con su número y fecha reales. Se conserva el PDF original y se verifica su integridad; el sistema no genera ni valida una firma institucional.</p>
-    <button type="button" disabled={loading || busy} onClick={() => setRetry((value) => value + 1)} className="border rounded-lg px-3 py-2 disabled:opacity-50">Actualizar documentos</button>
+  return <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6"><div className="flex items-center gap-3"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-sm font-bold text-[#9F062A]">2</span><div><h4 className="font-bold text-slate-900">Certificado institucional</h4><p className="mt-0.5 text-xs text-slate-500">{current ? "Consulte el documento registrado y su vigencia." : "Registre el PDF emitido por la institución."}</p></div></div><button type="button" disabled={loading || busy} onClick={() => setRetry((value) => value + 1)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50"><RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />Actualizar</button></div>
+    <div className="space-y-4 p-5 sm:p-6">
     {loading ? <p role="status">Cargando documentos...</p> : loadError ? <p role="alert" className="text-red-700 text-sm">{loadError}</p> : <>
-      {!current ? <fieldset disabled={busy || !ready} className="grid sm:grid-cols-2 gap-3">
+      {!current && ready ? <fieldset disabled={busy} className="grid sm:grid-cols-2 gap-4">
         <label className="text-sm">Número del documento<input value={number} onChange={(event) => setNumber(event.target.value)} maxLength={80} className="block border rounded-lg p-2 w-full mt-1" /></label>
         <label className="text-sm">Fecha de emisión<input type="date" value={date} max={academicToday()} onChange={(event) => setDate(event.target.value)} className="block border rounded-lg p-2 w-full mt-1" /></label>
         <label className="text-sm">Firmante según el PDF<input value={issuer} onChange={(event) => setIssuer(event.target.value)} maxLength={150} className="block border rounded-lg p-2 w-full mt-1" /></label>
-        <label className="text-sm">PDF institucional (máximo 5 MB)<input type="file" accept="application/pdf,.pdf" onChange={(event) => setFile(event.target.files?.[0] || null)} className="block mt-1 max-w-full" /></label>
+        <label className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 text-sm"><span className="flex items-center gap-2 font-medium"><FileUp className="h-4 w-4 text-[#9F062A]" />Adjuntar PDF institucional</span><span className="mt-1 block text-xs text-slate-500">Tamaño máximo: 5 MB</span><input type="file" accept="application/pdf,.pdf" onChange={(event) => setFile(event.target.files?.[0] || null)} className="block mt-2 w-full text-xs file:mr-3 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-2 file:text-slate-700" /></label>
         <button type="button" disabled={busy || !ready || !file || !number.trim() || !date || !issuer.trim()} onClick={() => { void run(register); }} className="bg-[#9F062A] text-white rounded-lg px-3 py-2 disabled:opacity-50">Registrar PDF emitido</button>
       </fieldset> : null}
-      {!ready && !current ? <p className="text-sm text-amber-800">Guarde todos los requisitos y marque el expediente Apto antes de registrar un certificado.</p> : null}
+      {!ready && !current ? <div className="flex items-start gap-3 rounded-xl bg-slate-50 p-5"><div className="rounded-lg border border-slate-200 bg-white p-2"><LockKeyhole className="h-5 w-5 text-slate-400" /></div><div><p className="text-sm font-semibold text-slate-700">Registro de certificado pendiente</p><p className="mt-1 text-sm leading-relaxed text-slate-500">Complete y guarde los cuatro requisitos del paso 1. Después, marque el expediente como apto para habilitar la carga del PDF.</p></div></div> : null}
       {items.map((item) => <article key={item._id} className="rounded-lg border p-3 space-y-2 text-sm"><p className="font-semibold">{item.number} · {item.active ? "Vigente en el registro" : "Revocado"} · Emitido: {item.issuedDate}</p><p>Firmante declarado: {item.issuerName}</p>
         <label className="block">Código de verificación del registro<input readOnly value={item.verificationCode} className="block border rounded-lg p-2 w-full mt-1" /></label>
         <div className="flex flex-wrap gap-3"><button type="button" disabled={busy} onClick={() => { void run(() => download(item)); }} className="border rounded-lg px-3 py-2">{item.active ? "Descargar PDF original" : "Descargar PDF archivado"}</button><button type="button" disabled={busy} onClick={() => { void run(() => verify(item)); }} className="border rounded-lg px-3 py-2">Verificar registro</button>
@@ -82,5 +82,7 @@ export default function CertificateDocuments({ dni, ready }: { dni: string; read
     </>}
     {verification ? <p role="status" className="rounded-lg bg-blue-50 p-3 text-sm">{verification}</p> : null}
     {error ? <p role="alert" className="text-red-700 text-sm">{error}</p> : null}
+    <details className="border-t border-slate-100 pt-3 text-xs text-slate-500"><summary className="cursor-pointer font-medium">Sobre el documento y su verificación</summary><p className="mt-2 leading-relaxed">Se conserva el PDF original con su número y fecha de emisión. La verificación comprueba que el archivo coincide con el registrado; no valida su firma criptográfica ni genera una firma institucional.</p></details>
+    </div>
   </section>;
 }

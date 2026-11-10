@@ -1080,6 +1080,8 @@ export default function DocenteDashboard({
                     {/* Sub-item 1: Asistencia */}
                     {selectedWeekOption === "asistencia" && (
                       <AsistenciaManager
+                        teacherDni={effectiveTeacherDni}
+                        course={selectedCourse!}
                         loading={attendanceLoading}
                         error={attendanceError}
                         onReload={onReloadAttendance}

@@ -77,15 +77,12 @@ export default function ControlAsistenciaPrincipal({
     // Parse week and session typed from ID: `att-${courseId}-w${week}-${session}`
     const idParts = record.id.split("-");
     let weekNum = record.week || 0;
-    let sessionType = "Registro diario";
+    const sessionType = record.sessionType || "Registro histórico sin tipo";
 
     // Regex check week
     const weekMatch = record.id.match(/-w(\d+)-/);
     if (weekMatch) {
       weekNum = record.week || parseInt(weekMatch[1], 10);
-    }
-    if (record.id.toLowerCase().includes("-laboratorio") || record.id.toLowerCase().includes("lab")) {
-      sessionType = "Laboratorio";
     }
 
     // Filter course

@@ -66,6 +66,7 @@ export interface ProcessedStudent {
   emergencyRelation?: string;
   enrolled: boolean;
   academicStatus: string;
+  enrollmentStatus?: string;
   programId: string;
   shift: string;
   paymentStatus: string;

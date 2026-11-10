@@ -206,6 +206,10 @@ export interface CourseEvaluation {
 }
 
 export interface AttendanceRecord {
+  programmingId?: string;
+  groupId?: string;
+  periodId?: string;
+  sessionType?: string;
   week?: number;
   id: string;
   courseId: string;

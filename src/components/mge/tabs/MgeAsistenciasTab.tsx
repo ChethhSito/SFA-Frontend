@@ -1,175 +1,69 @@
-import React from "react";
-import { CheckSquare } from "lucide-react";
+import React, { useState } from "react";
+import { Search, ArrowUpDown, Info, RefreshCw } from "lucide-react";
 import { Course, AttendanceRecord } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
 import { academicToday } from "../../../utils/attendance";
+import { normalizeStudentSearch } from "../../../utils/studentFormValidation";
+import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
+import ConfirmModal from "../../ui/ConfirmModal";
+import MgeTablePagination from "../MgeTablePagination";
 
+type Mark = "Presente" | "Tardanza" | "Falta" | "Justificado";
+const marks: Mark[] = ["Presente", "Tardanza", "Falta", "Justificado"];
+const styles: Record<Mark, string> = { Presente: "bg-emerald-50 text-emerald-700", Tardanza: "bg-amber-50 text-amber-800", Falta: "bg-red-50 text-red-700", Justificado: "bg-blue-50 text-blue-700" };
 interface Props {
-  loading: boolean;
-  error: string | null;
+  sessionMode?: boolean; readOnly?: boolean;
+  loading: boolean; error: string | null; saving: boolean;
   onReload: () => Promise<boolean>;
-  courses: Course[];
-  processedStudents: ProcessedStudent[];
-  attendance: AttendanceRecord[];
-  selectedAttendanceCourseId: string;
-  selectedAttendanceDate: string;
-  onCourseChange: (id: string) => void;
-  onDateChange: (date: string) => void;
-  onUpdateStudentAttendance: (dni: string, status: "Presente" | "Tardanza" | "Falta" | "Justificado") => void;
-  onFillAttendanceAll: (status: "Presente" | "Falta") => void;
+  courses: Course[]; processedStudents: ProcessedStudent[]; attendance: AttendanceRecord[];
+  selectedAttendanceCourseId: string; selectedAttendanceDate: string;
+  onCourseChange: (id: string) => void; onDateChange: (date: string) => void;
+  onUpdateStudentAttendance: (dni: string, status: Mark) => Promise<boolean | undefined>;
+  onFillAttendanceAll: (status: "Presente" | "Falta", dnis: string[]) => Promise<boolean | undefined>;
 }
-
-export default function MgeAsistenciasTab({
-  loading,
-  error,
-  onReload,
-  courses,
-  processedStudents,
-  attendance,
-  selectedAttendanceCourseId,
-  selectedAttendanceDate,
-  onCourseChange,
-  onDateChange,
-  onUpdateStudentAttendance,
-  onFillAttendanceAll,
-}: Props) {
-  const activeAttendanceRecord = attendance.find(
-    (att) => att.courseId === selectedAttendanceCourseId && att.date === selectedAttendanceDate
-  );
-
-  const course = courses.find((c) => c.id === selectedAttendanceCourseId);
-  const studentsInAttendanceCourse = course
-    ? processedStudents.filter(
-        (s) => s.enrolled && s.academicStatus === "MATRICULADO" && s.programId === (course.careerId || course.career)
-      )
-    : [];
-
+export default function MgeAsistenciasTab({ sessionMode = false, readOnly = false, loading, error, saving, onReload, courses, processedStudents, attendance, selectedAttendanceCourseId, selectedAttendanceDate, onCourseChange, onDateChange, onUpdateStudentAttendance, onFillAttendanceAll }: Props) {
+  const { programs } = useAcademicCatalog();
+  const [query, setQuery] = useState("");
+  const [situation, setSituation] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [ascending, setAscending] = useState(true);
+  const [bulk, setBulk] = useState<"Presente" | "Falta" | null>(null);
+  const [onlyUnmarked, setOnlyUnmarked] = useState(true);
+  const [saveError, setSaveError] = useState("");
+  const record = attendance.find((item) => item.courseId === selectedAttendanceCourseId && item.date === selectedAttendanceDate);
+  const course = courses.find((item) => item.id === selectedAttendanceCourseId);
+  const students = course ? processedStudents.filter((student) => student.active !== false && student.enrolled && student.academicStatus === "MATRICULADO" && student.programId === (course.careerId || course.career)) : [];
+  const statusFor = (dni: string) => record?.statusMap[dni];
+  const validDate = /^\d{4}-\d{2}-\d{2}$/.test(selectedAttendanceDate);
+  const words = normalizeStudentSearch(query).split(/\s+/).filter(Boolean);
+  const rows = students.filter((student) => words.every((word) => normalizeStudentSearch(`${student.lastName} ${student.name} ${student.dni}`).includes(word)) && (!situation || (situation === "missing" ? !statusFor(student.dni) : statusFor(student.dni) === situation)))
+    .sort((a, b) => (ascending ? 1 : -1) * `${a.lastName} ${a.name}`.localeCompare(`${b.lastName} ${b.name}`, "es", { sensitivity: "base" }) || a.dni.localeCompare(b.dni));
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(rows.length / pageSize))), start = (currentPage - 1) * pageSize;
+  const targets = students.filter((student) => !onlyUnmarked || !statusFor(student.dni));
+  const changedExisting = targets.filter((student) => statusFor(student.dni) && statusFor(student.dni) !== bulk).length;
+  const control = "mt-1.5 block h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-normal text-slate-700 focus:outline-[#9F062A]";
+  const clear = () => { setQuery(""); setSituation(""); setPage(1); };
   if (loading) return <p role="status">Cargando asistencias del servidor...</p>;
-  if (error) return <div role="alert" className="space-y-3 text-red-700"><p>{error}</p><button type="button" onClick={() => { void onReload(); }} className="rounded-lg border px-3 py-2">Reintentar carga</button></div>;
-
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 border border-slate-200 rounded-xl">
-        <div>
-          <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider block mb-1">
-            1. Curso / Turno Evaluado:
-          </label>
-          <select
-            aria-label="Curso de asistencia"
-            value={selectedAttendanceCourseId}
-            onChange={(e) => onCourseChange(e.target.value)}
-            className="w-full p-2 border border-slate-250 bg-white font-bold rounded-lg text-xs"
-          >
-            {courses.map((c) => (
-              <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider block mb-1">
-            2. Fecha Registrada:
-          </label>
-          <input
-            aria-label="Fecha de asistencia"
-            type="date"
-            value={selectedAttendanceDate}
-            onChange={(e) => onDateChange(e.target.value)}
-            className="w-full p-2 border border-slate-250 bg-white font-bold rounded-lg text-xs"
-          />
-          {selectedAttendanceDate > academicToday() ? <p role="status" className="mt-2 text-xs text-amber-800">
-            Fecha futura: estas marcas se guardan, pero se incluirán en los porcentajes de asistencia y riesgo académico cuando llegue esa fecha (hora de Lima).
-          </p> : null}
-        </div>
-      </div>
-
-      <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-        <div className="bg-slate-900 text-white px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <span className="text-xs font-black uppercase tracking-wider flex items-center gap-2">
-            <CheckSquare className="w-4 h-4 text-[#9F062A]" />
-            Control de Asistencia del {selectedAttendanceDate}
-          </span>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => onFillAttendanceAll("Presente")}
-              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] uppercase font-bold cursor-pointer"
-            >
-              Marcar Todos Presentes
-            </button>
-            <button
-              onClick={() => onFillAttendanceAll("Falta")}
-              className="px-2.5 py-1 bg-red-700 hover:bg-red-800 text-white rounded text-[10px] uppercase font-bold cursor-pointer"
-            >
-              Marcar Todos Faltas
-            </button>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-wider">Estudiante</th>
-                <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-wider">DNI</th>
-                <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-wider">Estado de Asistencia</th>
-                <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-wider text-right">Acción de Registro</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
-              {studentsInAttendanceCourse.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-400 font-extrabold uppercase">
-                    No hay alumnos asignados a la carrera vinculada a esta asignatura curricular.
-                  </td>
-                </tr>
-              ) : (
-                studentsInAttendanceCourse.map((st) => {
-                  const currentStatus = activeAttendanceRecord?.statusMap[st.dni] || "";
-                  return (
-                    <tr key={st.dni} className="hover:bg-slate-50/50">
-                      <td className="px-4 py-3 font-extrabold text-slate-900">{st.lastName}, {st.name}</td>
-                      <td className="px-4 py-3 font-bold font-mono text-slate-700">{st.dni}</td>
-                      <td className="px-4 py-3">
-                        {!currentStatus ? <span className="text-slate-500">Sin registrar</span> : null}
-                        {currentStatus === "Presente" && (
-                          <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-black uppercase text-[9.5px]">Presente</span>
-                        )}
-                        {currentStatus === "Tardanza" && (
-                          <span className="px-2 py-0.5 rounded bg-yellow-50 text-yellow-700 font-black uppercase text-[9.5px]">Tardanza</span>
-                        )}
-                        {currentStatus === "Falta" && (
-                          <span className="px-2 py-0.5 rounded bg-red-50 text-red-700 font-black uppercase text-[9.5px]">Falta de Asistencia</span>
-                        )}
-                        {currentStatus === "Justificado" && (
-                          <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-black uppercase text-[9.5px]">Justificado</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-1.5">
-                          {(["Presente", "Tardanza", "Falta", "Justificado"] as const).map((opt) => (
-                            <button
-                              key={opt}
-                              onClick={() => onUpdateStudentAttendance(st.dni, opt)}
-                              className={`px-2 py-1 text-[9px] font-black rounded uppercase transition-all cursor-pointer ${
-                                currentStatus === opt
-                                  ? "bg-slate-800 text-white"
-                                  : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-                              }`}
-                            >
-                              {opt}
-                            </button>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
+  if (error) return <div role="alert" className="space-y-3 rounded-xl border border-red-200 bg-white p-5 text-sm text-red-700"><p>{error}</p><button type="button" onClick={() => { void onReload(); }} className="rounded-lg border px-3 py-2">Reintentar carga</button></div>;
+  return <div className="space-y-5">
+    <header><h2 className="text-lg font-bold text-slate-900">{readOnly ? "Asistencia histórica" : "Registro de la sesión"}</h2><p className="mt-1 text-sm text-slate-500">{readOnly ? "Este registro no tiene grupo asociado y se conserva para consulta." : "Cada marca se guarda para esta sesión y su lista de alumnos."}</p></header>
+    <section aria-label="Filtros de asistencias" className="rounded-xl border border-slate-200 bg-white p-4"><div className="grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(200px,1.2fr)_minmax(0,1.7fr)_minmax(170px,1fr)_minmax(0,1fr)_auto]">
+      <label htmlFor="attendance-search" className="text-xs font-semibold text-slate-500">Buscador<div className="relative mt-1.5"><Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" /><input id="attendance-search" aria-label="Buscar estudiante en asistencias" placeholder="Nombre o DNI" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} className="h-11 w-full rounded-lg border border-slate-200 pl-9 pr-3 text-sm font-normal focus:outline-[#9F062A]" /></div></label>
+      <label htmlFor="attendance-course" className="min-w-0 text-xs font-semibold text-slate-500">Curso<select id="attendance-course" value={selectedAttendanceCourseId} disabled={saving || sessionMode || !courses.length} onChange={(event) => { onCourseChange(event.target.value); setPage(1); setSaveError(""); }} className={control}>{!courses.length ? <option value="">Sin cursos disponibles</option> : null}{courses.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.code}) · {programs.find((program) => program.id === (item.careerId || item.career))?.name || (sessionMode ? "Sesión seleccionada" : item.careerId || item.career)}</option>)}</select></label>
+      <label htmlFor="attendance-date" className="text-xs font-semibold text-slate-500">Fecha<input id="attendance-date" type="date" aria-label="Fecha de asistencia" value={selectedAttendanceDate} disabled={saving || sessionMode} onChange={(event) => { onDateChange(event.target.value); setPage(1); setSaveError(""); }} className={control} /></label>
+      <label htmlFor="attendance-status" className="text-xs font-semibold text-slate-500">Situación<select id="attendance-status" value={situation} onChange={(event) => { setSituation(event.target.value); setPage(1); }} className={control}><option value="">Todas las situaciones</option><option value="missing">Sin registrar</option>{marks.map((mark) => <option key={mark}>{mark}</option>)}</select></label>
+      {query || situation ? <button type="button" onClick={clear} className="h-11 rounded-lg px-3 text-xs font-semibold text-[#9F062A] hover:bg-rose-50">Limpiar</button> : null}
+    </div></section>
+    {!validDate ? <p role="alert" className="text-sm text-amber-800">Seleccione una fecha para registrar asistencia.</p> : selectedAttendanceDate > academicToday() ? <p role="status" className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">Fecha futura: las marcas se guardarán, pero se incluirán en los porcentajes cuando llegue esa fecha, según la hora de Lima.</p> : null}
+    <section aria-label="Registro de asistencias" className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-5 py-4"><div><h3 className="font-bold text-slate-900">{course?.name || "Seleccione un curso"}</h3><p className="mt-1 text-xs text-slate-500">{validDate ? selectedAttendanceDate.split("-").reverse().join("/") : "Sin fecha seleccionada"} · {students.length} estudiantes</p></div><div className="flex flex-wrap items-center gap-3"><button type="button" disabled={saving} onClick={() => { void onReload(); }} aria-label="Actualizar asistencias" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><RefreshCw className="h-4 w-4" /></button>{(["Presente", "Falta"] as const).map((mark) => <button key={mark} type="button" disabled={saving || readOnly || !validDate || !students.length} onClick={() => { setOnlyUnmarked(true); setSaveError(""); setBulk(mark); }} className={`rounded-lg border px-3 py-2 text-xs font-semibold disabled:opacity-40 ${mark === "Presente" ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50" : "border-red-200 text-red-700 hover:bg-red-50"}`}>{mark === "Presente" ? "Marcar presentes" : "Marcar faltas"}</button>)}</div></header>
+      <div className="flex flex-wrap gap-x-5 gap-y-2 border-b border-slate-100 px-5 py-3 text-xs text-slate-500">{marks.map((mark) => <span key={mark}>{students.filter((student) => statusFor(student.dni) === mark).length} {mark === "Presente" ? "presentes" : mark === "Falta" ? "faltas" : mark === "Tardanza" ? "tardanzas" : "justificados"}</span>)}<span>{students.filter((student) => !statusFor(student.dni)).length} sin registrar</span>{saving ? <span role="status" className="font-semibold text-[#9F062A]">Guardando…</span> : null}</div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[830px] text-left text-sm"><thead className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500"><tr><th scope="col" className="px-5 py-4" aria-sort={ascending ? "ascending" : "descending"}><button type="button" onClick={() => { setAscending(!ascending); setPage(1); }} className="flex items-center gap-2">Estudiante<ArrowUpDown className="h-3.5 w-3.5" /></button></th><th scope="col" className="px-4 py-4">Estado guardado</th><th scope="col" className="px-5 py-4 text-right">Registrar asistencia</th></tr></thead><tbody className="divide-y divide-slate-100">{rows.slice(start, start + pageSize).map((student) => { const current = statusFor(student.dni); return <tr key={student.dni} className="hover:bg-slate-50/60"><td className="px-5 py-4"><p className="font-semibold text-slate-900">{student.lastName}, {student.name}</p><p className="mt-1 text-xs text-slate-500">DNI {student.dni}</p></td><td className="px-4 py-4">{current && marks.includes(current as Mark) ? <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${styles[current as Mark]}`}>{current}</span> : <span className="text-xs text-slate-400">Sin registrar</span>}</td><td className="px-5 py-4"><div className="flex justify-end gap-2" role="group" aria-label={`Asistencia de ${student.name} ${student.lastName}`}>{marks.map((mark) => <button key={mark} type="button" aria-label={`${mark}: ${student.name} ${student.lastName}`} aria-pressed={current === mark} disabled={saving || readOnly || !validDate || current === mark} onClick={async () => { setSaveError(""); try { if (!await onUpdateStudentAttendance(student.dni, mark)) setSaveError("No se pudo guardar la asistencia. El estado anterior se conserva; reintente."); } catch { setSaveError("No se pudo guardar la asistencia. Intente nuevamente."); } }} className={`rounded-lg border px-3 py-2 text-xs font-semibold disabled:cursor-default ${current === mark ? `${styles[mark]} border-transparent` : "border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40"}`}>{mark}</button>)}</div></td></tr>; })}</tbody></table>{!rows.length ? <div className="p-10 text-center"><p className="font-semibold text-slate-700">{students.length ? "No hay estudiantes con estos filtros" : "No hay estudiantes disponibles para este curso"}</p><p className="mt-2 text-sm text-slate-500">{students.length ? "Cambie la búsqueda o la situación seleccionada." : "Se muestran estudiantes activos y matriculados en la carrera del curso."}</p></div> : null}</div>
+      <MgeTablePagination total={rows.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={setPageSize} label="estudiantes" />
+    </section>
+    {saveError ? <p role="alert" className="text-sm text-red-700">{saveError}</p> : null}
+    <p className="flex gap-2 text-xs leading-relaxed text-slate-500"><Info className="h-4 w-4 shrink-0" />Sin registrar no equivale a falta. Las marcas individuales se guardan de inmediato; las acciones masivas piden confirmar el alcance.</p>
+    <ConfirmModal isOpen={!!bulk} title={bulk === "Presente" ? "Marcar asistencia como presente" : "Marcar asistencia como falta"} variant={bulk === "Falta" ? "danger" : "primary"} isLoading={saving} message={<div className="space-y-3"><p className="font-semibold text-slate-700">{course?.name} · {selectedAttendanceDate.split("-").reverse().join("/")}</p><label className="flex items-start gap-2"><input type="checkbox" checked={onlyUnmarked} disabled={saving} onChange={(event) => setOnlyUnmarked(event.target.checked)} className="mt-0.5 accent-[#9F062A]" />Solo estudiantes sin registrar</label><p>Se aplicará a {targets.length} estudiantes del curso, incluyendo otras páginas y resultados ocultos por los filtros.</p>{changedExisting ? <p className="text-red-700">Se reemplazarán {changedExisting} marcas anteriores.</p> : null}{!targets.length ? <p className="text-amber-800">No hay estudiantes pendientes de registrar.</p> : null}{saveError ? <p role="alert" className="text-red-700">{saveError}</p> : null}</div>} confirmText={!targets.length ? "Cerrar" : saving ? "Guardando…" : `Confirmar ${targets.length} registros`} onClose={() => { if (!saving) setBulk(null); }} onConfirm={async () => { if (!targets.length) { setBulk(null); return; } if (!bulk || saving) return; setSaveError(""); try { if (await onFillAttendanceAll(bulk, targets.map((student) => student.dni))) setBulk(null); else setSaveError("No se pudo completar el registro masivo. Los estados anteriores se conservan."); } catch { setSaveError("No se pudo guardar la asistencia. Intente nuevamente."); } }} />
+  </div>;
 }

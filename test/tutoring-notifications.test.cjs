@@ -27,7 +27,10 @@ function setup(api, component = 'TutoringNotifications') {
   const compiled = ts.transpileModule(source, { compilerOptions: {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.React, esModuleInterop: true,
   } }).outputText;
-  const context = { exports: {}, require: (name) => name === 'react' ? react : api };
+  const searchSource = fs.readFileSync(path.resolve(__dirname, '../src/utils/studentFormValidation.ts'), 'utf8');
+  const searchContext = { exports: {}, require: () => ({}) };
+  vm.runInNewContext(ts.transpileModule(searchSource, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, searchContext);
+  const context = { exports: {}, require: (name) => name === 'react' ? react : name.endsWith('/studentFormValidation') ? searchContext.exports : api };
   vm.runInNewContext(compiled, context);
   return {
     render(refresh = 0) { cursor = 0; return context.exports.default({ refresh }); },

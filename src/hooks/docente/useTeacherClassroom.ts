@@ -108,13 +108,22 @@ export function useTeacherClassroom() {
     let confirmed = [...attendance];
     try {
       for (const record of updatedList) {
-        const previous = attendance.find((item) => item.courseId === record.courseId && item.date === record.date);
+          // Scheduled sessions are edited through their own roster-aware endpoint.
+          if (record.programmingId) {
+            const original = attendance.find((item) => item.programmingId === record.programmingId && item.date === record.date);
+            if (Object.entries(record.statusMap || {}).some(([dni, status]) => original?.statusMap?.[dni] !== status)) {
+              setAttendanceError("Para modificar esta asistencia, abra su sesión programada.");
+              return false;
+            }
+            continue;
+          }
+        const previous = attendance.find((item) => !item.programmingId && item.courseId === record.courseId && item.date === record.date);
         const changes = Object.fromEntries(Object.entries(record.statusMap || {}).filter(([dni, status]) => previous?.statusMap?.[dni] !== status));
         if (!Object.keys(changes).length) continue;
         const response = await saveCourseAttendance(record.courseId, record.date, changes as Record<string, string>, record.week);
         if (!response) return false;
         const saved = { ...response, id: response._id || response.id || `${response.courseId}-${response.date}` };
-        const index = confirmed.findIndex((item) => item.courseId === saved.courseId && item.date === saved.date);
+        const index = confirmed.findIndex((item) => !item.programmingId && item.courseId === saved.courseId && item.date === saved.date);
         if (index >= 0) confirmed[index] = saved;
         else confirmed.push(saved);
         cacheAttendance([...confirmed]);
