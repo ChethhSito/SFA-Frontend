@@ -446,6 +446,9 @@ function PostulanteDashboardInner({
         notify("Por favor ingrese el número de operación de su depósito de matrícula.", "warning");
         return;
       }
+      try {
+        localStorage.removeItem(`sfa_matricula_voucher_data_${applicant.dni}`);
+      } catch (err) {}
       const updatedEnr: Enrollment = {
         ...currentEnr,
         paymentStatus: "Pendiente" as const,
@@ -461,6 +464,11 @@ function PostulanteDashboardInner({
       if (!stagedMatriculaPreview) {
         notify("Por favor seleccione la foto de su voucher de depósito de matrícula.", "warning");
         return;
+      }
+      try {
+        localStorage.setItem(`sfa_matricula_voucher_data_${applicant.dni}`, stagedMatriculaPreview);
+      } catch (err) {
+        console.warn("Could not cache matricula voucher in localStorage:", err);
       }
       const updatedEnr: Enrollment = {
         ...currentEnr,

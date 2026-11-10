@@ -40,12 +40,28 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
   notify,
 }) => {
   const [freshApp, setFreshApp] = useState<Applicant | null>(null);
+  const baseApp = selectedDossierAppDni
+    ? applicants.find((a) => a.dni === selectedDossierAppDni)
+    : undefined;
 
   useEffect(() => {
     if (!selectedDossierAppDni) {
       setFreshApp(null);
       return;
     }
+    const currentBase = applicants.find((a) => a.dni === selectedDossierAppDni);
+    const docKeys = ["dniFile", "certificadoFile", "partidaFile", "fotoFile"] as const;
+    const needsBinaryHydration =
+      !currentBase ||
+      docKeys.some((k) => {
+        const d = (currentBase.docs as any)?.[k];
+        return d && d.status && d.status !== "No Enviado" && !d.fileDataUrl;
+      });
+
+    if (!needsBinaryHydration) {
+      return;
+    }
+
     let cancelled = false;
     fetchApplicantByDni(selectedDossierAppDni)
       .then((apiApp) => {
@@ -61,35 +77,45 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
 
   if (!selectedDossierAppDni) return null;
 
-  const baseApp = applicants.find((a) => a.dni === selectedDossierAppDni);
-  const app = freshApp && freshApp.dni === selectedDossierAppDni
-    ? ({ ...(baseApp || {}), ...freshApp, docs: { ...(baseApp?.docs || {}), ...(freshApp.docs || {}) } } as Applicant)
-    : baseApp;
+  const app = baseApp
+    ? ({
+        ...(freshApp && freshApp.dni === selectedDossierAppDni ? freshApp : {}),
+        ...baseApp,
+      } as Applicant)
+    : freshApp && freshApp.dni === selectedDossierAppDni
+    ? freshApp
+    : undefined;
   if (!app) return null;
 
   const effectivePaymentStatus = app.paymentStatus || "No Pagado";
 
-  const rawAppDocs = app.docs || {};
   const buildDocEntry = (key: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile") => {
-    const raw = (rawAppDocs as any)[key] || (baseApp?.docs as any)?.[key] || {};
-    const freshRaw = (freshApp?.docs as any)?.[key] || {};
+    const baseRaw = (baseApp?.docs as any)?.[key] || {};
+    const freshRaw =
+      freshApp && freshApp.dni === selectedDossierAppDni
+        ? (freshApp.docs as any)?.[key] || {}
+        : {};
     const storedUrl =
       typeof window !== "undefined" ? localStorage.getItem(`sfa_file_data_${app.dni}_${key}`) : null;
-    const fileDataUrl = freshRaw.fileDataUrl || raw.fileDataUrl || storedUrl || undefined;
+    const fileDataUrl = baseRaw.fileDataUrl || freshRaw.fileDataUrl || storedUrl || undefined;
     if (!fileDataUrl) {
       return {
         status: "No Enviado" as const,
         fileName: undefined,
         fileDataUrl: undefined,
-        observations: raw.observations || freshRaw.observations,
+        observations: baseRaw.observations ?? freshRaw.observations,
       };
     }
-    const mergedStatus = raw.status || freshRaw.status;
+    const mergedStatus = baseRaw.status || freshRaw.status;
     return {
       ...freshRaw,
-      ...raw,
+      ...baseRaw,
       status: mergedStatus && mergedStatus !== "No Enviado" ? mergedStatus : ("Pendiente" as const),
-      fileName: raw.fileName || freshRaw.fileName || `${key}.jpg`,
+      fileName: baseRaw.fileName || freshRaw.fileName || `${key}.jpg`,
+      observations:
+        baseRaw.status === "Observado"
+          ? baseRaw.observations ?? freshRaw.observations
+          : undefined,
       fileDataUrl,
     };
   };

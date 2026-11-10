@@ -320,6 +320,7 @@ export default function AdminDashboard({
             return { 
               ...enr, 
               paymentStatus: "Validado" as any,
+              paymentOperation: enr.paymentOperation || "VENTANILLA-CAJA",
               academicStatus: (enr.academicStatus === "MATRICULADO" ? "MATRICULADO" : "ADMITIDO") as any 
             };
           }
@@ -416,16 +417,23 @@ export default function AdminDashboard({
   const handleResetEnrollmentPayment = (studentDni: string) => {
     const updated = enrollments.map((enr) => {
       if (enr.studentDni === studentDni) {
+        const hasStudentVoucherOrOp = Boolean(
+          enr.paymentVoucherUrl ||
+          enr.paymentVoucherFileName ||
+          (enr.paymentOperation && enr.paymentOperation !== "VENTANILLA-CAJA")
+        );
         return { 
           ...enr, 
-          paymentStatus: "Pendiente" as any,
+          paymentStatus: (hasStudentVoucherOrOp ? "Pendiente" : "No Pagado") as any,
+          paymentOperation:
+            enr.paymentOperation === "VENTANILLA-CAJA" ? undefined : enr.paymentOperation,
           academicStatus: "ADMITIDO" as any 
         };
       }
       return enr;
     });
     onUpdateEnrollments(updated);
-    notify("Estado del pago de matrícula restablecido a 'Pendiente' para su corrección.", "info");
+    notify("Estado del pago de matrícula restablecido para su corrección.", "info");
   };
 
 

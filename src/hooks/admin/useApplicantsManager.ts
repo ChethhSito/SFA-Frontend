@@ -48,6 +48,72 @@ function preserveExistingDocBinaries(prevApp: any, nextApp: any): any {
   };
 }
 
+function buildDeltaPatchPayload(prevApp: any, nextApp: any): any {
+  if (!prevApp) return nextApp;
+  const docKeys = ["dniFile", "certificadoFile", "partidaFile", "fotoFile"] as const;
+  const patchDocs: any = nextApp.docs ? { ...nextApp.docs } : undefined;
+  if (patchDocs) {
+    for (const key of docKeys) {
+      const prevDoc = prevApp.docs?.[key];
+      const nextDoc = nextApp.docs?.[key];
+      if (nextDoc && prevDoc && nextDoc.fileDataUrl && nextDoc.fileDataUrl === prevDoc.fileDataUrl) {
+        patchDocs[key] = { ...nextDoc };
+        delete patchDocs[key].fileDataUrl;
+      }
+    }
+  }
+  const payload: any = {
+    ...nextApp,
+    docs: patchDocs,
+  };
+  if (
+    prevApp.paymentVoucherUrl &&
+    nextApp.paymentVoucherUrl &&
+    nextApp.paymentVoucherUrl === prevApp.paymentVoucherUrl
+  ) {
+    delete payload.paymentVoucherUrl;
+  }
+  return payload;
+}
+
+function hasApplicantChanged(prevApp: any, nextApp: any): boolean {
+  if (!prevApp) return true;
+  if (
+    prevApp.folderStatus !== nextApp.folderStatus ||
+    prevApp.folderObservations !== nextApp.folderObservations ||
+    prevApp.paymentStatus !== nextApp.paymentStatus ||
+    prevApp.paymentOperation !== nextApp.paymentOperation ||
+    prevApp.paymentObservations !== nextApp.paymentObservations ||
+    prevApp.paymentVoucherFileName !== nextApp.paymentVoucherFileName ||
+    prevApp.paymentVoucherUrl !== nextApp.paymentVoucherUrl ||
+    prevApp.examClassroom !== nextApp.examClassroom ||
+    prevApp.examStatus !== nextApp.examStatus ||
+    prevApp.admitted !== nextApp.admitted ||
+    prevApp.programId !== nextApp.programId ||
+    prevApp.name !== nextApp.name ||
+    prevApp.lastName !== nextApp.lastName ||
+    prevApp.email !== nextApp.email ||
+    prevApp.phone !== nextApp.phone ||
+    JSON.stringify(prevApp.supportQueries || []) !== JSON.stringify(nextApp.supportQueries || [])
+  ) {
+    return true;
+  }
+  const docKeys = ["dniFile", "certificadoFile", "partidaFile", "fotoFile"] as const;
+  for (const key of docKeys) {
+    const p = prevApp.docs?.[key] || {};
+    const n = nextApp.docs?.[key] || {};
+    if (
+      p.status !== n.status ||
+      p.fileName !== n.fileName ||
+      p.observations !== n.observations ||
+      p.fileDataUrl !== n.fileDataUrl
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function useApplicantsManager(
   onAdmissionTrigger?: (updatedList: any[]) => void
 ) {
@@ -67,7 +133,6 @@ export function useApplicantsManager(
         applicantsRef.current = apiApps;
         try {
           localStorage.setItem("sfa_applicants", JSON.stringify(stripFileDataUrls(apiApps)));
-          // Limpiar cachés locales heredados que antes causaban estados o nombres de archivo fantasma
           for (const key of Object.keys(localStorage)) {
             if (key.startsWith("sfa_doc_status_") || key.startsWith("sfa_payment_status_")) {
               localStorage.removeItem(key);
@@ -89,17 +154,16 @@ export function useApplicantsManager(
 
   useEffect(() => {
     void reloadApplicants();
-    const onFocus = () => void reloadApplicants();
-    window.addEventListener("focus", onFocus);
-    return () => {
-      window.removeEventListener("focus", onFocus);
-    };
   }, [reloadApplicants]);
 
   const handleUpdateApplicantsFromAdmin = async (updatedList: any[]) => {
     const prevByDni = new Map(applicantsRef.current.map((a) => [a.dni, a]));
     const hydratedList = updatedList.map((app) =>
       preserveExistingDocBinaries(prevByDni.get(app.dni), app)
+    );
+
+    const changedApplicants = hydratedList.filter((app) =>
+      hasApplicantChanged(prevByDni.get(app.dni), app)
     );
 
     setApplicants(hydratedList);
@@ -115,11 +179,13 @@ export function useApplicantsManager(
       onAdmissionTrigger(hydratedList);
     }
 
-    // Persistir en MongoDB conservando íntegramente fileDataUrl y paymentVoucherUrl
+    const targets = changedApplicants.length > 0 ? changedApplicants : [];
     await Promise.all(
-      hydratedList.map(async (app) => {
+      targets.map(async (app) => {
         try {
-          await apiUpdateApplicant(app.dni, app);
+          const prevApp = prevByDni.get(app.dni);
+          const payload = buildDeltaPatchPayload(prevApp, app);
+          await apiUpdateApplicant(app.dni, payload);
         } catch (err) {
           console.warn(`[Backend API] Could not persist applicant ${app.dni}:`, err);
         }

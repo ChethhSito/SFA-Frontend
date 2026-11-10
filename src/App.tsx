@@ -44,6 +44,7 @@ export default function App() {
     setAdmissionPeriods,
     reloadAdmissionPeriods,
     reloadApplicants,
+    reloadEnrollments,
     handleUpdateApplicantsFromAdmin,
     handleUpdateEnrollments,
     handleCreateEnrollment,
@@ -67,6 +68,7 @@ export default function App() {
   useEffect(() => {
     void reloadApplicants?.();
     void reloadAdmissionPeriods?.();
+    void reloadEnrollments?.();
   }, [currentUser.role, reloadApplicants, reloadAdmissionPeriods]);
 
   const handleEnterIntranet = () => {
@@ -108,7 +110,7 @@ export default function App() {
             partidaFile: appDocs.partidaFile || { status: "No Enviado" as const },
             fotoFile: appDocs.fotoFile || { status: "No Enviado" as const }
           },
-          paymentStatus: (updated.paymentStatus === "Validado" || updated.paymentStatus === "PAGADO") ? ("Validado" as const) : ("No Pagado" as const)
+          paymentStatus: "No Pagado" as const
         };
         handleUpdateEnrollments([...enrollments, newEnrollmentRow]);
 

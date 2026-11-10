@@ -46,7 +46,7 @@ export function useAppData() {
               partidaFile: appDocs.partidaFile || { status: "No Enviado" as const },
               fotoFile: appDocs.fotoFile || { status: "No Enviado" as const }
             },
-            paymentStatus: (updated.paymentStatus === "Validado" || updated.paymentStatus === "PAGADO") ? ("Validado" as const) : ("No Pagado" as const)
+            paymentStatus: "No Pagado" as const
           };
           currentEnrollments.push(newEnrollmentRow);
 
@@ -130,6 +130,7 @@ export function useAppData() {
     setEnrollments: enrollmentHook.setEnrollments,
     enrollmentsLoading: enrollmentHook.enrollmentsLoading,
     enrollmentsError: enrollmentHook.enrollmentsError,
+    reloadEnrollments: enrollmentHook.reloadEnrollments,
     handleUpdateEnrollments: enrollmentHook.handleUpdateEnrollments,
     handleCreateEnrollment: enrollmentHook.handleCreateEnrollment,
     handleUpdateEnrollmentByDni: enrollmentHook.handleUpdateEnrollmentByDni,

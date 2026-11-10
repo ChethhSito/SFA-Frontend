@@ -76,6 +76,27 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = React.memo(({
       },
       paymentStatus: "No Pagado" as const,
     };
+  } else {
+    const cachedMatVoucher =
+      typeof window !== "undefined" && applicant.dni
+        ? localStorage.getItem(`sfa_matricula_voucher_data_${applicant.dni}`)
+        : null;
+    const effectiveVoucherUrl = myEnrollment.paymentVoucherUrl || cachedMatVoucher || undefined;
+    const hasRealPaymentEvidence = Boolean(
+      myEnrollment.paymentOperation ||
+      effectiveVoucherUrl ||
+      myEnrollment.paymentVoucherFileName
+    );
+    myEnrollment = {
+      ...myEnrollment,
+      paymentVoucherUrl: effectiveVoucherUrl,
+      paymentStatus:
+        myEnrollment.academicStatus !== "MATRICULADO" &&
+        myEnrollment.paymentStatus === "Validado" &&
+        !hasRealPaymentEvidence
+          ? ("No Pagado" as const)
+          : myEnrollment.paymentStatus,
+    };
   }
 
   const isPaid = myEnrollment.paymentStatus === "Validado";

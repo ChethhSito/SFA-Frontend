@@ -110,6 +110,28 @@ export const CajaRegularTab: React.FC<CajaRegularTabProps> = ({
                       `${student?.name || fallbackApplicant?.name || ""} ${student?.lastName || fallbackApplicant?.lastName || ""}`.trim() ||
                       "Estudiante Admitido"
                     );
+                    const storedMatVoucher =
+                      typeof window !== "undefined"
+                        ? localStorage.getItem(`sfa_matricula_voucher_data_${enr.studentDni}`)
+                        : null;
+                    const effectiveVoucherUrl = enr.paymentVoucherUrl || storedMatVoucher || undefined;
+                    const hasVoucherFile = Boolean(
+                      effectiveVoucherUrl ||
+                      enr.paymentVoucherFileName ||
+                      (enr.paymentOperation && /\.(png|jpe?g|webp|pdf)$/i.test(enr.paymentOperation))
+                    );
+                    const hasRealPaymentEvidence = Boolean(
+                      hasVoucherFile || enr.paymentOperation
+                    );
+                    const effectivePaymentStatus =
+                      enr.academicStatus !== "MATRICULADO" &&
+                      enr.paymentStatus === "Validado" &&
+                      !hasRealPaymentEvidence
+                        ? "No Pagado"
+                        : enr.paymentStatus || "No Pagado";
+                    const hasPaymentSubmitted = Boolean(
+                      hasRealPaymentEvidence || effectivePaymentStatus === "Validado"
+                    );
 
                     return (
                       <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
@@ -117,11 +139,6 @@ export const CajaRegularTab: React.FC<CajaRegularTabProps> = ({
                         <td className="p-4 font-mono text-slate-600 font-bold">{enr.studentDni}</td>
                         <td className="p-4 text-left">
                           {(() => {
-                            const hasVoucherFile = Boolean(
-                              enr.paymentVoucherUrl ||
-                              enr.paymentVoucherFileName ||
-                              (enr.paymentOperation && /\.(png|jpe?g|webp|pdf)$/i.test(enr.paymentOperation))
-                            );
                             const voucherFileName = enr.paymentVoucherFileName || (
                               enr.paymentOperation && /\.(png|jpe?g|webp|pdf)$/i.test(enr.paymentOperation)
                                 ? enr.paymentOperation
@@ -147,50 +164,53 @@ export const CajaRegularTab: React.FC<CajaRegularTabProps> = ({
                                   </span>
                                 )}
 
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    triggerAdminPreview(
-                                      "Voucher Matrícula - " + displayName,
-                                      voucherFileName,
-                                      hasVoucherFile ? "image" : "receipt",
-                                      {
-                                        dni: enr.studentDni,
-                                        studentName: student?.name || fallbackApplicant?.name || "",
-                                        studentLastName: student?.lastName || fallbackApplicant?.lastName || "",
-                                        fullName: displayName,
-                                        programName: enr.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad",
-                                        transactionId: enr.paymentOperation || `REG-${enr.studentDni}`,
-                                        amount: "S/. 250.00",
-                                        date: (enr as any).enrollmentDate || new Date().toISOString().split("T")[0],
-                                        concept: "Derecho de Matrícula Regular e Inscripción",
-                                        fileDataUrl: enr.paymentVoucherUrl,
-                                        fileName: voucherFileName,
-                                        docLabel: "Comprobante de Pago de Matrícula Regular",
-                                        isVoucher: true,
-                                      }
-                                    )
-                                  }
-                                  className="group inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#9F062A] via-[#B31238] to-[#9F062A] hover:from-[#800521] hover:to-[#9F062A] text-white text-[10px] font-black uppercase tracking-wider rounded-lg shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer border border-[#800521]/30 shrink-0 select-none"
-                                >
-                                  <Eye className="w-3.5 h-3.5 text-rose-200 group-hover:text-white transition-colors" />
-                                  <span>{hasVoucherFile ? "Ver Voucher Adjunto" : "Ver Recibo Digital"}</span>
-                                </button>
+                                {hasPaymentSubmitted && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      triggerAdminPreview(
+                                        "Voucher Matrícula - " + displayName,
+                                        voucherFileName,
+                                        hasVoucherFile ? "image" : "receipt",
+                                        {
+                                          dni: enr.studentDni,
+                                          studentName: student?.name || fallbackApplicant?.name || "",
+                                          studentLastName: student?.lastName || fallbackApplicant?.lastName || "",
+                                          fullName: displayName,
+                                          programName: enr.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad",
+                                          transactionId: enr.paymentOperation || `REG-${enr.studentDni}`,
+                                          amount: "S/. 250.00",
+                                          date: (enr as any).enrollmentDate || new Date().toISOString().split("T")[0],
+                                          concept: "Derecho de Matrícula Regular e Inscripción",
+                                          fileDataUrl: effectiveVoucherUrl,
+                                          fileName: voucherFileName,
+                                          docLabel: "Comprobante de Pago de Matrícula Regular",
+                                          paymentStatus: effectivePaymentStatus,
+                                          isVoucher: true,
+                                        }
+                                      )
+                                    }
+                                    className="group inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#9F062A] via-[#B31238] to-[#9F062A] hover:from-[#800521] hover:to-[#9F062A] text-white text-[10px] font-black uppercase tracking-wider rounded-lg shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer border border-[#800521]/30 shrink-0 select-none"
+                                  >
+                                    <Eye className="w-3.5 h-3.5 text-rose-200 group-hover:text-white transition-colors" />
+                                    <span>{hasVoucherFile ? "Ver Voucher Adjunto" : "Ver Recibo Digital"}</span>
+                                  </button>
+                                )}
                               </div>
                             );
                           })()}
                         </td>
                         <td className="p-4 font-bold">S/. 250.00</td>
                         <td className="p-4">
-                          {enr.paymentStatus === "Validado" ? (
+                          {effectivePaymentStatus === "Validado" ? (
                             <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Validado
                             </span>
-                          ) : enr.paymentStatus === "Observado" ? (
+                          ) : effectivePaymentStatus === "Observado" ? (
                             <span className="text-xs font-bold text-red-700 flex items-center gap-1">
                               <AlertTriangle className="w-3.5 h-3.5 text-red-600" /> Rechazado / Obs.
                             </span>
-                          ) : enr.paymentStatus === "Pendiente" ? (
+                          ) : effectivePaymentStatus === "Pendiente" ? (
                             <span className="text-xs font-bold text-amber-700 flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5 text-amber-500" /> Por Revisar
                             </span>
@@ -205,7 +225,7 @@ export const CajaRegularTab: React.FC<CajaRegularTabProps> = ({
                             <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Matriculado
                             </span>
-                          ) : enr.paymentStatus === "Validado" ? (
+                          ) : effectivePaymentStatus === "Validado" ? (
                             <span className="text-xs font-bold text-sky-700 flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5 text-sky-500" /> Pendiente a matricular
                             </span>
@@ -214,7 +234,11 @@ export const CajaRegularTab: React.FC<CajaRegularTabProps> = ({
                           )}
                         </td>
                         <td className="p-4 text-center">
-                          {enr.paymentStatus === "Pendiente" ? (
+                          {!hasPaymentSubmitted ? (
+                            <span className="text-[10px] font-semibold text-slate-500">
+                              Sin pago registrado
+                            </span>
+                          ) : effectivePaymentStatus === "Pendiente" ? (
                             <div className="flex gap-1.5 justify-center">
                               <Button
                                 onClick={() => handleApproveEnrollmentPayment(enr.studentDni, true)}
@@ -233,7 +257,7 @@ export const CajaRegularTab: React.FC<CajaRegularTabProps> = ({
                                 Rechazar
                               </Button>
                             </div>
-                          ) : enr.paymentStatus === "Validado" ? (
+                          ) : effectivePaymentStatus === "Validado" ? (
                             <div className="flex flex-col items-center gap-1">
                               <span className="text-emerald-700 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verificado
@@ -248,15 +272,17 @@ export const CajaRegularTab: React.FC<CajaRegularTabProps> = ({
                               </button>
                             </div>
                           ) : (
-                            <div className="flex justify-center">
-                              <Button
-                                onClick={() => handleApproveEnrollmentPayment(enr.studentDni, true)}
-                                variant="outline"
-                                size="sm"
-                                className="font-bold text-[10px] tracking-wider text-emerald-800 border-emerald-250 hover:bg-emerald-50"
+                            <div className="flex items-center justify-center gap-2">
+                              <span className="text-rose-700 font-black text-[10px] uppercase tracking-wider">
+                                Observado
+                              </span>
+                              <button
+                                onClick={() => handleResetEnrollmentPayment(enr.studentDni)}
+                                className="text-[8.5px] uppercase font-sans font-bold bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded px-2 py-0.5 tracking-wider transition-colors cursor-pointer flex items-center gap-1"
                               >
-                                Validar en Ventanilla
-                              </Button>
+                                <RefreshCw className="w-3 h-3" />
+                                <span>Restablecer</span>
+                              </button>
                             </div>
                           )}
                         </td>
