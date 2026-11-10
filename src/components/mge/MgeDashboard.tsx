@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import {
   Users, FileText, CreditCard, Award, GraduationCap, CheckSquare,
-  TrendingUp, BookOpen, BrainCircuit, Calendar
+  TrendingUp, BookOpen, BrainCircuit, Calendar, CheckCircle2, Coins
 } from "lucide-react";
 import {
   Applicant,
@@ -750,7 +750,7 @@ export default function MgeDashboard({
             <div>
               <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Expedientes / Alertas</span>
               <p className="text-2xl font-black text-amber-600 mt-1 font-mono">
-                {graduations.filter(g => g.status === "EMITIDO").length || processedStudents.filter(s => s.average < 13 && s.average > 0).length}
+                {graduations.filter(g => g.status === "Certificado Emitido").length || processedStudents.filter(s => s.average < 13 && s.average > 0).length}
               </p>
             </div>
             <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">

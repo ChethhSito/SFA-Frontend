@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import {
   FileText, CreditCard, Award, Upload, CheckCircle2,
-  XCircle, LayoutDashboard, Landmark, Headset, Info
+  XCircle, LayoutDashboard, Landmark, Headset, Info,
+  GraduationCap, Coins
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Applicant, Enrollment } from "../../types";
