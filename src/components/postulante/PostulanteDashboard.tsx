@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import {
   FileText, CreditCard, Award, Upload, CheckCircle2,
-  XCircle, LayoutDashboard, Landmark, Headset, Info
+  XCircle, LayoutDashboard, Landmark, Headset, Info,
+  GraduationCap, Coins
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Applicant, Enrollment } from "../../types";
 import { useAcademicCatalog } from "../../context/AcademicCatalogContext";
+import { ApplicantPeriodProvider, useApplicantPeriod } from "./applicantPeriod";
 
 // Design System UI Components
 import Sidebar from "../ui/Sidebar";
@@ -32,7 +34,15 @@ interface PostulanteDashboardProps {
   onUpdateEnrollment?: (updated: Enrollment) => void;
 }
 
-export default function PostulanteDashboard({
+export default function PostulanteDashboard(props: PostulanteDashboardProps) {
+  return (
+    <ApplicantPeriodProvider applicant={props.applicant}>
+      <PostulanteDashboardInner {...props} />
+    </ApplicantPeriodProvider>
+  );
+}
+
+function PostulanteDashboardInner({
   applicant,
   onUpdateApplicant,
   onLogout,
@@ -41,6 +51,7 @@ export default function PostulanteDashboard({
   onUpdateEnrollment
 }: PostulanteDashboardProps) {
   const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
+  const { label: periodLabel, year: periodYear } = useApplicantPeriod();
   // Active Navigation Tab State
   const [activeTab, setActiveTab] = useState<"dashboard" | "documentos" | "pagos" | "resultados" | "soporte" | "matricula">("dashboard");
   const [toast, setToast] = useState<ToastNotice | null>(null);
@@ -48,7 +59,7 @@ export default function PostulanteDashboard({
     setToast({ id: Date.now(), message, kind });
   };
 
-  const getFormattedDate = (isoDate?: string, fallback: string = "12/03/2026") => {
+  const getFormattedDate = (isoDate?: string, fallback: string = "") => {
     if (!isoDate) return fallback;
     if (/\d{2}\/\d{2}\/\d{4}/.test(isoDate)) return isoDate;
     const parts = isoDate.split('-');
@@ -154,7 +165,7 @@ export default function PostulanteDashboard({
   const [isConstanciaModalOpen, setIsConstanciaModalOpen] = useState(false);
 
   const triggerPreview = (title: string, fileName: string, fileType: "image" | "receipt", customMeta?: any) => {
-    const prg = ACADEMIC_PROGRAMS.find(p => p.id === applicant.programId)?.name || "Electricidad Industrial";
+    const prg = ACADEMIC_PROGRAMS.find(p => p.id === applicant.programId)?.name || applicant.programId;
     setPreviewTitle(title);
     setPreviewFileName(fileName);
     setPreviewFileType(fileType);
@@ -164,10 +175,10 @@ export default function PostulanteDashboard({
       studentLastName: applicant.lastName,
       programName: prg,
       ...(fileType === "receipt" || customMeta?.isVoucher ? {
-        transactionId: applicant.paymentOperation || "PRE-620323",
+        transactionId: applicant.paymentOperation || "Sin operación registrada",
         amount: "S/. 120.00",
         date: paymentDate,
-        concept: "Derecho de Examen Ordinario 2026",
+        concept: `Derecho de Examen Ordinario ${periodLabel || periodYear}`.trim(),
       } : {}),
       ...customMeta
     });
@@ -435,6 +446,9 @@ export default function PostulanteDashboard({
         notify("Por favor ingrese el número de operación de su depósito de matrícula.", "warning");
         return;
       }
+      try {
+        localStorage.removeItem(`sfa_matricula_voucher_data_${applicant.dni}`);
+      } catch (err) {}
       const updatedEnr: Enrollment = {
         ...currentEnr,
         paymentStatus: "Pendiente" as const,
@@ -450,6 +464,11 @@ export default function PostulanteDashboard({
       if (!stagedMatriculaPreview) {
         notify("Por favor seleccione la foto de su voucher de depósito de matrícula.", "warning");
         return;
+      }
+      try {
+        localStorage.setItem(`sfa_matricula_voucher_data_${applicant.dni}`, stagedMatriculaPreview);
+      } catch (err) {
+        console.warn("Could not cache matricula voucher in localStorage:", err);
       }
       const updatedEnr: Enrollment = {
         ...currentEnr,
@@ -469,11 +488,11 @@ export default function PostulanteDashboard({
 
   const currentProgram = ACADEMIC_PROGRAMS.find(p => p.id === applicant.programId) || {
     id: applicant.programId,
-    name: "Electricidad Industrial",
-    code: "EI-2026",
-    duration: "3 años (6 Semestres)",
-    title: "Profesional Técnico en Electricidad Industrial",
-    description: "Formación integral en sistemas eléctricos industriales."
+    name: applicant.programId,
+    code: (applicant.programId || "").toUpperCase(),
+    duration: "",
+    title: "",
+    description: ""
   };
 
   // Nav items list for Sidebar
@@ -502,24 +521,41 @@ export default function PostulanteDashboard({
         onGoToPortal={onGoToPortal}
         userProfile={{
           name: `${applicant.name} ${applicant.lastName}`,
-          role: "Postulante 2026-I",
+          role: periodLabel ? `Postulante ${periodLabel}` : "Postulante",
           avatarBg: "bg-gradient-to-br from-[#8B0020] to-[#590013] text-amber-300 font-black border border-amber-400/40"
         }}
       />
 
       {/* MAIN DASHBOARD CONTENT AREA */}
       <main className="flex-1 overflow-y-auto bg-slate-100 p-4 sm:p-6 md:p-8 custom-scrollbar">
-        {/* TOP BAR HEADER */}
-        <PageHeader
-          title={
-            activeTab === "dashboard" ? "Resumen de Admisión" :
-              activeTab === "documentos" ? "Expediente Digital" :
-                activeTab === "pagos" ? "Estado de Pago" :
-                  activeTab === "resultados" ? "Resultados de Evaluación" :
-                    activeTab === "soporte" ? "Mesa de Ayuda" : "Matrícula de Ingresante"
-          }
-          subtitle={`Bienvenido al portal institucional, ${applicant.name}`}
-        />
+        {/* Institutional Hero Banner */}
+        <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+                SISTEMA INTRANET INSTITUCIONAL • PORTAL DEL POSTULANTE
+              </span>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-none text-white uppercase pt-0.5">
+                {activeTab === "dashboard" ? "Resumen de Admisión" :
+                  activeTab === "documentos" ? "Expediente Digital" :
+                    activeTab === "pagos" ? "Estado de Pago" :
+                      activeTab === "resultados" ? "Resultados de Evaluación" :
+                        activeTab === "soporte" ? "Mesa de Ayuda" : "Matrícula de Ingresante"}
+              </h1>
+              <p className="text-xs text-white/90 font-medium max-w-2xl">
+                Bienvenido al portal institucional, {applicant.name} {applicant.lastName}. Postulación a la carrera de {currentProgram.name}.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 bg-black/30 px-3.5 py-2 rounded-xl border border-white/20 shadow-inner shrink-0">
+              <Award className="w-4 h-4 text-amber-400" />
+              <span className="text-[10.5px] font-bold text-white/80 uppercase tracking-wider">Estado:</span>
+              <span className="text-xs font-black text-amber-300 font-mono">
+                {isActuallyAdmitted ? "ADMITIDO" : applicant.folderStatus === "Approved" ? "APROBADO" : "EN REVISIÓN"}
+              </span>
+            </div>
+          </div>
+        </div>
 
 
         {/* ALERTS DISPLAY */}

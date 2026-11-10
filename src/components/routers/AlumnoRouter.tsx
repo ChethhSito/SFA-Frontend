@@ -21,6 +21,7 @@ interface AlumnoRouterProps {
   onUpdateEnrollment: (enr: Enrollment) => void;
   onUpdateAssignments: (updated: CourseAssignment[]) => void;
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
 export default function AlumnoRouter({
@@ -39,7 +40,8 @@ export default function AlumnoRouter({
   onUpdatePersonal,
   onUpdateEnrollment,
   onUpdateAssignments,
-  onLogout
+  onLogout,
+  onGoToPortal
 }: AlumnoRouterProps) {
   const [session, setSession] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -167,6 +169,8 @@ export default function AlumnoRouter({
     academicStatus: isEnrolled ? "MATRICULADO" : (foundEnr?.academicStatus || "ADMITIDO"),
     shift: foundEnr?.shift || appRecord?.shift || "Mañana",
     groupId: foundEnr?.groupId || appRecord?.groupId,
+    courseGroupAssignments: foundEnr?.courseGroupAssignments || [],
+    registeredCourses: foundEnr?.registeredCourses,
     docs: mergedDocs,
     paymentStatus: isEnrolled ? "Validado" : (foundEnr?.paymentStatus || appRecord?.paymentStatus || "No Pagado"),
     paymentOperation: foundEnr?.paymentOperation || appRecord?.paymentOperation || (isEnrolled ? `OP-MATR-2026-${currentDni ? currentDni.slice(-4) : "0001"}` : "")
@@ -204,6 +208,7 @@ export default function AlumnoRouter({
       onUpdateEnrollment={onUpdateEnrollment}
       onUpdateAssignments={onUpdateAssignments}
       onLogout={onLogout}
+      onGoToPortal={onGoToPortal}
     />
   );
 }

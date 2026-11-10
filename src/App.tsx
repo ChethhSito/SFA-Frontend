@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from "react";
+import React, { useEffect } from "react";
 import { AlertCircle } from "lucide-react";
 import { useAppData } from "./hooks/useAppData";
 import { PortalHome, LoginPortal } from "./components/portal";
@@ -42,6 +42,9 @@ export default function App() {
     graduations,
     admissionPeriods,
     setAdmissionPeriods,
+    reloadAdmissionPeriods,
+    reloadApplicants,
+    reloadEnrollments,
     handleUpdateApplicantsFromAdmin,
     handleUpdateEnrollments,
     handleCreateEnrollment,
@@ -61,6 +64,12 @@ export default function App() {
     handleLogout,
     handleLoginSuccess
   } = useAppData();
+
+  useEffect(() => {
+    void reloadApplicants?.();
+    void reloadAdmissionPeriods?.();
+    void reloadEnrollments?.();
+  }, [currentUser.role, reloadApplicants, reloadAdmissionPeriods]);
 
   const handleEnterIntranet = () => {
     const roles = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
@@ -96,12 +105,12 @@ export default function App() {
           programId: updated.programId,
           academicStatus: "ADMITIDO" as const,
           docs: {
-            dniFile: appDocs.dniFile || { status: defaultStatus, fileName: `dni_${updated.dni}.pdf` },
-            certificadoFile: appDocs.certificadoFile || { status: defaultStatus, fileName: `certificado_${updated.dni}.pdf` },
-            partidaFile: appDocs.partidaFile || { status: defaultStatus, fileName: `partida_${updated.dni}.pdf` },
-            fotoFile: appDocs.fotoFile || { status: defaultStatus, fileName: `foto_${updated.dni}.jpg` }
+            dniFile: appDocs.dniFile || { status: "No Enviado" as const },
+            certificadoFile: appDocs.certificadoFile || { status: "No Enviado" as const },
+            partidaFile: appDocs.partidaFile || { status: "No Enviado" as const },
+            fotoFile: appDocs.fotoFile || { status: "No Enviado" as const }
           },
-          paymentStatus: (updated.paymentStatus === "Validado" || updated.paymentStatus === "PAGADO") ? ("Validado" as const) : ("No Pagado" as const)
+          paymentStatus: "No Pagado" as const
         };
         handleUpdateEnrollments([...enrollments, newEnrollmentRow]);
 
@@ -165,6 +174,7 @@ export default function App() {
           onEnterIntranet={handleEnterIntranet}
           onLogout={handleLogout}
           admissionPeriods={admissionPeriods}
+          onApplicantCreated={() => void reloadApplicants?.()}
         />
       )}
 
@@ -208,6 +218,7 @@ export default function App() {
           onUpdateEnrollment={handleUpdateEnrollment}
           onUpdateAssignments={handleUpdateAssignments}
           onLogout={handleLogout}
+            onGoToPortal={handleGoPortal}
         />
       )}
 
@@ -229,6 +240,7 @@ export default function App() {
           onUpdateAssignments={handleUpdateAssignments}
           onUpdateAttendance={handleUpdateAttendance}
           onLogout={handleLogout}
+          onGoToPortal={handleGoPortal}
         />
       )}
 
@@ -237,6 +249,7 @@ export default function App() {
         <SuperAdminRouter
           onLogout={handleLogout}
           onSwitchRole={handleLoginSuccess}
+          onGoToPortal={handleGoPortal}
         />
       )}
 
@@ -264,7 +277,7 @@ export default function App() {
           onUpdateAssignments={handleUpdateAssignments}
           onUpdateAttendance={handleUpdateAttendance}
           onLogout={handleLogout}
-          onGoToPortal={() => setCurrentUser({ role: "portal", identifier: "" })}
+          onGoToPortal={handleGoPortal}
         />
       )}
 
@@ -272,6 +285,7 @@ export default function App() {
       {currentUser.role === "mpa" && (
         <MpaRouter
           onLogout={handleLogout}
+          onGoToPortal={handleGoPortal}
         />
       )}
 
@@ -306,6 +320,7 @@ export default function App() {
           onUpdateAttendance={handleUpdateAttendance}
           onUpdateGraduations={handleUpdateGraduations}
           onLogout={handleLogout}
+          onGoToPortal={handleGoPortal}
         />
       )}
 
@@ -313,6 +328,7 @@ export default function App() {
       {currentUser.role === "maf" && (
         <MafRouter
           onLogout={handleLogout}
+          onGoToPortal={handleGoPortal}
         />
       )}
 

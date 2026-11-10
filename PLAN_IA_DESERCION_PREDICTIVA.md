@@ -4,6 +4,8 @@
 **Módulo Destino:** MGE (Módulo de Gestión de Estudiantes) & Dirección Académica  
 **Documento Técnico:** Propuesta de Implementación para Titulación / Sustentación  
 
+**Estado actual:** MGE ya muestra un indicador de riesgo calculado en el backend mediante reglas, pesos y umbrales sobre los datos disponibles. No hay un modelo de Machine Learning entrenado ni XAI implementada. Las fases de aprendizaje automático de este documento son una propuesta futura.
+
 ---
 
 ## 1. Resumen Ejecutivo y Justificación de Tesis

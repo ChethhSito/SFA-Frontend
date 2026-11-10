@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { 
-  Calendar, CreditCard, Users, GraduationCap, CheckSquare, Compass, FileText
+  Calendar, CreditCard, Users, GraduationCap, CheckSquare, Compass, FileText, CheckCircle2, Coins
 } from "lucide-react";
 import { Applicant, Enrollment, StudentPersonalData, Classroom, Teacher, Graduation, AdmissionPeriod, Course, CourseAssignment, AttendanceRecord, MpaPeriod } from "../../types";
-import { createAdmissionPeriod, updateAdmissionPeriod, deleteAdmissionPeriod } from "../../services/api";
+import { createAdmissionPeriod, updateAdmissionPeriod, deleteAdmissionPeriod, createEnrollment, updateEnrollment, updateApplicant } from "../../services/api";
 import { MPA_KEYS, fetchMpaCollections, fetchMpaCollection } from "../../services/mpaApi";
 
 // Reusable Custom Design System Components
@@ -320,6 +320,7 @@ export default function AdminDashboard({
             return { 
               ...enr, 
               paymentStatus: "Validado" as any,
+              paymentOperation: enr.paymentOperation || "VENTANILLA-CAJA",
               academicStatus: (enr.academicStatus === "MATRICULADO" ? "MATRICULADO" : "ADMITIDO") as any 
             };
           }
@@ -416,16 +417,23 @@ export default function AdminDashboard({
   const handleResetEnrollmentPayment = (studentDni: string) => {
     const updated = enrollments.map((enr) => {
       if (enr.studentDni === studentDni) {
+        const hasStudentVoucherOrOp = Boolean(
+          enr.paymentVoucherUrl ||
+          enr.paymentVoucherFileName ||
+          (enr.paymentOperation && enr.paymentOperation !== "VENTANILLA-CAJA")
+        );
         return { 
           ...enr, 
-          paymentStatus: "Pendiente" as any,
+          paymentStatus: (hasStudentVoucherOrOp ? "Pendiente" : "No Pagado") as any,
+          paymentOperation:
+            enr.paymentOperation === "VENTANILLA-CAJA" ? undefined : enr.paymentOperation,
           academicStatus: "ADMITIDO" as any 
         };
       }
       return enr;
     });
     onUpdateEnrollments(updated);
-    notify("Estado del pago de matrícula restablecido a 'Pendiente' para su corrección.", "info");
+    notify("Estado del pago de matrícula restablecido para su corrección.", "info");
   };
 
 
@@ -446,6 +454,12 @@ export default function AdminDashboard({
       }
     }
 
+    if (effectiveGroupId === "gp_ele_m1" || effectiveGroupId === "gp_electronica_m1") {
+      effectiveGroupId = "gp_electronica_m1";
+    } else if (effectiveGroupId === "gp_con_p1" || effectiveGroupId === "gp_contabilidad_m1") {
+      effectiveGroupId = "gp_contabilidad_m1";
+    }
+
     if (!effectiveGroupId) {
       notify("Por favor, seleccione un Grupo Académico para el estudiante antes de procesar la matrícula.", "warning");
       return;
@@ -461,7 +475,11 @@ export default function AdminDashboard({
       console.error(e);
     }
 
-    const hasProgramming = mpaTasks.length === 0 || mpaTasks.some((t: any) => t.groupId === effectiveGroupId);
+    const hasProgramming = mpaTasks.length === 0 || mpaTasks.some((t: any) => 
+      t.groupId === effectiveGroupId ||
+      (effectiveGroupId.includes("ele") && t.groupId.includes("electronica")) ||
+      (effectiveGroupId.includes("con") && t.groupId.includes("contabilidad"))
+    );
     if (!hasProgramming) {
       notify("El Grupo Académico seleccionado aún no posee una programación académica completa. Finalice la programación antes de utilizar este grupo.", "warning");
       return;
@@ -530,6 +548,16 @@ export default function AdminDashboard({
     
     onUpdateApplicants(updatedApps);
     onUpdateEnrollments(updatedEnrList);
+
+    // Direct REST API synchronization to MongoDB Atlas
+    const finalEnrollmentItem = updatedEnrList.find(e => e.studentDni === studentDni);
+    if (finalEnrollmentItem) {
+      updateEnrollment(studentDni, finalEnrollmentItem).catch(() => {
+        createEnrollment(finalEnrollmentItem).catch(err => console.warn("Error creating enrollment via REST API:", err));
+      });
+    }
+    updateApplicant(studentDni, { folderStatus: "Enrolled", admitted: true }).catch(err => console.warn("Error updating applicant via REST API:", err));
+
     notify("Postulante admisionado matriculado con éxito en el Ciclo I.", "success");
   };
 
@@ -593,12 +621,6 @@ export default function AdminDashboard({
           (!updatedDocs.partidaFile || updatedDocs.partidaFile.status === "Validado" || updatedDocs.partidaFile.status === "No Enviado") && 
           updatedDocs.fotoFile.status === "Validado";
 
-        try {
-          localStorage.setItem(`sfa_doc_status_${applicantDni}`, JSON.stringify(updatedDocs));
-        } catch (e) {
-          console.warn(e);
-        }
-
         return {
           ...app,
           folderStatus: allDocsValidated ? ("Approved" as const) : ("Pending" as const),
@@ -636,17 +658,13 @@ export default function AdminDashboard({
           const docKeys: Array<"dniFile" | "certificadoFile" | "partidaFile" | "fotoFile"> = ["dniFile", "certificadoFile", "partidaFile", "fotoFile"];
           docKeys.forEach((key) => {
             const currentDoc = updatedDocs[key] || { status: "No Enviado" };
-            updatedDocs[key] = {
-              ...currentDoc,
-              status: "Validado" as const
-            };
+            if (currentDoc.fileDataUrl) {
+              updatedDocs[key] = {
+                ...currentDoc,
+                status: "Validado" as const
+              };
+            }
           });
-        }
-
-        try {
-          localStorage.setItem(`sfa_doc_status_${applicantDni}`, JSON.stringify(updatedDocs));
-        } catch (e) {
-          console.warn(e);
         }
 
         return {
@@ -963,7 +981,28 @@ export default function AdminDashboard({
 
       {/* Main viewport area - scrollable only inside */}
       <main className="flex-1 p-4 md:p-8 h-full overflow-y-auto bg-slate-50 relative custom-scrollbar">
-        
+
+        {/* Institutional Hero Banner */}
+        <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+                SISTEMA INTRANET INSTITUCIONAL • MÓDULO MAMC
+              </span>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-none text-white uppercase pt-0.5">
+                Consola de Admisión, Matrícula y Caja (MAMC)
+              </h1>
+              <p className="text-xs text-white/90 font-medium max-w-2xl">
+                Auditoría financiera de vouchers, revisión de expedientes digitales, programación de exámenes y emisión de fichas de matrícula.
+              </p>
+            </div>
+            <div className="shrink-0">
+              {renderPeriodSelector()}
+            </div>
+          </div>
+        </div>
+
         {/* Tab Caja / Admission payments auditing */}
         {activeTab === "caja_admision" && (
           <CajaAdmisionTab

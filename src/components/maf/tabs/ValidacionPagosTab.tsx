@@ -1,10 +1,12 @@
 import React from "react";
-import { ShieldCheck, AlertTriangle, CheckCircle } from "lucide-react";
+import { ShieldCheck, AlertTriangle } from "lucide-react";
 import Button from "../../ui/Button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import PageTransition from "../../ui/PageTransition";
 import { MafObligation } from "../mafTypes";
 import { BankReconciliationPanel } from "../BankReconciliationPanel";
+import { newestVouchers } from "../obligationOrder";
+import { Pagination, usePagination } from "../../ui/Pagination";
 
 interface ValidacionPagosTabProps {
   obligations: MafObligation[];
@@ -12,7 +14,6 @@ interface ValidacionPagosTabProps {
   setStatusFilter: (filter: string) => void;
   vouchersPorValidar: number;
   handleOpenObservePayment: (oblId: string) => void;
-  handleApprovePayment: (oblId: string) => void;
   onBankConfirmed: (ids: string[], fileName: string) => void;
 }
 
@@ -22,12 +23,12 @@ export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
   setStatusFilter,
   vouchersPorValidar,
   handleOpenObservePayment,
-  handleApprovePayment,
   onBankConfirmed
 }) => {
-  const filteredList = obligations.filter(ob =>
+  const filteredList = newestVouchers(obligations.filter(ob =>
     statusFilter === "todos" ? ob.voucherRegistered : ob.status === statusFilter
-  );
+  ));
+  const pagination = usePagination(filteredList, 10, `${statusFilter}:${filteredList[0]?.id}`, 'sfa_maf_page_size');
 
   return (
     <PageTransition id="validacion_pagos" className="space-y-6">
@@ -41,7 +42,7 @@ export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
                 Auditoría e Inspección de Comprobantes Bancarios Registrados
               </CardTitle>
               <CardDescription>
-                Compare los vouchers virtuales y números de operación con el extracto de cuenta bancaria del IESTP. Apruebe para dar conformidad o declare observado para notificar corrección.
+                Compare los vouchers con el reporte simulado del Banco de la Nación. Solo la importación de coincidencias confirma el pago; puede observar un voucher para solicitar corrección.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2.5">
@@ -81,7 +82,7 @@ export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredList.map((ob) => (
+                  pagination.items.map((ob) => (
                     <tr key={ob.id} className="hover:bg-slate-55/60 transition-all">
                       <td className="px-4 py-3.5">
                         <div className="font-extrabold text-slate-900 uppercase">{ob.studentName}</div>
@@ -120,12 +121,6 @@ export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
                             >
                               <AlertTriangle className="w-3.5 h-3.5" /> Observar
                             </Button>
-                            <Button
-                              onClick={() => handleApprovePayment(ob.id)}
-                              className="bg-emerald-600 text-white hover:bg-emerald-700 font-black text-[9.5px] uppercase tracking-wide px-2.5 py-1.5 rounded-lg flex items-center gap-1 cursor-pointer shadow-sm"
-                            >
-                              <CheckCircle className="w-3.5 h-3.5" /> Validar Pago
-                            </Button>
                           </div>
                         ) : (
                           <div className="text-[10px] text-slate-450 font-bold">
@@ -139,6 +134,7 @@ export const ValidacionPagosTab: React.FC<ValidacionPagosTabProps> = ({
               </tbody>
             </table>
           </div>
+          <Pagination total={filteredList.length} page={pagination.page} pageSize={pagination.pageSize} pageCount={pagination.pageCount} onPageChange={pagination.setPage} onPageSizeChange={pagination.setPageSize} label="vouchers" />
         </CardContent>
       </Card>
     </PageTransition>

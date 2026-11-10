@@ -44,7 +44,6 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
         title="Derechos de Admisión - Oficina de Caja"
         subtitle="Audite los recibos financieros de postulación virtuales (Tasa S/. 120.00)."
         icon={<CreditCard className="w-6 h-6" />}
-        actions={renderPeriodSelector()}
       />
 
       {/* Applicant Admission paid vouchers list */}
@@ -131,35 +130,38 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
                                   </span>
                                 )}
 
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    triggerAdminPreview(
-                                      "Voucher Admisión - " + fullName,
-                                      voucherFileName,
-                                      hasVoucherFile ? "image" : "receipt",
-                                      {
-                                        dni: app.dni,
-                                        studentName: app.name || student?.name || "",
-                                        studentLastName: app.lastName || student?.lastName || "",
-                                        fullName: fullName,
-                                        programName: programName,
-                                        transactionId: app.paymentOperation || `ADM-${app.dni}`,
-                                        amount: "S/. 120.00",
-                                        date: app.paymentValidatedAt || app.registeredAt || new Date().toISOString().split("T")[0],
-                                        concept: "Derecho de Examen de Admisión",
-                                        fileDataUrl: app.paymentVoucherUrl,
-                                        fileName: voucherFileName,
-                                        docLabel: "Comprobante de Pago de Admisión",
-                                        isVoucher: true,
-                                      }
-                                    )
-                                  }
-                                  className="group inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#9F062A] via-[#B31238] to-[#9F062A] hover:from-[#800521] hover:to-[#9F062A] text-white text-[10px] font-black uppercase tracking-wider rounded-lg shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer border border-[#800521]/30 shrink-0 select-none"
-                                >
-                                  <Eye className="w-3.5 h-3.5 text-rose-200 group-hover:text-white transition-colors" />
-                                  <span>{hasVoucherFile ? "Ver Voucher Adjunto" : "Ver Recibo Digital"}</span>
-                                </button>
+                                {(hasVoucherFile || Boolean(app.paymentOperation) || app.paymentStatus === "Validado") && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      triggerAdminPreview(
+                                        "Voucher Admisión - " + fullName,
+                                        voucherFileName,
+                                        hasVoucherFile ? "image" : "receipt",
+                                        {
+                                          dni: app.dni,
+                                          studentName: app.name || student?.name || "",
+                                          studentLastName: app.lastName || student?.lastName || "",
+                                          fullName: fullName,
+                                          programName: programName,
+                                          transactionId: app.paymentOperation || `ADM-${app.dni}`,
+                                          amount: "S/. 120.00",
+                                          date: app.paymentValidatedAt || app.registeredAt || new Date().toISOString().split("T")[0],
+                                          concept: "Derecho de Examen de Admisión",
+                                          fileDataUrl: app.paymentVoucherUrl,
+                                          fileName: voucherFileName,
+                                          docLabel: "Comprobante de Pago de Admisión",
+                                          paymentStatus: app.paymentStatus,
+                                          isVoucher: true,
+                                        }
+                                      )
+                                    }
+                                    className="group inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#9F062A] via-[#B31238] to-[#9F062A] hover:from-[#800521] hover:to-[#9F062A] text-white text-[10px] font-black uppercase tracking-wider rounded-lg shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer border border-[#800521]/30 shrink-0 select-none"
+                                  >
+                                    <Eye className="w-3.5 h-3.5 text-rose-200 group-hover:text-white transition-colors" />
+                                    <span>{hasVoucherFile ? "Ver Voucher Adjunto" : "Ver Recibo Digital"}</span>
+                                  </button>
+                                )}
                               </div>
                             );
                           })()}

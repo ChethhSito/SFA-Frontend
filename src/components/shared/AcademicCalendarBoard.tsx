@@ -123,10 +123,12 @@ export default function AcademicCalendarBoard({ editable = false, periods, prefe
             {calendar.hasImage && <button type="button" disabled={busy} onClick={() => void run(() => deleteAcademicCalendarImage(period.id), 'Imagen retirada.')} className="rounded-lg border border-rose-200 px-3 py-2 text-rose-700 disabled:opacity-50">Quitar imagen</button>}
           </div>}
         </div>
-        {calendar.hasImage ? <a href={academicCalendarImageUrl(period.id, calendar.imageUpdatedAt)} target="_blank" rel="noopener noreferrer" className="mt-4 block">
-          <img src={academicCalendarImageUrl(period.id, calendar.imageUpdatedAt)} alt={`Calendario académico de ${period.name}`} className="max-h-[760px] w-full rounded-lg border border-slate-200 object-contain" />
-          <span className="mt-2 block text-xs text-slate-500">Abrir imagen completa: {calendar.imageFileName}</span>
-        </a> : <p className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-600">La institución aún no ha publicado una imagen para este período.</p>}
+        {calendar.hasImage ? <div className="mt-4 space-y-2">
+          <div className="flex min-h-48 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50 p-2">
+            <img src={academicCalendarImageUrl(period.id, calendar.imageUpdatedAt)} alt={`Calendario académico de ${period.name}`} className="block h-auto max-h-[760px] w-full object-contain" />
+          </div>
+          <a href={academicCalendarImageUrl(period.id, calendar.imageUpdatedAt)} target="_blank" rel="noopener noreferrer" className="inline-block text-xs font-bold text-[#800521] underline">Ver imagen en tamaño completo · {calendar.imageFileName}</a>
+        </div> : <p className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-600">La institución aún no ha publicado una imagen para este período.</p>}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">

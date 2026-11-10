@@ -239,12 +239,13 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
   const shiftMapped = activeShift === "Mañana" ? "sh_m" : activeShift === "Tarde" ? "sh_t" : "sh_n";
   const defaultMatchingGroup = useMemo(() => {
     return (
+      mpaGroupsList.find((g: any) => g.careerId === activeCareer && g.shiftId === shiftMapped && g.cycle === 1 && mpaTasksList.some((t: any) => t.groupId === g.id || (g.id.includes("ele") && t.groupId.includes("electronica")) || (g.id.includes("con") && t.groupId.includes("contabilidad")))) ||
       mpaGroupsList.find((g: any) => g.careerId === activeCareer && g.shiftId === shiftMapped && g.cycle === 1) ||
       mpaGroupsList.find((g: any) => g.careerId === activeCareer && g.cycle === 1) ||
       mpaGroupsList[0] ||
       null
     );
-  }, [mpaGroupsList, activeCareer, shiftMapped]);
+  }, [mpaGroupsList, mpaTasksList, activeCareer, shiftMapped]);
 
   const currentSelectedGroupId =
     matriculaGroups[targetDni || ""] ||
@@ -355,10 +356,6 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
               Formalice la matrícula oficial del Ciclo I para los postulantes que alcanzaron vacante. Configure turno, grupo de estudio y verifique la malla de asignaturas sincronizada con Planificación Académica.
             </p>
           </div>
-        </div>
-
-        <div className="shrink-0 flex items-center gap-3">
-          {renderPeriodSelector()}
         </div>
       </div>
 
@@ -925,7 +922,11 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
                           }
 
                           return groupsToShow.map((grp: any) => {
-                            const scheduledTasks = mpaTasksList.filter((tk: any) => tk.groupId === grp.id);
+                            const scheduledTasks = mpaTasksList.filter((tk: any) => 
+                              tk.groupId === grp.id ||
+                              (grp.id.includes("ele") && tk.groupId.includes("electronica")) ||
+                              (grp.id.includes("con") && tk.groupId.includes("contabilidad"))
+                            );
                             const isScheduled = scheduledTasks.length > 0;
                             const isShiftMatch = grp.shiftId === shiftMapped;
                             return (

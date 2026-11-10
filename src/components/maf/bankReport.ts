@@ -54,13 +54,41 @@ export async function parseBankReport(file: File): Promise<BankRow[]> {
   });
 }
 
-export async function bankReconciliationRequest<T>(action: 'preview' | 'confirm', fileName: string, rows: BankRow[], obligations: MafObligation[], preview?: ReconciliationPreview): Promise<T> {
+export async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Extract base64 part if data URL
+      const base64 = result.includes(',') ? result.split(',')[1] : result;
+      resolve(base64);
+    };
+    reader.onerror = error => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function bankReconciliationRequest<T>(
+  action: 'preview' | 'confirm',
+  fileName: string,
+  rows: BankRow[],
+  obligations: MafObligation[],
+  preview?: ReconciliationPreview,
+  fileMeta?: { fileBase64?: string; fileMimeType?: string; fileSizeBytes?: number }
+): Promise<T> {
   const base = (import.meta.env.VITE_API_URL as string) || 'http://127.0.0.1:3001';
   const response = await fetch(`${base}/bank-reconciliation/${action}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fileName, rows, obligations,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      fileName,
+      rows,
+      obligations,
       expectedFingerprint: preview?.fingerprint,
       expectedObligationIds: preview?.results.filter(r => r.status === 'coincide').map(r => r.obligationId),
+      fileBase64: fileMeta?.fileBase64,
+      fileMimeType: fileMeta?.fileMimeType,
+      fileSizeBytes: fileMeta?.fileSizeBytes,
     }),
   });
   if (!response.ok) {
@@ -68,4 +96,39 @@ export async function bankReconciliationRequest<T>(action: 'preview' | 'confirm'
     throw new Error(Array.isArray(data.message) ? data.message.join(', ') : data.message || `Error del servidor (${response.status}).`);
   }
   return response.json() as Promise<T>;
+}
+
+export async function fetchImportHistory(): Promise<Array<{
+  fingerprint: string;
+  fileName: string;
+  importedAt: string;
+  validatedObligationIds: string[];
+  fileSizeBytes?: number;
+}>> {
+  const base = (import.meta.env.VITE_API_URL as string) || 'http://127.0.0.1:3001';
+  const res = await fetch(`${base}/bank-reconciliation/history`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export async function downloadImportFile(fingerprint: string, fallbackName: string): Promise<void> {
+  const base = (import.meta.env.VITE_API_URL as string) || 'http://127.0.0.1:3001';
+  const res = await fetch(`${base}/bank-reconciliation/file/${fingerprint}`);
+  if (!res.ok) throw new Error('No se pudo descargar el archivo binario del servidor.');
+  const data = await res.json();
+  const byteCharacters = atob(data.fileBase64);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  const blob = new Blob([byteArray], { type: data.fileMimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = data.fileName || fallbackName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

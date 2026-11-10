@@ -41,12 +41,12 @@ export function useAppData() {
             programId: updated.programId,
             academicStatus: "ADMITIDO" as const,
             docs: {
-              dniFile: appDocs.dniFile || { status: defaultStatus, fileName: `dni_${updated.dni}.pdf` },
-              certificadoFile: appDocs.certificadoFile || { status: defaultStatus, fileName: `certificado_${updated.dni}.pdf` },
-              partidaFile: appDocs.partidaFile || { status: defaultStatus, fileName: `partida_${updated.dni}.pdf` },
-              fotoFile: appDocs.fotoFile || { status: defaultStatus, fileName: `foto_${updated.dni}.jpg` }
+              dniFile: appDocs.dniFile || { status: "No Enviado" as const },
+              certificadoFile: appDocs.certificadoFile || { status: "No Enviado" as const },
+              partidaFile: appDocs.partidaFile || { status: "No Enviado" as const },
+              fotoFile: appDocs.fotoFile || { status: "No Enviado" as const }
             },
-            paymentStatus: (updated.paymentStatus === "Validado" || updated.paymentStatus === "PAGADO") ? ("Validado" as const) : ("No Pagado" as const)
+            paymentStatus: "No Pagado" as const
           };
           currentEnrollments.push(newEnrollmentRow);
 
@@ -111,12 +111,14 @@ export function useAppData() {
     admissionPeriods: admissionPeriodsHook.admissionPeriods,
     setAdmissionPeriods: admissionPeriodsHook.setAdmissionPeriods,
     handleUpdateAdmissionPeriods: admissionPeriodsHook.handleUpdateAdmissionPeriods,
+    reloadAdmissionPeriods: admissionPeriodsHook.reloadAdmissionPeriods,
 
     // Applicants & Pre-postulante / Admisión
     applicants: applicantsHook.applicants,
     setApplicants: applicantsHook.setApplicants,
     applicantsLoading: applicantsHook.loading,
     applicantsError: applicantsHook.error,
+    reloadApplicants: applicantsHook.reloadApplicants,
     handleUpdateApplicantsFromAdmin,
     handleCreateApplicant: applicantsHook.handleCreateApplicant,
     handleUpdateApplicantByDni: applicantsHook.handleUpdateApplicantByDni,
@@ -128,6 +130,7 @@ export function useAppData() {
     setEnrollments: enrollmentHook.setEnrollments,
     enrollmentsLoading: enrollmentHook.enrollmentsLoading,
     enrollmentsError: enrollmentHook.enrollmentsError,
+    reloadEnrollments: enrollmentHook.reloadEnrollments,
     handleUpdateEnrollments: enrollmentHook.handleUpdateEnrollments,
     handleCreateEnrollment: enrollmentHook.handleCreateEnrollment,
     handleUpdateEnrollmentByDni: enrollmentHook.handleUpdateEnrollmentByDni,

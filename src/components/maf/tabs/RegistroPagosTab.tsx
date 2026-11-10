@@ -3,6 +3,8 @@ import { CreditCard, Layers, Search, Plus } from "lucide-react";
 import Button from "../../ui/Button";
 import PageTransition from "../../ui/PageTransition";
 import { MafObligation } from "../mafTypes";
+import { newestObligations } from "../obligationOrder";
+import { Pagination, usePagination } from "../../ui/Pagination";
 
 interface RegistroPagosTabProps {
   filteredObligations: MafObligation[];
@@ -17,6 +19,8 @@ export const RegistroPagosTab: React.FC<RegistroPagosTabProps> = ({
   setSearchQuery,
   handleOpenRegisterVoucher
 }) => {
+  const sorted = newestObligations(filteredObligations);
+  const pagination = usePagination(sorted, 10, `${searchQuery}:${sorted[0]?.id}`, 'sfa_maf_page_size');
   return (
     <PageTransition id="registro_pagos" className="space-y-6">
       <div className="bg-white p-6 border border-slate-205 rounded-2xl relative shadow-xs overflow-hidden">
@@ -88,7 +92,7 @@ export const RegistroPagosTab: React.FC<RegistroPagosTabProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredObligations.map((o) => (
+                  pagination.items.map((o) => (
                     <tr key={o.id} className="hover:bg-slate-50/50 transition-all">
                       <td className="px-4 py-3.5">
                         <div className="font-extrabold text-slate-900 uppercase">{o.studentName}</div>
@@ -109,26 +113,25 @@ export const RegistroPagosTab: React.FC<RegistroPagosTabProps> = ({
                           o.status === "Validado" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
                           o.status === "En Proceso" ? "bg-blue-50 text-blue-700 border border-blue-100" :
                           o.status === "Observado" ? "bg-red-50 text-red-700 border border-red-150 animate-pulse" :
-                          o.status === "Exonerado" ? "bg-purple-50 text-purple-700 border border-purple-100" :
                           "bg-amber-50 text-amber-700 border border-amber-100"
                         }`}>
                           {o.status}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        {o.status === "Pendiente" || o.status === "Observado" ? (
+                        {(o.status === "Pendiente" || o.status === "Observado") && o.source === 'llamada_apoderado' ? (
                           <Button
                             onClick={() => handleOpenRegisterVoucher(o.id)}
                             className="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[10px] tracking-wide uppercase px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer ml-auto"
                           >
-                            <Plus className="w-3.5 h-3.5" /> Registrar Pago
+                            <Plus className="w-3.5 h-3.5" /> Registrar voucher de llamada
                           </Button>
                         ) : o.voucherRegistered ? (
                           <div className="text-[10px] text-slate-500 font-bold">
                             Voucher #{o.voucherDetails?.operationNumber}
                           </div>
                         ) : (
-                          <span className="text-[10px] text-slate-400 font-bold">No Aplica</span>
+                          <span className="text-[10px] text-slate-400 font-bold">Esperando voucher del portal</span>
                         )}
                       </td>
                     </tr>
@@ -137,6 +140,7 @@ export const RegistroPagosTab: React.FC<RegistroPagosTabProps> = ({
               </tbody>
             </table>
           </div>
+          <Pagination total={sorted.length} page={pagination.page} pageSize={pagination.pageSize} pageCount={pagination.pageCount} onPageChange={pagination.setPage} onPageSizeChange={pagination.setPageSize} label="obligaciones" />
         </div>
       </div>
     </PageTransition>

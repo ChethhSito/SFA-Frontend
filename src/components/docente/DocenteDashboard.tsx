@@ -30,6 +30,7 @@ import EvaluacionesCursosPrincipal from "./EvaluacionesCursosPrincipal";
 import AvisosReportesPrincipal from "./AvisosReportesPrincipal";
 import GuidesLibrary from "../shared/GuidesLibrary";
 import AcademicCalendarBoard from "../shared/AcademicCalendarBoard";
+import TeacherProceduresTab from "./TeacherProceduresTab";
 import TeacherScheduleTab, { TeacherScheduleData } from "./TeacherScheduleTab";
 import { fetchMpaCollection } from "../../services/mpaApi";
 import { fileToBase64, fetchCourseObservations, createCourseObservation, deleteCourseObservation } from "../../services/api";
@@ -51,6 +52,7 @@ interface DocenteDashboardProps {
   onUpdateAssignments: (asgs: CourseAssignment[]) => Promise<boolean>;
   onUpdateAttendance: (att: AttendanceRecord[]) => Promise<boolean>;
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
 const DASHBOARD_COURSES_PER_PAGE = 2;
@@ -112,7 +114,8 @@ export default function DocenteDashboard({
   attendanceLoading,
   attendanceError,
   onReloadAttendance,
-  onLogout
+  onLogout,
+  onGoToPortal
 }: DocenteDashboardProps) {
   // Main Selection States
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -510,6 +513,7 @@ export default function DocenteDashboard({
             setSelectedCourseId(null);
           }}
           onLogout={onLogout}
+          onGoToPortal={onGoToPortal}
         />
       </div>
 
@@ -630,7 +634,8 @@ export default function DocenteDashboard({
             activeTab={activeTab === "curso" ? "cursos" : activeTab}
             setActiveTab={setActiveTab}
             onLogout={onLogout}
-          />
+          onGoToPortal={onGoToPortal}
+        />
         </div>
       )}
 
@@ -953,6 +958,8 @@ export default function DocenteDashboard({
               <AcademicCalendarBoard />
             </PageTransition>
           )}
+
+          {selectedCourseId === null && activeTab === "tramites" && <TeacherProceduresTab teacherDni={effectiveTeacherDni} />}
 
           {/* TAB 6: CONFIGURACION PERSONAL */}
           {selectedCourseId === null && activeTab === "configuracion" && (

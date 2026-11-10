@@ -6,6 +6,7 @@ import {
 import PageTransition from "../../ui/PageTransition";
 import Button from "../../ui/Button";
 import { Applicant, Enrollment } from "../../../types";
+import { useApplicantPeriod, formatLongDate, formatDateRange } from "../applicantPeriod";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 
 interface MatriculaTabProps {
@@ -47,6 +48,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = React.memo(({
   compressAndResizeImage,
   triggerPreview,
 }) => {
+  const { label: periodLabel, year: periodYear, period: admissionPeriod } = useApplicantPeriod();
   const { courses: REAL_MPA_COURSES } = useAcademicCatalog();
 
   // Find or initialize enrollment object
@@ -74,6 +76,27 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = React.memo(({
       },
       paymentStatus: "No Pagado" as const,
     };
+  } else {
+    const cachedMatVoucher =
+      typeof window !== "undefined" && applicant.dni
+        ? localStorage.getItem(`sfa_matricula_voucher_data_${applicant.dni}`)
+        : null;
+    const effectiveVoucherUrl = myEnrollment.paymentVoucherUrl || cachedMatVoucher || undefined;
+    const hasRealPaymentEvidence = Boolean(
+      myEnrollment.paymentOperation ||
+      effectiveVoucherUrl ||
+      myEnrollment.paymentVoucherFileName
+    );
+    myEnrollment = {
+      ...myEnrollment,
+      paymentVoucherUrl: effectiveVoucherUrl,
+      paymentStatus:
+        myEnrollment.academicStatus !== "MATRICULADO" &&
+        myEnrollment.paymentStatus === "Validado" &&
+        !hasRealPaymentEvidence
+          ? ("No Pagado" as const)
+          : myEnrollment.paymentStatus,
+    };
   }
 
   const isPaid = myEnrollment.paymentStatus === "Validado";
@@ -90,7 +113,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = React.memo(({
     <PageTransition id="matricula" className="space-y-6 text-left">
       {/* 1. Breadcrumb path */}
       <div className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest text-left">
-        Admisión 2026 &gt; <span className="text-slate-600">Pago de Matrícula Regular</span>
+        Admisión {periodLabel || periodYear} &gt; <span className="text-slate-600">Pago de Matrícula Regular</span>
       </div>
 
       {/* 2. Header section */}
@@ -142,7 +165,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = React.memo(({
             </div>
 
             <span className="text-[10px] text-slate-200 font-bold uppercase tracking-widest block mt-2">
-              DERECHO DE MATRÍCULA Y REGISTRO SEMESTRAL 2026-I
+              DERECHO DE MATRÍCULA Y REGISTRO SEMESTRAL {periodLabel}
             </span>
             <div className="flex items-baseline gap-2 mt-1 mb-3">
               <span className="text-3xl sm:text-4xl font-black text-amber-300 font-mono tracking-tight leading-none">

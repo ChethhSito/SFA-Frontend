@@ -5,6 +5,7 @@ import Button from "../ui/Button";
 
 interface MafRouterProps {
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
 export default function MafRouter(props: MafRouterProps) {
@@ -51,5 +52,5 @@ export default function MafRouter(props: MafRouterProps) {
     );
   }
 
-  return <MafDashboard onLogout={props.onLogout} />;
+  return <MafDashboard onLogout={props.onLogout} onGoToPortal={props.onGoToPortal} />;
 }

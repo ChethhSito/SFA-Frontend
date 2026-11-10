@@ -6,6 +6,7 @@ import {
 import PageTransition from "../../ui/PageTransition";
 import AlertBox from "../../ui/AlertBox";
 import { Applicant } from "../../../types";
+import { useApplicantPeriod, formatLongDate, formatDateRange } from "../applicantPeriod";
 
 interface DocumentosTabProps {
   applicant: Applicant;
@@ -30,6 +31,7 @@ export const DocumentosTab: React.FC<DocumentosTabProps> = React.memo(({
   handleFileChange,
   triggerPreview,
 }) => {
+  const { label: periodLabel, year: periodYear, period: admissionPeriod } = useApplicantPeriod();
   // Helper to get doc: si NO tiene archivo de imagen real, figura estrictamente como No Enviado
   const getDoc = (key: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile") => {
     const rawDoc = applicant.docs?.[key];
@@ -114,7 +116,7 @@ export const DocumentosTab: React.FC<DocumentosTabProps> = React.memo(({
     <PageTransition id="documentos" className="space-y-6">
       {/* Breadcrumb path */}
       <div className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest text-left">
-        Admisión 2026 &gt; <span className="text-slate-600">Expediente de Admisión</span>
+        Admisión {periodLabel || periodYear} &gt; <span className="text-slate-600">Expediente de Admisión</span>
       </div>
 
       {notice && (
@@ -250,7 +252,7 @@ export const DocumentosTab: React.FC<DocumentosTabProps> = React.memo(({
           </div>
           <span className="text-[10px] text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full font-extrabold uppercase tracking-wider border border-emerald-200 flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-            Expediente Digital 2026
+            Expediente Digital {periodLabel || periodYear}
           </span>
         </div>
 

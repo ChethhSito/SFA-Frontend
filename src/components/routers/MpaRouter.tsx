@@ -5,6 +5,7 @@ import Button from "../ui/Button";
 
 interface MpaRouterProps {
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
 export default function MpaRouter(props: MpaRouterProps) {
@@ -51,5 +52,5 @@ export default function MpaRouter(props: MpaRouterProps) {
     );
   }
 
-  return <MpaDashboard onLogout={props.onLogout} />;
+  return <MpaDashboard onLogout={props.onLogout} onGoToPortal={props.onGoToPortal} />;
 }

@@ -4,6 +4,7 @@ import { Applicant, AdmissionPeriod } from "../../../types";
 import { Card } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
 import PageTransition from "../../ui/PageTransition";
+import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 
 interface SecretariaTabProps {
   applicants: Applicant[];
@@ -34,50 +35,14 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
   setSelectedDossierAppDni,
   renderPeriodSelector,
 }) => {
+  const { programs } = useAcademicCatalog();
   return (
     <PageTransition id="secretaria" className="space-y-6">
       <PageHeader
         title="División de Admisiones Institucionales"
         subtitle="Gestione carpetas de admisión, audite requisitos digitales por período y resuelva incidencias de postulación."
         icon={<FileText className="w-6 h-6 text-[#9F062A]" />}
-        actions={renderPeriodSelector()}
       />
-
-      {/* 1. Academic Period Selector Banner */}
-      <div className="bg-slate-900 text-white rounded-xl p-5 md:p-6 shadow-md border-b-4 border-amber-500 relative flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="space-y-1 z-10">
-          <span className="text-[10px] text-amber-300 font-extrabold tracking-widest uppercase block">
-            Período de Admisión Administrado
-          </span>
-          <h3 className="text-lg md:text-xl font-black font-display tracking-tight">
-            Periodo de Admisión: {admissionPeriods.find((p) => p.id === selectedPeriodId)?.name || "Seleccione Periodo"}
-          </h3>
-          <p className="text-xs text-slate-300 font-medium">
-            Las estadísticas, filtros y postulantes mostrados corresponden únicamente a esta cohorte.
-          </p>
-        </div>
-        <div className="flex items-center gap-2.5 z-10 bg-slate-800 p-2 rounded-lg border border-slate-700 w-full md:w-auto">
-          <label htmlFor="period-dashboard-selector" className="text-xs font-extrabold tracking-wide text-slate-300 uppercase whitespace-nowrap">
-            Periodo:
-          </label>
-          <select
-            id="period-dashboard-selector"
-            value={selectedPeriodId}
-            onChange={(e) => setSelectedPeriodId(e.target.value)}
-            className="bg-slate-950 text-white border border-slate-800 rounded-md px-3 py-1.5 text-xs font-black focus:outline-none focus:ring-1 focus:ring-amber-500 w-full md:w-auto cursor-pointer"
-          >
-            <option value="all">TODOS LOS PERIODOS ({applicants.length})</option>
-            {admissionPeriods.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} {p.status === "APERTURADO" ? "(ACTIVO)" : ""}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="absolute right-6 bottom-4 opacity-5 pointer-events-none hidden lg:block">
-          <GraduationCap className="w-32 h-32" />
-        </div>
-      </div>
 
       {/* 2. Key Dynamic Stats for selected period */}
       {(() => {
@@ -89,28 +54,9 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
         const totalInPeriod = activeApplicants.length;
         const pendingF = activeApplicants.filter((a) => a.folderStatus === "Pending").length;
         const observedF = activeApplicants.filter((a) => a.folderStatus === "Observed").length;
-        const approvedF = activeApplicants.filter((a) => {
-          let folderStatus = a.folderStatus;
-          try {
-            const rawDocs = localStorage.getItem(`sfa_doc_status_${a.dni}`);
-            if (rawDocs) {
-              const parsed = JSON.parse(rawDocs);
-              if (parsed.dniFile?.status === "Validado" && parsed.certificadoFile?.status === "Validado" && parsed.fotoFile?.status === "Validado") {
-                folderStatus = "Approved";
-              }
-            }
-          } catch (e) {}
-          return folderStatus === "Approved";
-        }).length;
+        const approvedF = activeApplicants.filter((a) => a.folderStatus === "Approved").length;
         const enrolledF = activeApplicants.filter((a) => a.folderStatus === "Enrolled").length;
-        const totalRevenue = activeApplicants.filter((a) => {
-          let payStatus = a.paymentStatus;
-          try {
-            const s = localStorage.getItem(`sfa_payment_status_${a.dni}`);
-            if (s === "Validado") payStatus = "Validado";
-          } catch (e) {}
-          return payStatus === "Validado";
-        }).length * 120;
+        const totalRevenue = activeApplicants.filter((a) => a.paymentStatus === "Validado").length * 120;
 
         return (
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 text-xs font-bold font-mono">
@@ -257,37 +203,23 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-100 bg-white font-semibold text-slate-700">
                   {filteredApplicants.map((app) => {
-                    let localDocStatus: any = null;
-                    try {
-                      const raw = localStorage.getItem(`sfa_doc_status_${app.dni}`);
-                      if (raw) localDocStatus = JSON.parse(raw);
-                    } catch (e) {}
+                    const effectivePaymentStatus = app.paymentStatus || "No Pagado";
 
-                    let localPayStatus: string | null = null;
-                    try {
-                      localPayStatus = localStorage.getItem(`sfa_payment_status_${app.dni}`);
-                    } catch (e) {}
-
-                    const effectivePaymentStatus = (localPayStatus === "Validado" || app.paymentStatus === "Validado")
-                      ? "Validado"
-                      : (app.paymentStatus || "Pendiente");
-
-                    const rawDocs = app.docs || {};
-                    const appDocs = {
-                      dniFile: { status: "No Enviado" as const },
-                      certificadoFile: { status: "No Enviado" as const },
-                      partidaFile: { status: "No Enviado" as const },
-                      fotoFile: { status: "No Enviado" as const },
-                      ...rawDocs,
-                      ...(localDocStatus || {})
-                    };
-
+                    const rawDocs: any = app.docs || {};
                     const docsListKeys: Array<"dniFile" | "certificadoFile" | "partidaFile" | "fotoFile"> = [
                       "dniFile",
                       "certificadoFile",
                       "partidaFile",
                       "fotoFile",
                     ];
+                    const appDocs: any = {};
+                    for (const k of docsListKeys) {
+                      const d = rawDocs[k];
+                      const hasImg = Boolean(d?.fileDataUrl);
+                      appDocs[k] = hasImg
+                        ? d
+                        : { status: "No Enviado" as const };
+                    }
                     const valCount = docsListKeys.filter((k) => appDocs[k]?.status === "Validado").length;
                     const obsCount = docsListKeys.filter((k) => appDocs[k]?.status === "Observado").length;
                     const pendCount = docsListKeys.filter((k) => appDocs[k]?.status === "Pendiente").length;
@@ -307,14 +239,14 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
                               <span className="text-[10px] text-slate-500 font-bold block mt-1 tracking-tight">
                                 DNI: {app.dni} | Código:{" "}
                                 <span className="font-mono text-slate-800">
-                                  {app.applicantCode || "PE-2026-" + app.dni.slice(-4)}
+                                  {app.applicantCode || "Sin código"}
                                 </span>
                               </span>
                             </div>
                           </div>
                         </td>
                         <td className="p-3.5 font-bold uppercase tracking-tight text-slate-900 border-none">
-                          {app.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad"}
+                          {programs.find((p) => p.id === app.programId)?.name || app.programId}
                         </td>
                         <td className="p-3.5 border-none">
                           {effectivePaymentStatus === "Validado" ? (
@@ -325,9 +257,13 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
                             <span className="text-xs font-bold text-red-700 flex items-center gap-1">
                               <AlertTriangle className="w-3.5 h-3.5 text-red-600" /> Tasa Observada
                             </span>
-                          ) : (
+                          ) : effectivePaymentStatus === "Pendiente" ? (
                             <span className="text-xs font-bold text-amber-700 flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5 text-amber-500" /> Por revisar
+                            </span>
+                          ) : (
+                            <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5 text-slate-400" /> Sin pago registrado
                             </span>
                           )}
                         </td>

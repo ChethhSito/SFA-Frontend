@@ -1,38 +1,89 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   fetchEnrollments,
   createEnrollment as apiCreateEnrollment,
   updateEnrollment as apiUpdateEnrollment
 } from "../../services/api";
 
+function normalizeEnrollmentList(list: any[]): any[] {
+  return (list || []).map((enr) => {
+    const hasRealPaymentEvidence = Boolean(
+      enr.paymentOperation ||
+      enr.paymentVoucherUrl ||
+      enr.paymentVoucherFileName
+    );
+    if (
+      enr.academicStatus !== "MATRICULADO" &&
+      enr.paymentStatus === "Validado" &&
+      !hasRealPaymentEvidence
+    ) {
+      return {
+        ...enr,
+        paymentStatus: "No Pagado",
+      };
+    }
+    return enr;
+  });
+}
+
 export function useStudentEnrollment() {
   const [enrollments, setEnrollments] = useState<any[]>([]);
+  const enrollmentsRef = useRef<any[]>([]);
+  enrollmentsRef.current = enrollments;
 
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const reloadEnrollments = () => {
     setLoading(true);
-    fetchEnrollments()
+    return fetchEnrollments()
       .then((apiEnrolls) => {
         if (!apiEnrolls) throw new Error("No se pudo consultar matrículas");
-        setEnrollments(apiEnrolls);
-        localStorage.setItem("sfa_enrollments", JSON.stringify(apiEnrolls));
-        if (apiEnrolls.length === 0) localStorage.removeItem("sfa_session_alumno");
+        const normalized = normalizeEnrollmentList(apiEnrolls);
+        setEnrollments(normalized);
+        enrollmentsRef.current = normalized;
+        try {
+          localStorage.setItem("sfa_enrollments", JSON.stringify(normalized));
+        } catch (e) {}
+        if (normalized.length === 0 && typeof localStorage.removeItem === "function") {
+          localStorage.removeItem("sfa_session_alumno");
+        }
       })
       .catch((err) => {
         console.error("Error fetching enrollments from REST API:", err);
         setError("Error al cargar matrículas.");
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    void reloadEnrollments();
   }, []);
 
   const handleUpdateEnrollments = (updatedList: any[]) => {
-    setEnrollments(updatedList);
+    const normalized = normalizeEnrollmentList(updatedList);
+    const prevByDni = new Map(enrollmentsRef.current.map((e) => [e.studentDni, e]));
+    setEnrollments(normalized);
+    enrollmentsRef.current = normalized;
     try {
-      localStorage.setItem("sfa_enrollments", JSON.stringify(updatedList));
+      localStorage.setItem("sfa_enrollments", JSON.stringify(normalized));
     } catch (e) {
       console.warn("[localStorage] Could not save sfa_enrollments:", e);
+    }
+    if (Array.isArray(normalized)) {
+      for (const enr of normalized) {
+        if (!enr.studentDni) continue;
+        const prev = prevByDni.get(enr.studentDni);
+        if (prev && JSON.stringify(prev) === JSON.stringify(enr)) continue;
+        apiUpdateEnrollment(enr.studentDni, enr)
+          .then((res) => {
+            if (!res) {
+              return apiCreateEnrollment(enr);
+            }
+            return res;
+          })
+          .catch((err) => console.warn("Could not sync enrollment to API:", err));
+      }
     }
   };
 
@@ -73,6 +124,7 @@ export function useStudentEnrollment() {
     setEnrollments,
     enrollmentsLoading: loading,
     enrollmentsError: error,
+    reloadEnrollments,
     handleUpdateEnrollments,
     handleCreateEnrollment,
     handleUpdateEnrollmentByDni

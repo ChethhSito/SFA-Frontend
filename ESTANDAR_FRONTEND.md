@@ -51,4 +51,4 @@ graph LR
 
 ## Estado del flujo de conciliación MAF
 
-La carga de Excel y la vista previa viven en `src/components/maf/BankReconciliationPanel.tsx`; `bankReport.ts` lee la primera hoja y envía JSON al backend. Las obligaciones y vouchers se mantienen en el estado de `MafDashboard.tsx` y en `localStorage`. Este flujo usa un cliente HTTP que muestra errores al usuario para evitar presentar una confirmación fallida como exitosa. Al migrar MAF a obligaciones compartidas en el backend, esta lógica debe extraerse del estado local y seguir la separación de capas descrita arriba.
+La carga de Excel y la vista previa viven en `src/components/maf/BankReconciliationPanel.tsx`; `bankReport.ts` lee la primera hoja y envía JSON al backend. `MafDashboard.tsx` conserva estado y copia en `localStorage`, y `src/services/mafState.ts` sincroniza catálogos, obligaciones y auditoría con MongoDB. La conciliación muestra los errores de confirmación, pero algunas escrituras de estado se ejecutan de forma asíncrona sin reintento automático. Falta reforzar consistencia, validación en servidor y permisos MAF.

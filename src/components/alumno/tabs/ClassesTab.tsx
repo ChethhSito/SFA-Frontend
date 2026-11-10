@@ -242,19 +242,6 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     return courseMatches && a.kind !== "assessment" && (a.title.includes(`[Semana ${selectedClassWeek}]`) || a.title.includes(`Semana ${selectedClassWeek}`));
   });
 
-  const fallbackAssignments = filteredDBAssignments.length > 0 ? filteredDBAssignments : [
-    {
-      id: `fasg-1-${selectedClassWeek}`,
-      courseId: activeCourseDbId,
-      title: `Tarea Virtual Semana ${selectedClassWeek}: Cuestionario y Práctica`,
-      description: `Resuelva el cuestionario de afianzamiento sobre los temas tratados en esta sección de ${activeCourse.name}. Presentar informe técnico individual en PDF.`,
-      dueDate: `2026-06-${Math.min(28, 5 + selectedClassWeek)}`,
-      rubric: "Estructura: 10pts, Lógica y Simulación: 10pts",
-      attachment: `guia_de_laboratorio_semana_${selectedClassWeek}.pdf`,
-      submissions: []
-    }
-  ];
-
   const handleSimulateHWUpload = (asgId: string, customFileName: string) => {
     if (!customFileName.trim()) return;
     
@@ -577,24 +564,37 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-5 space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-3 bg-emerald-50 rounded-lg text-center border border-emerald-100">
-                    <span className="text-[9px] text-emerald-800 font-bold uppercase block">Situación de Curso</span>
-                    <span className="text-lg font-black text-emerald-950 block mt-1">Aprobado</span>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-lg text-center border">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase block">Promedio Final</span>
-                    <span className="text-lg font-black text-slate-800 block mt-1 font-mono">{averageGrade}</span>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-lg text-center border">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase block">Asistencia Total</span>
-                    <span className="text-lg font-black text-slate-800 block mt-1">95.5%</span>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-lg text-center border">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase block">Horas Realizadas</span>
-                    <span className="text-lg font-black text-slate-800 block mt-1">96 Horas</span>
-                  </div>
-                </div>
+                {(() => {
+                  const numAverage = averageGrade !== "NR" ? parseFloat(averageGrade) : null;
+                  const courseStatus = numAverage === null ? "En Curso" : numAverage >= 12.5 ? "Aprobado" : "Desaprobado";
+                  const statusBg = courseStatus === "Aprobado" ? "bg-emerald-50 text-emerald-950 border-emerald-100" : courseStatus === "En Curso" ? "bg-blue-50 text-blue-950 border-blue-100" : "bg-red-50 text-red-950 border-red-100";
+                  const statusLabelColor = courseStatus === "Aprobado" ? "text-emerald-800" : courseStatus === "En Curso" ? "text-blue-800" : "text-red-800";
+
+                  return (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className={`p-3 rounded-lg text-center border ${statusBg}`}>
+                        <span className={`text-[9px] font-bold uppercase block ${statusLabelColor}`}>Situación de Curso</span>
+                        <span className="text-lg font-black block mt-1">{courseStatus}</span>
+                      </div>
+                      <div className="p-3 bg-slate-50 rounded-lg text-center border">
+                        <span className="text-[9px] text-slate-400 font-bold uppercase block">Promedio Final</span>
+                        <span className="text-lg font-black text-slate-800 block mt-1 font-mono">{averageGrade}</span>
+                      </div>
+                      <div className="p-3 bg-slate-50 rounded-lg text-center border">
+                        <span className="text-[9px] text-slate-400 font-bold uppercase block">Asistencia Registrada</span>
+                        <span className="text-lg font-black text-slate-800 block mt-1 font-mono">
+                          {courseGradesCount > 0 ? "100%" : "Regular"}
+                        </span>
+                      </div>
+                      <div className="p-3 bg-slate-50 rounded-lg text-center border">
+                        <span className="text-[9px] text-slate-400 font-bold uppercase block">Horas de Plan de Estudios</span>
+                        <span className="text-lg font-black text-slate-800 block mt-1 font-mono">
+                          {((activeCourse as any).hours || (activeCourse as any).credits * 16 || 64)} Horas
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-xs">
                   <span className="font-extrabold text-slate-800 block mb-3 uppercase text-[10.5px] tracking-wide">
@@ -602,13 +602,23 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   </span>
                   <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
                     {Array.from({ length: COURSE_WEEKS }, (_, i) => i + 1).map((w) => {
-                      const hasGrade = w < 4;
-                      const gr = hasGrade ? (w === 1 ? 16 : w === 2 ? 17 : 18) : "NR";
+                      const weekAssignment = assignments.find(a => {
+                        const courseMatches = activeCourse.attendanceCourseIds?.includes(a.courseId) || a.courseId === activeCourse.id || a.courseId === activeCourseDbId;
+                        return courseMatches && (a.title.includes(`[Semana ${w}]`) || a.title.includes(`Semana ${w}`));
+                      });
+                      const studentSub = weekAssignment?.submissions?.find((s: any) => s.studentDni === studentDni && s.grade !== undefined);
+                      const weekEval = (evaluations || []).find((e: any) => {
+                        const courseMatches = e.courseId === activeCourse.id || e.courseId === activeCourseDbId;
+                        return courseMatches && (e.week === w || e.title?.includes(`Semana ${w}`));
+                      });
+                      const finalGrade = studentSub?.grade !== undefined ? studentSub.grade : (weekEval?.grade !== undefined ? weekEval.grade : null);
+                      const hasGrade = finalGrade !== null;
+
                       return (
                         <div key={w} className="bg-white p-2.5 rounded border border-slate-200 flex flex-col items-center justify-between">
                           <span className="text-[9.5px] text-slate-400 font-bold">Sem {w}</span>
                           <span className={`text-[11.5px] font-mono font-black mt-1 ${hasGrade ? "text-[#800521]" : "text-slate-400"}`}>
-                            {gr}
+                            {hasGrade ? finalGrade : "NR"}
                           </span>
                         </div>
                       );
@@ -702,11 +712,22 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 })()}
 
                 {selectedClassWeekOption === "tareas" && (() => {
-                  const asgs = fallbackAssignments;
+                  const asgs = filteredDBAssignments;
+                  if (asgs.length === 0) {
+                    return (
+                      <div className="text-center py-12 px-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 space-y-2 font-sans">
+                        <BookOpen className="w-8 h-8 text-slate-300 mx-auto" />
+                        <h4 className="text-xs font-bold text-slate-650">Sin tareas programadas</h4>
+                        <p className="text-[11px] text-slate-450 max-w-sm mx-auto">
+                          El docente a cargo no ha programado tareas evaluativas para la Semana {selectedClassWeek}.
+                        </p>
+                      </div>
+                    );
+                  }
                   return (
                     <div className="space-y-4">
                       {asgs.map((asg: any) => {
-                        const prevSub = asg.submissions?.find((s: any) => s.studentDni === studentDni || s.studentDni === "12345678");
+                        const prevSub = asg.submissions?.find((s: any) => s.studentDni === studentDni);
                         const hasSubmitted = !!simulationHWFiles[asg.id] || !!prevSub;
                         const currentFileName = simulationHWFiles[asg.id] || prevSub?.fileName || "";
                         const submissionDate = prevSub?.submitDate || new Date().toISOString().split("T")[0];
@@ -811,10 +832,23 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 })()}
 
                 {selectedClassWeekOption === "evaluaciones" && (() => {
-                  const weekAsgs = fallbackAssignments;
-                  const sub = weekAsgs[0]?.submissions?.find((s: any) => s.studentDni === studentDni || s.studentDni === "12345678");
-                  const submissionFile = simulationHWFiles[weekAsgs[0]?.id] || sub?.fileName;
+                  const weekAsgs = filteredDBAssignments;
+                  const currentAsg = weekAsgs[0];
+                  const sub = currentAsg?.submissions?.find((s: any) => s.studentDni === studentDni);
+                  const submissionFile = currentAsg ? (simulationHWFiles[currentAsg.id] || sub?.fileName) : undefined;
                   
+                  if (!currentAsg) {
+                    return (
+                      <div className="text-center py-12 px-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 space-y-2 font-sans">
+                        <Award className="w-8 h-8 text-slate-300 mx-auto" />
+                        <h4 className="text-xs font-bold text-slate-650">Sin evaluaciones para esta semana</h4>
+                        <p className="text-[11px] text-slate-450 max-w-sm mx-auto">
+                          No existen rúbricas ni criterios de evaluación registrados para la Semana {selectedClassWeek}.
+                        </p>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div className="space-y-4 font-sans">
                       <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-3">
@@ -884,9 +918,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 )}
 
                 {selectedClassWeekOption === "evidencias" && (() => {
-                  const weekAsgs = fallbackAssignments;
-                  const sub = weekAsgs[0]?.submissions?.find((s: any) => s.studentDni === studentDni || s.studentDni === "12345678");
-                  const submissionFile = simulationHWFiles[weekAsgs[0]?.id] || sub?.fileName;
+                  const weekAsgs = filteredDBAssignments;
+                  const currentAsg = weekAsgs[0];
+                  const sub = currentAsg?.submissions?.find((s: any) => s.studentDni === studentDni);
+                  const submissionFile = currentAsg ? (simulationHWFiles[currentAsg.id] || sub?.fileName) : undefined;
                   return (
                     <div className="space-y-3 font-sans">
                       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-4 text-left">

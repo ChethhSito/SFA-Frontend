@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import {
   Users, FileText, CreditCard, Award, GraduationCap, CheckSquare,
-  TrendingUp, BookOpen, BrainCircuit, Calendar
+  TrendingUp, BookOpen, BrainCircuit, Calendar, CheckCircle2, Coins
 } from "lucide-react";
 import {
   Applicant,
@@ -654,7 +654,8 @@ export default function MgeDashboard({
         {/* Content area */}
         {saving ? <p role="status" className="p-3">Guardando cambios en el servidor...</p> : null}
         <fieldset disabled={saving} className="flex-1 min-h-0 min-w-0 border-0 overflow-y-auto p-4 md:p-6 custom-scrollbar">
-          {activeSubTab === "estudiantes" && (
+
+        {activeSubTab === "estudiantes" && (
             sourceLoading ? <p role="status">Cargando el padrón y las matrículas...</p> : sourceError ? <p role="alert" className="text-red-700">{sourceError} Recargue para reintentar.</p> : <MgeEstudiantesTab
               filteredStudents={filteredStudents}
               totalCount={processedStudents.length}

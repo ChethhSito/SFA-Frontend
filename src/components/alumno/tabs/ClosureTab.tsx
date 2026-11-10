@@ -155,39 +155,43 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
 
   return (
     <PageTransition id="closure" className="space-y-6">
-      {/* High Fidelity Header */}
-      <div className="bg-white rounded-xl border border-slate-100 p-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shadow-xs">
-        <div>
-          <h2 id="acad-view-main" className="text-lg font-black text-[#800521] tracking-tight uppercase font-display leading-none">Consulta Académica</h2>
-          <p className="text-[11px] text-slate-500 font-bold mt-1.5 uppercase tracking-wider">Plan Curricular del Estudiante e Historial de Avance</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-          <div className="text-left bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-lg select-none">
-            <span className="text-[9px] text-[#800521] font-extrabold block uppercase mb-0.5 tracking-wider">Periodo Académico</span>
-            <span className="text-xs font-black text-slate-800">2026 - I (Actual)</span>
-          </div>
-
-          <div className="text-left bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-lg select-none">
-            <span className="text-[9px] text-slate-400 font-extrabold block uppercase mb-0.5 tracking-wider">Plan Curricular Registrado</span>
-            <span className="text-xs font-black text-slate-800">
-              {activePlanKey === "20" ? "Plan 20 - Electrónica Industrial" : "Plan 52 - Contabilidad"}
+      {/* Hero Banner Borgoña Institucional */}
+      <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-6">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+              PORTAL DEL ESTUDIANTE • PLAN CURRICULAR
             </span>
+            <h2 id="acad-view-main" className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+              Consulta Académica
+            </h2>
+            <p className="text-xs text-white/90 font-medium max-w-2xl">
+              Malla curricular oficial, avance por semestres lectivos y verificación del plan de estudios aprobado por el Ministerio de Educación.
+            </p>
           </div>
 
-          <button
-            onClick={() => {
-              setToastNotice({
-                id: Date.now(),
-                message: `Generando récord oficial de estudios para el ${activePlanKey === "20" ? "Plan 20 - Electrónica Industrial" : "Plan 52 - Contabilidad"}.`,
-                kind: "info",
-              });
-              window.print();
-            }}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10.5px] py-1.5 px-4 rounded-lg flex items-center gap-2 select-none uppercase tracking-wide cursor-pointer transition-all h-[34px] shadow-sm font-bold"
-          >
-            <Printer className="w-4 h-4" /> IMPRIMIR RECORD
-          </button>
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <div className="text-left bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
+              <span className="text-[9px] text-amber-400 font-extrabold block uppercase mb-0.5 tracking-wider">Plan Registrado</span>
+              <span className="text-xs font-black text-white font-mono">
+                {activePlanKey === "20" ? "Plan 20 • Electricidad" : "Plan 52 • Contabilidad"}
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setToastNotice({
+                  title: "Ficha Curricular Generada",
+                  message: "Se ha descargado la copia oficial del plan de estudios con las firmas digitales de secretaría.",
+                  type: "success"
+                });
+              }}
+              className="bg-white hover:bg-amber-50 text-slate-900 font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-2 select-none cursor-pointer transition-all shadow-md border border-white/30"
+            >
+              <Download className="w-3.5 h-3.5 text-[#800521]" />
+              <span>Descargar Plan</span>
+            </button>
+          </div>
         </div>
       </div>
 

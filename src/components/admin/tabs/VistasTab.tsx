@@ -55,7 +55,6 @@ export const VistasTab: React.FC<VistasTabProps> = ({
         title="Vistas y Reportes de Admisión"
         subtitle="Consulte estadísticas generales del proceso de admisión, analice el embudo de conversión y registre los resultados del examen de suficiencia académica."
         icon={<Users className="w-6 h-6 text-[#9F062A]" />}
-        actions={renderPeriodSelector()}
       />
 
       <div className="space-y-6">

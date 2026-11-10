@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import PageTransition from "../../ui/PageTransition";
 import { Applicant } from "../../../types";
+import { useApplicantPeriod, formatLongDate, formatDateRange } from "../applicantPeriod";
 
 interface PagosTabProps {
   applicant: Applicant;
@@ -38,6 +39,7 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
   triggerPreview,
   setActiveTab,
 }) => {
+  const { label: periodLabel, year: periodYear, period: admissionPeriod } = useApplicantPeriod();
   const [isEditingPayment, setIsEditingPayment] = useState(false);
   const storedVoucherUrl = applicant.paymentVoucherUrl || (applicant.dni ? localStorage.getItem(`sfa_voucher_data_${applicant.dni}`) : null) || undefined;
   const isVoucherType = Boolean(
@@ -54,7 +56,7 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
     <PageTransition id="pagos" className="space-y-6">
       {/* Breadcrumb path */}
       <div className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest text-left">
-        Admisión 2026 &gt; <span className="text-slate-600">Estado de Pago</span>
+        Admisión {periodLabel || periodYear} &gt; <span className="text-slate-600">Estado de Pago</span>
       </div>
 
       {/* Header section */}
@@ -87,7 +89,7 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
               </span>
             </div>
 
-            <span className="text-[10px] text-slate-200 font-bold uppercase tracking-widest block mt-2">DERECHO DE EXAMEN ADMISIÓN 2026</span>
+            <span className="text-[10px] text-slate-200 font-bold uppercase tracking-widest block mt-2">DERECHO DE EXAMEN ADMISIÓN {periodLabel || periodYear}</span>
             <div className="flex items-baseline gap-2 mt-1 mb-3">
               <span className="text-3xl sm:text-4xl font-black text-amber-300 font-mono tracking-tight leading-none">S/. 120.00</span>
               <span className="text-[10px] text-slate-200 font-bold uppercase">Monto Único Regular</span>
@@ -492,7 +494,7 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
                   <td className="p-3.5 font-mono font-bold text-slate-800">
                     {applicant.paymentOperation || applicant.paymentVoucherFileName || "No registrado"}
                   </td>
-                  <td className="p-3.5 font-bold text-slate-900">Derecho de Examen Ordinario 2026</td>
+                  <td className="p-3.5 font-bold text-slate-900">Derecho de Examen Ordinario {periodLabel || periodYear}</td>
                   <td className="p-3.5 text-slate-900 font-extrabold font-mono">S/. 120.00</td>
                   <td className="p-3.5">
                     <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
@@ -512,11 +514,11 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
                   <td className="p-3.5 pr-5">
                     {effectivePaymentStatus === "Validado" ? (
                       <span 
-                        onClick={() => triggerPreview("Recibo de Examen de Admisión", applicant.paymentOperation || "PRE-620323", "receipt", { 
+                        onClick={() => triggerPreview("Recibo de Examen de Admisión", applicant.paymentOperation || "Sin operación registrada", "receipt", { 
                           amount: "S/. 120.00", 
-                          concept: "Derecho de Examen Ordinario 2026", 
+                          concept: `Derecho de Examen Ordinario ${periodLabel || periodYear}`, 
                           date: paymentDate, 
-                          transactionId: applicant.paymentOperation || "PRE-620323",
+                          transactionId: applicant.paymentOperation || "Sin operación registrada",
                           dni: applicant.dni,
                           studentName: applicant.name,
                           studentLastName: applicant.lastName

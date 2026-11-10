@@ -4,7 +4,6 @@ import ConfirmModal from "../ui/ConfirmModal";
 import { Card, CardContent } from "../ui/Card";
 import {
   CreditCard,
-  Percent,
   History,
   HelpCircle,
   Info,
@@ -12,34 +11,35 @@ import {
   Coins,
   ShieldCheck,
   Layers,
-  ArrowLeft
+  ArrowLeft,
+  Home
 } from "lucide-react";
-import { fetchAdmissionPeriods, fetchApplicants, fetchEnrollments, fetchStudentByDni } from "../../services/api";
-import { createServiceRequest, fetchServiceRequests, ServiceConceptCode, ServiceRequest, updateServiceRequestPayment } from "../../services/serviceRequests";
-import { MafConcept, MafObligation, MafExoneration, MafAuditLog, SupportTicket } from "./mafTypes";
+import { fetchAdmissionPeriods, fetchApplicants, fetchEnrollments, fetchStudentByDni, updateApplicant, updateEnrollment } from "../../services/api";
+import { createServiceRequest, fetchServiceRequests, ServiceConceptCode, ServiceRequest, updateServiceRequestPayment, deliverServiceRequestResult } from "../../services/serviceRequests";
+import { MafConcept, MafObligation, MafAuditLog, SupportTicket } from "./mafTypes";
 import { defaultConcepts, syncObligationsToMamcAndMge } from "./mafUtils";
+import { readMafState, saveMafState } from "../../services/mafState";
 import { AddConceptModal } from "./modals/AddConceptModal";
 import { AddObligationModal } from "./modals/AddObligationModal";
 import { RegisterVoucherModal } from "./modals/RegisterVoucherModal";
 import { ObserveObligationModal } from "./modals/ObserveObligationModal";
-import { ExonerationModal } from "./modals/ExonerationModal";
 import { RegistroPagosTab } from "./tabs/RegistroPagosTab";
 import { ValidacionPagosTab } from "./tabs/ValidacionPagosTab";
 import { EstadosPagoTab } from "./tabs/EstadosPagoTab";
 import { CatalogoTasasTab } from "./tabs/CatalogoTasasTab";
-import { ExoneracionesTab } from "./tabs/ExoneracionesTab";
 import { RegistroTransaccionesTab } from "./tabs/RegistroTransaccionesTab";
 import { AuditoriaTab } from "./tabs/AuditoriaTab";
 import { SoporteTab } from "./tabs/SoporteTab";
 
 interface MafDashboardProps {
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
 function obligationFromRequest(request: ServiceRequest): MafObligation {
   return {
     id: request.id,
-    studentDni: request.studentDni,
+    studentDni: request.studentDni || request.teacherDni || '',
     studentName: request.studentName,
     conceptCode: request.conceptCode,
     conceptName: request.conceptName,
@@ -49,10 +49,14 @@ function obligationFromRequest(request: ServiceRequest): MafObligation {
     period: request.period || "Sin período",
     status: request.status,
     dateCreated: request.createdAt?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+    createdAt: request.createdAt,
+    voucherRegisteredAt: request.paymentOperation ? (request.voucherRegisteredAt || request.updatedAt) : undefined,
     source: request.source,
     requestReason: request.reason,
     requestedBy: request.requestedBy,
     contactPhone: request.contactPhone,
+    deliveryStatus: request.deliveryStatus,
+    resultFileName: request.resultFileName,
     voucherRegistered: !!request.paymentOperation,
     ...(request.paymentOperation ? { voucherDetails: {
       operationNumber: request.paymentOperation,
@@ -63,10 +67,10 @@ function obligationFromRequest(request: ServiceRequest): MafObligation {
   };
 }
 
-export default function MafDashboard({ onLogout }: MafDashboardProps) {
+export default function MafDashboard({ onLogout, onGoToPortal }: MafDashboardProps) {
   // Navigation State
   const [activeTab, setActiveTab] = useState<
-    "registro_pagos" | "validacion_pagos" | "estados_pago" | "catalogo_tasas" | "exoneraciones" | "registro_transacciones" | "auditoria" | "soporte"
+    "registro_pagos" | "validacion_pagos" | "estados_pago" | "catalogo_tasas" | "registro_transacciones" | "resultados" | "auditoria" | "soporte"
   >("registro_pagos");
 
   // Notifications State
@@ -76,7 +80,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
   const [concepts, setConcepts] = useState<MafConcept[]>([]);
   const [obligations, setObligations] = useState<MafObligation[]>([]);
   const [verifiedStudentDni, setVerifiedStudentDni] = useState("");
-  const [exonerations, setExonerations] = useState<MafExoneration[]>([]);
   const [auditLogs, setAuditLogs] = useState<MafAuditLog[]>([]);
 
   // Search, Filter, and Modal States
@@ -88,7 +91,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
   const [showAddObligationModal, setShowAddObligationModal] = useState(false);
   const [showRegisterVoucherModal, setShowRegisterVoucherModal] = useState(false);
   const [showObserveModal, setShowObserveModal] = useState(false);
-  const [showExonerationModal, setShowExonerationModal] = useState(false);
 
   // Reusable confirmation modal state
   const [confirmModal, setConfirmModal] = useState<{
@@ -137,20 +139,11 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
 
   const [observationText, setObservationText] = useState("");
 
-  const [exonerationForm, setExonerationForm] = useState({
-    studentDni: "",
-    studentName: "",
-    type: "Beca Integral (100%)" as MafExoneration["type"],
-    percentage: 100,
-    conceptCode: "",
-    reason: "",
-  });
 
   // Support Tickets State
   const [tickets, setTickets] = useState<SupportTicket[]>([
     { id: "T-8091", sender: "Rosa Elvira Huamán", dni: "44332211", topic: "Voucher de admisión rechazado", date: "2026-06-15", status: "Pendiente", detail: "El banco no emitió el código correcto pero adjunto mi captura de banca por celular." },
     { id: "T-8082", sender: "Jorge Luis Toledo", dni: "76543210", topic: "Error de cobro duplicado", date: "2026-06-14", status: "Atendido", detail: "Hice el pago dos veces por error, solicito la devolución de S/. 250." },
-    { id: "T-8073", sender: "Carlos Mendoza", dni: "98765432", topic: "Carga de exoneración por convenio", date: "2026-06-12", status: "Atendido", detail: "Falta aplicar mi descuento de media beca deportiva de S/.125 para mi matrícula." }
   ]);
 
   const [newTicket, setNewTicket] = useState({
@@ -189,6 +182,7 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
     setAuditLogs((prev) => {
       const updated = [newLog, ...prev];
       localStorage.setItem("maf_audit_logs", JSON.stringify(updated));
+      void saveMafState('auditLogs', updated).catch(error => console.error('No se pudo guardar auditoría MAF:', error));
       return updated;
     });
   };
@@ -200,6 +194,7 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
       requests.forEach(request => byId.set(request.id, obligationFromRequest(request)));
       const next = Array.from(byId.values());
       localStorage.setItem("maf_obligations", JSON.stringify(next));
+      void saveMafState('obligations', next).catch(error => console.error('No se pudieron guardar obligaciones MAF:', error));
       return next;
     });
     return requests.length;
@@ -209,19 +204,14 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
   useEffect(() => {
     const storedConcepts = localStorage.getItem("maf_concepts");
     if (storedConcepts) {
-      setConcepts(JSON.parse(storedConcepts));
+      const previous: MafConcept[] = JSON.parse(storedConcepts);
+      setConcepts([...previous, ...defaultConcepts.filter(item => !previous.some(old => old.code === item.code))]);
     } else {
       setConcepts(defaultConcepts);
       localStorage.setItem("maf_concepts", JSON.stringify(defaultConcepts));
     }
 
-    const storedExonerations = localStorage.getItem("maf_exonerations");
-    if (storedExonerations) {
-      setExonerations(JSON.parse(storedExonerations));
-    } else {
-      setExonerations([]);
-      localStorage.setItem("maf_exonerations", JSON.stringify([]));
-    }
+    localStorage.removeItem("maf_exonerations");
 
     const storedObligations = localStorage.getItem("maf_obligations");
     if (storedObligations) {
@@ -265,9 +255,9 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
             const existingAdm = updatedObls.find((o) => o.studentDni === dni && o.conceptCode === "ADM01");
 
             let status: MafObligation["status"] = "Pendiente";
-            if (app.paymentStatus === "Pagado" || app.paymentStatus === "VERIFICADO" || app.paymentStatus === "Validado" || app.status === "REGISTRADO") {
+            if (app.paymentStatus === "Validado" || app.paymentStatus === "VERIFICADO") {
               status = "Validado";
-            } else if (app.paymentStatus === "POR_VERIFICAR" || app.paymentStatus === "En Proceso") {
+            } else if (app.paymentStatus === "POR_VERIFICAR" || app.paymentStatus === "En Proceso" || app.paymentStatus === "Pagado" || app.paymentStatus === "Pendiente") {
               status = "En Proceso";
             }
 
@@ -294,9 +284,9 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
                 }
               });
               changed = true;
-            } else if (existingAdm.status !== status && status === "Validado") {
+            } else if (existingAdm.status !== status) {
               existingAdm.status = status;
-              existingAdm.voucherRegistered = true;
+              existingAdm.voucherRegistered = !!app.paymentOperation || !!app.voucherCode || status === 'Validado';
               changed = true;
             }
           });
@@ -308,9 +298,9 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
             const existingMat = updatedObls.find((o) => o.studentDni === dni && o.conceptCode === "MAT01");
 
             let status: MafObligation["status"] = "Pendiente";
-            if (enr.paymentStatus === "Validado" || enr.paymentStatus === "PAGADO" || enr.academicStatus === "MATRICULADO") {
+            if (enr.paymentStatus === "Validado") {
               status = "Validado";
-            } else if (enr.paymentStatus === "POR_VERIFICAR" || enr.paymentStatus === "En Proceso") {
+            } else if (enr.paymentStatus === "POR_VERIFICAR" || enr.paymentStatus === "En Proceso" || enr.paymentStatus === "Pagado" || enr.paymentStatus === "Pendiente") {
               status = "En Proceso";
             }
 
@@ -337,15 +327,16 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
                 }
               });
               changed = true;
-            } else if (existingMat.status !== status && status === "Validado") {
+            } else if (existingMat.status !== status) {
               existingMat.status = status;
-              existingMat.voucherRegistered = true;
+              existingMat.voucherRegistered = !!enr.paymentOperation || status === 'Validado';
               changed = true;
             }
           });
 
           if (changed) {
             localStorage.setItem("maf_obligations", JSON.stringify(updatedObls));
+            void saveMafState('obligations', updatedObls).catch(error => console.error('No se pudieron guardar obligaciones MAF:', error));
           }
 
           return updatedObls;
@@ -355,21 +346,44 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
       }
     };
 
-    syncMamcPayments();
-    void refreshServiceRequests().catch(error => console.error("No se pudieron cargar las solicitudes de estudiantes en MAF:", error));
+    const hydrate = async () => {
+      try {
+        const [serverConcepts, serverObligations, serverLogs] = await Promise.all([
+          readMafState<MafConcept>('concepts'), readMafState<MafObligation>('obligations'), readMafState<MafAuditLog>('auditLogs'),
+        ]);
+        const localConcepts = JSON.parse(localStorage.getItem('maf_concepts') || '[]') as MafConcept[];
+        const localObligations = JSON.parse(localStorage.getItem('maf_obligations') || '[]') as MafObligation[];
+        const localLogs = JSON.parse(localStorage.getItem('maf_audit_logs') || '[]') as MafAuditLog[];
+        const conceptsToUse = [...(serverConcepts.length ? serverConcepts : localConcepts), ...defaultConcepts.filter(item => !(serverConcepts.length ? serverConcepts : localConcepts).some(old => old.code === item.code))];
+        setConcepts(conceptsToUse);
+        const obligationsToUse = (serverObligations.length ? serverObligations : localObligations).map(item =>
+          (item.status as string) === 'Exonerado' ? { ...item, status: 'Pendiente' as const, discount: 0, finalAmount: item.amount } : item,
+        );
+        setObligations(obligationsToUse);
+        setAuditLogs(serverLogs.length ? serverLogs : localLogs);
+        if (!serverConcepts.length) await saveMafState('concepts', conceptsToUse);
+        if (obligationsToUse.length && (!serverObligations.length || obligationsToUse.some(item => (serverObligations.find(old => old.id === item.id)?.status as string) === 'Exonerado')))
+          await saveMafState('obligations', obligationsToUse);
+        if (!serverLogs.length && localLogs.length) await saveMafState('auditLogs', localLogs);
+      } catch (error) { console.error('No se pudo cargar el estado MAF desde MongoDB:', error); }
+      await syncMamcPayments();
+      await refreshServiceRequests().catch(error => console.error('No se pudieron cargar solicitudes:', error));
+    };
+    void hydrate();
   }, []);
 
   // Save on updates helper
   const handleConceptsUpdate = (updated: MafConcept[]) => {
     setConcepts(updated);
     localStorage.setItem("maf_concepts", JSON.stringify(updated));
+    void saveMafState('concepts', updated).catch(error => triggerNotification(error.message, 'warning'));
   };
 
   const handleObligationsUpdate = (updated: MafObligation[]) => {
     updated.filter(item => item.id.startsWith("SOL-")).forEach(item => {
       const previous = obligations.find(old => old.id === item.id);
       const operation = item.voucherDetails?.operationNumber || "";
-      if (previous && (previous.status !== item.status || (previous.voucherDetails?.operationNumber || "") !== operation)) {
+      if (previous && item.status !== 'Validado' && (previous.status !== item.status || (previous.voucherDetails?.operationNumber || "") !== operation)) {
         void updateServiceRequestPayment(item.id, {
           status: item.status,
           paymentOperation: operation,
@@ -384,12 +398,8 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
     });
     setObligations(updated);
     localStorage.setItem("maf_obligations", JSON.stringify(updated));
+    void saveMafState('obligations', updated).catch(error => triggerNotification(error.message, 'warning'));
     syncObligationsToMamcAndMge(updated);
-  };
-
-  const handleExonerationsUpdate = (updated: MafExoneration[]) => {
-    setExonerations(updated);
-    localStorage.setItem("maf_exonerations", JSON.stringify(updated));
   };
 
   // Concept CRUD Handlers
@@ -513,13 +523,30 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
     setShowRegisterVoucherModal(true);
   };
 
-  const handleRegisterVoucher = (e: React.FormEvent) => {
+  const handleRegisterVoucher = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedObligationId || !voucherForm.operationNumber || voucherForm.amountPaid <= 0) {
       triggerNotification("Por favor ingrese todos los detalles del comprobante físico.", "warning");
       return;
     }
 
+    const selected = obligations.find(o => o.id === selectedObligationId);
+    try {
+      if (selected?.id.startsWith('SOL-')) await updateServiceRequestPayment(selected.id, {
+        status: 'En Proceso', paymentOperation: voucherForm.operationNumber,
+        paymentDate: voucherForm.paymentDate, amountPaid: Number(voucherForm.amountPaid), bankName: voucherForm.bankName,
+      });
+      else if (selected?.conceptCode === 'ADM01') {
+        const saved = await updateApplicant(selected.studentDni, { paymentStatus: 'Pendiente', paymentOperation: voucherForm.operationNumber });
+        if (!saved) throw new Error('No se pudo guardar el voucher de admisión.');
+      } else if (selected?.conceptCode === 'MAT01') {
+        const saved = await updateEnrollment(selected.studentDni, { paymentStatus: 'Pendiente', paymentOperation: voucherForm.operationNumber });
+        if (!saved) throw new Error('No se pudo guardar el voucher de matrícula.');
+      }
+    } catch (error) {
+      triggerNotification(error instanceof Error ? error.message : 'No se pudo guardar el voucher en el servidor.', 'warning');
+      return;
+    }
     const nextList = obligations.map(o => {
       if (o.id === selectedObligationId) {
         addAuditLog(
@@ -531,6 +558,7 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
           ...o,
           status: "En Proceso" as const,
           voucherRegistered: true,
+          voucherRegisteredAt: new Date().toISOString(),
           voucherDetails: {
             operationNumber: voucherForm.operationNumber,
             bankName: voucherForm.bankName,
@@ -550,53 +578,33 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
   };
 
   // Validation Handlers (Approve/Reject)
-  const handleApprovePayment = (oblId: string) => {
-    const ob = obligations.find(o => o.id === oblId);
-    if (!ob) return;
-
-    setConfirmModal({
-      isOpen: true,
-      title: "Validar Pago Oficial",
-      message: `¿Confirmó el importe de S/. ${ob.finalAmount} y desea VALIDAR oficialmente este pago de ${ob.studentName}?`,
-      variant: "primary",
-      confirmText: "Validar Pago",
-      cancelText: "Cancelar",
-      onConfirm: () => {
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-        const nextList = obligations.map(o => {
-          if (o.id === oblId) {
-            addAuditLog(
-              "Validación Aprobación",
-              `El comprobante ${o.voucherDetails?.operationNumber || "N/A"} asociado a ${o.studentName} fue VALIDADO exitosamente.`,
-              "success"
-            );
-            return {
-              ...o,
-              status: "Validado" as const,
-            };
-          }
-          return o;
-        });
-
-        handleObligationsUpdate(nextList);
-        triggerNotification("Pago auditado y VALIDADO oficialmente.", "success");
-      }
-    });
-  };
-
-
   const handleOpenObservePayment = (oblId: string) => {
     setSelectedObligationId(oblId);
     setObservationText("");
     setShowObserveModal(true);
   };
 
-  const handleConfirmObservePayment = () => {
+  const handleConfirmObservePayment = async () => {
     if (!selectedObligationId || !observationText.trim()) {
       triggerNotification("Por favor, provea la razón del rechazo / observación para notificar al estudiante.", "warning");
       return;
     }
 
+    const selected = obligations.find(o => o.id === selectedObligationId);
+    try {
+      if (selected?.id.startsWith('SOL-')) await updateServiceRequestPayment(selected.id, {
+        status: 'Observado', paymentOperation: selected.voucherDetails?.operationNumber,
+        paymentDate: selected.voucherDetails?.paymentDate, amountPaid: selected.voucherDetails?.amountPaid,
+        bankName: selected.voucherDetails?.bankName,
+      });
+      else if (selected?.conceptCode === 'ADM01') {
+        const saved = await updateApplicant(selected.studentDni, { paymentStatus: 'Observado', paymentObservations: observationText });
+        if (!saved) throw new Error('No se pudo guardar la observación de admisión.');
+      } else if (selected?.conceptCode === 'MAT01') {
+        const saved = await updateEnrollment(selected.studentDni, { paymentStatus: 'Observado' });
+        if (!saved) throw new Error('No se pudo guardar la observación de matrícula.');
+      }
+    } catch (error) { triggerNotification(error instanceof Error ? error.message : 'No se guardó la observación.', 'warning'); return; }
     const nextList = obligations.map(o => {
       if (o.id === selectedObligationId) {
         addAuditLog(
@@ -621,84 +629,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
     setShowObserveModal(false);
     setSelectedObligationId(null);
   };
-
-  // Exoneration Forms Handlers
-  const handleOpenAddExoneration = () => {
-    setExonerationForm({
-      studentDni: "",
-      studentName: "",
-      type: "Beca Integral (100%)",
-      percentage: 100,
-      conceptCode: "MAT01",
-      reason: "",
-    });
-    setShowExonerationModal(true);
-  };
-
-  const handleAddExoneration = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!exonerationForm.studentDni || !exonerationForm.studentName || !exonerationForm.reason) {
-      triggerNotification("Por favor complete todos los datos de la resolución de exoneración.", "warning");
-      return;
-    }
-
-    const newEx: MafExoneration = {
-      id: "ex-" + Math.floor(1000 + Math.random() * 9000),
-      studentDni: exonerationForm.studentDni,
-      studentName: exonerationForm.studentName,
-      type: exonerationForm.type,
-      percentage: Number(exonerationForm.percentage),
-      conceptCode: exonerationForm.conceptCode,
-      reason: exonerationForm.reason,
-      dateGranted: new Date().toISOString().split("T")[0]
-    };
-
-    const nextExs = [...exonerations, newEx];
-    handleExonerationsUpdate(nextExs);
-
-    const nextObls = obligations.map(o => {
-      if (o.studentDni === newEx.studentDni && o.conceptCode === newEx.conceptCode && o.status === "Pendiente") {
-        const discountAmt = o.amount * (newEx.percentage / 100);
-        const finalAmt = o.amount - discountAmt;
-        return {
-          ...o,
-          discount: discountAmt,
-          finalAmount: finalAmt,
-          status: finalAmt === 0 ? ("Exonerado" as const) : o.status
-        };
-      }
-      return o;
-    });
-    handleObligationsUpdate(nextObls);
-
-    addAuditLog(
-      "Otorgar Exoneración",
-      `Se otorgó exoneración tipo (${newEx.type}) a ${newEx.studentName} para el concepto ${newEx.conceptCode}.`,
-      "info"
-    );
-
-    triggerNotification("Beca / Exoneración registrada y aplicada con éxito.");
-    setShowExonerationModal(false);
-  };
-
-  const handleDeleteExoneration = (id: string, name: string) => {
-    setConfirmModal({
-      isOpen: true,
-      title: "Anular Beca / Exoneración",
-      message: `¿Está seguro de anular la exoneración de ${name}?`,
-      variant: "warning",
-      confirmText: "Anular Exoneración",
-      cancelText: "Cancelar",
-      onConfirm: () => {
-        setConfirmModal(prev => ({ ...prev, isOpen: false }));
-        const nextList = exonerations.filter(ex => ex.id !== id);
-        handleExonerationsUpdate(nextList);
-        addAuditLog("Anulación de Exoneración", `Se anuló la exoneración para ${name}.`, "warning");
-        triggerNotification("Exoneración anulada con éxito.", "info");
-      }
-    });
-  };
-
 
   // Support Ticket Form Submit
   const handleAddTicket = (e: React.FormEvent) => {
@@ -751,36 +681,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
     });
   };
 
-  const setFormExonerationDni = (dni: string) => {
-    let text = dni.trim();
-    setExonerationForm(prev => ({ ...prev, studentDni: text }));
-    if (text.length === 8) {
-      const savedStudents = localStorage.getItem("sfa_students");
-      const savedApplicants = localStorage.getItem("sfa_applicants");
-      let foundName = "";
-
-      if (savedStudents) {
-        try {
-          const list = JSON.parse(savedStudents);
-          if (list[text]) foundName = `${list[text].lastName}, ${list[text].name}`;
-        } catch (e) {}
-      }
-
-      if (!foundName && savedApplicants) {
-        try {
-          const list = JSON.parse(savedApplicants);
-          const ap = list.find((a: any) => a.dni === text);
-          if (ap) foundName = `${ap.lastName}, ${ap.name}`;
-        } catch (e) {}
-      }
-
-      if (foundName) {
-        setExonerationForm(prev => ({ ...prev, studentName: foundName }));
-        triggerNotification(`Estudiante bajo sospecha de beca: ${foundName}`, "info");
-      }
-    }
-  };
-
   // Filtered queries helper
   const filteredObligations = obligations.filter(o => {
     const query = searchQuery.trim().toLowerCase();
@@ -798,7 +698,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
     totalRecaudado: obligations.filter(o => o.status === "Validado").reduce((acc, o) => acc + (o.voucherDetails?.amountPaid || o.finalAmount), 0),
     pendientesCount: obligations.filter(o => o.status === "Pendiente" || o.status === "En Proceso").length,
     validadosCount: obligations.filter(o => o.status === "Validado").length,
-    becasCount: exonerations.length,
     vouchersPorValidar: obligations.filter(o => o.status === "En Proceso").length,
   };
 
@@ -851,12 +750,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
                 route: "catalogo_tasas",
                 active: activeTab === "catalogo_tasas"
               },
-              {
-                label: "Control de Exoneraciones / Becas",
-                icon: <Percent className="w-4 h-4" />,
-                route: "exoneraciones",
-                active: activeTab === "exoneraciones"
-              }
             ]
           },
           {
@@ -868,6 +761,7 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
                 route: "registro_transacciones",
                 active: activeTab === "registro_transacciones"
               },
+              { label: "Resultados de Trámites", icon: <Layers className="w-4 h-4" />, route: "resultados", active: activeTab === "resultados" },
               {
                 label: "Auditoria de Movimientos",
                 icon: <History className="w-4 h-4" />,
@@ -889,6 +783,8 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
           }
         ]}
         onItemClick={(route) => setActiveTab(route as any)}
+        onLogout={onLogout}
+        onGoToPortal={onGoToPortal}
       />
 
       {/* 2. Main content viewport areas */}
@@ -905,41 +801,41 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
         )}
 
         {/* Global MAF Module Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-slate-200 pb-5 mb-6 gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded bg-amber-500 text-amber-950 font-black text-[9px] uppercase tracking-wider">
-                Consola Oficial MAF
+        <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+                SISTEMA INTRANET INSTITUCIONAL • MÓDULO MAF
               </span>
-              <span className="px-2 py-0.5 rounded bg-slate-200 text-slate-800 font-black text-[9px] uppercase tracking-wider font-mono">
-                Source of Truth
-              </span>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-none text-white uppercase pt-0.5">
+                Módulo de Administración y Finanzas (MAF)
+              </h1>
+              <p className="text-xs text-white/90 font-medium max-w-2xl">
+                Consola Operativa y de Control de Caja, Conciliación Bancaria, Tasas Educativas y Trámites Institucionales.
+              </p>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight mt-1">
-              Módulo de Administración y Finanzas (MAF)
-            </h1>
-            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              Consola Operativa y de Control de Gastos, Matrículas, Prospectos y Trámites Institucionales.
-            </p>
-          </div>
 
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => void refreshServiceRequests().then(count => {
-                triggerNotification(`${count} solicitud(es) de estudiantes consultadas en la base local.`);
-              }).catch(() => triggerNotification("No se pudieron consultar las solicitudes en la base local.", "warning"))}
-              className="p-2 border border-slate-250 bg-white rounded-lg hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              Sincronizar
-            </button>
-            <button
-              onClick={onLogout}
-              className="px-4 py-2 hover:bg-red-50 text-red-650 font-black text-[10px] uppercase tracking-wider rounded-lg transition-all border border-red-200/50 flex items-center gap-2 cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              Cerrar Módulo
-            </button>
+            <div className="flex items-center gap-2.5 shrink-0">
+              <button
+                onClick={() => void refreshServiceRequests().then(count => {
+                  triggerNotification(`${count} solicitud(es) consultadas en la base de datos.`);
+                }).catch(() => triggerNotification("No se pudieron consultar las solicitudes.", "warning"))}
+                className="px-3.5 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+              >
+                <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+                Sincronizar
+              </button>
+              {onGoToPortal && (
+                <button
+                  onClick={onGoToPortal}
+                  className="px-3.5 py-2 bg-white hover:bg-amber-50 text-slate-800 hover:text-[#800521] font-black text-xs uppercase tracking-wider rounded-xl transition-all border border-white/40 flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <Home className="w-3.5 h-3.5 text-[#800521]" />
+                  Portal Principal
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -981,17 +877,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-purple-600">
-            <CardContent className="pt-4 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider font-mono">Estudiantes Exonerados</span>
-                <p className="text-xl font-black text-slate-900 mt-1 font-mono">{stats.becasCount}</p>
-              </div>
-              <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
-                <Percent className="w-5 h-5" />
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Tab content rendering */}
@@ -1011,7 +896,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
             setStatusFilter={setStatusFilter}
             vouchersPorValidar={stats.vouchersPorValidar}
             handleOpenObservePayment={handleOpenObservePayment}
-            handleApprovePayment={handleApprovePayment}
             onBankConfirmed={(ids, fileName) => {
               const selected = new Set(ids);
               handleObligationsUpdate(obligations.map(ob => selected.has(ob.id) && ob.status === "En Proceso" ? { ...ob, status: "Validado" } : ob));
@@ -1039,13 +923,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
           />
         )}
 
-        {activeTab === "exoneraciones" && (
-          <ExoneracionesTab
-            exonerations={exonerations}
-            handleOpenAddExoneration={handleOpenAddExoneration}
-            handleDeleteExoneration={handleDeleteExoneration}
-          />
-        )}
 
         {activeTab === "registro_transacciones" && (
           <RegistroTransaccionesTab
@@ -1053,6 +930,21 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
             setShowAddObligationModal={setShowAddObligationModal}
           />
         )}
+
+        {activeTab === "resultados" && <section className="space-y-4 rounded-xl border bg-white p-5">
+          <h2 className="text-xl font-black">Entrega de documentos</h2>
+          <p className="text-sm text-slate-600">El pago debe estar validado con el reporte bancario. Adjunte el PDF emitido por Secretaría; el alumno o docente podrá descargarlo desde su historial.</p>
+          {obligations.filter(item => item.id.startsWith('SOL-') && item.status === 'Validado').map(item =>
+            <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 border-b py-3 text-sm">
+              <div><p className="font-bold">{item.conceptName} · {item.studentName}</p><p className="text-slate-500">{item.id} · {item.deliveryStatus === 'Emitido' ? `Emitido: ${item.resultFileName}` : 'Pendiente de emisión'}</p></div>
+              <label className="cursor-pointer rounded border px-3 py-2 font-bold text-[#800521]">Adjuntar PDF emitido<input type="file" accept="application/pdf,.pdf" className="sr-only" onChange={async e => {
+                const file = e.target.files?.[0]; if (!file) return;
+                try { await deliverServiceRequestResult(item.id, file); await refreshServiceRequests(); triggerNotification('Documento disponible para el solicitante.', 'success'); }
+                catch (error) { triggerNotification(error instanceof Error ? error.message : 'No se pudo entregar el documento.', 'warning'); }
+                e.target.value = '';
+              }} /></label>
+            </div>)}
+        </section>}
 
         {activeTab === "auditoria" && <AuditoriaTab auditLogs={auditLogs} />}
 
@@ -1102,14 +994,6 @@ export default function MafDashboard({ onLogout }: MafDashboardProps) {
         handleConfirmObservePayment={handleConfirmObservePayment}
       />
 
-      <ExonerationModal
-        show={showExonerationModal}
-        onClose={() => setShowExonerationModal(false)}
-        exonerationForm={exonerationForm}
-        setExonerationForm={setExonerationForm}
-        setFormExonerationDni={setFormExonerationDni}
-        handleAddExoneration={handleAddExoneration}
-      />
 
       {/* Reusable Confirmation Modal */}
       <ConfirmModal

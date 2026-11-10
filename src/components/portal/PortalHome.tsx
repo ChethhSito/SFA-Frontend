@@ -18,12 +18,14 @@ interface PortalHomeProps {
   onEnterIntranet: () => void;
   onLogout?: () => void;
   admissionPeriods?: AdmissionPeriod[];
+  onApplicantCreated?: (created: any) => void;
 }
 
 export default function PortalHome({
   onEnterIntranet,
   onLogout,
-  admissionPeriods = []
+  admissionPeriods = [],
+  onApplicantCreated
 }: PortalHomeProps) {
   const activePeriod = openAdmissionPeriod(admissionPeriods);
   const admissionLabel = activePeriod?.name || "Sin convocatoria abierta";
@@ -177,6 +179,7 @@ export default function PortalHome({
         setFormError("No se pudo registrar la preinscripción en MongoDB. Revise la convocatoria e inténtelo nuevamente.");
         return;
       }
+      onApplicantCreated?.(created);
       const generatedApplicantCode = created.applicantCode || dniInput;
 
       if (emailInput && emailInput.trim()) {

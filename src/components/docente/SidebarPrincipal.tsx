@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { 
   Users, BookOpen, Clock, FileText, CheckCircle, 
-  Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronDown, ChevronRight, Settings, BarChart3, Megaphone, FileSpreadsheet, LibraryBig
+  Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, Home, GraduationCap, ChevronDown, ChevronRight, Settings, BarChart3, Megaphone, FileSpreadsheet, LibraryBig
 } from "lucide-react";
 import { Course, Teacher } from "../../types";
 import Badge from "../ui/Badge";
@@ -15,6 +15,7 @@ export interface SidebarPrincipalProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onLogout: () => void;
+  onGoToPortal?: () => void;
 }
 
 export default function SidebarPrincipal({
@@ -25,7 +26,8 @@ export default function SidebarPrincipal({
   onSelectCourse,
   activeTab,
   setActiveTab,
-  onLogout
+  onLogout,
+  onGoToPortal
 }: SidebarPrincipalProps) {
   // Dynamic teacher details from props
   const teacherName = teacher ? `${teacher.name} ${teacher.lastName}` : "Docente Titular";
@@ -59,6 +61,7 @@ export default function SidebarPrincipal({
     { id: "evaluaciones_cursos", label: "Evaluaciones de Cursos", icon: <FileSpreadsheet className="w-4 h-4" /> },
     { id: "guias", label: "Guías y Reglamentos", icon: <LibraryBig className="w-4 h-4" /> },
     { id: "calendar", label: "Calendario Académico", icon: <Calendar className="w-4 h-4" /> },
+    { id: "tramites", label: "Mis Trámites", icon: <FileText className="w-4 h-4" /> },
     { id: "configuracion", label: "Configuración", icon: <Settings className="w-4 h-4" /> },
   ];
 
@@ -66,11 +69,11 @@ export default function SidebarPrincipal({
     <aside className="w-64 h-full bg-white border-r border-slate-100 flex flex-col shrink-0 select-none text-left">
       {/* SFA Logo Header */}
       <div className="p-5 flex items-center gap-3 border-b border-slate-150/40">
-        <div className="h-10 w-10 bg-[#8B0026] text-[#CFA020] rounded-xl flex items-center justify-center font-bold shadow-md shrink-0 border border-[#8B0026]/10">
+        <div className="h-10 w-10 bg-[#800521] text-[#CFA020] rounded-xl flex items-center justify-center font-bold shadow-md shrink-0 border border-[#800521]/10">
           <GraduationCap className="w-5 h-5" />
         </div>
         <div className="text-left">
-          <h1 className="text-sm font-black text-[#8B0026] tracking-tight leading-none uppercase">
+          <h1 className="text-sm font-black text-[#800521] tracking-tight leading-none uppercase">
             IESTP SFA
           </h1>
           <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wide block mt-1">
@@ -127,7 +130,7 @@ export default function SidebarPrincipal({
                   }}
                   className={`w-full text-left py-2.5 px-3 rounded-xl transition-all duration-150 flex items-center gap-3 cursor-pointer text-xs font-semibold ${
                     isActive
-                      ? "bg-[#8B0026] text-white font-bold shadow-md border border-red-900/10"
+                      ? "bg-[#800521] text-white font-bold shadow-md border border-red-900/10"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
                   }`}
                 >
@@ -142,11 +145,20 @@ export default function SidebarPrincipal({
         </div>
       </div>
 
-      {/* Logout Action Bar */}
-      <div className="p-4 border-t border-slate-100 bg-slate-50/40 shrink-0">
+      {/* Footer Action Bar */}
+      <div className="p-4 border-t border-slate-100 bg-slate-50/40 shrink-0 space-y-1.5">
+        {onGoToPortal && (
+          <button
+            onClick={onGoToPortal}
+            className="w-full py-2.5 px-3 rounded-xl bg-white hover:bg-red-50 text-slate-700 hover:text-[#9F062A] text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 tracking-wider border border-slate-200/60 shadow-2xs cursor-pointer"
+          >
+            <Home className="w-4 h-4 shrink-0 text-[#9F062A]" />
+            <span>Portal Principal</span>
+          </button>
+        )}
         <button
           onClick={onLogout}
-          className="w-full py-2.5 px-3 rounded-xl bg-transparent hover:bg-rose-50 text-slate-600 hover:text-[#8B0026] text-xs font-black uppercase transition-all flex items-center justify-center gap-2 tracking-wider border border-transparent hover:border-red-100 cursor-pointer"
+          className="w-full py-2.5 px-3 rounded-xl bg-transparent hover:bg-rose-50 text-slate-600 hover:text-[#800521] text-xs font-black uppercase transition-all flex items-center justify-center gap-2 tracking-wider border border-transparent hover:border-red-100 cursor-pointer"
         >
           <LogOut className="w-4 h-4 shrink-0 text-slate-400" />
           <span>Cerrar Sesión</span>

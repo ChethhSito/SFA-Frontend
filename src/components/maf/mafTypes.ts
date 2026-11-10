@@ -15,15 +15,19 @@ export interface MafObligation {
   conceptCode: string;
   conceptName: string;
   amount: number;
-  discount: number; // For exonerations / scholarships
+  discount: number;
   finalAmount: number;
   period: string;
-  status: "Pendiente" | "En Proceso" | "Validado" | "Observado" | "Exonerado";
+  status: "Pendiente" | "En Proceso" | "Validado" | "Observado";
   dateCreated: string;
-  source?: "estudiante" | "llamada_apoderado";
+  createdAt?: string;
+  voucherRegisteredAt?: string;
+  source?: "estudiante" | "docente" | "llamada_apoderado";
   requestReason?: string;
   requestedBy?: string;
   contactPhone?: string;
+  deliveryStatus?: 'Pendiente' | 'Emitido';
+  resultFileName?: string;
   voucherRegistered?: boolean;
   voucherDetails?: {
     operationNumber: string;
@@ -32,17 +36,6 @@ export interface MafObligation {
     amountPaid: number;
     observations?: string;
   };
-}
-
-export interface MafExoneration {
-  id: string;
-  studentDni: string;
-  studentName: string;
-  type: "Beca Integral (100%)" | "Media Beca (50%)" | "Exoneración por Convenio" | "Caso Social";
-  percentage: number; // 50 or 100
-  reason: string;
-  dateGranted: string;
-  conceptCode: string; // Exoneration applied to specific concept (e.g. MATRICULA)
 }
 
 export interface MafAuditLog {

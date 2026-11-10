@@ -89,7 +89,7 @@ export default function Sidebar({
 
   // Resolve user values
   const userName = user?.name || userProfile?.name || "Usuario";
-  const userRole = user?.role || userProfile?.role || "Postulante 2026-I";
+  const userRole = user?.role || userProfile?.role || "Usuario";
   const userStatus = user?.status || userProfile?.status || "Activo";
   const userAvatar = user?.avatar || userProfile?.avatar;
 
@@ -146,14 +146,14 @@ export default function Sidebar({
   const renderLogo = () => {
     if (!instLogo) {
       return (
-        <div className="h-10 w-10 bg-[#8B0026] text-[#CFA020] rounded-xl flex items-center justify-center font-bold shadow-md shrink-0 border border-[#8B0026]/10">
+        <div className="h-10 w-10 bg-[#800521] text-[#CFA020] rounded-xl flex items-center justify-center font-bold shadow-md shrink-0 border border-[#800521]/10">
           <GraduationCap className="w-5 h-5" />
         </div>
       );
     }
     if (typeof instLogo === "string") {
       return (
-        <div className="h-10 w-10 bg-[#8B0026] text-[#CFA020] rounded-xl flex items-center justify-center font-bold shadow-md shrink-0 overflow-hidden">
+        <div className="h-10 w-10 bg-[#800521] text-[#CFA020] rounded-xl flex items-center justify-center font-bold shadow-md shrink-0 overflow-hidden">
           {instLogo.startsWith("http") ? (
             <img src={instLogo} alt="Logo" className="w-full h-full object-cover" />
           ) : (
@@ -172,7 +172,7 @@ export default function Sidebar({
         {renderLogo()}
         {!collapsed && (
           <div className="text-left min-w-0 flex-1">
-            <h1 className="text-xs font-black text-[#8B0026] tracking-tight leading-none uppercase truncate">
+            <h1 className="text-xs font-black text-[#800521] tracking-tight leading-none uppercase truncate">
               {instName}
             </h1>
             <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wide block mt-1 truncate">
@@ -264,14 +264,14 @@ export default function Sidebar({
                         collapsed ? "justify-center p-2.5 rounded-xl" : "justify-between py-2.5 px-3 rounded-xl"
                       } ${
                         item.active
-                          ? "bg-[#9F062A] text-white font-bold shadow-sm shadow-[#9F062A]/20 border border-red-900/20"
+                          ? "bg-[#800521] text-white font-bold shadow-sm shadow-[#800521]/20 border border-red-900/20"
                           : isSubActive
-                            ? "bg-slate-100 text-[#9F062A] font-bold border border-slate-200"
+                            ? "bg-slate-100 text-[#800521] font-bold border border-slate-200"
                             : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
                       }`}
                     >
                       <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3 min-w-0"}`}>
-                        <span className={`w-4 h-4 shrink-0 flex items-center justify-center transition-colors ${item.active ? "text-amber-400" : isSubActive ? "text-[#9F062A]" : "text-slate-400"}`}>
+                        <span className={`w-4 h-4 shrink-0 flex items-center justify-center transition-colors ${item.active ? "text-amber-400" : isSubActive ? "text-[#800521]" : "text-slate-400"}`}>
                           {renderItemIcon(item.icon)}
                         </span>
                         {!collapsed && <span className="truncate tracking-wide text-[11.5px]">{item.label}</span>}
@@ -309,12 +309,12 @@ export default function Sidebar({
                                   }}
                                   className={`w-full text-left py-2 px-3 rounded-lg transition-all duration-150 flex items-center gap-2.5 cursor-pointer text-[11px] font-semibold ${
                                     isThisSubActive
-                                      ? "bg-[#9F062A]/10 text-[#9F062A] font-extrabold border-l-2 border-[#9F062A]"
+                                      ? "bg-[#800521]/10 text-[#800521] font-extrabold border-l-2 border-[#800521]"
                                       : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
                                   }`}
                                 >
                                   {sub.icon && (
-                                    <span className={`w-3.5 h-3.5 shrink-0 flex items-center justify-center transition-colors ${isThisSubActive ? "text-[#9F062A]" : "text-slate-400"}`}>
+                                    <span className={`w-3.5 h-3.5 shrink-0 flex items-center justify-center transition-colors ${isThisSubActive ? "text-[#800521]" : "text-slate-400"}`}>
                                       {renderItemIcon(sub.icon)}
                                     </span>
                                   )}
@@ -341,11 +341,11 @@ export default function Sidebar({
             <button
               onClick={onGoToPortal}
               title={collapsed ? "Volver al Portal Principal" : undefined}
-              className={`w-full py-2 rounded-xl text-slate-700 hover:text-[#9F062A] hover:bg-red-50 text-xs font-bold uppercase transition-all flex items-center justify-center tracking-wider cursor-pointer ${
+              className={`w-full py-2 rounded-xl text-slate-700 hover:text-[#800521] hover:bg-red-50 text-xs font-bold uppercase transition-all flex items-center justify-center tracking-wider cursor-pointer ${
                 collapsed ? "px-0" : "px-3 gap-2 border border-slate-200/60 bg-white shadow-2xs"
               }`}
             >
-              <Home className="w-4 h-4 shrink-0 text-[#9F062A]" />
+              <Home className="w-4 h-4 shrink-0 text-[#800521]" />
               {!collapsed && <span>Portal Principal</span>}
             </button>
           )}
@@ -374,7 +374,7 @@ export default function Sidebar({
         <div className="flex items-center gap-2.5">
           {renderLogo()}
           <div className="text-left">
-            <h1 className="text-xs font-black text-[#9F062A] tracking-tight leading-none uppercase">
+            <h1 className="text-xs font-black text-[#800521] tracking-tight leading-none uppercase">
               {instName}
             </h1>
             <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wide block mt-0.5">
@@ -384,7 +384,7 @@ export default function Sidebar({
         </div>
         <button
           onClick={() => setIsOpenMobile(!isOpenMobile)}
-          className="p-1.5 text-slate-500 hover:text-[#9F062A] hover:bg-slate-50 rounded-lg transition-colors border border-slate-200 shadow-2xs cursor-pointer"
+          className="p-1.5 text-slate-500 hover:text-[#800521] hover:bg-slate-50 rounded-lg transition-colors border border-slate-200 shadow-2xs cursor-pointer"
           aria-label="Abrir menú"
         >
           {isOpenMobile ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -415,7 +415,7 @@ export default function Sidebar({
               <div className="absolute top-4 right-4 z-50">
                 <button
                   onClick={() => setIsOpenMobile(false)}
-                  className="p-1.5 text-slate-400 hover:text-[#9F062A] hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 text-slate-400 hover:text-[#800521] hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
                 >
                   <X className="w-4.5 h-4.5" />
                 </button>
@@ -434,7 +434,7 @@ export default function Sidebar({
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           title={isCollapsed ? "Expandir menú lateral" : "Colapsar menú lateral"}
-          className="absolute -right-3.5 top-6 z-40 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#9F062A] border border-slate-300 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"
+          className="absolute -right-3.5 top-6 z-40 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#800521] border border-slate-300 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"
         >
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>

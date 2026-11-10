@@ -106,95 +106,79 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
   return (
     <PageTransition id="attendance" className="space-y-6">
       {/* High Fidelity Header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 shadow-xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              Control Escolar y Asistencia • Registros disponibles
+      <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-6">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+              PORTAL DEL ESTUDIANTE • CONTROL ESCOLAR
             </span>
-          </div>
-          <h2 id="asis-view-main" className="text-xl font-black text-slate-900 tracking-tight mt-1">
-            Control de Asistencia del Estudiante
-          </h2>
-          <p className="text-xs text-slate-500 font-medium">
-            Seguimiento de puntualidad, asistencias en taller y justificaciones reglamentarias
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-          <div className="text-left bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-xl select-none">
-            <span className="text-[9px] text-[#800521] font-extrabold block uppercase tracking-wider">Semestre Lectivo</span>
-            <span className="text-xs font-black text-slate-800">Historial disponible</span>
+            <h2 id="asis-view-main" className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+              Control de Asistencia del Estudiante
+            </h2>
+            <p className="text-xs text-white/90 font-medium max-w-2xl">
+              Seguimiento de puntualidad presencial, registro de sesiones dictadas en taller y control del quórum reglamentario del 70%.
+            </p>
           </div>
 
-          <button
-            onClick={() => window.print()}
-            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-2 select-none cursor-pointer transition-all shadow-xs"
-          >
-            <Printer className="w-3.5 h-3.5 text-slate-500" />
-            <span>Imprimir Récord</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <div className="text-left bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
+              <span className="text-[9px] text-amber-400 font-extrabold block uppercase mb-0.5 tracking-wider">Semestre Lectivo</span>
+              <span className="text-xs font-black text-white font-mono">Historial Disponible</span>
+            </div>
+            <button
+              onClick={() => window.print()}
+              className="bg-white hover:bg-amber-50 text-slate-900 font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-2 select-none cursor-pointer transition-all shadow-md border border-white/30"
+            >
+              <Printer className="w-3.5 h-3.5 text-[#800521]" />
+              <span>Imprimir Récord</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Metric Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs text-left flex flex-col justify-between min-h-[110px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-blue-600 flex items-center justify-between text-left">
           <div>
-            <span className="text-slate-400 text-[10px] font-black uppercase tracking-wider block">Asistencia General</span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className={`text-2xl font-black ${overallRate >= 70 ? "text-emerald-600" : "text-amber-600"}`}>{overallRate === null ? "Sin datos" : `${overallRate}%`}</span>
-              <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${overallRate >= 70 ? "text-emerald-700 bg-emerald-50" : "text-amber-700 bg-amber-50"}`}>
-                {overallRate === null ? "Sin registros" : overallRate >= 70 ? "Al Día" : "Observado"}
-              </span>
-            </div>
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Asistencia General</span>
+            <p className="text-2xl font-black text-slate-900 mt-1 font-mono">{overallRate === null ? "Sin datos" : `${overallRate}%`}</p>
           </div>
-          <span className="text-[10px] font-bold text-slate-400 block mt-2">Registros históricos disponibles</span>
+          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+            <Clock className="w-5 h-5" />
+          </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs text-left flex flex-col justify-between min-h-[110px]">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-emerald-600 flex items-center justify-between text-left">
           <div>
-            <span className="text-slate-400 text-[10px] font-black uppercase tracking-wider block">Asignaturas en Formación</span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-black text-slate-900">{currentAttendanceCourses.length.toString().padStart(2, "0")}</span>
-              <span className="text-xs font-bold text-slate-400">Cursos Oficiales</span>
-            </div>
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Sesiones Asistidas</span>
+            <p className="text-2xl font-black text-emerald-600 mt-1 font-mono">{totalAsistencias} / {totalSesiones}</p>
           </div>
-          <span className="text-[10px] font-bold text-slate-400 block mt-2">Ciclo I • Malla Curricular</span>
+          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs text-left flex flex-col justify-between min-h-[110px]">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-purple-600 flex items-center justify-between text-left">
           <div>
-            <span className="text-slate-400 text-[10px] font-black uppercase tracking-wider block">Inasistencias Totales</span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-black text-slate-900">{totalInasistencias.toString().padStart(2, "0")}</span>
-              <span className="text-xs font-bold text-slate-400">Sesiones</span>
-            </div>
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Inasistencias Acumuladas</span>
+            <p className="text-2xl font-black text-purple-600 mt-1 font-mono">{totalInasistencias}</p>
           </div>
-          <span className="text-[10px] font-bold text-slate-400 block mt-2">Límite permitido: 30% por curso</span>
+          <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+            <Calendar className="w-5 h-5" />
+          </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs text-left flex flex-col justify-between min-h-[110px]">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-amber-500 flex items-center justify-between text-left">
           <div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-400 text-[10px] font-black uppercase tracking-wider block">Alertas de Riesgo</span>
-              {totalAlertsCount > 0 ? (
-                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-              ) : (
-                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              )}
-            </div>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className={`text-2xl font-black ${totalAlertsCount > 0 ? "text-amber-600" : "text-emerald-600"}`}>
-                {totalAlertsCount.toString().padStart(2, "0")}
-              </span>
-            </div>
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Cursos en Alerta (&lt;70%)</span>
+            <p className="text-2xl font-black text-amber-600 mt-1 font-mono">{totalAlertsCount}</p>
           </div>
-          <span className={`${totalAlertsCount > 0 ? "text-amber-700" : "text-emerald-700"} text-[10px] font-bold leading-tight`}>{alertMsg}</span>
+          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
         </div>
       </div>
-
       {/* Main panel: LISTADO DE CURSOS + Right Sidebar */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         <div id="asis-courses" className="xl:col-span-8 space-y-4">

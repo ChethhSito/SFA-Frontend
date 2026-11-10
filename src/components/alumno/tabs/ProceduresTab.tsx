@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { FileText, RefreshCw } from 'lucide-react';
-import { createServiceRequest, fetchServiceRequests, ServiceRequest, StudentProcedureCode, submitServiceRequestVoucher } from '../../../services/serviceRequests';
+import { createServiceRequest, fetchServiceRequests, ServiceRequest, StudentProcedureCode, submitServiceRequestVoucher, serviceRequestResultUrl } from '../../../services/serviceRequests';
+import { readMafState } from '../../../services/mafState';
+import { Pagination, usePagination } from '../../ui/Pagination';
 
 const procedures: { code: StudentProcedureCode; title: string; amount: number; why: string }[] = [
   { code: 'CER01', title: 'Certificado de Estudios Oficial', amount: 50,
@@ -11,6 +13,7 @@ const procedures: { code: StudentProcedureCode; title: string; amount: number; w
 
 export function ProceduresTab({ studentDni, period }: { studentDni: string; period: string }) {
   const [items, setItems] = useState<ServiceRequest[]>([]);
+  const [rates, setRates] = useState<Record<string, number>>({});
   const [selected, setSelected] = useState<StudentProcedureCode>('CER01');
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(true);
@@ -21,6 +24,8 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
   const [voucherSaving, setVoucherSaving] = useState(false);
   const [voucherFeedback, setVoucherFeedback] = useState('');
   const [voucherError, setVoucherError] = useState('');
+  const sortedItems = [...items].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  const pagination = usePagination(sortedItems, 5, sortedItems[0]?.id, 'sfa_student_requests_page_size');
 
   const reload = async () => {
     setLoading(true);
@@ -35,6 +40,8 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
   };
 
   useEffect(() => { void reload(); }, [studentDni]);
+  useEffect(() => { void readMafState<{ code: string; amount: number }>('concepts').then(list =>
+    setRates(Object.fromEntries(list.map(item => [item.code, item.amount])))).catch(() => {}); }, []);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -83,16 +90,43 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
     }
   };
   return <section className="space-y-6">
-    <header>
-      <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2"><FileText className="w-6 h-6 text-[#9F062A]" /> Trámites de Secretaría</h1>
-      <p className="text-sm text-slate-600 mt-2">Solicita un documento asociado a tu ficha de estudiante. La solicitud genera una obligación de pago en MAF. Después de pagar en el Banco de la Nación, registra aquí los datos de tu voucher. MAF comprobará el pago con el reporte del banco antes de validarlo.</p>
-    </header>
+    <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-6">
+      <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1.5">
+          <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+            PORTAL DEL ESTUDIANTE • MESA DE PARTES DIGITAL
+          </span>
+          <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+            Trámites de Secretaría
+          </h2>
+          <p className="text-xs text-white/90 font-medium max-w-2xl">
+            Emisión de certificados, constancias oficiales de matrícula y seguimiento de expedientes validados por Secretaría General y MAF.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="text-left bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
+            <span className="text-[9px] text-amber-400 font-extrabold block uppercase mb-0.5 tracking-wider">Período Lectivo</span>
+            <span className="text-xs font-black text-white font-mono">{period || "2026 - I"}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => void reload()}
+            className="bg-white hover:bg-amber-50 text-slate-900 font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-2 select-none cursor-pointer transition-all shadow-md border border-white/30"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-[#800521]" />
+            <span>Actualizar Solicitudes</span>
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div className="grid gap-4 md:grid-cols-2">
       {procedures.map(item => <div key={item.code} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <p className="font-bold text-slate-900">{item.title}</p>
         <p className="text-sm text-slate-600 mt-2">{item.why}</p>
-        <p className="text-sm font-bold text-[#9F062A] mt-3">Tasa: S/ {item.amount.toFixed(2)}</p>
+        <p className="text-sm font-bold text-[#9F062A] mt-3">Tasa: S/ {(rates[item.code] || item.amount).toFixed(2)}</p>
       </div>)}
     </div>
 
@@ -101,7 +135,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       <p className="text-xs text-slate-600">Se vinculará al DNI {studentDni}. Podrás consultar su estado aquí.</p>
       <label className="block text-sm font-semibold text-slate-700">Trámite
         <select className="mt-1 w-full rounded-lg border border-slate-300 p-2.5 bg-white" value={selected} onChange={e => setSelected(e.target.value as StudentProcedureCode)}>
-          {procedures.map(item => <option key={item.code} value={item.code}>{item.title} — S/ {item.amount.toFixed(2)}</option>)}
+          {procedures.map(item => <option key={item.code} value={item.code}>{item.title} — S/ {(rates[item.code] || item.amount).toFixed(2)}</option>)}
         </select>
       </label>
       <p className="text-sm text-slate-600">{procedure.why}</p>
@@ -118,12 +152,14 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       {voucherFeedback && <p role="status" className="text-sm text-emerald-700 mt-3">{voucherFeedback}</p>}
       {voucherError && <p role="alert" className="text-sm text-red-700 mt-3">{voucherError}</p>}
       {loading ? <p className="text-sm text-slate-500 mt-3">Cargando...</p> : items.length === 0 ? <p className="text-sm text-slate-500 mt-3">Aún no tienes solicitudes.</p> :
-        <ul className="divide-y divide-slate-100 mt-3">{items.map(item => <li key={item.id} className="py-4 text-sm space-y-3">
+        <ul className="divide-y divide-slate-100 mt-3">{pagination.items.map(item => <li key={item.id} className="py-4 text-sm space-y-3">
           <div className="flex flex-wrap justify-between gap-2">
             <div><p className="font-semibold">{item.conceptName}</p><p className="text-xs text-slate-500">{item.id} · S/ {item.amount.toFixed(2)}</p></div>
             <span className="font-bold text-slate-700">{item.status}</span>
           </div>
           {item.paymentOperation && <p className="text-xs text-slate-600">Voucher comunicado: {item.paymentOperation}. MAF aún debe contrastarlo con el banco si el estado es En Proceso.</p>}
+          {item.deliveryStatus === 'Emitido' && <a href={serviceRequestResultUrl(item.id, studentDni)} className="inline-block text-sm font-bold text-[#9F062A] underline">Descargar documento: {item.resultFileName || 'PDF'}</a>}
+          {item.status === 'Validado' && item.deliveryStatus !== 'Emitido' && <p className="text-xs text-emerald-700">Pago validado; Secretaría prepara el documento.</p>}
           {(item.status === 'Pendiente' || item.status === 'Observado') && <button type="button" onClick={() => startVoucher(item)} className="rounded-lg border border-[#9F062A] px-3 py-2 text-xs font-bold text-[#9F062A]">{item.status === 'Observado' ? 'Corregir datos del voucher' : 'Registrar mi voucher'}</button>}
           {voucher.requestId === item.id && <form onSubmit={saveVoucher} className="rounded-lg bg-slate-50 border border-slate-200 p-4 space-y-3 max-w-lg">
             <p className="text-xs text-slate-600">Copia los datos de tu comprobante del Banco de la Nación. Registrarlo no confirma el pago: MAF lo validará con el reporte bancario.</p>
@@ -144,6 +180,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
             </div>
           </form>}
         </li>)}</ul>}
+      {!loading && items.length > 0 && <Pagination total={items.length} page={pagination.page} pageSize={pagination.pageSize} pageCount={pagination.pageCount} onPageChange={pagination.setPage} onPageSizeChange={pagination.setPageSize} label="solicitudes" />}
     </div>
   </section>;
 }

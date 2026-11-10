@@ -22,6 +22,7 @@ interface ImagePreviewModalProps {
     docLabel?: string;
     docKey?: string;
     docStatus?: string;
+    paymentStatus?: string;
     isVoucher?: boolean;
   };
 }
@@ -81,8 +82,17 @@ export default function ImagePreviewModal({
       } catch (e) {}
     }
     if (safeDni && (metadata?.isVoucher || title.toLowerCase().includes("voucher"))) {
+      const isMatriculaVoucher =
+        title.toLowerCase().includes("matrícula") ||
+        title.toLowerCase().includes("matricula") ||
+        (metadata?.concept || "").toLowerCase().includes("matrícula") ||
+        (metadata?.docLabel || "").toLowerCase().includes("matrícula");
       try {
-        const storedVoucher = localStorage.getItem(`sfa_voucher_data_${safeDni}`);
+        const storedVoucher = localStorage.getItem(
+          isMatriculaVoucher
+            ? `sfa_matricula_voucher_data_${safeDni}`
+            : `sfa_voucher_data_${safeDni}`
+        );
         if (storedVoucher) return storedVoucher;
       } catch (e) {}
     }
@@ -252,13 +262,23 @@ export default function ImagePreviewModal({
 
               {/* Verified Badge / Stamp */}
               <div className="mt-6 flex flex-col items-center justify-center">
-                <div className="border-2 border-emerald-600/30 text-emerald-700 bg-emerald-50 rounded-lg p-2 flex items-center gap-1.5 transform -rotate-2 select-none">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  <div className="text-center">
-                    <p className="text-[9px] font-black uppercase tracking-widest leading-none">PAGO VALIDADO</p>
-                    <p className="text-[7px] font-bold text-emerald-600 uppercase mt-0.5 leading-none">Oficina de Tesorería</p>
+                {metadata?.paymentStatus === "Pendiente" ? (
+                  <div className="border-2 border-amber-600/30 text-amber-700 bg-amber-50 rounded-lg p-2 flex items-center gap-1.5 transform -rotate-2 select-none">
+                    <FileCheck className="w-3.5 h-3.5 text-amber-600" />
+                    <div className="text-center">
+                      <p className="text-[9px] font-black uppercase tracking-widest leading-none">EN VERIFICACIÓN</p>
+                      <p className="text-[7px] font-bold text-amber-600 uppercase mt-0.5 leading-none">Oficina de Tesorería</p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="border-2 border-emerald-600/30 text-emerald-700 bg-emerald-50 rounded-lg p-2 flex items-center gap-1.5 transform -rotate-2 select-none">
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                    <div className="text-center">
+                      <p className="text-[9px] font-black uppercase tracking-widest leading-none">PAGO VALIDADO</p>
+                      <p className="text-[7px] font-bold text-emerald-600 uppercase mt-0.5 leading-none">Oficina de Tesorería</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Barcode representation */}
                 <div className="mt-5 flex flex-col items-center space-y-1 opacity-70">

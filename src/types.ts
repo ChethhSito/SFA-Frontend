@@ -134,6 +134,8 @@ export interface Enrollment {
   updatedAt?: string;
   shift?: "Mañana" | "Tarde" | "Noche";
   groupId?: string;
+  courseGroupAssignments?: { courseId: string; groupId: string }[];
+  registeredCourses?: { courseId: string; groupId: string }[];
 }
 
 export interface Course {
