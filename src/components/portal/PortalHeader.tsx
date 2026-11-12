@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import type { PublicCareer } from "../../services/publicContent";
 import {
   Phone, Mail, MapPin, Facebook, ChevronDown, Users, Award,
   CheckSquare, Landmark, Zap, User, GraduationCap, LayoutDashboard,
@@ -8,6 +9,7 @@ import {
 export type PortalTab = "inicio" | "nosotros" | "programas" | "admision" | "transparencia" | "contactanos";
 
 interface PortalHeaderProps {
+  careers: PublicCareer[];
   admissionLabel: string;
   currentTab: PortalTab;
   setCurrentTab: (tab: PortalTab) => void;
@@ -22,6 +24,7 @@ interface PortalHeaderProps {
 }
 
 export const PortalHeader: React.FC<PortalHeaderProps> = ({
+  careers,
   admissionLabel,
   currentTab,
   setCurrentTab,
@@ -48,15 +51,15 @@ export const PortalHeader: React.FC<PortalHeaderProps> = ({
             </span>
             <span className="flex items-center gap-1.5 text-slate-100 hover:text-amber-300 transition-colors">
               <Phone className="w-3.5 h-3.5 text-amber-300" />
-              Central: 01 500 6177
+              Contacto: 970 776 040
             </span>
             <span className="flex items-center gap-1.5 text-slate-100 hover:text-amber-300 transition-colors">
               <Mail className="w-3.5 h-3.5 text-amber-300" />
-              admision@iestpsfa.edu.pe
+              sec.academicaiestpsfa@gmail.com
             </span>
             <span className="hidden lg:flex items-center gap-1.5 text-slate-200">
               <MapPin className="w-3.5 h-3.5 text-amber-300" />
-              VMT - Pachacútec Cdra. 50
+              VMT - Prolongación Pachacútec Cdra. 50
             </span>
           </div>
 
@@ -168,29 +171,9 @@ export const PortalHeader: React.FC<PortalHeaderProps> = ({
               </button>
 
               <div className="absolute top-full left-0 w-72 bg-white border border-slate-200/90 shadow-2xl rounded-xl p-2.5 z-50 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-200 space-y-1">
-                <span className="text-[9px] uppercase font-black text-[#9F062A] tracking-wider block px-2 mb-1 font-mono">Especialidades Licenciadas:</span>
-                <button
-                  onClick={() => {
-                    setSelectedProgramId("electronica");
-                    setCurrentTab("programas");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col cursor-pointer"
-                >
-                  <span className="flex items-center gap-2"><Zap className="w-4 h-4 text-[#9F062A] shrink-0" /> Electricidad Industrial</span>
-                  <span className="text-[9px] text-slate-500 normal-case font-normal mt-0.5 ml-6">Control de PLCs, Motores y Subestaciones</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedProgramId("contabilidad");
-                    setCurrentTab("programas");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg transition-colors text-[11px] font-bold text-slate-800 uppercase flex flex-col mt-0.5 cursor-pointer"
-                >
-                  <span className="flex items-center gap-2"><Landmark className="w-4 h-4 text-[#9F062A] shrink-0" /> Contabilidad Financiera</span>
-                  <span className="text-[9px] text-slate-500 normal-case font-normal mt-0.5 ml-6">Tributación Empresarial, NIIF y ERP</span>
-                </button>
+                <span className="text-[9px] uppercase font-black text-[#9F062A] tracking-wider block px-2 mb-1 font-mono">Programas vigentes:</span>
+                {careers.map(career => <button key={career.id} onClick={() => { setSelectedProgramId(career.id); setCurrentTab("programas"); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="w-full text-left p-2.5 hover:bg-rose-50 hover:text-[#9F062A] rounded-lg text-[11px] font-bold text-slate-800 uppercase">{career.name}</button>)}
+                {careers.length === 0 && <p className="text-xs text-slate-500 px-2">Sin programas publicados.</p>}
               </div>
             </div>
 

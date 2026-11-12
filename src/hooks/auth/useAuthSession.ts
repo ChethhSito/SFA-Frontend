@@ -3,6 +3,13 @@ import { Role } from "../../types";
 
 const alertQueue: string[] = [];
 let globalAlertHandler: ((message: string) => void) | null = null;
+const staffRoles = new Set(["superadmin", "administrador", "docente", "mpa", "mge", "maf"]);
+function hasValidStaffToken() {
+  try {
+    const payload = localStorage.getItem("sfa_staff_token")?.split(".")[0];
+    return !!payload && JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/"))).exp > Date.now();
+  } catch { return false; }
+}
 
 if (typeof window !== "undefined") {
   window.alert = (message: any) => {
@@ -27,7 +34,7 @@ export function useAuthSession() {
       }
       if (rawPath !== "" && rawPath !== "/") {
         const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
-        const hasSession = roles.some((r) => Boolean(localStorage.getItem(`sfa_session_${r}`)));
+        const hasSession = roles.some((r) => Boolean(localStorage.getItem(`sfa_session_${r}`)) && (!staffRoles.has(r) || hasValidStaffToken()));
         if (!hasSession) {
           return { role: "404" as any, identifier: "" };
         }
@@ -36,7 +43,7 @@ export function useAuthSession() {
     const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
     for (const r of roles) {
       const saved = localStorage.getItem(`sfa_session_${r}`);
-      if (saved) {
+      if (saved && (!staffRoles.has(r) || hasValidStaffToken())) {
         return { role: r, identifier: saved };
       }
     }
@@ -64,6 +71,7 @@ export function useAuthSession() {
   }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem("sfa_staff_token");
     const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
     roles.forEach((r) => localStorage.removeItem(`sfa_session_${r}`));
     setCurrentUser({ role: "portal", identifier: "" });

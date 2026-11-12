@@ -14,7 +14,7 @@ export interface SystemUser {
   phone?: string;
   role: Role;
   assignedModule: string;
-  status: "Activo" | "Inactivo" | "Bloqueado";
+  status: "Activo" | "Inactivo" | "Bloqueado" | "Pendiente";
   password?: string;
   createdAt?: string;
   lastLogin?: string;

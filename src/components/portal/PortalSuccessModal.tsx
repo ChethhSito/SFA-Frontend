@@ -9,6 +9,7 @@ interface SuccessModalData {
   applicantCode?: string;
   dni?: string;
   password?: string;
+  emailStatus?: "accepted" | "failed";
 }
 
 interface PortalSuccessModalProps {
@@ -26,6 +27,7 @@ export const PortalSuccessModal: React.FC<PortalSuccessModalProps> = ({ data, on
         <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto border border-emerald-200">
           <CheckCircle2 className="w-8 h-8" />
         </div>
+
         <div>
           <span className="text-[10px] font-black uppercase text-[#9F062A] tracking-widest block font-mono">REGISTRO COMPLETADO</span>
           <h3 className="text-xl font-black text-slate-900 uppercase mt-1">¡Pre-Inscripción Exitosa!</h3>
@@ -33,6 +35,14 @@ export const PortalSuccessModal: React.FC<PortalSuccessModalProps> = ({ data, on
             Estimado(a) <strong className="text-slate-900">{data.name} {data.lastName}</strong>, tu pre-inscripción al programa de <strong className="text-[#9F062A]">{data.programName}</strong> ha sido registrada en el sistema oficial del IESTP San Francisco de Asís.
           </p>
         </div>
+
+        {data.emailStatus && (
+          <p className={`rounded-lg px-4 py-3 text-left text-xs font-semibold ${data.emailStatus === "accepted" ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-900"}`}>
+            {data.emailStatus === "accepted"
+              ? "El servicio de correo aceptó la confirmación. Revisa tu bandeja de entrada y spam."
+              : "No se pudo enviar la confirmación por correo. Conserva el código y la clave que aparecen aquí para ingresar."}
+          </p>
+        )}
 
         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left text-xs space-y-2.5">
           {data.applicantCode && (

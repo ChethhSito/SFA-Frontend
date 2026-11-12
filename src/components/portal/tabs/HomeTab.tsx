@@ -4,8 +4,11 @@ import {
   CheckSquare, Landmark, FileText, ChevronDown
 } from "lucide-react";
 import { careersDetail, faqsList } from "../portalData";
+import type { PublicCareer, PublicFee } from "../../../services/publicContent";
 
 interface HomeTabProps {
+  careers: PublicCareer[];
+  fees: PublicFee[];
   admissionLabel: string;
   registrationOpen: boolean;
   setCurrentTab: (tab: "inicio" | "nosotros" | "programas" | "admision" | "transparencia" | "contactanos") => void;
@@ -15,6 +18,8 @@ interface HomeTabProps {
 }
 
 export const HomeTab: React.FC<HomeTabProps> = ({
+  careers,
+  fees,
   admissionLabel,
   registrationOpen,
   setCurrentTab,
@@ -22,6 +27,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
   setProgramSelection,
   setSubmitSuccessMsg
 }) => {
+  const featured = careers.slice(0, 2);
   const [hoveredCareerId, setHoveredCareerId] = useState<string | null>(null);
   const [expandedFaqId, setExpandedFaqId] = useState<number | null>(null);
 
@@ -160,25 +166,25 @@ export const HomeTab: React.FC<HomeTabProps> = ({
               Carreras Profesionales Licenciadas
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-medium">
-              Formación técnica de 3 años con titulación oficial expedida directamente por el Ministerio de Educación (MINEDU) y pensión mensual de S/ 0.00.
+              Conoce los programas de estudio registrados por Planificación Académica.
             </p>
           </div>
 
           {/* Tarjetas Horizontales Alternadas (Zig-Zag) */}
           <div className="space-y-6">
             {/* CARRERA 01: ELECTRICIDAD INDUSTRIAL */}
-            <div
-              onMouseEnter={() => setHoveredCareerId("electronica")}
+            {featured[0] && <div
+              onMouseEnter={() => setHoveredCareerId(featured[0].id)}
               onMouseLeave={() => setHoveredCareerId(null)}
               onClick={() => {
-                setSelectedProgramId("electronica");
-                setProgramSelection("electronica");
+                setSelectedProgramId(featured[0].id);
+                setProgramSelection(featured[0].id);
                 setCurrentTab("programas");
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
-              className={`group bg-white rounded-3xl border transition-all duration-500 overflow-hidden cursor-pointer ${hoveredCareerId === "electronica"
+              className={`group bg-white rounded-3xl border transition-all duration-500 overflow-hidden cursor-pointer ${hoveredCareerId === featured[0].id
                 ? "border-[#9F062A] shadow-2xl scale-[1.015] z-10 bg-gradient-to-r from-rose-50/30 via-white to-white"
-                : hoveredCareerId === "contabilidad"
+                : hoveredCareerId === featured[1]?.id
                   ? "border-slate-200/80 shadow-sm opacity-85 scale-[0.985]"
                   : "border-slate-200/90 shadow-md hover:shadow-xl"
                 }`}
@@ -187,17 +193,17 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                 <div className="lg:col-span-5 relative overflow-hidden bg-slate-900 min-h-[220px] lg:min-h-full">
                   <img
                     src={careersDetail[0].image}
-                    alt={careersDetail[0].name}
+                    alt={featured[0].name}
                     className="w-full h-full object-cover rounded-none transition-transform duration-700 ease-out group-hover:scale-108"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
                   <div className="absolute top-0 left-0 bg-slate-950/90 text-amber-300 font-mono text-[10px] font-extrabold uppercase tracking-wider px-3.5 py-1.5 border-b border-r border-amber-400/40 rounded-br-xl shadow-md">
-                    ● LICENCIAMIENTO MINEDU
+                    ● PROGRAMA DE ESTUDIOS
                   </div>
                   <div className="absolute bottom-3 left-4 text-white">
                     <span className="text-[10px] font-extrabold font-mono text-amber-300 uppercase tracking-widest block">ESPECIALIDAD 01</span>
                     <h4 className="text-lg font-black uppercase tracking-tight text-white drop-shadow-md">
-                      ELECTRICIDAD INDUSTRIAL
+                      {featured[0].name}
                     </h4>
                   </div>
                   <div className="absolute bottom-0 left-0 h-1 w-0 group-hover:w-full bg-gradient-to-r from-amber-400 via-[#9F062A] to-amber-400 transition-all duration-500" />
@@ -211,33 +217,33 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                       <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider font-mono">TITULACIÓN DIRECTA</span>
                     </div>
                     <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight hidden lg:block">
-                      ELECTRICIDAD INDUSTRIAL
+                      {featured[0].name}
                     </h4>
                     <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
-                      Diagnostica, instala, programa y realiza el mantenimiento preventivo y correctivo de sistemas eléctricos de media y baja tensión, maquinaria de potencia, automatización industrial mediante PLCs, motores eléctricos y tableros de control.
+                      {featured[0].description || "Conoce el plan de estudios de este programa."}
                     </p>
                   </div>
 
                   <div className="py-2.5 border-y border-slate-200/80 grid grid-cols-3 gap-2 text-center">
                     <div>
                       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider font-mono block">ARANCEL</span>
-                      <span className="text-sm font-black text-[#9F062A]">S/ 0.00</span>
+                      <span className="text-sm font-black text-[#9F062A]">Consultar tasas</span>
                     </div>
                     <div className="border-x border-slate-200/80 px-2">
                       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider font-mono block">DURACIÓN</span>
-                      <span className="text-sm font-black text-slate-900">3 Años</span>
+                      <span className="text-sm font-black text-slate-900">{featured[0].durationSemesters || 6} semestres</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider font-mono block">HORAS</span>
-                      <span className="text-sm font-black text-slate-900">3,080 Hrs</span>
+                      <span className="text-sm font-black text-slate-900">Ver malla</span>
                     </div>
                   </div>
 
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedProgramId("electronica");
-                      setProgramSelection("electronica");
+                      setSelectedProgramId(featured[0].id);
+                      setProgramSelection(featured[0].id);
                       setCurrentTab("programas");
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
@@ -248,21 +254,21 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                   </button>
                 </div>
               </div>
-            </div>
+            </div>}
 
             {/* CARRERA 02: CONTABILIDAD FINANCIERA */}
-            <div
-              onMouseEnter={() => setHoveredCareerId("contabilidad")}
+            {featured[1] && <div
+              onMouseEnter={() => setHoveredCareerId(featured[1].id)}
               onMouseLeave={() => setHoveredCareerId(null)}
               onClick={() => {
-                setSelectedProgramId("contabilidad");
-                setProgramSelection("contabilidad");
+                setSelectedProgramId(featured[1].id);
+                setProgramSelection(featured[1].id);
                 setCurrentTab("programas");
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
-              className={`group bg-white rounded-3xl border transition-all duration-500 overflow-hidden cursor-pointer ${hoveredCareerId === "contabilidad"
+              className={`group bg-white rounded-3xl border transition-all duration-500 overflow-hidden cursor-pointer ${hoveredCareerId === featured[1].id
                 ? "border-[#9F062A] shadow-2xl scale-[1.015] z-10 bg-gradient-to-r from-white via-white to-rose-50/30"
-                : hoveredCareerId === "electronica"
+                : hoveredCareerId === featured[0]?.id
                   ? "border-slate-200/80 shadow-sm opacity-85 scale-[0.985]"
                   : "border-slate-200/90 shadow-md hover:shadow-xl"
                 }`}
@@ -276,33 +282,33 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                       <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider font-mono">TITULACIÓN DIRECTA</span>
                     </div>
                     <h4 className="text-xl font-black text-slate-900 uppercase tracking-tight hidden lg:block">
-                      CONTABILIDAD FINANCIERA
+                      {featured[1].name}
                     </h4>
                     <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
-                      Domina el control tributario y financiero de acuerdo a las Normas Internacionales de Información Financiera (NIIF), auditoría tributaria en PyMEs, costos de producción y sistematización contable con software ERP moderno.
+                      {featured[1].description || "Conoce el plan de estudios de este programa."}
                     </p>
                   </div>
 
                   <div className="py-2.5 border-y border-slate-200/80 grid grid-cols-3 gap-2 text-center">
                     <div>
                       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider font-mono block">ARANCEL</span>
-                      <span className="text-sm font-black text-[#9F062A]">S/ 0.00</span>
+                      <span className="text-sm font-black text-[#9F062A]">Consultar tasas</span>
                     </div>
                     <div className="border-x border-slate-200/80 px-2">
                       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider font-mono block">DURACIÓN</span>
-                      <span className="text-sm font-black text-slate-900">3 Años</span>
+                      <span className="text-sm font-black text-slate-900">{featured[1].durationSemesters || 6} semestres</span>
                     </div>
                     <div>
                       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider font-mono block">HORAS</span>
-                      <span className="text-sm font-black text-slate-900">3,040 Hrs</span>
+                      <span className="text-sm font-black text-slate-900">Ver malla</span>
                     </div>
                   </div>
 
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedProgramId("contabilidad");
-                      setProgramSelection("contabilidad");
+                      setSelectedProgramId(featured[1].id);
+                      setProgramSelection(featured[1].id);
                       setCurrentTab("programas");
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
@@ -316,23 +322,23 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                 <div className="lg:col-span-5 relative overflow-hidden bg-slate-900 min-h-[220px] lg:min-h-full order-1 lg:order-2">
                   <img
                     src={careersDetail[1].image}
-                    alt={careersDetail[1].name}
+                    alt={featured[1].name}
                     className="w-full h-full object-cover rounded-none transition-transform duration-700 ease-out group-hover:scale-108"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
                   <div className="absolute top-0 left-0 bg-slate-950/90 text-amber-300 font-mono text-[10px] font-extrabold uppercase tracking-wider px-3.5 py-1.5 border-b border-r border-amber-400/40 rounded-br-xl shadow-md">
-                    ● LICENCIAMIENTO MINEDU
+                    ● PROGRAMA DE ESTUDIOS
                   </div>
                   <div className="absolute bottom-3 left-4 text-white">
                     <span className="text-[10px] font-extrabold font-mono text-amber-300 uppercase tracking-widest block">ESPECIALIDAD 02</span>
                     <h4 className="text-lg font-black uppercase tracking-tight text-white drop-shadow-md">
-                      CONTABILIDAD FINANCIERA
+                      {featured[1].name}
                     </h4>
                   </div>
                   <div className="absolute bottom-0 left-0 h-1 w-0 group-hover:w-full bg-gradient-to-r from-amber-400 via-[#9F062A] to-amber-400 transition-all duration-500" />
                 </div>
               </div>
-            </div>
+            </div>}
           </div>
         </div>
       </section>
@@ -367,7 +373,7 @@ export const HomeTab: React.FC<HomeTabProps> = ({
                 {
                   step: "02",
                   title: "Pago de Tasa Ordinaria",
-                  desc: "Abona S/. 120 por derecho de examen en las agencias o agentes del Banco de la Nación.",
+                  desc: `Consulta la tasa de admisión registrada en MAF${fees.find(fee => fee.code === 'ADM01') ? `: S/ ${Number(fees.find(fee => fee.code === 'ADM01')!.amount).toFixed(2)}` : '.'}. Registra tu comprobante para su validación.`,
                   icon: <Landmark className="w-6 h-6 text-[#9F062A]" />,
                   stairClass: "lg:translate-y-8"
                 },

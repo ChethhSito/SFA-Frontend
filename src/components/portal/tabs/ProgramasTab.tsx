@@ -1,8 +1,11 @@
 import React from "react";
 import { Clock, UserCheck, Layers, ArrowRight } from "lucide-react";
 import { careersDetail } from "../portalData";
+import type { PublicCatalog } from "../../../services/publicContent";
 
 interface ProgramasTabProps {
+  catalog: PublicCatalog | null;
+  catalogError: string;
   selectedProgramId: string;
   setSelectedProgramId: (id: string) => void;
   setProgramSelection: (id: string) => void;
@@ -11,13 +14,26 @@ interface ProgramasTabProps {
 }
 
 export const ProgramasTab: React.FC<ProgramasTabProps> = ({
+  catalog,
+  catalogError,
   selectedProgramId,
   setSelectedProgramId,
   setProgramSelection,
   setCurrentTab,
   setSubmitSuccessMsg
 }) => {
-  const activeCareer = careersDetail.find(c => c.id === selectedProgramId) || careersDetail[0];
+  const careers = catalog?.careers || [];
+  const selected = careers.find(c => c.id === selectedProgramId) || careers[0];
+  const version = catalog?.versions.find(v => v.careerId === selected?.id);
+  const items = version ? catalog!.items.filter(item => item.careerId === selected?.id && item.versionId === version.id) : [];
+  const cycles = [...new Set<number>(items.map(item => Number(item.cycle)))].sort((a, b) => a - b);
+  const image = selected?.name.toLowerCase().includes('electricidad') ? careersDetail[0].image : selected?.name.toLowerCase().includes('contabilidad') ? careersDetail[1].image : '/hero_campus_sfa.jpg';
+  const activeCareer = selected && {
+    id: selected.id, name: selected.name, image,
+    hours: `${selected.durationSemesters || 6} semestres`, title: selected.code || 'Programa de estudios',
+    profile: selected.description || 'Información académica pendiente de publicación en MPA.',
+    careerPath: cycles.map(cycle => ({ cycle: `Ciclo ${cycle}`, courses: items.filter(item => Number(item.cycle) === cycle).map(item => catalog!.courses.find(course => course.id === item.courseId)?.name || item.courseId) })),
+  };
 
   return (
     <div className="bg-slate-50 py-16 px-4 min-h-screen">
@@ -25,7 +41,7 @@ export const ProgramasTab: React.FC<ProgramasTabProps> = ({
 
         <div className="text-center max-w-3xl mx-auto">
           <span className="text-[#9F062A] font-extrabold text-xs uppercase tracking-widest block font-mono">MALLA CURRICULAR Y PLANES DE ESTUDIO</span>
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Programas de Estudio Licenciados</h2>
+          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 uppercase mt-1">Programas de Estudio</h2>
           <p className="text-xs sm:text-sm text-slate-600 font-medium mt-2 leading-relaxed">
             Conoce en detalle el plan modular por ciclos académicos, la carga horaria y las competencias profesionales de cada especialidad.
           </p>
@@ -33,17 +49,15 @@ export const ProgramasTab: React.FC<ProgramasTabProps> = ({
 
         {/* Selector de Carrera */}
         <div className="flex justify-center items-center gap-3 flex-wrap">
-          {careersDetail.map((c) => {
-            const isActive = selectedProgramId === c.id;
+          {careers.map((c) => {
+            const isActive = selected?.id === c.id;
             return (
               <button
                 key={c.id}
                 onClick={() => setSelectedProgramId(c.id)}
                 className={`px-6 py-3 rounded-xl font-black text-xs uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-2.5 ${isActive ? "bg-[#9F062A] text-white border-[#9F062A] shadow-md" : "bg-white text-slate-700 border-slate-200 hover:bg-rose-50 hover:text-[#9F062A]"}`}
               >
-                {React.cloneElement(c.icon as React.ReactElement, {
-                  className: `w-5 h-5 ${isActive ? "text-amber-300" : "text-[#9F062A]"}`
-                })}
+                <Layers className={`w-5 h-5 ${isActive ? "text-amber-300" : "text-[#9F062A]"}`} />
                 <span>{c.name}</span>
               </button>
             );
@@ -51,7 +65,10 @@ export const ProgramasTab: React.FC<ProgramasTabProps> = ({
         </div>
 
         {/* Detalle Completo de la Carrera Seleccionada */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-10 shadow-xs space-y-10 max-w-5xl mx-auto">
+        {catalogError && <p role="alert" className="text-center text-amber-900 bg-amber-50 border border-amber-200 rounded-xl p-5">{catalogError}</p>}
+        {!catalog && !catalogError && <p className="text-center text-slate-600">Cargando programas…</p>}
+        {catalog && !activeCareer && <p className="text-center text-slate-600 bg-white border rounded-xl p-6">MPA aún no registra programas activos.</p>}
+        {activeCareer && <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-10 shadow-xs space-y-10 max-w-5xl mx-auto">
 
           {/* Cabecera del Programa */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-b border-slate-200 pb-8">
@@ -67,12 +84,6 @@ export const ProgramasTab: React.FC<ProgramasTabProps> = ({
               </div>
             </div>
 
-            <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
-              <span className="text-[10px] uppercase font-bold text-slate-400">Proyección Salarial Promedio:</span>
-              <span className="text-emerald-700 font-black text-base bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-                {activeCareer.salaryEst}
-              </span>
-            </div>
           </div>
 
           {/* Perfil del Egresado */}
@@ -91,13 +102,14 @@ export const ProgramasTab: React.FC<ProgramasTabProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
               <h4 className="text-xs font-black uppercase tracking-wider text-[#9F062A] flex items-center gap-2">
                 <Layers className="w-4 h-4 text-[#9F062A]" />
-                Ruta Formativa de Plan de Estudios (Ciclo I al VI)
+                Ruta Formativa del Plan de Estudios
               </h4>
               <span className="text-[11px] font-bold text-slate-500 font-mono">
-                6 Semestres Académicos • 3 Años de Formación
+                {version?.name || `${selected.durationSemesters || 6} semestres académicos`}
               </span>
             </div>
 
+            {activeCareer.careerPath.length === 0 && <p className="text-xs text-slate-600">MPA todavía no publica una malla curricular activa para este programa.</p>}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {activeCareer.careerPath.map((cp, idx) => (
                 <div
@@ -166,7 +178,7 @@ export const ProgramasTab: React.FC<ProgramasTabProps> = ({
             </button>
           </div>
 
-        </div>
+        </div>}
 
       </div>
     </div>

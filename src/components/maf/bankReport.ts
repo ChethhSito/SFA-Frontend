@@ -79,7 +79,7 @@ export async function bankReconciliationRequest<T>(
   const base = (import.meta.env.VITE_API_URL as string) || 'http://127.0.0.1:3001';
   const response = await fetch(`${base}/bank-reconciliation/${action}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('sfa_staff_token') || ''}` },
     body: JSON.stringify({
       fileName,
       rows,
@@ -106,14 +106,14 @@ export async function fetchImportHistory(): Promise<Array<{
   fileSizeBytes?: number;
 }>> {
   const base = (import.meta.env.VITE_API_URL as string) || 'http://127.0.0.1:3001';
-  const res = await fetch(`${base}/bank-reconciliation/history`);
+  const res = await fetch(`${base}/bank-reconciliation/history`, { headers: { Authorization: `Bearer ${localStorage.getItem('sfa_staff_token') || ''}` } });
   if (!res.ok) return [];
   return res.json();
 }
 
 export async function downloadImportFile(fingerprint: string, fallbackName: string): Promise<void> {
   const base = (import.meta.env.VITE_API_URL as string) || 'http://127.0.0.1:3001';
-  const res = await fetch(`${base}/bank-reconciliation/file/${fingerprint}`);
+  const res = await fetch(`${base}/bank-reconciliation/file/${fingerprint}`, { headers: { Authorization: `Bearer ${localStorage.getItem('sfa_staff_token') || ''}` } });
   if (!res.ok) throw new Error('No se pudo descargar el archivo binario del servidor.');
   const data = await res.json();
   const byteCharacters = atob(data.fileBase64);
