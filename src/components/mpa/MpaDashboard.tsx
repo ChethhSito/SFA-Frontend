@@ -389,7 +389,7 @@ export default function MpaDashboard({ onLogout, onGoToPortal }: MpaDashboardPro
             )}
 
             {activeTab === "calendar" && (
-              <div className="p-5 md:p-8"><AcademicCalendarBoard editable periods={periods} /></div>
+              <div className="p-5 md:p-6"><AcademicCalendarBoard editable periods={periods} /></div>
             )}
           </AnimatePresence>
         </div>
