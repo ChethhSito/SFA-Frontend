@@ -25,8 +25,16 @@ export default function AcademicCalendarBoard({ editable = false, periods, prefe
   const [loadedPeriods, setLoadedPeriods] = useState<MpaPeriod[]>([]);
   const availablePeriods = periods || loadedPeriods;
   const [periodId, setPeriodId] = useState('');
-  const [calendar, setCalendar] = useState<AcademicCalendarData | null>(null);
-  const [loading, setLoading] = useState(false);
+
+  const readCachedCalendar = (pid: string): AcademicCalendarData => {
+    try {
+      const saved = localStorage.getItem(`sfa_calendar_${pid}`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { periodId: pid, events: [], hasImage: false, imageFileName: null, imageUpdatedAt: null };
+  };
+
+  const [calendar, setCalendar] = useState<AcademicCalendarData>(() => readCachedCalendar(periodId));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -50,13 +58,19 @@ export default function AcademicCalendarBoard({ editable = false, periods, prefe
   }, [availablePeriods, periodId, preferredPeriodId]);
 
   useEffect(() => {
-    if (!periodId) { setCalendar(null); return; }
+    if (!periodId) return;
     let active = true;
-    setLoading(true);
+    const initial = readCachedCalendar(periodId);
+    setCalendar(initial);
     setError('');
-    fetchAcademicCalendar(periodId).then((data) => { if (active) setCalendar(data); })
-      .catch((cause) => { if (active) { setCalendar(null); setError(cause instanceof Error ? cause.message : 'No se pudo cargar el calendario.'); } })
-      .finally(() => { if (active) setLoading(false); });
+    fetchAcademicCalendar(periodId).then((data) => {
+      if (active) {
+        setCalendar(data);
+        try { localStorage.setItem(`sfa_calendar_${periodId}`, JSON.stringify(data)); } catch {}
+      }
+    }).catch((cause) => {
+      if (active) setError(cause instanceof Error ? cause.message : 'No se pudo sincronizar el calendario.');
+    });
     return () => { active = false; };
   }, [periodId]);
 
@@ -111,11 +125,10 @@ export default function AcademicCalendarBoard({ editable = false, periods, prefe
       <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-xs font-bold uppercase text-slate-500">Fin del período</p><p className="mt-1 font-black text-slate-900">{formatDate(period.endDate)}</p></div>
     </div>}
 
-    {loading && <p role="status" className="text-sm text-slate-600">Cargando calendario...</p>}
     {error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
     {message && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{message}</p>}
 
-    {period && calendar && <>
+    {period && <>
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="flex items-center gap-2 font-black text-slate-900"><ImagePlus className="h-5 w-5 text-[#800521]" /> Imagen del calendario</h2>
           {editable && <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
