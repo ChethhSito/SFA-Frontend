@@ -141,7 +141,6 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
             )}
           </button>
         </div>
-        </div>
 
         {/* Card 2: Guía de Requisitos y Recomendaciones */}
         <div id="exam-guide" className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs text-left flex flex-col justify-between">
