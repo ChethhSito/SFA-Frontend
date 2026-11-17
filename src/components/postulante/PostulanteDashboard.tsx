@@ -52,6 +52,16 @@ function PostulanteDashboardInner({
 }: PostulanteDashboardProps) {
   const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   const { label: periodLabel, year: periodYear } = useApplicantPeriod();
+
+  const currentProgram = ACADEMIC_PROGRAMS.find(p => p.id === applicant.programId) || {
+    id: applicant.programId,
+    name: applicant.programId,
+    code: (applicant.programId || "").toUpperCase(),
+    duration: "",
+    title: "",
+    description: ""
+  };
+
   // Active Navigation Tab State
   const [activeTab, setActiveTab] = useState<"dashboard" | "documentos" | "pagos" | "resultados" | "soporte" | "matricula">("dashboard");
   const [toast, setToast] = useState<ToastNotice | null>(null);
@@ -495,15 +505,6 @@ function PostulanteDashboardInner({
       setStagedMatriculaPreview("");
       notify("¡Foto de voucher de matrícula enviada! La oficina de caja verificará el comprobante.", "success");
     }
-  };
-
-  const currentProgram = ACADEMIC_PROGRAMS.find(p => p.id === applicant.programId) || {
-    id: applicant.programId,
-    name: applicant.programId,
-    code: (applicant.programId || "").toUpperCase(),
-    duration: "",
-    title: "",
-    description: ""
   };
 
   // Nav items list for Sidebar
