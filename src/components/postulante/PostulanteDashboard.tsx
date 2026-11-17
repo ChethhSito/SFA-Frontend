@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FileText, CreditCard, Award, Upload, CheckCircle2,
   XCircle, LayoutDashboard, Landmark, Headset, Info,
@@ -215,6 +215,17 @@ function PostulanteDashboardInner({
 
   const globalProgressPercentage = Math.round((approvedCount / totalDocs) * 100);
   const isActuallyAdmitted = applicant.admitted === true || applicant.admitted === "ADMITIDO";
+
+  // Notificación Toast temporal y no invasiva al confirmarse la vacante oficial
+  useEffect(() => {
+    if (isActuallyAdmitted) {
+      const key = `sfa_toast_admitted_${applicant.dni}`;
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "1");
+        notify(`¡Felicidades! Ha alcanzado una vacante oficial en ${currentProgram.name}.`, "success");
+      }
+    }
+  }, [isActuallyAdmitted, applicant.dni, currentProgram.name]);
 
   // Normalizar pago si se declaró voucher pero no existe archivo físico de imagen
   const storedVoucher = applicant.paymentVoucherUrl || (applicant.dni ? localStorage.getItem(`sfa_voucher_data_${applicant.dni}`) : null) || undefined;
@@ -523,50 +534,46 @@ function PostulanteDashboardInner({
           name: `${applicant.name} ${applicant.lastName}`,
           role: periodLabel ? `Postulante ${periodLabel}` : "Postulante",
           status: isActuallyAdmitted ? "ADMITIDO" : "ACTIVO",
-          avatarBg: isActuallyAdmitted
-            ? "bg-gradient-to-br from-emerald-600 to-teal-800 text-white font-black border border-emerald-300"
-            : "bg-gradient-to-br from-[#8B0020] to-[#590013] text-amber-300 font-black border border-amber-400/40"
+          avatarBg: "bg-gradient-to-br from-[#8B0020] to-[#590013] text-amber-300 font-black border border-amber-400/40"
         }}
         extraContent={
           isActuallyAdmitted ? (
-            <div className="bg-gradient-to-br from-emerald-700 via-emerald-600 to-teal-800 text-white rounded-xl p-3 shadow-md border border-emerald-400/40 text-left relative overflow-hidden animate-fade-in space-y-2">
+            <div className="bg-emerald-50/90 border border-emerald-200/90 rounded-xl p-3 text-left space-y-2 shadow-3xs animate-fade-in">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <span className="p-1 rounded-md bg-white/20 text-emerald-100">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  </span>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-100">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
                     ¡Ingreso Confirmado!
                   </span>
                 </div>
-                <span className="h-2 w-2 rounded-full bg-emerald-300 animate-ping" />
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
               </div>
 
               <div>
-                <h5 className="text-[11px] font-black text-white leading-tight">
+                <h5 className="text-[11px] font-black text-slate-900 leading-tight">
                   Vacante Adjudicada
                 </h5>
-                <span className="text-[9.5px] font-semibold text-emerald-100 block mt-0.5">
+                <span className="text-[9.5px] font-bold text-emerald-700 block mt-0.5">
                   {currentProgram.name}
                 </span>
               </div>
 
-              <div className="pt-1 flex flex-col gap-1.5">
+              <div className="pt-0.5 flex flex-col gap-1.5">
                 <button
                   type="button"
                   onClick={() => setActiveTab("resultados")}
-                  className="w-full bg-white hover:bg-emerald-50 text-emerald-950 text-[10px] font-black uppercase tracking-wider py-1.5 px-2.5 rounded-lg shadow-2xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-wider py-1.5 px-2.5 rounded-lg shadow-3xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
-                  <Award className="w-3.5 h-3.5 text-emerald-700" />
+                  <Award className="w-3.5 h-3.5" />
                   <span>Ver Constancia</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("matricula")}
-                  className="w-full bg-emerald-900/70 hover:bg-emerald-900 text-white text-[9.5px] font-bold uppercase tracking-wider py-1 px-2 rounded-lg border border-emerald-300/40 flex items-center justify-center gap-1 transition-all cursor-pointer"
+                  className="w-full bg-white hover:bg-emerald-50 text-emerald-850 text-[9.5px] font-bold uppercase tracking-wider py-1 px-2 rounded-lg border border-emerald-300 flex items-center justify-center gap-1 transition-all cursor-pointer"
                 >
                   <span>Pagar Matrícula</span>
-                  <ArrowRight className="w-3 h-3 text-emerald-200" />
+                  <ArrowRight className="w-3 h-3 text-emerald-600" />
                 </button>
               </div>
             </div>
@@ -577,17 +584,11 @@ function PostulanteDashboardInner({
       {/* MAIN DASHBOARD CONTENT AREA */}
       <main className="flex-1 overflow-y-auto bg-slate-100 p-4 sm:p-6 md:p-8 custom-scrollbar">
         {/* Institutional Hero Banner */}
-        <div className={`relative text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 mb-6 transition-all duration-300 ${
-          isActuallyAdmitted
-            ? "bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-900 border-emerald-400"
-            : "bg-[#800521] border-amber-500"
-        }`}>
-          <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-black/40 opacity-90" />
+        <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-6">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1.5">
-              <span className={`text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono ${
-                isActuallyAdmitted ? "bg-emerald-300 text-slate-950" : "bg-amber-400 text-slate-950"
-              }`}>
+              <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
                 SISTEMA INTRANET INSTITUCIONAL • PORTAL DEL POSTULANTE
               </span>
               <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-none text-white uppercase pt-0.5">
@@ -598,37 +599,18 @@ function PostulanteDashboardInner({
                         activeTab === "soporte" ? "Mesa de Ayuda" : "Matrícula de Ingresante"}
               </h1>
               <p className="text-xs text-white/90 font-medium max-w-2xl">
-                Bienvenido al portal institucional, {applicant.name} {applicant.lastName}. {isActuallyAdmitted ? `¡Ingresante oficial a ${currentProgram.name}!` : `Postulación a la carrera de ${currentProgram.name}.`}
+                Bienvenido al portal institucional, {applicant.name} {applicant.lastName}. Postulación a la carrera de {currentProgram.name}.
               </p>
             </div>
             <div className="flex items-center gap-2 bg-black/30 px-3.5 py-2 rounded-xl border border-white/20 shadow-inner shrink-0">
-              <Award className={`w-4 h-4 ${isActuallyAdmitted ? "text-emerald-300" : "text-amber-400"}`} />
+              <Award className="w-4 h-4 text-amber-400" />
               <span className="text-[10.5px] font-bold text-white/80 uppercase tracking-wider">Estado:</span>
-              <span className={`text-xs font-black font-mono ${isActuallyAdmitted ? "text-emerald-300" : "text-amber-300"}`}>
+              <span className="text-xs font-black text-amber-300 font-mono">
                 {isActuallyAdmitted ? "ADMITIDO" : applicant.folderStatus === "Approved" ? "APROBADO" : "EN REVISIÓN"}
               </span>
             </div>
           </div>
         </div>
-
-
-        {/* ALERTS DISPLAY */}
-        {isActuallyAdmitted && (
-          <AlertBox
-            variant="success"
-            title="¡FELICIDADES! VACANTE OFICIAL ALCANZADA"
-            message={`Ha sido ADMITIDO oficialmente en la carrera técnica de ${currentProgram.name}. Ya puede acceder a la pestaña de 'Pago de Matrícula' y descargar su Constancia Oficial de Admisión.`}
-            action={
-              <button
-                onClick={() => setIsConstanciaModalOpen(true)}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-[10px] uppercase px-3 py-1.5 rounded-md cursor-pointer flex items-center gap-1"
-              >
-                <Award className="w-3.5 h-3.5" />
-                <span>Ver Constancia</span>
-              </button>
-            }
-          />
-        )}
 
         {/* ACTIVE TAB CONTENT RENDER */}
         {activeTab === "dashboard" && (
