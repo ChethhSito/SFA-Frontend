@@ -50,13 +50,31 @@ export default function PostulanteRouter({
           console.error("Error fetching REST API applicant in PostulanteRouter:", err);
         })
         .finally(() => {
-          if (!cancelled) setLoading(false);
+          if (!cancelled && showSpinner) setLoading(false);
         });
     };
 
+    // Carga inicial
     loadFromMongo(true);
+
+    // Auto-polling en segundo plano cada 3.5 segundos para reflejar aprobaciones de tesorería/administración en tiempo real
+    const interval = setInterval(() => {
+      loadFromMongo(false);
+    }, 3500);
+
+    // Sincronización instantánea al cambiar o enfocar la pestaña
+    const handleSync = () => {
+      loadFromMongo(false);
+    };
+
+    window.addEventListener("focus", handleSync);
+    window.addEventListener("storage", handleSync);
+
     return () => {
       cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener("focus", handleSync);
+      window.removeEventListener("storage", handleSync);
     };
   }, []);
 
@@ -70,9 +88,23 @@ export default function PostulanteRouter({
       (a as any)._id === currentDni
   );
 
-  let applicantToRender: Applicant | null = liveApplicant
-    ? ({ ...(localApp || {}), ...liveApplicant } as Applicant)
-    : localApp || null;
+  let applicantToRender: Applicant | null = null;
+  if (liveApplicant && localApp) {
+    applicantToRender = {
+      ...localApp,
+      ...liveApplicant,
+      paymentStatus:
+        localApp.paymentStatus === "Validado" || liveApplicant.paymentStatus === "Validado"
+          ? "Validado"
+          : (liveApplicant.paymentStatus || localApp.paymentStatus || "No Pagado"),
+      folderStatus:
+        localApp.folderStatus === "Approved" || liveApplicant.folderStatus === "Approved"
+          ? "Approved"
+          : (liveApplicant.folderStatus || localApp.folderStatus || "Pending"),
+    };
+  } else {
+    applicantToRender = liveApplicant || localApp || null;
+  }
 
   if (applicantToRender) {
     const rawDocs: any = {
