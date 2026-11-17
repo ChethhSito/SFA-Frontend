@@ -439,14 +439,6 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
                               </div>
                             )}
                           </td>
-                                  className="px-2.5 py-2 rounded-xl text-[10.5px] font-bold uppercase text-slate-500 hover:text-rose-700 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-colors cursor-pointer"
-                                  title="Calificar como No Admitido"
-                                >
-                                  No Admitir
-                                </button>
-                              </div>
-                            )}
-                          </td>
                         </tr>
                       );
                     })}
