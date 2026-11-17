@@ -38,19 +38,34 @@ export default function MpaDashboard({ onLogout, onGoToPortal }: MpaDashboardPro
     "classrooms" | "shifts" | "groups" | "program" | "reports" | "support" | "calendar"
   >("periods");
 
-  // State collections
-  const [periods, setPeriods] = useState<MpaPeriod[]>([]);
-  const [careers, setCareers] = useState<MpaCareer[]>([]);
-  const [courses, setCourses] = useState<MpaCourse[]>([]);
-  const [curriculum, setCurriculum] = useState<MpaCurriculumItem[]>([]);
-  const [curriculumVersions, setCurriculumVersions] = useState<MpaCurriculumVersion[]>([]);
-  const [shifts, setShifts] = useState<MpaShift[]>([]);
-  const [schedules, setSchedules] = useState<MpaSchedule[]>([]);
-  const [classrooms, setClassrooms] = useState<MpaClassroom[]>([]);
-  const [groups, setGroups] = useState<MpaAcademicGroup[]>([]);
-  const [teachers, setTeachers] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<MpaProgramTask[]>([]);
-  const [loading, setLoading] = useState(true);
+  const readCached = <T,>(key: string, fallback: T): T => {
+    try {
+      const item = localStorage.getItem(`mpa_db_${key}`);
+      return item ? JSON.parse(item) : fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
+  // State collections with instant local cache recovery
+  const [periods, setPeriods] = useState<MpaPeriod[]>(() => readCached("periods", []));
+  const [careers, setCareers] = useState<MpaCareer[]>(() => readCached("careers", []));
+  const [courses, setCourses] = useState<MpaCourse[]>(() => readCached("courses", []));
+  const [curriculum, setCurriculum] = useState<MpaCurriculumItem[]>(() => readCached("curriculum", []));
+  const [curriculumVersions, setCurriculumVersions] = useState<MpaCurriculumVersion[]>(() => readCached("curriculum_versions", []));
+  const [shifts, setShifts] = useState<MpaShift[]>(() => readCached("shifts", []));
+  const [schedules, setSchedules] = useState<MpaSchedule[]>(() => readCached("schedules", []));
+  const [classrooms, setClassrooms] = useState<MpaClassroom[]>(() => readCached("classrooms", []));
+  const [groups, setGroups] = useState<MpaAcademicGroup[]>(() => readCached("groups", []));
+  const [teachers, setTeachers] = useState<any[]>(() => readCached("teachers", []));
+  const [tasks, setTasks] = useState<MpaProgramTask[]>(() => readCached("tasks", []));
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !localStorage.getItem("mpa_db_periods");
+    } catch {
+      return true;
+    }
+  });
   const [syncError, setSyncError] = useState("");
   const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
   const pendingSaves = useRef<Partial<Record<MpaKey, Promise<unknown>>>>({});
@@ -231,7 +246,46 @@ export default function MpaDashboard({ onLogout, onGoToPortal }: MpaDashboardPro
         </header>
 
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain relative">
-          {loading ? <div className="p-8 text-sm text-slate-600">Cargando planificación académica...</div> : (
+          {loading ? (
+            <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">
+              <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-200 shadow-sm animate-pulse">
+                <div className="w-5 h-5 border-2 border-[#9F062A] border-t-transparent rounded-full animate-spin shrink-0" />
+                <div>
+                  <span className="text-xs font-black text-slate-800 uppercase tracking-wide block">
+                    Cargando Planificación Académica
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    Sincronizando mallas curriculares, asignaciones docentes y períodos lectivos...
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="h-28 bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-xs animate-pulse">
+                  <div className="h-3 bg-slate-200 rounded w-1/3" />
+                  <div className="h-6 bg-slate-300 rounded w-1/2" />
+                  <div className="h-2.5 bg-slate-100 rounded w-2/3" />
+                </div>
+                <div className="h-28 bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-xs animate-pulse">
+                  <div className="h-3 bg-slate-200 rounded w-1/3" />
+                  <div className="h-6 bg-slate-300 rounded w-1/2" />
+                  <div className="h-2.5 bg-slate-100 rounded w-2/3" />
+                </div>
+                <div className="h-28 bg-white rounded-xl border border-slate-200 p-4 space-y-3 shadow-xs animate-pulse">
+                  <div className="h-3 bg-slate-200 rounded w-1/3" />
+                  <div className="h-6 bg-slate-300 rounded w-1/2" />
+                  <div className="h-2.5 bg-slate-100 rounded w-2/3" />
+                </div>
+              </div>
+
+              <div className="h-64 bg-white rounded-xl border border-slate-200 p-6 space-y-4 shadow-xs animate-pulse">
+                <div className="h-4 bg-slate-200 rounded w-1/4" />
+                <div className="h-10 bg-slate-100 rounded w-full" />
+                <div className="h-10 bg-slate-100 rounded w-full" />
+                <div className="h-10 bg-slate-100 rounded w-full" />
+              </div>
+            </div>
+          ) : (
           <AnimatePresence mode="wait">
             {activeTab === "periods" && (
               <PeriodsTab 
