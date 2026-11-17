@@ -63,6 +63,17 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
     fileName?: string;
   } | null>(null);
 
+  // Local reactive overrides for instant 0ms UI feedback on clicks
+  const [localDocOverrides, setLocalDocOverrides] = useState<
+    Record<string, { status: "Validado" | "Observado" | "Pendiente"; observations?: string }>
+  >({});
+  const [localFolderStatus, setLocalFolderStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLocalDocOverrides({});
+    setLocalFolderStatus(null);
+  }, [selectedDossierAppDni]);
+
   const baseApp = selectedDossierAppDni
     ? applicants.find((a) => a.dni === selectedDossierAppDni)
     : undefined;
@@ -88,8 +99,8 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
     // Sincronización inmediata al abrir
     syncApplicant();
 
-    // Auto-sync cada 3.5 segundos en segundo plano mientras el modal está abierto
-    const interval = setInterval(syncApplicant, 3500);
+    // Auto-sync cada 4 segundos en segundo plano mientras el modal está abierto
+    const interval = setInterval(syncApplicant, 4000);
 
     // Sincronización instantánea ante enfoque de ventana o eventos de storage en otra pestaña
     const handleSync = () => syncApplicant();
@@ -124,27 +135,33 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
       freshApp && freshApp.dni === selectedDossierAppDni
         ? (freshApp.docs as any)?.[key] || {}
         : {};
+    const override = localDocOverrides[key];
     const storedUrl =
       typeof window !== "undefined" ? localStorage.getItem(`sfa_file_data_${app.dni}_${key}`) : null;
     const fileDataUrl = freshRaw.fileDataUrl || baseRaw.fileDataUrl || storedUrl || undefined;
+
     if (!fileDataUrl) {
       return {
-        status: "No Enviado" as const,
+        status: override?.status || "No Enviado" as const,
         fileName: undefined,
         fileDataUrl: undefined,
-        observations: freshRaw.observations ?? baseRaw.observations,
+        observations: override?.observations ?? freshRaw.observations ?? baseRaw.observations,
       };
     }
-    const mergedStatus = freshRaw.status || baseRaw.status;
+
+    // Effective status: local override has first priority, then baseRaw (current session state), then server
+    const effectiveStatus = override?.status || baseRaw.status || freshRaw.status || "Pendiente";
+    const effectiveObservations =
+      effectiveStatus === "Observado"
+        ? (override?.observations ?? freshRaw.observations ?? baseRaw.observations)
+        : undefined;
+
     return {
-      ...baseRaw,
       ...freshRaw,
-      status: mergedStatus && mergedStatus !== "No Enviado" ? mergedStatus : ("Pendiente" as const),
-      fileName: freshRaw.fileName || baseRaw.fileName || `${key}.jpg`,
-      observations:
-        (freshRaw.status || baseRaw.status) === "Observado"
-          ? freshRaw.observations ?? baseRaw.observations
-          : undefined,
+      ...baseRaw,
+      status: effectiveStatus,
+      fileName: freshRaw.fileName || baseRaw.fileName || `${key}.png`,
+      observations: effectiveObservations,
       fileDataUrl,
     };
   };
@@ -163,9 +180,11 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
 
   const effectiveFolderStatus = (app.folderStatus === "Enrolled")
     ? "Enrolled"
-    : (app.folderStatus === "Approved" || isAllValid)
+    : (localFolderStatus === "Approved" || app.folderStatus === "Approved" || isAllValid)
     ? "Approved"
-    : (app.folderStatus || "Pending");
+    : (localFolderStatus === "Observed" || app.folderStatus === "Observed")
+    ? "Observed"
+    : (localFolderStatus || app.folderStatus || "Pending");
 
   const docsConfig = [
     { label: "Copia de DNI", key: "dniFile" as const, required: true },
@@ -176,6 +195,57 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
 
   const validatedCount = docsConfig.filter((d) => appDocs[d.key]?.status === "Validado").length;
   const programName = app.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad";
+
+  const onValidateDoc = (
+    docKey: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile",
+    status: "Validado" | "Observado" | "Pendiente",
+    observations?: string,
+    label?: string
+  ) => {
+    // 1. Inmediata actualización reactiva local (0ms de latencia visual)
+    setLocalDocOverrides((prev) => ({
+      ...prev,
+      [docKey]: { status, observations },
+    }));
+
+    setFreshApp((prev) => {
+      if (!prev) return prev;
+      const docObj = (prev.docs as any)?.[docKey] || {};
+      return {
+        ...prev,
+        docs: {
+          ...(prev.docs || {}),
+          [docKey]: {
+            ...docObj,
+            status,
+            observations: status === "Observado" ? observations : undefined,
+          },
+        },
+      };
+    });
+
+    // 2. Persistencia en estado padre y base de datos
+    handleValidateApplicantDocument(app.dni, docKey, status, observations);
+
+    // 3. Feedback inmediato
+    if (status === "Validado") {
+      notify?.(`Requisito "${label || docKey}" aprobado con éxito.`, "success");
+    } else if (status === "Observado") {
+      notify?.(`Requisito "${label || docKey}" observado.`, "warning");
+    } else {
+      notify?.(`Requisito "${label || docKey}" marcado como Pendiente.`, "info");
+    }
+  };
+
+  const onUpdateFolder = (status: "Pending" | "Observed" | "Approved") => {
+    if (status === "Observed" && !(folderObservationInput[app.dni] || "").trim()) {
+      notify?.("Por favor ingrese una observación antes de marcar la carpeta como observada.", "warning");
+      return;
+    }
+    setLocalFolderStatus(status);
+    setFreshApp((prev) => (prev ? { ...prev, folderStatus: status } : prev));
+    handleUpdateFolderStatus(app.dni, status);
+  };
 
   return (
     <>
@@ -241,7 +311,13 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                     return (
                       <div
                         key={item.key}
-                        className="bg-white border border-slate-200 rounded-2xl p-4 shadow-3xs flex flex-col gap-3.5 hover:border-slate-300 transition-all"
+                        className={`bg-white border rounded-2xl p-4 shadow-3xs flex flex-col gap-3.5 transition-all ${
+                          docState.status === "Validado"
+                            ? "border-emerald-200 bg-emerald-50/10"
+                            : docState.status === "Observado"
+                            ? "border-rose-200 bg-rose-50/10"
+                            : "border-slate-200 hover:border-slate-300"
+                        }`}
                       >
                         {/* Document Header */}
                         <div className="flex justify-between items-start">
@@ -271,15 +347,15 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                           </div>
                           <div>
                             {docState.status === "Validado" ? (
-                              <span className="text-xs font-black text-emerald-800 bg-emerald-100/80 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                              <span className="text-xs font-black text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Validado
                               </span>
                             ) : docState.status === "Observado" ? (
-                              <span className="text-xs font-black text-rose-800 bg-rose-100/80 border border-rose-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                              <span className="text-xs font-black text-rose-800 bg-rose-100/90 border border-rose-300 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
                                 <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Observado
                               </span>
                             ) : docState.status === "Pendiente" ? (
-                              <span className="text-xs font-black text-amber-800 bg-amber-100/80 border border-amber-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                              <span className="text-xs font-black text-amber-800 bg-amber-100/90 border border-amber-300 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-2xs">
                                 <Clock className="w-3.5 h-3.5 text-amber-600" /> Por revisar
                               </span>
                             ) : (
@@ -428,10 +504,14 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                             <button
                               type="button"
                               onClick={() => {
-                                handleValidateApplicantDocument(app.dni, item.key, "Pendiente", "");
+                                onValidateDoc(item.key, "Pendiente", "", item.label);
                                 setIndividualDocObs({ ...individualDocObs, [obsInputKey]: "" });
                               }}
-                              className="px-3 py-1.5 rounded-lg text-xs font-extrabold uppercase text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200"
+                              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold uppercase transition-all cursor-pointer border ${
+                                docState.status === "Pendiente"
+                                  ? "bg-amber-500 text-white border-amber-600 shadow-xs ring-2 ring-amber-400/30"
+                                  : "bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200"
+                              }`}
                             >
                               Pendiente
                             </button>
@@ -442,22 +522,30 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                                   notify?.("Por favor ingrese el motivo de observación para este requisito.", "warning");
                                   return;
                                 }
-                                handleValidateApplicantDocument(app.dni, item.key, "Observado", currentObsText.trim());
+                                onValidateDoc(item.key, "Observado", currentObsText.trim(), item.label);
                               }}
-                              className="px-3.5 py-1.5 rounded-lg text-xs font-black uppercase bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition-colors cursor-pointer shadow-3xs"
+                              className={`px-3.5 py-1.5 rounded-lg text-xs font-black uppercase transition-all cursor-pointer border shadow-3xs ${
+                                docState.status === "Observado"
+                                  ? "bg-rose-600 text-white border-rose-700 shadow-xs ring-2 ring-rose-400/30"
+                                  : "bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200"
+                              }`}
                             >
                               Observar
                             </button>
                             <button
                               type="button"
                               onClick={() => {
-                                handleValidateApplicantDocument(app.dni, item.key, "Validado", "");
+                                onValidateDoc(item.key, "Validado", "", item.label);
                                 setIndividualDocObs({ ...individualDocObs, [obsInputKey]: "" });
                               }}
-                              className="px-3.5 py-1.5 rounded-lg text-xs font-black uppercase bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer shadow-3xs flex items-center gap-1.5"
+                              className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase transition-all cursor-pointer shadow-3xs flex items-center gap-1.5 border ${
+                                docState.status === "Validado"
+                                  ? "bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-400/40 shadow-sm"
+                                  : "bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white border-emerald-300"
+                              }`}
                             >
                               <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>Aprobar / Validar</span>
+                              <span>Aprobar</span>
                             </button>
                           </div>
                         </div>
@@ -616,24 +704,18 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                         { id: "Observed" as const, label: "Observado" },
                         { id: "Approved" as const, label: "Aprobada" },
                       ].map((opt) => {
-                        const isSelected = app.folderStatus === opt.id;
+                        const isSelected = effectiveFolderStatus === opt.id;
                         return (
                           <button
                             key={opt.id}
-                            onClick={() => {
-                              if (opt.id === "Observed" && !(folderObservationInput[app.dni] || "").trim()) {
-                                notify?.("Por favor ingrese una observación antes de marcar la carpeta como observada.", "warning");
-                                return;
-                              }
-                              handleUpdateFolderStatus(app.dni, opt.id);
-                            }}
+                            onClick={() => onUpdateFolder(opt.id)}
                             className={`py-2 px-1 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer border flex items-center justify-center text-center shadow-3xs ${
                               isSelected
                                 ? opt.id === "Approved"
-                                  ? "bg-emerald-600 text-white border-emerald-700 font-extrabold shadow-sm"
+                                  ? "bg-emerald-600 text-white border-emerald-700 font-extrabold shadow-sm ring-2 ring-emerald-400/40"
                                   : opt.id === "Observed"
-                                  ? "bg-rose-700 text-white border-rose-800 font-extrabold shadow-sm"
-                                  : "bg-amber-600 text-white border-amber-700 font-extrabold shadow-sm"
+                                  ? "bg-rose-700 text-white border-rose-800 font-extrabold shadow-sm ring-2 ring-rose-400/40"
+                                  : "bg-amber-600 text-white border-amber-700 font-extrabold shadow-sm ring-2 ring-amber-400/40"
                                 : opt.id === "Observed"
                                 ? "bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200"
                                 : opt.id === "Approved"
