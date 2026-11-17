@@ -266,15 +266,37 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
                           )}
                         </td>
                         <td className="p-3.5 border-none">
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-tight">
-                              <span className="text-emerald-700 font-black">{valCount} OK</span>
-                              {obsCount > 0 && <span className="text-red-600 font-black">{obsCount} OBS</span>}
-                              {pendCount > 0 && <span className="text-amber-600 font-black">{pendCount} PEND</span>}
+                          <div className="space-y-1.5 min-w-[140px]">
+                            <div className="flex items-center justify-between gap-1.5">
+                              {valCount === 4 ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-3xs">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                  100% Completo
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-slate-700">
+                                  <span className="font-mono text-[#9F062A] font-black">
+                                    {Math.round((valCount / 4) * 100)}%
+                                  </span>
+                                  <span className="text-slate-400 text-[10px]">({valCount} de 4)</span>
+                                </span>
+                              )}
+                              {obsCount > 0 && (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200">
+                                  {obsCount} OBS
+                                </span>
+                              )}
+                              {pendCount > 0 && valCount < 4 && (
+                                <span className="text-[10px] font-bold text-amber-600">
+                                  {pendCount} pend.
+                                </span>
+                              )}
                             </div>
-                            <div className="w-24 h-1 border border-slate-200 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="w-full max-w-[130px] h-2 bg-slate-100 border border-slate-200 rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-emerald-600 transition-all duration-300"
+                                className={`h-full rounded-full transition-all duration-300 ${
+                                  valCount === 4 ? "bg-emerald-500" : "bg-[#9F062A]"
+                                }`}
                                 style={{ width: `${(valCount / 4) * 100}%` }}
                               />
                             </div>
