@@ -72,29 +72,35 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
       setFreshApp(null);
       return;
     }
-    const currentBase = applicants.find((a) => a.dni === selectedDossierAppDni);
-    const docKeys = ["dniFile", "certificadoFile", "partidaFile", "fotoFile"] as const;
-    const needsBinaryHydration =
-      !currentBase ||
-      docKeys.some((k) => {
-        const d = (currentBase.docs as any)?.[k];
-        return d && d.status && d.status !== "No Enviado" && !d.fileDataUrl;
-      });
-
-    if (!needsBinaryHydration) {
-      return;
-    }
 
     let cancelled = false;
-    fetchApplicantByDni(selectedDossierAppDni)
-      .then((apiApp) => {
-        if (!cancelled && apiApp) {
-          setFreshApp(apiApp);
-        }
-      })
-      .catch(() => {});
+
+    const syncApplicant = () => {
+      fetchApplicantByDni(selectedDossierAppDni)
+        .then((apiApp) => {
+          if (!cancelled && apiApp) {
+            setFreshApp(apiApp);
+          }
+        })
+        .catch(() => {});
+    };
+
+    // Sincronización inmediata al abrir
+    syncApplicant();
+
+    // Auto-sync cada 3.5 segundos en segundo plano mientras el modal está abierto
+    const interval = setInterval(syncApplicant, 3500);
+
+    // Sincronización instantánea ante enfoque de ventana o eventos de storage en otra pestaña
+    const handleSync = () => syncApplicant();
+    window.addEventListener("focus", handleSync);
+    window.addEventListener("storage", handleSync);
+
     return () => {
       cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener("focus", handleSync);
+      window.removeEventListener("storage", handleSync);
     };
   }, [selectedDossierAppDni]);
 
@@ -120,24 +126,24 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
         : {};
     const storedUrl =
       typeof window !== "undefined" ? localStorage.getItem(`sfa_file_data_${app.dni}_${key}`) : null;
-    const fileDataUrl = baseRaw.fileDataUrl || freshRaw.fileDataUrl || storedUrl || undefined;
+    const fileDataUrl = freshRaw.fileDataUrl || baseRaw.fileDataUrl || storedUrl || undefined;
     if (!fileDataUrl) {
       return {
         status: "No Enviado" as const,
         fileName: undefined,
         fileDataUrl: undefined,
-        observations: baseRaw.observations ?? freshRaw.observations,
+        observations: freshRaw.observations ?? baseRaw.observations,
       };
     }
-    const mergedStatus = baseRaw.status || freshRaw.status;
+    const mergedStatus = freshRaw.status || baseRaw.status;
     return {
-      ...freshRaw,
       ...baseRaw,
+      ...freshRaw,
       status: mergedStatus && mergedStatus !== "No Enviado" ? mergedStatus : ("Pendiente" as const),
-      fileName: baseRaw.fileName || freshRaw.fileName || `${key}.jpg`,
+      fileName: freshRaw.fileName || baseRaw.fileName || `${key}.jpg`,
       observations:
-        baseRaw.status === "Observado"
-          ? baseRaw.observations ?? freshRaw.observations
+        (freshRaw.status || baseRaw.status) === "Observado"
+          ? freshRaw.observations ?? baseRaw.observations
           : undefined,
       fileDataUrl,
     };
