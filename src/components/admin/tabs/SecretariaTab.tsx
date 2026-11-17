@@ -1,5 +1,5 @@
 import React from "react";
-import { FileText, GraduationCap, Users, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
+import { FileText, GraduationCap, Users, CheckCircle2, AlertTriangle, Clock, Search } from "lucide-react";
 import { Applicant, AdmissionPeriod } from "../../../types";
 import { Card } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
@@ -97,16 +97,14 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
       {/* 3. Search & Filter Bar */}
       <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         <div className="relative flex-1">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             placeholder="Buscar postulante por nombre, apellido o DNI..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-3.5 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-[#9F062A]"
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-[#9F062A]"
           />
-          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs uppercase">
-            Buscar
-          </span>
         </div>
 
         {/* Career Selection Filter */}
