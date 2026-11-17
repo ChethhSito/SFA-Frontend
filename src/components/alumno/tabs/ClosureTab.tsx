@@ -135,30 +135,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
     }
   };
 
-  const [isPromoted, setIsPromoted] = useState<boolean>(() => {
-    return localStorage.getItem(`sfa_student_promoted_${personalData.dni}`) === "true";
-  });
-
-  const togglePromotion = () => {
-    const nextVal = !isPromoted;
-    setIsPromoted(nextVal);
-    localStorage.setItem(`sfa_student_promoted_${personalData.dni}`, String(nextVal));
-    if (nextVal) {
-      setSelectedQueryCycle("VI");
-      setToastNotice({
-        title: "Avance Académico Completado",
-        message: "El estudiante ha completado con éxito los 6 ciclos lectivos (120 créditos). Apto para certificación y titulación.",
-        type: "success"
-      });
-    } else {
-      setSelectedQueryCycle("I");
-      setToastNotice({
-        title: "Restablecido a Ciclo I",
-        message: "El estudiante vuelve a su estado regular de ingresante en Ciclo I.",
-        type: "info"
-      });
-    }
-  };
+  const isPromoted = localStorage.getItem(`sfa_student_promoted_${personalData.dni}`) === "true";
 
   const activePlanKey = enrollment.programId === "electronica" ? "20" : "52";
   const activeSemesterKey = selectedQueryCycle || "I";
@@ -223,22 +200,10 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <button
-              onClick={togglePromotion}
-              className={`font-black text-xs py-2 px-3.5 rounded-xl flex items-center gap-2 select-none cursor-pointer transition-all shadow-md border ${
-                isPromoted 
-                  ? "bg-amber-400 hover:bg-amber-300 text-slate-950 border-amber-300 animate-pulse" 
-                  : "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400"
-              }`}
-              title="Simulación para exposición oficial (salto directo a los 6 ciclos completados)"
-            >
-              <Award className="w-4 h-4" />
-              <span>{isPromoted ? "↺ Restablecer a Ciclo I" : "⚡ Simular Avance a Ciclo VI (Egresado)"}</span>
-            </button>
             <div className="text-left bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
               <span className="text-[9px] text-amber-400 font-extrabold block uppercase mb-0.5 tracking-wider">Plan Registrado</span>
               <span className="text-xs font-black text-white font-mono">
-                {activePlanKey === "20" ? "Plan 20 • Electricidad" : "Plan 52 • Contabilidad"}
+                {activePlanKey === "20" ? "Plan 20 - Electricidad" : "Plan 52 - Contabilidad"}
               </span>
             </div>
             <button
@@ -372,7 +337,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                               ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
                               : "bg-amber-50 text-amber-700 border-amber-100"
                           }`}>
-                            {crs.status}{crs.simGrade ? ` • Nota: ${crs.simGrade}` : ""}
+                            {crs.status}{crs.simGrade ? ` (Nota: ${crs.simGrade})` : ""}
                           </span>
                         </td>
                         <td className="p-4 text-center font-mono text-slate-405 font-bold">{crs.teo} hrs</td>

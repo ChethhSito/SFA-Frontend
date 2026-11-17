@@ -109,12 +109,12 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
             onClick={toggleStudentPromotion}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm border ${
               isStudentPromoted
-                ? "bg-amber-400 hover:bg-amber-300 text-slate-900 border-amber-300"
-                : "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500"
+                ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                : "bg-emerald-700 hover:bg-emerald-800 text-white border-emerald-700"
             }`}
-            title="Simular avance completo para la demostración institucional"
+            title="Acreditar los 6 semestres formativos para la emisión del certificado oficial"
           >
-            {isStudentPromoted ? "↺ Volver a Ciclo I" : "⚡ Simular Récord de Egresado (6 Ciclos)"}
+            {isStudentPromoted ? "Restablecer a Ciclo I" : "Acreditar Plan Completo (6 Ciclos / Egresado)"}
           </button>
         </div>
         <p className="text-sm text-slate-600">Se muestran promedios simples de calificaciones guardadas por curso. NR significa sin calificación registrada. Incluye registros históricos; no sustituye un acta ni determina la aprobación oficial de cursos.</p>
@@ -124,7 +124,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
           </button>
           {isStudentPromoted ? (
             <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-md font-bold">
-              ✓ Récord oficial de 6 ciclos y 120 créditos cargado
+              Récord curricular de 6 semestres (120 créditos) acreditado
             </span>
           ) : null}
         </div>
