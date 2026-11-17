@@ -107,12 +107,14 @@ export default function AcademicCalendarBoard({ editable = false, periods, prefe
   };
 
   return <section className="space-y-6 text-left">
-    <header className="rounded-2xl bg-[#800521] p-6 text-white shadow-sm">
-      <div className="flex items-center gap-3"><CalendarDays className="h-7 w-7 text-amber-300" /><div>
-        <h1 className="text-xl font-black">Calendario académico</h1>
-        <p className="mt-1 text-sm text-rose-50">{editable ? 'Publicación institucional para alumnos y docentes' : 'Fechas y actividades comunicadas por la institución'}</p>
-      </div></div>
-    </header>
+    {!editable && (
+      <header className="rounded-2xl bg-[#800521] p-6 text-white shadow-sm">
+        <div className="flex items-center gap-3"><CalendarDays className="h-7 w-7 text-amber-300" /><div>
+          <h1 className="text-xl font-black">Calendario académico</h1>
+          <p className="mt-1 text-sm text-rose-50">Fechas y actividades comunicadas por la institución</p>
+        </div></div>
+      </header>
+    )}
 
     {availablePeriods.length ? <label className="block max-w-sm text-sm font-bold text-slate-700">Período académico
       <select value={periodId} onChange={(event) => setPeriodId(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2.5">

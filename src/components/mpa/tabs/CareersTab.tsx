@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Trash2, GraduationCap, Plus, CheckCircle2, Clock, Award, X } from "lucide-react";
+import { Trash2, Plus, X } from "lucide-react";
 import { MpaCareer, MpaCurriculumItem, MpaAcademicGroup, MpaProgramTask } from "../../../types";
 import Button from "../../ui/Button";
 import { PageTransition } from "../PageTransition";
@@ -28,65 +28,50 @@ export function CareersTab({ careers, curriculum, groups, tasks, saveDb, setCare
   const activeCareersCount = careers.filter(c => (c.status || "Activo") === "Activo").length;
 
   return (
-    <PageTransition id="careers" className="space-y-6 text-left">
-      {/* Banner Institucional Borgoña Oficial */}
-      <header className="rounded-2xl bg-[#800521] p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <GraduationCap className="h-8 w-8 text-amber-300 shrink-0" />
-          <div>
-            <h1 className="text-xl font-black">Gestión de Carreras y Programas de Estudio</h1>
-            <p className="mt-1 text-sm text-rose-50">
-              Programas formativos profesionales autorizados según normativa del MINEDU.
-            </p>
+    <PageTransition id="careers" className="p-5 md:p-6 space-y-4 text-left">
+      {/* Barra de KPIs Compacta + Botón de Acción */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1">
+          <div className="bg-white px-3.5 py-2.5 rounded-xl border border-slate-200 shadow-xs">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Carreras Habilitadas</span>
+            <span className="text-sm font-black text-[#800521] font-mono block truncate mt-0.5">
+              {activeCareersCount} Especialidades
+            </span>
+          </div>
+
+          <div className="bg-white px-3.5 py-2.5 rounded-xl border border-slate-200 shadow-xs">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Duración Reglamentaria</span>
+            <span className="text-sm font-black text-slate-900 font-mono block mt-0.5">
+              6 Semestres (3 Años)
+            </span>
+          </div>
+
+          <div className="bg-white px-3.5 py-2.5 rounded-xl border border-slate-200 shadow-xs col-span-2 sm:col-span-1">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Créditos de Titulación</span>
+            <span className="text-sm font-black text-amber-600 font-mono block mt-0.5">
+              120.0 Créditos Oficiales
+            </span>
           </div>
         </div>
+
         <button
           type="button"
           onClick={() => setShowForm(!showForm)}
-          className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer self-start md:self-auto shrink-0"
+          className={`shrink-0 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer border ${
+            showForm 
+              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" 
+              : "bg-[#800521] hover:bg-[#67041a] text-white border-[#800521]"
+          }`}
         >
-          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          <span>{showForm ? "Cerrar Formulario" : "Registrar Nueva Carrera"}</span>
+          {showForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+          <span>{showForm ? "Cerrar Formulario" : "+ Registrar Carrera"}</span>
         </button>
-      </header>
-
-      {/* Tarjetas de Resumen Ejecutivo */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Carreras Habilitadas</span>
-          <span className="text-lg font-black text-[#800521] font-mono mt-1 block">
-            {activeCareersCount} Especialidades
-          </span>
-          <span className="text-[11px] text-emerald-600 font-bold block mt-1">
-            Programas con admisión activa
-          </span>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Duración Reglamentaria</span>
-          <span className="text-lg font-black text-slate-900 font-mono mt-1 block">
-            6 Semestres (3 Años)
-          </span>
-          <span className="text-[11px] text-slate-500 font-bold block mt-1">
-            Nivel Profesional Técnico
-          </span>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Créditos de Titulación</span>
-          <span className="text-lg font-black text-amber-600 font-mono mt-1 block">
-            120.0 Créditos
-          </span>
-          <span className="text-[11px] text-slate-500 font-bold block mt-1">
-            Malla curricular completa
-          </span>
-        </div>
       </div>
 
       {/* Formulario Expandible */}
       {showForm && (
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 animate-fade-in">
-          <div className="flex items-center justify-between border-b pb-3">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4 animate-fade-in">
+          <div className="flex items-center justify-between border-b pb-2.5">
             <h3 className="text-xs font-black text-[#9F062A] uppercase tracking-wider">
               Registrar Nuevo Programa de Estudios
             </h3>
@@ -114,7 +99,7 @@ export function CareersTab({ careers, curriculum, groups, tasks, saveDb, setCare
             }}
             className="space-y-4 text-xs font-semibold"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2">
                 <label className="block text-[10px] text-slate-500 font-bold uppercase">Nombre de la Carrera *</label>
                 <input 
@@ -140,7 +125,7 @@ export function CareersTab({ careers, curriculum, groups, tasks, saveDb, setCare
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-[10px] text-slate-500 font-bold uppercase">Descripción Formativa *</label>
                 <textarea 
@@ -148,11 +133,11 @@ export function CareersTab({ careers, curriculum, groups, tasks, saveDb, setCare
                   placeholder="Propósito y campo ocupacional del programa..." 
                   value={formCareer.description || ""}
                   onChange={(e) => setFormCareer({ ...formCareer, description: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 border rounded-lg h-20 font-semibold"
+                  className="w-full mt-1 px-3 py-2 border rounded-lg h-18 font-semibold"
                 />
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <div>
                   <label className="block text-[10px] text-slate-500 font-bold uppercase">Períodos Regulados (Semestres) *</label>
                   <input 
@@ -186,8 +171,8 @@ export function CareersTab({ careers, curriculum, groups, tasks, saveDb, setCare
               >
                 Cancelar
               </button>
-              <Button type="submit" className="bg-[#9F062A] hover:bg-[#800521] text-white uppercase text-[10px] font-black tracking-wider px-6">
-                Guardar Carrera Académica
+              <Button type="submit" className="bg-[#9F062A] hover:bg-[#800521] text-white uppercase text-[10px] font-black tracking-wider px-5">
+                Guardar Carrera
               </Button>
             </div>
           </form>
@@ -195,12 +180,12 @@ export function CareersTab({ careers, curriculum, groups, tasks, saveDb, setCare
       )}
 
       {/* Listado de Carreras a Todo lo Ancho */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-          <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest leading-none">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+        <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider leading-none">
             Programas de Estudio Vigentes ({careers.length})
           </h3>
-          <span className="text-[11px] font-bold text-slate-500 font-mono">
+          <span className="text-[10px] font-bold text-slate-500 font-mono">
             Malla Curricular Modular
           </span>
         </div>
@@ -208,31 +193,31 @@ export function CareersTab({ careers, curriculum, groups, tasks, saveDb, setCare
           <table className="w-full text-left text-xs text-slate-600">
             <thead className="bg-slate-100 uppercase tracking-wider text-[9px] font-black text-slate-500 border-b border-slate-200">
               <tr>
-                <th className="p-4 pl-6">Código</th>
-                <th className="p-4">Programa / Propósito Formativo</th>
-                <th className="p-4 text-center">Duración</th>
-                <th className="p-4 text-center">Estado Oficial</th>
-                <th className="p-4 text-right pr-6">Acciones</th>
+                <th className="p-3 pl-5">Código</th>
+                <th className="p-3">Programa / Propósito Formativo</th>
+                <th className="p-3 text-center">Duración</th>
+                <th className="p-3 text-center">Estado Oficial</th>
+                <th className="p-3 text-right pr-5">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-semibold">
               {careers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-slate-400 font-semibold text-xs">
+                  <td colSpan={5} className="p-6 text-center text-slate-400 font-semibold text-xs">
                     No existen carreras registradas.
                   </td>
                 </tr>
               ) : (
                 careers.map(item => (
                   <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="p-4 pl-6 font-mono font-black text-[#9F062A] text-sm">{item.code}</td>
-                    <td className="p-4 leading-tight">
-                      <div className="font-bold text-slate-950 text-sm">{item.name}</div>
-                      <div className="text-[11px] text-slate-500 mt-1 max-w-xl line-clamp-2">{item.description || "Sin descripción registrada"}</div>
+                    <td className="p-3.5 pl-5 font-mono font-black text-[#9F062A] text-xs">{item.code}</td>
+                    <td className="p-3.5 leading-tight">
+                      <div className="font-bold text-slate-950 text-xs">{item.name}</div>
+                      <div className="text-[10.5px] text-slate-500 mt-0.5 max-w-xl line-clamp-2">{item.description || "Sin descripción registrada"}</div>
                     </td>
-                    <td className="p-4 text-center font-mono whitespace-nowrap text-slate-800 font-bold">{item.durationSemesters} Semestres</td>
-                    <td className="p-4 text-center">
-                      <span className={`px-2.5 py-1 rounded text-[9.5px] font-black uppercase border inline-block ${
+                    <td className="p-3.5 text-center font-mono whitespace-nowrap text-slate-800 font-bold">{item.durationSemesters} Semestres</td>
+                    <td className="p-3.5 text-center">
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border inline-block ${
                         (item.status || "Activo") === "Activo"
                           ? "bg-emerald-50 text-emerald-800 border-emerald-250 font-bold" 
                           : "bg-slate-100 text-slate-500 border-slate-200 font-bold"
@@ -240,8 +225,8 @@ export function CareersTab({ careers, curriculum, groups, tasks, saveDb, setCare
                         {item.status || "Activo"}
                       </span>
                     </td>
-                    <td className="p-4 text-right pr-6">
-                      <div className="inline-flex gap-2 mr-3">
+                    <td className="p-3.5 text-right pr-5">
+                      <div className="inline-flex gap-1.5 mr-2">
                         <button 
                           onClick={() => {
                             const next = careers.map(c => ({
@@ -251,7 +236,7 @@ export function CareersTab({ careers, curriculum, groups, tasks, saveDb, setCare
                             saveDb("careers", next, setCareers);
                             notify?.(`Estado de ${item.name} actualizado.`, "info");
                           }}
-                          className="text-[10px] bg-slate-100 text-slate-700 border border-slate-300 px-2 py-1 rounded font-bold hover:bg-slate-200 uppercase cursor-pointer"
+                          className="text-[9.5px] bg-slate-100 text-slate-700 border border-slate-300 px-2 py-0.5 rounded font-bold hover:bg-slate-200 uppercase cursor-pointer"
                         >
                           Alternar Estado
                         </button>
@@ -272,10 +257,10 @@ export function CareersTab({ careers, curriculum, groups, tasks, saveDb, setCare
                           saveDb("careers", next, setCareers);
                           notify?.(`Carrera eliminada exitosamente.`, "info");
                         }}
-                        className="text-red-500 hover:text-red-800 cursor-pointer inline-block align-middle p-1.5 rounded hover:bg-red-50"
+                        className="text-red-500 hover:text-red-800 cursor-pointer inline-block align-middle p-1 rounded hover:bg-red-50"
                         title="Eliminar carrera"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </td>
                   </tr>

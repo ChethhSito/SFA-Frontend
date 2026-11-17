@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Trash2, BookOpen, Plus, CheckCircle2, Filter, X } from "lucide-react";
+import { Trash2, Plus, Filter, X } from "lucide-react";
 import { MpaCourse, MpaCareer, MpaCurriculumItem, MpaProgramTask } from "../../../types";
 import Button from "../../ui/Button";
 import { PageTransition } from "../PageTransition";
@@ -45,65 +45,50 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
   const generalCount = courses.filter(c => c.type === "General" || c.careerId === "comun").length;
 
   return (
-    <PageTransition id="courses" className="space-y-6 text-left">
-      {/* Banner Institucional Borgoña Oficial */}
-      <header className="rounded-2xl bg-[#800521] p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <BookOpen className="h-8 w-8 text-amber-300 shrink-0" />
-          <div>
-            <h1 className="text-xl font-black">Catálogo de Cursos y Unidades Didácticas</h1>
-            <p className="mt-1 text-sm text-rose-50">
-              Malla curricular oficial, horas lectivas y asignación por especialidad formativa.
-            </p>
+    <PageTransition id="courses" className="p-5 md:p-6 space-y-4 text-left">
+      {/* Barra de KPIs Compacta + Botón de Acción */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1">
+          <div className="bg-white px-3.5 py-2.5 rounded-xl border border-slate-200 shadow-xs">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Total de Asignaturas</span>
+            <span className="text-sm font-black text-[#800521] font-mono block truncate mt-0.5">
+              {courses.length} Cursos Registrados
+            </span>
+          </div>
+
+          <div className="bg-white px-3.5 py-2.5 rounded-xl border border-slate-200 shadow-xs">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Cursos de Especialidad</span>
+            <span className="text-sm font-black text-slate-900 font-mono block mt-0.5">
+              {especialidadCount} Unidades
+            </span>
+          </div>
+
+          <div className="bg-white px-3.5 py-2.5 rounded-xl border border-slate-200 shadow-xs col-span-2 sm:col-span-1">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Cursos Generales / Empleabilidad</span>
+            <span className="text-sm font-black text-amber-600 font-mono block mt-0.5">
+              {generalCount} Unidades
+            </span>
           </div>
         </div>
+
         <button
           type="button"
           onClick={() => setShowForm(!showForm)}
-          className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer self-start md:self-auto shrink-0"
+          className={`shrink-0 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer border ${
+            showForm 
+              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" 
+              : "bg-[#800521] hover:bg-[#67041a] text-white border-[#800521]"
+          }`}
         >
-          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          <span>{showForm ? "Cerrar Formulario" : "Registrar Nuevo Curso"}</span>
+          {showForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+          <span>{showForm ? "Cerrar Formulario" : "+ Registrar Curso"}</span>
         </button>
-      </header>
-
-      {/* Tarjetas de Resumen Ejecutivo */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total de Asignaturas</span>
-          <span className="text-lg font-black text-[#800521] font-mono mt-1 block">
-            {courses.length} Cursos
-          </span>
-          <span className="text-[11px] text-emerald-600 font-bold block mt-1">
-            Catálogo curricular oficial
-          </span>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Cursos de Especialidad</span>
-          <span className="text-lg font-black text-slate-900 font-mono mt-1 block">
-            {especialidadCount} Unidades
-          </span>
-          <span className="text-[11px] text-slate-500 font-bold block mt-1">
-            Asociadas a Electricidad y Contabilidad
-          </span>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Cursos Generales / Empleabilidad</span>
-          <span className="text-lg font-black text-amber-600 font-mono mt-1 block">
-            {generalCount} Unidades
-          </span>
-          <span className="text-[11px] text-slate-500 font-bold block mt-1">
-            Competencias transversales
-          </span>
-        </div>
       </div>
 
       {/* Formulario Expandible */}
       {showForm && (
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 animate-fade-in">
-          <div className="flex items-center justify-between border-b pb-3">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4 animate-fade-in">
+          <div className="flex items-center justify-between border-b pb-2.5">
             <h3 className="text-xs font-black text-[#9F062A] uppercase tracking-wider">
               Registrar Nueva Unidad Didáctica
             </h3>
@@ -133,7 +118,7 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
             }}
             className="space-y-4 text-xs font-semibold"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2">
                 <label className="block text-[10px] text-slate-500 font-bold uppercase">Nombre del Curso / Unidad Didáctica *</label>
                 <input 
@@ -159,7 +144,7 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-[10px] text-slate-500 font-bold uppercase">Tipo de Curso *</label>
                 <select
@@ -210,7 +195,7 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
                 <label className="block text-[10px] text-slate-500 font-bold uppercase">Créditos MINEDU *</label>
                 <input 
@@ -225,7 +210,7 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
               </div>
 
               <div>
-                <label className="block text-[10px] text-slate-500 font-bold uppercase">Horas Teoría / Sem *</label>
+                <label className="block text-[10px] text-slate-500 font-bold uppercase">Horas Teoría *</label>
                 <input 
                   type="number"
                   min={0}
@@ -237,7 +222,7 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
               </div>
 
               <div>
-                <label className="block text-[10px] text-slate-500 font-bold uppercase">Horas Laboratorio / Sem *</label>
+                <label className="block text-[10px] text-slate-500 font-bold uppercase">Horas Laboratorio *</label>
                 <input 
                   type="number"
                   min={0}
@@ -269,8 +254,8 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
               >
                 Cancelar
               </button>
-              <Button type="submit" className="bg-[#9F062A] hover:bg-[#800521] text-white uppercase text-[10px] font-black tracking-wider px-6">
-                Guardar Curso Académico
+              <Button type="submit" className="bg-[#9F062A] hover:bg-[#800521] text-white uppercase text-[10px] font-black tracking-wider px-5">
+                Guardar Curso
               </Button>
             </div>
           </form>
@@ -278,19 +263,19 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
       )}
 
       {/* Listado de Asignaturas a Todo lo Ancho */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest leading-none">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+        <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider leading-none">
             Asignaturas Registradas ({courses.length})
           </h3>
           
           <div className="flex items-center gap-2">
             <Filter className="w-3.5 h-3.5 text-slate-400" />
-            <label className="text-[10px] font-black uppercase text-slate-500 whitespace-nowrap">Filtrar por Carrera:</label>
+            <label className="text-[10px] font-black uppercase text-slate-500 whitespace-nowrap">Filtrar Carrera:</label>
             <select
               value={coursesFilterCareer}
               onChange={(e) => setCoursesFilterCareer(e.target.value)}
-              className="text-xs bg-white border border-slate-200 rounded-lg px-3 py-1.5 font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#800521]"
+              className="text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1 font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#800521]"
             >
               <option value="all">Todas las Carreras</option>
               {careers.map(car => (
@@ -305,13 +290,13 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
           <table className="w-full text-left text-xs text-slate-600">
             <thead className="bg-slate-100 uppercase tracking-wider text-[9px] font-black text-slate-500 border-b border-slate-200">
               <tr>
-                <th className="p-4 pl-6">Código</th>
-                <th className="p-4">Nombre de la Asignatura</th>
-                <th className="p-4">Especialidad / Ciclo</th>
-                <th className="p-4 text-center font-mono">Créditos</th>
-                <th className="p-4 text-center font-mono">Horas T/L</th>
-                <th className="p-4 text-center font-mono">Estado</th>
-                <th className="p-4 text-right pr-6">Acciones</th>
+                <th className="p-3 pl-5">Código</th>
+                <th className="p-3">Nombre de la Asignatura</th>
+                <th className="p-3">Especialidad / Ciclo</th>
+                <th className="p-3 text-center font-mono">Créditos</th>
+                <th className="p-3 text-center font-mono">Horas T/L</th>
+                <th className="p-3 text-center font-mono">Estado</th>
+                <th className="p-3 text-right pr-5">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-semibold">
@@ -320,7 +305,7 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
                 if (filtered.length === 0) {
                   return (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-slate-400 font-semibold text-xs">
+                      <td colSpan={7} className="p-6 text-center text-slate-400 font-semibold text-xs">
                         No existen cursos registrados para esta selección.
                       </td>
                     </tr>
@@ -328,18 +313,18 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
                 }
                 return filtered.map(item => (
                   <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="p-4 pl-6 font-mono font-black text-[#9F062A] text-sm">{item.code}</td>
-                    <td className="p-4 text-slate-900 font-bold text-sm">{item.name}</td>
-                    <td className="p-4">
+                    <td className="p-3.5 pl-5 font-mono font-black text-[#9F062A] text-xs">{item.code}</td>
+                    <td className="p-3.5 text-slate-900 font-bold text-xs">{item.name}</td>
+                    <td className="p-3.5">
                       {(() => {
                         const courseType = item.type || (item.careerId === "comun" ? "General" : "Especialidad");
                         const isGeneral = courseType === "General";
                         const car = careers.find(c => c.id === item.careerId);
                         
                         return (
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className={`text-[9.5px] px-2 py-0.5 rounded font-black uppercase tracking-wider border ${
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider border ${
                                 isGeneral 
                                   ? "bg-slate-100 text-slate-700 border-slate-200" 
                                   : "bg-[#9F062A]/10 text-[#9F062A] border-[#9F062A]/20"
@@ -347,24 +332,24 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
                                 {courseType}
                               </span>
                               {car && (
-                                <span className="text-[10px] bg-slate-50 text-slate-800 border border-slate-200 px-1.5 py-0.5 rounded font-bold uppercase">
+                                <span className="text-[9.5px] bg-slate-50 text-slate-800 border border-slate-200 px-1.5 py-0.5 rounded font-bold uppercase">
                                   {car.code}
                                 </span>
                               )}
                             </div>
-                            <span className="text-[10px] text-amber-700 font-black uppercase font-mono tracking-wider">
+                            <span className="text-[9.5px] text-amber-700 font-black uppercase font-mono tracking-wider">
                               Ciclo {item.referenceCycle || 1} {isGeneral ? "(Sugerido)" : ""}
                             </span>
                           </div>
                         );
                       })()}
                     </td>
-                    <td className="p-4 text-center font-mono font-bold text-slate-900">{item.credits} u.</td>
-                    <td className="p-4 text-center font-mono text-slate-500">
+                    <td className="p-3.5 text-center font-mono font-bold text-slate-900">{item.credits} u.</td>
+                    <td className="p-3.5 text-center font-mono text-slate-500 text-[11px]">
                       T: {item.theoryHours ?? 2}h | L: {item.labHours ?? 2}h
                     </td>
-                    <td className="p-4 text-center">
-                      <span className={`px-2.5 py-1 rounded text-[9.5px] font-black uppercase border inline-block ${
+                    <td className="p-3.5 text-center">
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border inline-block ${
                         (item.status ?? "Activo") === "Activo"
                           ? "bg-emerald-50 text-emerald-800 border-emerald-250 font-bold"
                           : "bg-red-50 text-red-800 border-red-250 font-bold"
@@ -372,7 +357,7 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
                         {item.status ?? "Activo"}
                       </span>
                     </td>
-                    <td className="p-4 text-right pr-6">
+                    <td className="p-3.5 text-right pr-5">
                       <button 
                         onClick={() => {
                           const inCurriculum = curriculum.some(curr => curr.courseId === item.id);
@@ -385,10 +370,10 @@ export function CoursesTab({ courses, careers, curriculum, tasks, saveDb, setCou
                           saveDb("courses", next, setCourses);
                           notify?.(`Curso eliminado exitosamente.`, "info");
                         }}
-                        className="text-red-500 hover:text-red-800 cursor-pointer p-1.5 rounded hover:bg-red-50"
+                        className="text-red-500 hover:text-red-800 cursor-pointer p-1 rounded hover:bg-red-50"
                         title="Eliminar curso"
                       >
-                        <Trash2 className="w-4 h-4 ml-auto" />
+                        <Trash2 className="w-3.5 h-3.5 ml-auto" />
                       </button>
                     </td>
                   </tr>

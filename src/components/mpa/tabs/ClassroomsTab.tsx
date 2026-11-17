@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Trash2, Building, Plus, CheckCircle2, MapPin, X } from "lucide-react";
+import { Trash2, Building, Plus, MapPin, X } from "lucide-react";
 import { MpaClassroom, MpaCareer, MpaProgramTask } from "../../../types";
 import Button from "../../ui/Button";
 import { PageTransition } from "../PageTransition";
@@ -35,65 +35,50 @@ export function ClassroomsTab({ classrooms, careers, tasks, saveDb, setClassroom
   const theoryCount = classrooms.filter(c => c.type === "Teoría").length;
 
   return (
-    <PageTransition id="classrooms" className="space-y-6 text-left">
-      {/* Banner Institucional Borgoña Oficial */}
-      <header className="rounded-2xl bg-[#800521] p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Building className="h-8 w-8 text-amber-300 shrink-0" />
-          <div>
-            <h1 className="text-xl font-black">Gestión de Aulas y Laboratorios</h1>
-            <p className="mt-1 text-sm text-rose-50">
-              Distribución de ambientes físicos, talleres de potencia y capacidad de aforo.
-            </p>
+    <PageTransition id="classrooms" className="p-5 md:p-6 space-y-4 text-left">
+      {/* Barra de KPIs Compacta + Botón de Acción */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1">
+          <div className="bg-white px-3.5 py-2.5 rounded-xl border border-slate-200 shadow-xs">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Total Ambientes</span>
+            <span className="text-sm font-black text-[#800521] font-mono block truncate mt-0.5">
+              {classrooms.length} Espacios Físicos
+            </span>
+          </div>
+
+          <div className="bg-white px-3.5 py-2.5 rounded-xl border border-slate-200 shadow-xs">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Aulas de Teoría</span>
+            <span className="text-sm font-black text-slate-900 font-mono block mt-0.5">
+              {theoryCount} Aulas
+            </span>
+          </div>
+
+          <div className="bg-white px-3.5 py-2.5 rounded-xl border border-slate-200 shadow-xs col-span-2 sm:col-span-1">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Talleres y Laboratorios</span>
+            <span className="text-sm font-black text-amber-600 font-mono block mt-0.5">
+              {labCount} Laboratorios
+            </span>
           </div>
         </div>
+
         <button
           type="button"
           onClick={() => setShowForm(!showForm)}
-          className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition-all cursor-pointer self-start md:self-auto shrink-0"
+          className={`shrink-0 text-xs font-black px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer border ${
+            showForm 
+              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" 
+              : "bg-[#800521] hover:bg-[#67041a] text-white border-[#800521]"
+          }`}
         >
-          {showForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          <span>{showForm ? "Cerrar Formulario" : "Registrar Nueva Aula"}</span>
+          {showForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+          <span>{showForm ? "Cerrar Formulario" : "+ Registrar Nueva Aula"}</span>
         </button>
-      </header>
-
-      {/* Tarjetas de Resumen Ejecutivo */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Ambientes</span>
-          <span className="text-lg font-black text-[#800521] font-mono mt-1 block">
-            {classrooms.length} Espacios Físicos
-          </span>
-          <span className="text-[11px] text-emerald-600 font-bold block mt-1">
-            Habilitados para el semestre
-          </span>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Aulas de Teoría</span>
-          <span className="text-lg font-black text-slate-900 font-mono mt-1 block">
-            {theoryCount} Aulas
-          </span>
-          <span className="text-[11px] text-slate-500 font-bold block mt-1">
-            Sesiones presenciales magistrales
-          </span>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Talleres y Laboratorios</span>
-          <span className="text-lg font-black text-amber-600 font-mono mt-1 block">
-            {labCount} Laboratorios
-          </span>
-          <span className="text-[11px] text-slate-500 font-bold block mt-1">
-            Equipamiento técnico especializado
-          </span>
-        </div>
       </div>
 
       {/* Formulario Expandible */}
       {showForm && (
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4 animate-fade-in">
-          <div className="flex items-center justify-between border-b pb-3">
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4 animate-fade-in">
+          <div className="flex items-center justify-between border-b pb-2.5">
             <h3 className="text-xs font-black text-[#9F062A] uppercase tracking-wider">
               Registrar Nuevo Ambiente Físico
             </h3>
@@ -199,8 +184,8 @@ export function ClassroomsTab({ classrooms, careers, tasks, saveDb, setClassroom
       )}
 
       {/* Listado de Ambientes a Todo lo Ancho */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+        <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
           <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest leading-none">
             Ambientes Registrados ({classrooms.length})
           </h3>
@@ -212,11 +197,11 @@ export function ClassroomsTab({ classrooms, careers, tasks, saveDb, setClassroom
           <table className="w-full text-left text-xs text-slate-600">
             <thead className="bg-slate-100 uppercase tracking-wider text-[9px] font-black text-slate-500 border-b border-slate-200">
               <tr>
-                <th className="p-4 pl-6">Nombre del Ambiente</th>
-                <th className="p-4 text-center">Tipo</th>
-                <th className="p-4">Ubicación Institucional</th>
-                <th className="p-4 text-center font-mono">Aforo Máximo</th>
-                <th className="p-4 text-right pr-6">Acciones</th>
+                <th className="p-3.5 pl-5">Nombre del Ambiente</th>
+                <th className="p-3.5 text-center">Tipo</th>
+                <th className="p-3.5">Ubicación Institucional</th>
+                <th className="p-3.5 text-center font-mono">Aforo Máximo</th>
+                <th className="p-3.5 text-right pr-5">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-semibold text-slate-800">
@@ -229,14 +214,14 @@ export function ClassroomsTab({ classrooms, careers, tasks, saveDb, setClassroom
               ) : (
                 classrooms.map(item => (
                   <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="p-4 pl-6 font-black text-slate-900 text-sm">
+                    <td className="p-3.5 pl-5 font-black text-slate-900 text-sm">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-[#9F062A]" />
                         <span>{item.name}</span>
                       </div>
                     </td>
-                    <td className="p-4 text-center">
-                      <span className={`px-2.5 py-1 rounded text-[9.5px] font-black uppercase border inline-block ${
+                    <td className="p-3.5 text-center">
+                      <span className={`px-2.5 py-0.5 rounded text-[9.5px] font-black uppercase border inline-block ${
                         item.type === "Laboratorio"
                           ? "bg-amber-50 text-amber-800 border-amber-250 font-bold"
                           : "bg-blue-50 text-blue-800 border-blue-250 font-bold"
@@ -244,9 +229,9 @@ export function ClassroomsTab({ classrooms, careers, tasks, saveDb, setClassroom
                         {item.type}
                       </span>
                     </td>
-                    <td className="p-4 text-slate-600">{item.location}</td>
-                    <td className="p-4 text-center font-mono font-bold text-slate-900">{item.capacity} Estudiantes</td>
-                    <td className="p-4 text-right pr-6">
+                    <td className="p-3.5 text-slate-600">{item.location}</td>
+                    <td className="p-3.5 text-center font-mono font-bold text-slate-900">{item.capacity} Estudiantes</td>
+                    <td className="p-3.5 text-right pr-5">
                       <button 
                         onClick={() => {
                           const inTasks = tasks.some(t => t.classroomId === item.id);
