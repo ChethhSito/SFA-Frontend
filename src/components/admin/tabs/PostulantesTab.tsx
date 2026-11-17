@@ -290,13 +290,18 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
         </div>
 
         {/* Listings Table */}
-        <Card>
-          <CardHeader>
-            <div className="text-left">
-              <CardTitle>Control de Aulas y Resultados Oficiales de Admisión</CardTitle>
-              <CardDescription>
-                Gestione la asignación de aulas físicas para el examen presencial y registre la resolución oficial de ingreso mediante firma digital con PIN.
-              </CardDescription>
+        <Card className="overflow-hidden border border-slate-200/90 shadow-sm mt-4">
+          <CardHeader className="bg-slate-50/70 border-b border-slate-100 py-3.5 px-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="text-left">
+                <CardTitle className="text-sm font-black text-slate-800 tracking-tight">Control de Aulas y Resultados Oficiales de Admisión</CardTitle>
+                <CardDescription className="text-xs text-slate-500 font-medium">
+                  Gestione la asignación de aulas físicas para el examen presencial y registre la resolución oficial de ingreso mediante firma digital con PIN.
+                </CardDescription>
+              </div>
+              <span className="self-start sm:self-auto px-2.5 py-1 rounded-full text-[10.5px] font-mono font-bold bg-slate-200 text-slate-700">
+                {filteredList.length} {filteredList.length === 1 ? "postulante" : "postulantes"}
+              </span>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -313,91 +318,100 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
               </div>
             ) : (
               <div className="overflow-x-auto text-[11.5px] font-semibold animate-scale-up">
-                <table className="w-full border-collapse">
+                <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 text-slate-500 text-[10px] uppercase border-b border-slate-100 font-extrabold tracking-wider">
-                      <th className="p-4 text-left">Postulante</th>
-                      <th className="p-4 text-left">DNI / Contacto</th>
-                      <th className="p-4 text-left">Carrera Postulada</th>
-                      <th className="p-4 text-left">Aula de Examen Presencial</th>
-                      <th className="p-4 text-center">Decisión Oficial de Admisión</th>
+                    <tr className="bg-slate-900 border-b border-slate-800 text-white font-extrabold uppercase tracking-wide text-[10px]">
+                      <th className="p-3.5">Postulante / Identificación</th>
+                      <th className="p-3.5">Carrera Postulada</th>
+                      <th className="p-3.5">Aula de Examen Presencial</th>
+                      <th className="p-3.5 text-center">Decisión Oficial de Admisión</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
                     {filteredList.map((app, idx) => {
                       const isAdmitted = app.admitted === "ADMITIDO" || app.admitted === true;
                       const isNotAdmitted = app.admitted === "NO ADMITIDO";
+                      const initial1 = (app.name || "P").charAt(0).toUpperCase();
+                      const initial2 = (app.lastName || "R").charAt(0).toUpperCase();
 
                       return (
-                        <tr key={app.dni || idx} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="p-4 text-left">
-                            <span className="font-extrabold text-slate-900 block text-xs">
-                              {app.name} {app.lastName}
-                            </span>
-                            <span className="text-[9.5px] text-slate-400 font-extrabold uppercase mt-0.5 block font-mono">
-                              CÓDIGO: {app.applicantCode || "PE-2027-" + app.dni.slice(-4)}
-                            </span>
+                        <tr key={app.dni || idx} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="p-3.5">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-slate-100 text-[#9F062A] font-extrabold flex items-center justify-center border border-slate-200 select-none shrink-0 shadow-3xs">
+                                {initial1}{initial2}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-[#9F062A] uppercase leading-none block text-[11.5px] whitespace-nowrap">
+                                  {app.name} {app.lastName}
+                                </h4>
+                                <span className="text-[10px] text-slate-500 font-bold block mt-1 tracking-tight whitespace-nowrap">
+                                  DNI: {app.dni} | Código:{" "}
+                                  <span className="font-mono text-slate-800">
+                                    {app.applicantCode || "PE-2027-" + app.dni.slice(-4)}
+                                  </span>
+                                  {app.phone ? ` | Tel: ${app.phone}` : ""}
+                                </span>
+                              </div>
+                            </div>
                           </td>
-                          <td className="p-4 text-left">
-                            <span className="font-mono font-bold text-slate-700 block">{app.dni}</span>
-                            <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
-                              {app.phone || app.email}
-                            </span>
-                          </td>
-                          <td className="p-4 uppercase text-[10.5px] text-slate-800 font-bold">
+
+                          <td className="p-3.5 uppercase text-xs text-slate-800 font-bold tracking-tight whitespace-nowrap">
                             {app.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad"}
                           </td>
 
                           {/* Control de Aula de Examen */}
-                          <td className="p-4 text-left">
-                            <div className="flex items-center gap-1.5">
-                              <MapPin
-                                className={`w-3.5 h-3.5 shrink-0 ${
-                                  app.examClassroom ? "text-indigo-600" : "text-amber-500"
-                                }`}
-                              />
-                              <select
-                                value={app.examClassroom || ""}
-                                onChange={(e) => handleAssignClassroom(app.dni, e.target.value)}
-                                className={`text-xs font-bold rounded-lg px-2.5 py-1.5 border shadow-3xs cursor-pointer focus:outline-none transition-all ${
-                                  app.examClassroom
-                                    ? "bg-indigo-50/90 text-indigo-900 border-indigo-200 focus:border-indigo-400"
-                                    : "bg-amber-50/80 text-amber-900 border-amber-200 focus:border-amber-400"
-                                }`}
-                              >
-                                <option value="">-- Sin Asignar Aula --</option>
-                                {classroomOptions.map((option) => (
-                                  <option key={option} value={option}>
-                                    {option}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <span className="text-[9.5px] text-slate-400 mt-1 block">
+                          <td className="p-3.5">
+                            <div className="flex items-center gap-2 whitespace-nowrap">
+                              <div className="relative">
+                                <select
+                                  value={app.examClassroom || ""}
+                                  onChange={(e) => handleAssignClassroom(app.dni, e.target.value)}
+                                  className={`text-xs font-bold rounded-lg pl-3 pr-8 py-1.5 border shadow-3xs cursor-pointer focus:outline-none transition-all appearance-none ${
+                                    app.examClassroom
+                                      ? "bg-indigo-50/90 text-indigo-900 border-indigo-200 focus:border-indigo-400"
+                                      : "bg-slate-50 text-slate-700 border-slate-200 focus:border-[#9F062A]"
+                                  }`}
+                                >
+                                  <option value="">-- Sin Asignar Aula --</option>
+                                  {classroomOptions.map((option) => (
+                                    <option key={option} value={option}>
+                                      {option}
+                                    </option>
+                                  ))}
+                                </select>
+                                <MapPin
+                                  className={`w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${
+                                    app.examClassroom ? "text-indigo-600" : "text-slate-400"
+                                  }`}
+                                />
+                              </div>
+
                               {app.examClassroom ? (
-                                <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                                  <Check className="w-3 h-3" /> Visible en el portal del postulante
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-3xs">
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  Aula Asignada
                                 </span>
                               ) : (
-                                <span className="text-amber-600 font-medium">
-                                  Pendiente de asignación física
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-3xs">
+                                  Por Asignar
                                 </span>
                               )}
-                            </span>
+                            </div>
                           </td>
 
                           {/* Estado de Admisión con Componente de PIN */}
-                          <td className="p-4 text-center">
+                          <td className="p-3.5 text-center whitespace-nowrap">
                             {isAdmitted ? (
                               <div className="flex items-center justify-center gap-2">
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-3xs">
                                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                                   ADMITIDO (INGRESO APROBADO)
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => handleRevertAdmission(app.dni)}
-                                  className="text-[10px] font-extrabold text-slate-400 hover:text-rose-600 hover:underline uppercase tracking-wider cursor-pointer"
+                                  className="text-[10px] font-extrabold text-slate-400 hover:text-rose-600 hover:underline uppercase tracking-wider cursor-pointer ml-1"
                                   title="Revertir ingreso a Pendiente"
                                 >
                                   Revertir
@@ -405,14 +419,14 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
                               </div>
                             ) : isNotAdmitted ? (
                               <div className="flex items-center justify-center gap-2">
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-rose-100 text-rose-800 border border-rose-300 shadow-3xs">
                                   <XCircle className="w-4 h-4 text-rose-600" />
                                   NO ADMITIDO
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => handleRevertAdmission(app.dni)}
-                                  className="text-[10px] font-extrabold text-slate-400 hover:text-indigo-600 hover:underline uppercase tracking-wider cursor-pointer"
+                                  className="text-[10px] font-extrabold text-slate-400 hover:text-indigo-600 hover:underline uppercase tracking-wider cursor-pointer ml-1"
                                   title="Revertir a Pendiente"
                                 >
                                   Revertir
@@ -423,7 +437,7 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleOpenPinModal(app)}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white shadow-3xs transition-all hover:scale-[1.02] cursor-pointer"
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white shadow-3xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
                                 >
                                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-100" />
                                   <span>Admitir</span>
