@@ -84,7 +84,9 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
                 : applicant.admitted === "NO ADMITIDO"
                   ? "Estimado postulante, su proceso de admisión ha concluido. Le invitamos a estar atento a nuestras siguientes convocatorias."
                   : (approvedCount === 4 && applicant.paymentStatus === "Validado")
-                    ? "Su expediente y pago han sido aprobados. Se le ha asignado el Aula 104 para rendir su examen de admisión presencial."
+                    ? (applicant.examClassroom
+                        ? `Su expediente y pago han sido aprobados. Se le ha asignado el ${applicant.examClassroom} para rendir su examen de admisión presencial.`
+                        : "Su expediente y pago han sido aprobados con éxito. Su aula para el examen de admisión presencial se encuentra pendiente de asignación por Secretaría.")
                     : "Su carpeta se encuentra en fase de validación por secretaría. Complete la carga de sus 4 requisitos y el pago de tasa para habilitar su aula."}
             </p>
           </div>
@@ -258,8 +260,10 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
                   INFORMACIÓN DEL EXAMEN DE ADMISIÓN
                 </span>
 
-                <span className="bg-amber-100 text-amber-800 text-[9px] font-black uppercase tracking-wider py-0.5 px-3 rounded-full">
-                  AULA ASIGNADA
+                <span className={`text-[9px] font-black uppercase tracking-wider py-0.5 px-3 rounded-full ${
+                  applicant.examClassroom ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-amber-100 text-amber-800 border border-amber-200"
+                }`}>
+                  {applicant.examClassroom ? "AULA ASIGNADA" : "AULA PENDIENTE"}
                 </span>
               </div>
 
@@ -287,13 +291,21 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
                 </div>
 
                 <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg flex gap-2.5 items-center">
-                  <span className="h-8 w-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm shrink-0">
-                    <MapPin className="w-4 h-4 text-indigo-700" />
+                  <span className={`h-8 w-8 rounded-lg flex items-center justify-center text-sm shrink-0 ${
+                    applicant.examClassroom ? "bg-indigo-100 text-indigo-700" : "bg-amber-100 text-amber-700"
+                  }`}>
+                    <MapPin className="w-4 h-4" />
                   </span>
                   <div>
                     <span className="text-[9px] text-slate-400 font-black block uppercase tracking-wider leading-none">Ubicación / Aula Física</span>
-                    <span className="text-slate-800 text-[10.5px] font-extrabold block mt-0.5">Aula 104 - Pabellón A</span>
-                    <span className="text-[8.5px] text-indigo-600 font-bold block mt-0.5 uppercase">Pabellón Académico Designado</span>
+                    <span className="text-slate-800 text-[10.5px] font-extrabold block mt-0.5">
+                      {applicant.examClassroom || "Pendiente de Asignación"}
+                    </span>
+                    <span className={`text-[8.5px] font-bold block mt-0.5 uppercase ${
+                      applicant.examClassroom ? "text-indigo-600" : "text-amber-600"
+                    }`}>
+                      {applicant.examClassroom ? "Pabellón Académico Designado" : "Secretaría asignará su aula"}
+                    </span>
                   </div>
                 </div>
 
@@ -344,9 +356,15 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
                 </div>
 
                 <div className="relative">
-                  <span className="absolute -left-[19px] top-0.5 h-3 w-3 rounded-full bg-amber-500 animate-pulse border-2 border-white shrink-0" />
+                  <span className={`absolute -left-[19px] top-0.5 h-3 w-3 rounded-full border-2 border-white shrink-0 ${
+                    applicant.examClassroom ? "bg-emerald-600" : "bg-amber-500 animate-pulse"
+                  }`} />
                   <span className="text-[10.5px] font-black text-slate-900 block leading-tight">Rendir Examen Presencial</span>
-                  <span className="text-[8.5px] text-amber-600 font-extrabold uppercase leading-none mt-0.5 inline-block">Aula 104 Asignada</span>
+                  <span className={`text-[8.5px] font-extrabold uppercase leading-none mt-0.5 inline-block ${
+                    applicant.examClassroom ? "text-emerald-700" : "text-amber-600"
+                  }`}>
+                    {applicant.examClassroom ? `${applicant.examClassroom} Asignada` : "Aula Pendiente de Asignación"}
+                  </span>
                 </div>
               </div>
             </div>
