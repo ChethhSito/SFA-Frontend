@@ -27,6 +27,7 @@ export default function PostulanteRouter({
   const [session, setSession] = useState<string | null>(null);
   const [liveApplicant, setLiveApplicant] = useState<Applicant | null>(null);
   const [loading, setLoading] = useState(true);
+  const [, setSyncTick] = useState(0);
 
   useEffect(() => {
     const s = localStorage.getItem("sfa_session_postulante");
@@ -57,14 +58,15 @@ export default function PostulanteRouter({
     // Carga inicial
     loadFromMongo(true);
 
-    // Auto-polling en segundo plano cada 3.5 segundos para reflejar aprobaciones de tesorería/administración en tiempo real
+    // Auto-polling en segundo plano cada 3 segundos para reflejar asignación de aula y admisiones en tiempo real
     const interval = setInterval(() => {
       loadFromMongo(false);
-    }, 3500);
+    }, 3000);
 
     // Sincronización instantánea al cambiar o enfocar la pestaña
     const handleSync = () => {
       loadFromMongo(false);
+      setSyncTick((t) => t + 1);
     };
 
     window.addEventListener("focus", handleSync);
@@ -79,7 +81,24 @@ export default function PostulanteRouter({
   }, []);
 
   const currentDni = session || "";
-  const localApp = applicants.find(
+
+  let storedApp: Applicant | null = null;
+  try {
+    const rawStored = localStorage.getItem("sfa_applicants");
+    if (rawStored) {
+      const parsed: Applicant[] = JSON.parse(rawStored);
+      storedApp =
+        parsed.find(
+          (a) =>
+            a.id === currentDni ||
+            a.uid === currentDni ||
+            a.applicantCode === currentDni ||
+            a.dni === currentDni
+        ) || null;
+    }
+  } catch (e) {}
+
+  const propApp = applicants.find(
     (a) =>
       a.id === currentDni ||
       a.uid === currentDni ||
@@ -88,22 +107,34 @@ export default function PostulanteRouter({
       (a as any)._id === currentDni
   );
 
+  const localApp = storedApp || propApp;
+
   let applicantToRender: Applicant | null = null;
-  if (liveApplicant && localApp) {
+  const base = localApp || propApp || liveApplicant;
+  if (base) {
     applicantToRender = {
+      ...propApp,
       ...localApp,
       ...liveApplicant,
+      examClassroom: liveApplicant?.examClassroom || localApp?.examClassroom || propApp?.examClassroom,
+      examStatus:
+        (liveApplicant?.examClassroom || localApp?.examClassroom || propApp?.examClassroom)
+          ? "Programado"
+          : (liveApplicant?.examStatus || localApp?.examStatus || propApp?.examStatus || "No Programado"),
       paymentStatus:
-        localApp.paymentStatus === "Validado" || liveApplicant.paymentStatus === "Validado"
+        localApp?.paymentStatus === "Validado" || liveApplicant?.paymentStatus === "Validado" || propApp?.paymentStatus === "Validado"
           ? "Validado"
-          : (liveApplicant.paymentStatus || localApp.paymentStatus || "No Pagado"),
+          : (liveApplicant?.paymentStatus || localApp?.paymentStatus || propApp?.paymentStatus || "No Pagado"),
       folderStatus:
-        localApp.folderStatus === "Approved" || liveApplicant.folderStatus === "Approved"
+        localApp?.folderStatus === "Approved" || liveApplicant?.folderStatus === "Approved" || propApp?.folderStatus === "Approved"
           ? "Approved"
-          : (liveApplicant.folderStatus || localApp.folderStatus || "Pending"),
+          : (liveApplicant?.folderStatus || localApp?.folderStatus || propApp?.folderStatus || "Pending"),
+      admitted:
+        localApp?.admitted === "ADMITIDO" || liveApplicant?.admitted === "ADMITIDO" || propApp?.admitted === "ADMITIDO" ||
+        localApp?.admitted === true || liveApplicant?.admitted === true || propApp?.admitted === true
+          ? "ADMITIDO"
+          : (liveApplicant?.admitted || localApp?.admitted || propApp?.admitted || "PENDIENTE"),
     };
-  } else {
-    applicantToRender = liveApplicant || localApp || null;
   }
 
   if (applicantToRender) {
