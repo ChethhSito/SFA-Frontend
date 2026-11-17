@@ -70,7 +70,7 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
                   : applicant.admitted === "NO ADMITIDO"
                     ? "bg-red-500/30 text-red-200 border border-red-400/40"
                     : (approvedCount === 4 && applicant.paymentStatus === "Validado")
-                      ? "bg-amber-400/20 text-amber-300 border border-amber-400/40 animate-pulse"
+                      ? "bg-amber-400/20 text-amber-300 border border-amber-400/40"
                       : "bg-white/10 text-amber-300 border border-amber-400/20"
               }`}>
                 {isActuallyAdmitted && <CheckCircle2 className="w-3 h-3 text-emerald-300" />}
@@ -394,7 +394,7 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
 
                 <div className="relative">
                   <span className={`absolute -left-[19px] top-0.5 h-3 w-3 rounded-full border-2 border-white shrink-0 ${
-                    applicant.examClassroom ? "bg-emerald-600" : "bg-amber-500 animate-pulse"
+                    applicant.examClassroom ? "bg-emerald-600" : "bg-amber-500"
                   }`} />
                   <span className="text-[10.5px] font-black text-slate-900 block leading-tight">Rendir Examen Presencial</span>
                   <span className={`text-[8.5px] font-extrabold uppercase leading-none mt-0.5 inline-block ${

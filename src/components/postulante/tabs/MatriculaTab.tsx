@@ -147,7 +147,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = React.memo(({
                   : isPaid
                     ? "bg-sky-500/20 text-sky-200 border border-sky-400/40"
                     : isPending
-                      ? "bg-amber-400/20 text-amber-300 border border-amber-400/40 animate-pulse"
+                      ? "bg-amber-400/20 text-amber-300 border border-amber-400/40"
                       : isObserved
                         ? "bg-red-500/30 text-red-200 border border-red-400/40 font-black"
                         : "bg-white/10 text-amber-300 border border-amber-400/20"
@@ -275,7 +275,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = React.memo(({
                   : isPaid 
                   ? "bg-sky-100 text-sky-850"
                   : isPending
-                  ? "bg-amber-100 text-amber-800 animate-pulse"
+                  ? "bg-amber-100 text-amber-800"
                   : isObserved
                   ? "bg-red-50 text-red-700 font-extrabold border border-red-200"
                   : "bg-slate-100 text-slate-500 font-semibold"
@@ -366,7 +366,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = React.memo(({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500 font-bold">Carga Académica:</span>
-                    <span className="text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-extrabold animate-pulse">
+                    <span className="text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-extrabold">
                       PENDIENTE DE ASIGNACIÓN
                     </span>
                   </div>

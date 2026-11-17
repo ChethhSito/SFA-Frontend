@@ -547,7 +547,7 @@ function PostulanteDashboardInner({
                     ¡Ingreso Confirmado!
                   </span>
                 </div>
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
               </div>
 
               <div>

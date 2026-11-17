@@ -43,12 +43,7 @@ export default function Badge({
     >
       {pulse && (
         <span className="relative flex h-1.5 w-1.5 shrink-0">
-          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-            variant === "success" ? "bg-emerald-500" :
-            variant === "danger" ? "bg-rose-500" :
-            variant === "warning" ? "bg-amber-500" : "bg-brand-blue"
-          }`}></span>
-          <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
+          <span className={`inline-flex rounded-full h-1.5 w-1.5 ${
             variant === "success" ? "bg-emerald-600" :
             variant === "danger" ? "bg-rose-600" :
             variant === "warning" ? "bg-amber-600" : "bg-brand-blue"
