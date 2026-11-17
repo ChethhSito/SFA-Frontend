@@ -1,6 +1,7 @@
 import React from "react";
 import { 
-  Award, ArrowRight, Calendar, Clock, MapPin, Download, AlertTriangle, Headset, MessageSquare, FileText 
+  Award, ArrowRight, Calendar, Clock, MapPin, Download, AlertTriangle, Headset, MessageSquare, FileText,
+  Sparkles, CheckCircle2
 } from "lucide-react";
 import PageTransition from "../../ui/PageTransition";
 import { Applicant } from "../../../types";
@@ -48,21 +49,31 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
       {/* TOP ROW: 2 Cards side by side (Estado de Resultados Borgoña + Guía y Pasos) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 items-stretch">
         
-        {/* Card 1: Estado de Admisión (Borgoña Theme) */}
-        <div className="bg-[#8B0020] text-white p-5 rounded-xl shadow-md flex flex-col justify-between border-l-4 border-amber-400 text-left relative overflow-hidden">
-          <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+        {/* Card 1: Estado de Admisión (Card Verde Institucional cuando es Admitido) */}
+        <div className={`p-5 rounded-xl shadow-md flex flex-col justify-between text-left relative overflow-hidden transition-all duration-300 border-l-4 ${
+          isActuallyAdmitted
+            ? "bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-900 border-emerald-300 text-white shadow-emerald-950/20"
+            : applicant.admitted === "NO ADMITIDO"
+              ? "bg-gradient-to-br from-slate-800 to-slate-900 border-rose-500 text-white"
+              : "bg-[#8B0020] border-amber-400 text-white"
+        }`}>
+          <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
           <div>
-            <div className="flex justify-between items-center border-b border-white/10 pb-2.5 mb-3">
-              <h3 className="font-black text-white text-xs uppercase tracking-wider block leading-none">Resultados Oficiales SFA</h3>
-              <span className={`text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+            <div className="flex justify-between items-center border-b border-white/15 pb-2.5 mb-3">
+              <h3 className="font-black text-white text-xs uppercase tracking-wider block leading-none flex items-center gap-1.5">
+                {isActuallyAdmitted && <Sparkles className="w-3.5 h-3.5 text-amber-300" />}
+                Resultados Oficiales SFA
+              </h3>
+              <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 ${
                 isActuallyAdmitted
-                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/40"
+                  ? "bg-white/20 text-white border border-white/40 shadow-3xs"
                   : applicant.admitted === "NO ADMITIDO"
                     ? "bg-red-500/30 text-red-200 border border-red-400/40"
                     : (approvedCount === 4 && applicant.paymentStatus === "Validado")
                       ? "bg-amber-400/20 text-amber-300 border border-amber-400/40 animate-pulse"
                       : "bg-white/10 text-amber-300 border border-amber-400/20"
               }`}>
+                {isActuallyAdmitted && <CheckCircle2 className="w-3 h-3 text-emerald-300" />}
                 {isActuallyAdmitted 
                   ? "ADMITIDO" 
                   : applicant.admitted === "NO ADMITIDO" 
@@ -73,14 +84,18 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
               </span>
             </div>
 
-            <span className="text-[9px] text-slate-200 font-bold uppercase tracking-wider block mt-1">CARRERA DE POSTULACIÓN</span>
-            <h4 className="text-lg sm:text-xl font-black text-amber-300 tracking-tight leading-snug mt-0.5 mb-1.5">
+            <span className={`text-[9px] font-black uppercase tracking-wider block mt-1 ${
+              isActuallyAdmitted ? "text-emerald-200" : "text-slate-200"
+            }`}>
+              {isActuallyAdmitted ? "CARRERA DE INGRESO ADJUDICADA" : "CARRERA DE POSTULACIÓN"}
+            </span>
+            <h4 className="text-lg sm:text-xl font-black text-white tracking-tight leading-snug mt-0.5 mb-1.5">
               {currentProgram.name}
             </h4>
 
             <p className="text-slate-100 font-medium text-[11px] leading-relaxed mb-4">
               {isActuallyAdmitted
-                ? "¡Felicidades! Ha alcanzado una vacante oficial en la carrera técnica elegida. Su Constancia Digital de Admisión se encuentra disponible para su descarga."
+                ? "¡Muchas felicidades! Ha alcanzado una vacante oficial en la carrera técnica elegida. Su Constancia Digital de Admisión se encuentra disponible para su descarga y su proceso de matrícula regular está habilitado."
                 : applicant.admitted === "NO ADMITIDO"
                   ? "Estimado postulante, su proceso de admisión ha concluido. Le invitamos a estar atento a nuestras siguientes convocatorias."
                   : (approvedCount === 4 && applicant.paymentStatus === "Validado")
@@ -102,17 +117,30 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
                 if (el) el.scrollIntoView({ behavior: "smooth" });
               }
             }}
-            className="w-full bg-white hover:bg-amber-50 text-[#8B0020] font-black py-2.5 rounded-lg text-[11px] uppercase tracking-wider shadow-sm hover:shadow-md transition-all cursor-pointer text-center flex items-center justify-center gap-2 group"
+            className={`w-full font-black py-2.5 rounded-lg text-[11px] uppercase tracking-wider shadow-sm hover:shadow-md transition-all cursor-pointer text-center flex items-center justify-center gap-2 group ${
+              isActuallyAdmitted
+                ? "bg-white hover:bg-emerald-50 text-emerald-950"
+                : "bg-white hover:bg-amber-50 text-[#8B0020]"
+            }`}
           >
-            <span>
-              {isActuallyAdmitted 
-                ? "Descargar Constancia Oficial" 
-                : (approvedCount === 4 && applicant.paymentStatus === "Validado")
-                  ? "Ver Detalles del Examen"
-                  : "Completar Expediente"}
-            </span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            {isActuallyAdmitted ? (
+              <>
+                <Award className="w-4 h-4 text-emerald-700" />
+                <span>Descargar Constancia Oficial</span>
+                <ArrowRight className="w-3.5 h-3.5 text-emerald-700 group-hover:translate-x-1 transition-transform" />
+              </>
+            ) : (
+              <>
+                <span>
+                  {(approvedCount === 4 && applicant.paymentStatus === "Validado")
+                    ? "Ver Detalles del Examen"
+                    : "Completar Expediente"}
+                </span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
           </button>
+        </div>
         </div>
 
         {/* Card 2: Guía de Requisitos y Recomendaciones */}
@@ -207,13 +235,23 @@ export const ResultadosTab: React.FC<ResultadosTabProps> = React.memo(({
                 </div>
               </div>
 
-              <button 
-                onClick={() => setIsConstanciaModalOpen(true)}
-                className="w-full bg-[#8B0020] hover:bg-[#700018] text-white py-3 rounded-lg font-black text-[11px] uppercase tracking-wider shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer leading-none"
-              >
-                <Download className="w-4 h-4 text-amber-300" />
-                <span>Descargar Constancia Oficial de Admisión</span>
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <button 
+                  onClick={() => setIsConstanciaModalOpen(true)}
+                  className="flex-1 bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white py-3 rounded-lg font-black text-[11px] uppercase tracking-wider shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer leading-none"
+                >
+                  <Download className="w-4 h-4 text-emerald-200" />
+                  <span>Descargar Constancia Oficial de Admisión</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("matricula")}
+                  className="sm:w-auto px-5 bg-amber-500 hover:bg-amber-600 text-slate-950 py-3 rounded-lg font-black text-[11px] uppercase tracking-wider shadow-sm flex items-center justify-center gap-1.5 transition-all cursor-pointer leading-none"
+                >
+                  <span>Ir a Pago de Matrícula</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
 
