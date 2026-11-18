@@ -294,7 +294,7 @@ export const DocumentosTab: React.FC<DocumentosTabProps> = React.memo(({
                       isApproved
                         ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
                         : isPending
-                          ? "bg-amber-100 text-amber-800 border border-amber-200 animate-pulse"
+                          ? "bg-amber-100 text-amber-800 border border-amber-200"
                           : isObserved
                             ? "bg-red-100 text-red-800 border border-red-200"
                             : "bg-slate-100 text-slate-500 border border-slate-200"

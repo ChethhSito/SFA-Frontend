@@ -1,5 +1,5 @@
 import React from "react";
-import { FileText, GraduationCap, Users, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
+import { FileText, GraduationCap, Users, CheckCircle2, AlertTriangle, Clock, Search } from "lucide-react";
 import { Applicant, AdmissionPeriod } from "../../../types";
 import { Card } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
@@ -97,16 +97,14 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
       {/* 3. Search & Filter Bar */}
       <div className="bg-white rounded-xl border border-slate-100 p-4 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         <div className="relative flex-1">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             placeholder="Buscar postulante por nombre, apellido o DNI..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-3.5 pr-10 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-[#9F062A]"
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-[#9F062A]"
           />
-          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs uppercase">
-            Buscar
-          </span>
         </div>
 
         {/* Career Selection Filter */}
@@ -268,15 +266,37 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
                           )}
                         </td>
                         <td className="p-3.5 border-none">
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-tight">
-                              <span className="text-emerald-700 font-black">{valCount} OK</span>
-                              {obsCount > 0 && <span className="text-red-600 font-black">{obsCount} OBS</span>}
-                              {pendCount > 0 && <span className="text-amber-600 font-black">{pendCount} PEND</span>}
+                          <div className="space-y-1.5 min-w-[140px]">
+                            <div className="flex items-center justify-between gap-1.5">
+                              {valCount === 4 ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-3xs">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                  100% Completo
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-slate-700">
+                                  <span className="font-mono text-[#9F062A] font-black">
+                                    {Math.round((valCount / 4) * 100)}%
+                                  </span>
+                                  <span className="text-slate-400 text-[10px]">({valCount} de 4)</span>
+                                </span>
+                              )}
+                              {obsCount > 0 && (
+                                <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200">
+                                  {obsCount} OBS
+                                </span>
+                              )}
+                              {pendCount > 0 && valCount < 4 && (
+                                <span className="text-[10px] font-bold text-amber-600">
+                                  {pendCount} pend.
+                                </span>
+                              )}
                             </div>
-                            <div className="w-24 h-1 border border-slate-200 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="w-full max-w-[130px] h-2 bg-slate-100 border border-slate-200 rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-emerald-600 transition-all duration-300"
+                                className={`h-full rounded-full transition-all duration-300 ${
+                                  valCount === 4 ? "bg-emerald-500" : "bg-[#9F062A]"
+                                }`}
                                 style={{ width: `${(valCount / 4) * 100}%` }}
                               />
                             </div>

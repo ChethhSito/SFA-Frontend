@@ -17,8 +17,8 @@ interface ClosureTabProps {
   setSelectedPlan: React.Dispatch<React.SetStateAction<string>>;
   selectedQueryPeriod: string;
   setSelectedQueryPeriod: React.Dispatch<React.SetStateAction<string>>;
-  selectedQueryCycle: "I" | "II" | "III" | "IV" | "V";
-  setSelectedQueryCycle: React.Dispatch<React.SetStateAction<"I" | "II" | "III" | "IV" | "V">>;
+  selectedQueryCycle: "I" | "II" | "III" | "IV" | "V" | "VI";
+  setSelectedQueryCycle: React.Dispatch<React.SetStateAction<"I" | "II" | "III" | "IV" | "V" | "VI">>;
   simulatedGrades: Record<string, number>;
   setSimulatedGrades: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   advisorConsultText: string;
@@ -84,6 +84,13 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         { code: "CO-503", name: "Auditoría Financiera Integral", type: "Obligatorio", credits: 3, status: "Activo", teo: 1, pr: 4 },
         { code: "CO-504", name: "Software Aplicado SISCONT / CONCAR", type: "Obligatorio", credits: 3, status: "Activo", teo: 1, pr: 4 },
         { code: "CO-505", name: "Ética en los Negocios y Finanzas", type: "Obligatorio", credits: 2, status: "Activo", teo: 1, pr: 2 }
+      ],
+      "VI": [
+        { code: "CO-601", name: "Formulación de Proyectos de Inversión", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "CO-602", name: "Comercio Exterior y Regímenes Aduaneros", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "CO-603", name: "Finanzas Corporativas y Mercado de Valores", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
+        { code: "CO-604", name: "Seminario de Titulación y Prácticas EFSRT", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
+        { code: "CO-605", name: "Liderazgo, Gestión y Emprendimiento", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
       ]
     },
     "20": {
@@ -117,13 +124,22 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         { code: "EE-503", name: "Sistemas de Control Automático II", type: "Obligatorio", credits: 3, status: "Activo", teo: 1, pr: 4 },
         { code: "EE-504", name: "Instalaciones Industriales Inteligentes", type: "Obligatorio", credits: 3, status: "Activo", teo: 1, pr: 4 },
         { code: "EE-505", name: "Ética y Deontología Profesional", type: "Obligatorio", credits: 2, status: "Activo", teo: 1, pr: 2 }
+      ],
+      "VI": [
+        { code: "EE-601", name: "Controladores PLC y SCADA Industrial", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EE-602", name: "Mantenimiento Eléctrico de Potencia", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EE-603", name: "Redes Industriales y Automatización", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
+        { code: "EE-604", name: "Proyecto de Innovación y Titulación EFSRT", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
+        { code: "EE-605", name: "Gestión Empresarial y Empleabilidad", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
       ]
     }
   };
 
+  const isPromoted = localStorage.getItem(`sfa_student_promoted_${personalData.dni}`) === "true";
+
   const activePlanKey = enrollment.programId === "electronica" ? "20" : "52";
   const activeSemesterKey = selectedQueryCycle || "I";
-  const cycleMap: Record<string, number> = { "I": 1, "II": 2, "III": 3, "IV": 4, "V": 5 };
+  const cycleMap: Record<string, number> = { "I": 1, "II": 2, "III": 3, "IV": 4, "V": 5, "VI": 6 };
   const targetCycleNum = cycleMap[activeSemesterKey] || 1;
 
   // Filter real courses from database by student's career program and selected cycle
@@ -139,17 +155,29 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         name: c.name,
         type: "Obligatorio",
         credits: c.credits || 4,
-        status: targetCycleNum === 1 ? "Matriculado (En Curso)" : "Pendiente de Matrícula",
+        status: isPromoted ? "Aprobado" : (targetCycleNum === 1 ? "Matriculado (En Curso)" : "Pendiente de Matrícula"),
         teo: 2,
         pr: 4
       }))
     : (CORE_PLAN_COURSES[activePlanKey]?.[activeSemesterKey] || CORE_PLAN_COURSES["20"]["I"]);
   
-  // Real academic progress status: For Ciclo I student, cycle I is "Matriculado (En Curso)", cycles II-V are "Pendiente"
-  const activeCoursesList = rawCoursesList.map((c) => ({
-    ...c,
-    status: targetCycleNum === 1 ? "Matriculado (En Curso)" : "Pendiente de Matrícula"
-  }));
+  // Real academic progress status: If promoted to VI, all cycles show Aprobado
+  const activeCoursesList = rawCoursesList.map((c, index) => {
+    if (isPromoted) {
+      const grades = [17, 18, 16, 19, 17, 18];
+      const grade = grades[index % grades.length];
+      return {
+        ...c,
+        status: "Aprobado",
+        simGrade: grade
+      };
+    }
+    return {
+      ...c,
+      status: targetCycleNum === 1 ? "Matriculado (En Curso)" : "Pendiente de Matrícula",
+      simGrade: undefined
+    };
+  });
   const cycleCreditsSum = activeCoursesList.reduce((sum, c) => sum + c.credits, 0);
   const weightedGpa = 0.0;
 
@@ -175,7 +203,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             <div className="text-left bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
               <span className="text-[9px] text-amber-400 font-extrabold block uppercase mb-0.5 tracking-wider">Plan Registrado</span>
               <span className="text-xs font-black text-white font-mono">
-                {activePlanKey === "20" ? "Plan 20 • Electricidad" : "Plan 52 • Contabilidad"}
+                {activePlanKey === "20" ? "Plan 20 - Electricidad" : "Plan 52 - Contabilidad"}
               </span>
             </div>
             <button
@@ -199,28 +227,42 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between text-left min-h-[110px]">
           <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Ciclo Académico Actual</span>
-          <span className="text-lg font-black text-[#800521] mt-1 uppercase tracking-tight">I SEMESTRE</span>
+          <span className="text-lg font-black text-[#800521] mt-1 uppercase tracking-tight">
+            {isPromoted ? "VI SEMESTRE (EGRESADO)" : "I SEMESTRE"}
+          </span>
           <div className="flex items-center gap-1.5 mt-2 bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded text-[9.5px] font-black w-max">
-            <Award className="w-3 h-3 text-emerald-600" /> REGULAR
+            <Award className="w-3 h-3 text-emerald-600" /> {isPromoted ? "APTO TITULACIÓN" : "REGULAR"}
           </div>
         </div>
 
         <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between text-left min-h-[110px]">
           <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Créditos de Carrera</span>
-          <span className="text-xl font-black text-[#2D3748] mt-1 font-mono">{cycleCreditsSum}.0 / 120.0</span>
-          <span className="text-[10px] text-emerald-600 font-bold block mt-1 font-semibold">Créditos Inscritos: 100% Ciclo I</span>
+          <span className="text-xl font-black text-[#2D3748] mt-1 font-mono">
+            {isPromoted ? "120.0 / 120.0" : `${cycleCreditsSum}.0 / 120.0`}
+          </span>
+          <span className="text-[10px] text-emerald-600 font-bold block mt-1 font-semibold">
+            {isPromoted ? "100% Plan Culminado (6 Ciclos)" : "Créditos Inscritos: 100% Ciclo I"}
+          </span>
         </div>
 
         <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between text-left min-h-[110px]">
           <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Promedio Ponderado</span>
-          <span className="text-xl font-black text-[#2D3748] mt-1 font-mono">0.00</span>
-          <span className="text-[10px] text-slate-500 font-bold block mt-1 font-semibold">Semestre 2026-I en curso</span>
+          <span className="text-xl font-black text-[#2D3748] mt-1 font-mono">
+            {isPromoted ? "17.40" : "0.00"}
+          </span>
+          <span className="text-[10px] text-emerald-600 font-bold block mt-1 font-semibold">
+            {isPromoted ? "Tercio Superior Oficial" : "Semestre 2026-I en curso"}
+          </span>
         </div>
 
         <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between text-left min-h-[110px]">
           <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Estado de Matrícula</span>
-          <span className="text-xs font-black text-slate-800 uppercase tracking-wide mt-1">MATRICULADO</span>
-          <span className="text-[9px] text-emerald-600 font-bold block mt-1 font-semibold">Periodo 2026-I Activo</span>
+          <span className="text-xs font-black text-slate-800 uppercase tracking-wide mt-1">
+            {isPromoted ? "EGRESADO CONCLUIDO" : "MATRICULADO"}
+          </span>
+          <span className="text-[9px] text-emerald-600 font-bold block mt-1 font-semibold">
+            {isPromoted ? "Apto para Certificados Oficiales" : "Periodo 2026-I Activo"}
+          </span>
         </div>
       </div>
 
@@ -228,7 +270,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         <div className="xl:col-span-8 space-y-4">
           <div className="flex bg-white p-1 rounded-xl border border-slate-150 overflow-x-auto gap-1">
-            {(["I", "II", "III", "IV", "V"] as const).map((cycle) => (
+            {(["I", "II", "III", "IV", "V", "VI"] as const).map((cycle) => (
               <button
                 key={cycle}
                 onClick={() => setSelectedQueryCycle(cycle)}
@@ -246,6 +288,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
           <div className="bg-white rounded-xl border border-slate-100 shadow-xs overflow-hidden text-left">
             {(() => {
               const cyclePeriodDisplayMap: Record<string, string> = {
+                "VI": "Periodo 2026 - II",
                 "V": "Periodo 2026 - I",
                 "IV": "Periodo 2025 - II",
                 "III": "Periodo 2025 - I",
@@ -294,7 +337,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                               ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
                               : "bg-amber-50 text-amber-700 border-amber-100"
                           }`}>
-                            {crs.status}
+                            {crs.status}{crs.simGrade ? ` (Nota: ${crs.simGrade})` : ""}
                           </span>
                         </td>
                         <td className="p-4 text-center font-mono text-slate-405 font-bold">{crs.teo} hrs</td>

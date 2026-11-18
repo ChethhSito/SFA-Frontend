@@ -85,7 +85,7 @@ export default function AlumnoDashboard({
   const [profileInnerTab, setProfileInnerTab] = useState<"docs" | "payments" | "academic">("docs");
 
   // State members for interactive Consulta Académica multi-sidebar view
-  const [selectedQueryCycle, setSelectedQueryCycle] = useState<"I" | "II" | "III" | "IV" | "V">("I");
+  const [selectedQueryCycle, setSelectedQueryCycle] = useState<"I" | "II" | "III" | "IV" | "V" | "VI">("I");
   const [simulatedGrades, setSimulatedGrades] = useState<Record<string, number>>({});
   
   // Custom states for Image 1 and Image 2 High Fidelity replication

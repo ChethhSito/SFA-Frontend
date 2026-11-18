@@ -1,9 +1,22 @@
-import React from "react";
-import { Users, MapPin } from "lucide-react";
+import React, { useState } from "react";
+import {
+  Users,
+  MapPin,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  ShieldCheck,
+  Award,
+  AlertTriangle,
+  RefreshCw,
+  ChevronDown,
+  Check,
+} from "lucide-react";
 import { Applicant } from "../../../types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
 import PageTransition from "../../ui/PageTransition";
+import { AdminAdmissionPinModal } from "../modals/AdminAdmissionPinModal";
 
 interface PostulantesTabProps {
   applicants: Applicant[];
@@ -32,12 +45,16 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
   renderPeriodSelector,
   notify,
 }) => {
+  // Modal de PIN institucional para admitir formalmente al postulante
+  const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [selectedAppForPin, setSelectedAppForPin] = useState<Applicant | null>(null);
+
   const activeApps = applicants.filter((app) => 
     !selectedPeriodId || 
     selectedPeriodId === "all" || app.periodId === selectedPeriodId
   );
 
-  // A candidate is a ready "Postulante" once all 4 documents are validated AND payment is validated.
+  // Un candidato califica como "Postulante Apto" cuando sus 4 documentos y su pago de tasa están validados
   const readyPostulantes = activeApps.filter((app) => {
     let localDocStatus: any = null;
     try {
@@ -59,7 +76,7 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
     return isDni && isCert && isPartida && isFoto && isPayment;
   });
 
-  // Filtering by search, career and classroom
+  // Filtrado por texto, carrera y aula
   const filteredList = readyPostulantes.filter((app) => {
     const fullName = `${app.name} ${app.lastName}`.toLowerCase();
     const matchesQuery =
@@ -90,18 +107,94 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
   const hasClassroomCount = readyPostulantes.filter((a) => !!a.examClassroom).length;
 
   const classroomOptions = [
-    "Aula A-101 (Teoría)",
-    "Aula B-201 (Cómputo)",
-    "Aula C-102 (Motores)",
-    "Laboratorio L-101",
-    "Auditorio Principal",
+    "Aula 101 - Pabellón A (Teoría)",
+    "Aula 102 - Pabellón A (Teoría)",
+    "Aula 201 - Pabellón B (Teoría)",
+    "Aula 202 - Pabellón B (Teoría)",
+    "Laboratorio L-101 (Cómputo)",
+    "Taller Electricidad 1",
+    "Auditorio Principal San Francisco",
   ];
+
+  const handleAssignClassroom = (dni: string, classroom: string) => {
+    const updatedList = applicants.map((a) => {
+      if (a.dni === dni) {
+        return {
+          ...a,
+          examClassroom: classroom || undefined,
+          examStatus: classroom ? ("Programado" as const) : ("No Programado" as const),
+        };
+      }
+      return a;
+    });
+    onUpdateApplicants(updatedList);
+    if (classroom) {
+      notify?.(`Aula asignada con éxito: ${classroom}`, "success");
+    } else {
+      notify?.("Asignación de aula removida.", "info");
+    }
+  };
+
+  const handleOpenPinModal = (app: Applicant) => {
+    setSelectedAppForPin(app);
+    setPinModalOpen(true);
+  };
+
+  const handleConfirmAdmissionWithPin = (dni: string) => {
+    const target = applicants.find((a) => a.dni === dni);
+    const updatedList = applicants.map((a) => {
+      if (a.dni === dni) {
+        return {
+          ...a,
+          admitted: "ADMITIDO" as const,
+          folderStatus: "Approved" as const,
+          folderApprovedAt: new Date().toISOString().split("T")[0],
+          examStatus: "Evaluado" as const,
+        };
+      }
+      return a;
+    });
+    onUpdateApplicants(updatedList);
+    notify?.(
+      `¡Firma digital validada! ${target?.name || "El postulante"} ${target?.lastName || ""} ha sido OFICIALMENTE ADMITIDO y habilitado para el proceso de matrícula.`,
+      "success"
+    );
+  };
+
+  const handleRevertAdmission = (dni: string) => {
+    const updatedList = applicants.map((a) => {
+      if (a.dni === dni) {
+        return {
+          ...a,
+          admitted: "PENDIENTE" as any,
+        };
+      }
+      return a;
+    });
+    onUpdateApplicants(updatedList);
+    notify?.("Estado de admisión revertido a Pendiente de Evaluación.", "info");
+  };
+
+  const handleMarkNotAdmitted = (dni: string) => {
+    const target = applicants.find((a) => a.dni === dni);
+    const updatedList = applicants.map((a) => {
+      if (a.dni === dni) {
+        return {
+          ...a,
+          admitted: "NO ADMITIDO" as const,
+        };
+      }
+      return a;
+    });
+    onUpdateApplicants(updatedList);
+    notify?.(`El postulante ${target?.name || ""} ha sido calificado como NO ADMITIDO.`, "warning");
+  };
 
   return (
     <PageTransition id="postulantes" className="space-y-6 text-left">
       <PageHeader
         title="Postulantes Aptos (Examen de Admisión)"
-        subtitle="Gestione los postulantes que ya tienen sus 5 requisitos completamente validados (4 documentos y pago S/.120 de Tasa confirmados). Asigne aulas físicas de evaluación y registre los resultados para admisión."
+        subtitle="Gestione los postulantes que ya tienen sus 5 requisitos completamente validados (4 documentos y pago S/.120 de Tasa confirmados). Asigne aulas físicas de evaluación y registre los resultados para admisión mediante firma digital."
         icon={<Users className="w-6 h-6 text-[#9F062A]" />}
       />
 
@@ -197,13 +290,18 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
         </div>
 
         {/* Listings Table */}
-        <Card>
-          <CardHeader>
-            <div className="text-left">
-              <CardTitle>Control de Aulas y Resultados del Examen</CardTitle>
-              <CardDescription>
-                A continuación se listan todos los aspirantes aptos. Usted puede asignarles el respectivo aula físico para el examen de admisión y calibrar la decisión oficial de ingreso como ADMITIDO o NO ADMITIDO.
-              </CardDescription>
+        <Card className="overflow-hidden border border-slate-200/90 shadow-sm mt-4">
+          <CardHeader className="bg-slate-50/70 border-b border-slate-100 py-3.5 px-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="text-left">
+                <CardTitle className="text-sm font-black text-slate-800 tracking-tight">Control de Aulas y Resultados Oficiales de Admisión</CardTitle>
+                <CardDescription className="text-xs text-slate-500 font-medium">
+                  Gestione la asignación de aulas físicas para el examen presencial y registre la resolución oficial de ingreso mediante firma digital con PIN.
+                </CardDescription>
+              </div>
+              <span className="self-start sm:self-auto px-2.5 py-1 rounded-full text-[10.5px] font-mono font-bold bg-slate-200 text-slate-700">
+                {filteredList.length} {filteredList.length === 1 ? "postulante" : "postulantes"}
+              </span>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -220,135 +318,144 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
               </div>
             ) : (
               <div className="overflow-x-auto text-[11.5px] font-semibold animate-scale-up">
-                <table className="w-full border-collapse">
+                <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 text-slate-500 text-[10.5px] uppercase border-b border-slate-150">
-                      <th className="p-4 text-left">Postulante</th>
-                      <th className="p-4 text-left">DNI / Contacto</th>
-                      <th className="p-4 text-left">Carrera Postulada</th>
-                      <th className="p-4 text-left">Asignar Aula de Examen</th>
-                      <th className="p-4 text-center">Estado de Admisión</th>
+                    <tr className="bg-slate-900 border-b border-slate-800 text-white font-extrabold uppercase tracking-wide text-[10px]">
+                      <th className="p-3.5">Postulante / Identificación</th>
+                      <th className="p-3.5">Carrera Postulada</th>
+                      <th className="p-3.5">Aula de Examen Presencial</th>
+                      <th className="p-3.5 text-center">Decisión Oficial de Admisión</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
-                    {filteredList.map((app, idx) => (
-                      <tr key={app.dni || idx} className="hover:bg-slate-50/40 transition-colors">
-                        <td className="p-4 text-left">
-                          <span className="font-extrabold text-slate-900 block">
-                            {app.name} {app.lastName}
-                          </span>
-                          <span className="text-[9.5px] text-slate-400 font-extrabold uppercase mt-0.5 block">
-                            CÓDIGO: {app.applicantCode || "PE-2026-" + app.dni.slice(-4)}
-                          </span>
-                        </td>
-                        <td className="p-4 text-left">
-                          <span className="font-mono font-bold text-slate-700 block">{app.dni}</span>
-                          <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
-                            {app.phone || app.email}
-                          </span>
-                        </td>
-                        <td className="p-4 uppercase text-[10.5px] text-slate-800">
-                          {app.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad"}
-                        </td>
-                        <td className="p-4 text-left">
-                          <div className="flex items-center gap-1.5">
-                            <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
-                            <select
-                              value={app.examClassroom || ""}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                const updatedList = applicants.map((a) => {
-                                  if (a.dni === app.dni) {
-                                    return {
-                                      ...a,
-                                      examClassroom: val || undefined,
-                                      examStatus: val ? ("Programado" as const) : ("No Programado" as const),
-                                    };
-                                  }
-                                  return a;
-                                });
-                                onUpdateApplicants(updatedList);
-                              }}
-                              className="text-[11px] font-sans font-bold bg-white border border-slate-200 rounded-md px-2.5 py-1.5 text-slate-850 shadow-3xs cursor-pointer focus:outline-none focus:border-indigo-500"
-                            >
-                              <option value="">-- Sin Asignar Aula --</option>
-                              {classroomOptions.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </td>
-                        <td className="p-4 text-center">
-                          <div className="flex items-center justify-center">
-                            <select
-                              value={
-                                app.admitted === "ADMITIDO" || app.admitted === true
-                                  ? "admitido"
-                                  : app.admitted === "NO ADMITIDO"
-                                  ? "no_admitido"
-                                  : "pendiente"
-                              }
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                if (val === "admitido" && !app.examClassroom) {
-                                  notify?.("¡Validación requerida! No se puede admitir al postulante sin antes haberle asignado un aula para que rinda su examen de admisión.", "warning");
-                                  return;
-                                }
-                                const updatedList = applicants.map((a) => {
-                                  if (a.dni === app.dni) {
-                                    let admittedValue: "PENDIENTE" | "ADMITIDO" | "NO ADMITIDO" = "PENDIENTE";
-                                    let folderStatusValue = a.folderStatus;
-                                    if (val === "admitido") {
-                                      admittedValue = "ADMITIDO";
-                                      folderStatusValue = "Approved";
-                                    } else if (val === "no_admitido") {
-                                      admittedValue = "NO ADMITIDO";
-                                    } else {
-                                      admittedValue = "PENDIENTE";
-                                    }
-                                    return {
-                                      ...a,
-                                      admitted: admittedValue,
-                                      folderStatus: folderStatusValue,
-                                      folderApprovedAt:
-                                        folderStatusValue === "Approved"
-                                          ? new Date().toISOString().split("T")[0]
-                                          : a.folderApprovedAt,
-                                    };
-                                  }
-                                  return a;
-                                });
-                                onUpdateApplicants(updatedList);
+                    {filteredList.map((app, idx) => {
+                      const isAdmitted = app.admitted === "ADMITIDO" || app.admitted === true;
+                      const isNotAdmitted = app.admitted === "NO ADMITIDO";
+                      const initial1 = (app.name || "P").charAt(0).toUpperCase();
+                      const initial2 = (app.lastName || "R").charAt(0).toUpperCase();
 
-                                if (val === "admitido") {
-                                  notify?.(
-                                    `El ingresante ${app.name} ${app.lastName} ahora figura con el resultado ADMITIDO y pasará instantáneamente a la bandeja de matrícula.`,
-                                    "success"
-                                  );
-                                } else if (val === "no_admitido") {
-                                  notify?.(`El postulante ${app.name} ${app.lastName} ha sido calificado como NO ADMITIDO.`, "warning");
-                                } else {
-                                  notify?.(`El postulante ${app.name} ${app.lastName} queda en estado PENDIENTE.`, "info");
-                                }
-                              }}
-                              className={`text-[11px] font-sans font-black uppercase tracking-wider bg-white border rounded-md px-3 py-1.5 shadow-3xs cursor-pointer focus:outline-none ${
-                                app.admitted === "ADMITIDO" || app.admitted === true
-                                  ? "text-emerald-700 border-emerald-250 bg-emerald-50 hover:bg-emerald-100"
-                                  : app.admitted === "NO ADMITIDO"
-                                  ? "text-rose-700 border-rose-250 bg-rose-50 hover:bg-rose-100"
-                                  : "text-slate-800 border-slate-300 hover:bg-slate-50"
-                              }`}
-                            >
-                              <option value="pendiente">PENDIENTE / EVALUACION</option>
-                              <option value="admitido">ADMITIDO (INGRESO)</option>
-                              <option value="no_admitido">NO ADMITIDO (HISTORIAL)</option>
-                            </select>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                      return (
+                        <tr key={app.dni || idx} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="p-3.5">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-slate-100 text-[#9F062A] font-extrabold flex items-center justify-center border border-slate-200 select-none shrink-0 shadow-3xs">
+                                {initial1}{initial2}
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-[#9F062A] uppercase leading-none block text-[11.5px] whitespace-nowrap">
+                                  {app.name} {app.lastName}
+                                </h4>
+                                <span className="text-[10px] text-slate-500 font-bold block mt-1 tracking-tight whitespace-nowrap">
+                                  DNI: {app.dni} | Código:{" "}
+                                  <span className="font-mono text-slate-800">
+                                    {app.applicantCode || "PE-2027-" + app.dni.slice(-4)}
+                                  </span>
+                                  {app.phone ? ` | Tel: ${app.phone}` : ""}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="p-3.5 uppercase text-xs text-slate-800 font-bold tracking-tight whitespace-nowrap">
+                            {app.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad"}
+                          </td>
+
+                          {/* Control de Aula de Examen */}
+                          <td className="p-3.5">
+                            <div className="flex items-center gap-2 whitespace-nowrap">
+                              <div className="relative">
+                                <select
+                                  value={app.examClassroom || ""}
+                                  onChange={(e) => handleAssignClassroom(app.dni, e.target.value)}
+                                  className={`text-xs font-bold rounded-lg pl-3 pr-8 py-1.5 border shadow-3xs cursor-pointer focus:outline-none transition-all appearance-none ${
+                                    app.examClassroom
+                                      ? "bg-indigo-50/90 text-indigo-900 border-indigo-200 focus:border-indigo-400"
+                                      : "bg-slate-50 text-slate-700 border-slate-200 focus:border-[#9F062A]"
+                                  }`}
+                                >
+                                  <option value="">-- Sin Asignar Aula --</option>
+                                  {classroomOptions.map((option) => (
+                                    <option key={option} value={option}>
+                                      {option}
+                                    </option>
+                                  ))}
+                                </select>
+                                <MapPin
+                                  className={`w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${
+                                    app.examClassroom ? "text-indigo-600" : "text-slate-400"
+                                  }`}
+                                />
+                              </div>
+
+                              {app.examClassroom ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-3xs">
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  Aula Asignada
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shadow-3xs">
+                                  Por Asignar
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Estado de Admisión con Componente de PIN */}
+                          <td className="p-3.5 text-center whitespace-nowrap">
+                            {isAdmitted ? (
+                              <div className="flex items-center justify-center gap-2">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-3xs">
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                  ADMITIDO (INGRESO APROBADO)
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRevertAdmission(app.dni)}
+                                  className="text-[10px] font-extrabold text-slate-400 hover:text-rose-600 hover:underline uppercase tracking-wider cursor-pointer ml-1"
+                                  title="Revertir ingreso a Pendiente"
+                                >
+                                  Revertir
+                                </button>
+                              </div>
+                            ) : isNotAdmitted ? (
+                              <div className="flex items-center justify-center gap-2">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-rose-100 text-rose-800 border border-rose-300 shadow-3xs">
+                                  <XCircle className="w-4 h-4 text-rose-600" />
+                                  NO ADMITIDO
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRevertAdmission(app.dni)}
+                                  className="text-[10px] font-extrabold text-slate-400 hover:text-indigo-600 hover:underline uppercase tracking-wider cursor-pointer ml-1"
+                                  title="Revertir a Pendiente"
+                                >
+                                  Revertir
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenPinModal(app)}
+                                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white shadow-3xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                >
+                                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-100" />
+                                  <span>Admitir</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleMarkNotAdmitted(app.dni)}
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase text-slate-500 hover:text-rose-700 hover:bg-rose-50 border border-slate-200 transition-colors cursor-pointer"
+                                  title="Calificar como No Admitido"
+                                >
+                                  No Admitir
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -356,6 +463,17 @@ export const PostulantesTab: React.FC<PostulantesTabProps> = ({
           </CardContent>
         </Card>
       </div>
+
+      {/* MODAL INSTITUCIONAL DE FIRMA DIGITAL CON PIN */}
+      <AdminAdmissionPinModal
+        isOpen={pinModalOpen}
+        applicant={selectedAppForPin}
+        onConfirmAdmission={handleConfirmAdmissionWithPin}
+        onClose={() => {
+          setPinModalOpen(false);
+          setSelectedAppForPin(null);
+        }}
+      />
     </PageTransition>
   );
 };

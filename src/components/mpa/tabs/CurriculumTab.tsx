@@ -62,7 +62,7 @@ export function CurriculumTab({
   };
 
   return (
-    <PageTransition id="curriculum">
+    <PageTransition id="curriculum" className="p-5 md:p-6 space-y-6 text-left">
       <div className="space-y-6 text-left">
         
         {/* TOP CONTROL RAIL: CAREER & VERSION MANAGER */}

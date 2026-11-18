@@ -154,6 +154,33 @@ export function useApplicantsManager(
 
   useEffect(() => {
     void reloadApplicants();
+
+    // Auto-sync en segundo plano cada 5 segundos
+    const interval = setInterval(() => {
+      fetchApplicants()
+        .then((apiApps) => {
+          if (!apiApps) return;
+          setApplicants((prev) => {
+            const prevByDni = new Map(prev.map((a) => [a.dni, a]));
+            return apiApps.map((app) => preserveExistingDocBinaries(prevByDni.get(app.dni), app));
+          });
+        })
+        .catch(() => {});
+    }, 5000);
+
+    // Sincronización instantánea al cambiar de pestaña o cuando otro tab escribe en storage
+    const handleSync = () => {
+      void reloadApplicants();
+    };
+
+    window.addEventListener("focus", handleSync);
+    window.addEventListener("storage", handleSync);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleSync);
+      window.removeEventListener("storage", handleSync);
+    };
   }, [reloadApplicants]);
 
   const handleUpdateApplicantsFromAdmin = async (updatedList: any[]) => {

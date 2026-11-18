@@ -26,7 +26,7 @@ export const ProgramTaskListTable: React.FC<ProgramTaskListTableProps> = ({
   onDeleteTask
 }) => {
   return (
-    <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm text-left">
+    <div className="w-full bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs text-left">
       <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
         <div>
           <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest leading-none">Matriz de Clases y Sesiones Registradas</h4>

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus, X, Clock, CalendarDays } from "lucide-react";
 import { MpaShift, MpaSchedule } from "../../../types";
 import Button from "../../ui/Button";
 import { PageTransition } from "../PageTransition";
@@ -14,6 +14,9 @@ interface ShiftsTabProps {
 }
 
 export function ShiftsTab({ shifts, schedules, saveDb, setShifts, setSchedules }: ShiftsTabProps) {
+  const [showShiftForm, setShowShiftForm] = useState(false);
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+
   const [shiftErrorMessage, setShiftErrorMessage] = useState<string | null>(null);
   const [scheduleErrorMessage, setScheduleErrorMessage] = useState<string | null>(null);
   
@@ -61,77 +64,134 @@ export function ShiftsTab({ shifts, schedules, saveDb, setShifts, setSchedules }
     : (endOptions[0] || "");
 
   return (
-    <PageTransition id="shifts">
-      <div className="space-y-8 text-left">
-        {/* SECTION 1: SHIFTS / TURNOS */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-4">
-            <h3 className="text-xs font-black text-[#9F062A] uppercase tracking-wider border-b pb-2">Registrar Turno</h3>
-            
-            {shiftErrorMessage && (
-              <div className="p-3 bg-red-50 text-red-800 text-xs rounded-lg border border-red-200 font-bold space-y-1">
-                <p>{shiftErrorMessage}</p>
-                <p className="text-[10px] font-medium text-slate-500">
-                  Recuerde que el Turno Mañana debe ser entre 08:00 AM y 01:00 PM, y no puede haber solapamiento entre turnos.
-                </p>
-              </div>
-            )}
+    <PageTransition id="shifts" className="p-5 md:p-6 space-y-6 text-left">
+      {/* Barra de KPIs Compacta + Botones de Acción */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1">
+          <div className="bg-white px-3.5 py-2.5 rounded-xl border border-slate-200 shadow-xs">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Turnos Habilitados</span>
+            <span className="text-sm font-black text-[#800521] font-mono block truncate mt-0.5">
+              {shifts.length} Turnos Activos
+            </span>
+          </div>
 
-            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-[11px] font-medium text-amber-900 leading-relaxed space-y-1">
-              <p className="font-extrabold uppercase text-[9px] text-amber-800 tracking-wider">Reglas de Operación:</p>
-              <ul className="list-disc pl-4 space-y-0.5">
-                <li><strong>Mañana:</strong> Permitido exclusivamente de <b>08:00 AM a 01:00 PM</b>.</li>
-                <li><strong>Evitar Cruces:</strong> No se pueden programar turnos que se superpongan en horario.</li>
-              </ul>
+          <div className="bg-white px-3.5 py-2.5 rounded-xl border border-slate-200 shadow-xs">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Franjas de Clase</span>
+            <span className="text-sm font-black text-slate-900 font-mono block mt-0.5">
+              {schedules.length} Bloques Registrados
+            </span>
+          </div>
+
+          <div className="bg-white px-3.5 py-2.5 rounded-xl border border-slate-200 shadow-xs col-span-2 sm:col-span-1">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Hora Pedagógica</span>
+            <span className="text-sm font-black text-amber-600 font-mono block mt-0.5">
+              50 Minutos / Sesión
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              setShowShiftForm(!showShiftForm);
+              if (!showShiftForm) setShowScheduleForm(false);
+            }}
+            className={`text-xs font-black px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer border ${
+              showShiftForm 
+                ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" 
+                : "bg-[#800521] hover:bg-[#67041a] text-white border-[#800521]"
+            }`}
+          >
+            {showShiftForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+            <span>{showShiftForm ? "Cerrar Turno" : "+ Registrar Turno"}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowScheduleForm(!showScheduleForm);
+              if (!showScheduleForm) setShowShiftForm(false);
+            }}
+            className={`text-xs font-black px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer border ${
+              showScheduleForm 
+                ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300" 
+                : "bg-slate-900 hover:bg-slate-800 text-white border-slate-900"
+            }`}
+          >
+            {showScheduleForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+            <span>{showScheduleForm ? "Cerrar Horario" : "+ Registrar Horario"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* FORMULARIO EXPANDIBLE DE TURNO */}
+      {showShiftForm && (
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4 animate-fade-in">
+          <div className="flex items-center justify-between border-b pb-2.5">
+            <h3 className="text-xs font-black text-[#9F062A] uppercase tracking-wider">
+              Registrar Nuevo Turno Académico
+            </h3>
+            <span className="text-[11px] text-slate-500 font-semibold">
+              Regla de operación: Mañana de 08:00 AM a 01:00 PM sin solapamientos
+            </span>
+          </div>
+
+          {shiftErrorMessage && (
+            <div className="p-3 bg-red-50 text-red-800 text-xs rounded-lg border border-red-200 font-bold">
+              {shiftErrorMessage}
             </div>
+          )}
 
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!formShift.name || !formShift.startTime || !formShift.endTime) {
-                  setShiftErrorMessage("Todos los campos marcados con asterisco son obligatorios.");
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!formShift.name || !formShift.startTime || !formShift.endTime) {
+                setShiftErrorMessage("Todos los campos marcados con asterisco son obligatorios.");
+                return;
+              }
+
+              const startMin = parseTimeToMinutes(formShift.startTime);
+              const endMin = parseTimeToMinutes(formShift.endTime);
+
+              if (startMin >= endMin) {
+                setShiftErrorMessage("La hora de inicio debe ser anterior a la hora de salida.");
+                return;
+              }
+
+              const isMorningName = formShift.name.trim().toLowerCase().includes("mañ") || formShift.name.trim().toLowerCase().includes("morn");
+              if (isMorningName) {
+                const morningStartBound = parseTimeToMinutes("08:00 AM");
+                const morningEndBound = parseTimeToMinutes("01:00 PM");
+                if (startMin < morningStartBound || endMin > morningEndBound) {
+                  setShiftErrorMessage("Turno Mañana fuera de límites. El turno Mañana debe iniciar a partir de las 08:00 AM y concluir a más tardar a la 01:00 PM.");
                   return;
                 }
+              }
 
-                const startMin = parseTimeToMinutes(formShift.startTime);
-                const endMin = parseTimeToMinutes(formShift.endTime);
+              const hasShiftOverlap = shifts.some(existingSh => {
+                const extStart = parseTimeToMinutes(existingSh.startTime);
+                const extEnd = parseTimeToMinutes(existingSh.endTime);
+                return (startMin < extEnd && endMin > extStart);
+              });
 
-                if (startMin >= endMin) {
-                  setShiftErrorMessage("La hora de inicio debe ser anterior a la hora de salida.");
-                  return;
-                }
+              if (hasShiftOverlap) {
+                setShiftErrorMessage("Cruce de turnos detectado. Ya existe otro turno registrado que se solapa total o parcialmente.");
+                return;
+              }
 
-                const isMorningName = formShift.name.trim().toLowerCase().includes("mañ") || formShift.name.trim().toLowerCase().includes("morn");
-                if (isMorningName) {
-                  const morningStartBound = parseTimeToMinutes("08:00 AM");
-                  const morningEndBound = parseTimeToMinutes("01:00 PM");
-                  if (startMin < morningStartBound || endMin > morningEndBound) {
-                    setShiftErrorMessage("Turno Mañana fuera de límites. El turno Mañana debe iniciar a partir de las 08:00 AM y concluir a más tardar a la 01:00 PM.");
-                    return;
-                  }
-                }
-
-                const hasShiftOverlap = shifts.some(existingSh => {
-                  const extStart = parseTimeToMinutes(existingSh.startTime);
-                  const extEnd = parseTimeToMinutes(existingSh.endTime);
-                  return (startMin < extEnd && endMin > extStart);
-                });
-
-                if (hasShiftOverlap) {
-                  setShiftErrorMessage("Cruze de turnos detectado. Ya existe otro turno registrado que se solapa total o parcialmente con las horas especificadas.");
-                  return;
-                }
-
-                setShiftErrorMessage(null);
-                const id = "s_" + Date.now();
-                const next = [...shifts, { ...formShift, id }];
-                saveDb("shifts", next, setShifts);
-                setFormShift({ id: "", name: "", startTime: "", endTime: "" });
-              }}
-              className="space-y-4 text-xs font-semibold"
-            >
+              setShiftErrorMessage(null);
+              const id = "s_" + Date.now();
+              const next = [...shifts, { ...formShift, id }];
+              saveDb("shifts", next, setShifts);
+              setFormShift({ id: "", name: "", startTime: "", endTime: "" });
+              setShowShiftForm(false);
+            }}
+            className="space-y-4 text-xs font-semibold"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-[10px] text-slate-500 font-bold uppercase">Plantilla de Turno Académico</label>
+                <label className="block text-[10px] text-slate-500 font-bold uppercase">Plantilla Rápida</label>
                 <select 
                   onChange={(e) => {
                     const val = e.target.value;
@@ -146,7 +206,7 @@ export function ShiftsTab({ shifts, schedules, saveDb, setShifts, setSchedules }
                       setShiftErrorMessage(null);
                     }
                   }}
-                  className="w-full mt-1 p-2 bg-slate-50 border rounded-md font-bold text-slate-800"
+                  className="w-full mt-1 p-2 bg-slate-50 border rounded-lg font-bold text-slate-800"
                 >
                   <option value="custom">-- Personalizado / Escribir Rango --</option>
                   <option value="manana">Turno Mañana (08:00 AM - 01:00 PM)</option>
@@ -163,19 +223,20 @@ export function ShiftsTab({ shifts, schedules, saveDb, setShifts, setSchedules }
                   placeholder="Ej: Mañana" 
                   value={formShift.name}
                   onChange={(e) => setFormShift({ ...formShift, name: e.target.value })}
-                  className="w-full mt-1 px-3 py-2 border rounded-md"
+                  className="w-full mt-1 px-3 py-2 border rounded-lg font-bold text-slate-900"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+
+              <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-[10px] text-slate-500 font-bold uppercase">Hora Inicio *</label>
                   <input 
                     type="text" 
                     required 
-                    placeholder="Ej: 08:00 AM" 
+                    placeholder="08:00 AM" 
                     value={formShift.startTime}
                     onChange={(e) => setFormShift({ ...formShift, startTime: e.target.value })}
-                    className="w-full mt-1 px-3 py-2 border rounded-md"
+                    className="w-full mt-1 px-3 py-2 border rounded-lg font-mono font-bold"
                   />
                 </div>
                 <div>
@@ -183,136 +244,117 @@ export function ShiftsTab({ shifts, schedules, saveDb, setShifts, setSchedules }
                   <input 
                     type="text" 
                     required 
-                    placeholder="Ej: 01:00 PM" 
+                    placeholder="01:00 PM" 
                     value={formShift.endTime}
                     onChange={(e) => setFormShift({ ...formShift, endTime: e.target.value })}
-                    className="w-full mt-1 px-3 py-2 border rounded-md"
+                    className="w-full mt-1 px-3 py-2 border rounded-lg font-mono font-bold"
                   />
                 </div>
               </div>
+            </div>
 
-              <Button type="submit" className="w-full bg-[#9F062A] hover:bg-[#800521] text-white uppercase text-[10px] font-black tracking-wider">
+            <div className="flex gap-2 justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setShowShiftForm(false)}
+                className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50 font-bold text-xs cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <Button type="submit" className="bg-[#9F062A] hover:bg-[#800521] text-white uppercase text-[10px] font-black tracking-wider px-6">
                 Guardar Turno
               </Button>
-            </form>
-          </div>
-
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-            <div className="p-4 bg-slate-50 border-b border-slate-200">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest leading-none">Turnos Habilitados</h3>
             </div>
-            <table className="w-full text-left text-xs text-slate-600">
-              <thead className="bg-[#9F062A]/5 uppercase tracking-wider text-[9px] font-black text-slate-500 border-b border-slate-200">
-                <tr>
-                  <th className="p-3">Turno</th>
-                  <th className="p-3">Horario Regulado de Ingreso / Salida</th>
-                  <th className="p-3 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-semibold text-slate-800">
-                {shifts.map(item => (
-                  <tr key={item.id} className="hover:bg-slate-50/50">
-                    <td className="p-3 font-black text-[#9F062A] text-xs">{item.name}</td>
-                    <td className="p-3 font-mono font-bold">{item.startTime} a {item.endTime}</td>
-                    <td className="p-3 text-right">
-                      <button 
-                        onClick={() => {
-                          const next = shifts.filter(s => s.id !== item.id);
-                          saveDb("shifts", next, setShifts);
-                        }}
-                        className="text-red-650 hover:text-red-800 cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4 ml-auto" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          </form>
         </div>
+      )}
 
-        {/* SECTION 2: SCHEDULES / HORARIOS */}
-        <div className="pt-6 border-t border-slate-200 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <div className="bg-white p-5 rounded-xl border border-slate-200 space-y-4">
-            <h3 className="text-xs font-black text-[#9F062A] uppercase tracking-wider border-b pb-2">Registrar Horario de Clase</h3>
-            
-            {scheduleErrorMessage && (
-              <div className="p-3 bg-red-50 text-red-800 text-xs rounded-lg border border-red-200 font-bold space-y-1">
-                <p>{scheduleErrorMessage}</p>
-                <p className="text-[10px] font-medium text-slate-500">
-                  Por favor seleccione un rango diferente o revise los horarios registrados a la derecha.
-                </p>
-              </div>
-            )}
+      {/* FORMULARIO EXPANDIBLE DE HORARIO */}
+      {showScheduleForm && (
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-4 animate-fade-in">
+          <div className="flex items-center justify-between border-b pb-2.5">
+            <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+              Registrar Nueva Franja Horaria de Clase
+            </h3>
+            <span className="text-[11px] text-slate-500 font-semibold">
+              Bloques de 50 minutos según normativa pedagógica
+            </span>
+          </div>
 
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                const finalStart = currentStartTime;
-                const finalEnd = currentEndTime;
+          {scheduleErrorMessage && (
+            <div className="p-3 bg-red-50 text-red-800 text-xs rounded-lg border border-red-200 font-bold">
+              {scheduleErrorMessage}
+            </div>
+          )}
 
-                if (!finalStart || !finalEnd) {
-                  setScheduleErrorMessage("Debe seleccionar una hora de inicio y de fin válidas.");
-                  return;
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              const finalStart = currentStartTime;
+              const finalEnd = currentEndTime;
+
+              if (!finalStart || !finalEnd) {
+                setScheduleErrorMessage("Debe seleccionar una hora de inicio y de fin válidas.");
+                return;
+              }
+
+              const computedTimeSlot = `${finalStart} - ${finalEnd}`;
+              const newStartMin = parseTimeToMinutes(finalStart);
+              const newEndMin = parseTimeToMinutes(finalEnd);
+
+              const hasOverlap = schedules.some(sch => {
+                if (sch.dayOfWeek.trim().toLowerCase() !== formSchedule.dayOfWeek.trim().toLowerCase()) {
+                  return false;
                 }
-
-                const computedTimeSlot = `${finalStart} - ${finalEnd}`;
-                
-                const newStartMin = parseTimeToMinutes(finalStart);
-                const newEndMin = parseTimeToMinutes(finalEnd);
-
-                const hasOverlap = schedules.some(sch => {
-                  if (sch.dayOfWeek.trim().toLowerCase() !== formSchedule.dayOfWeek.trim().toLowerCase()) {
-                    return false;
+                let extStart = sch.startTime ? parseTimeToMinutes(sch.startTime) : 0;
+                let extEnd = sch.endTime ? parseTimeToMinutes(sch.endTime) : 0;
+                if (!extStart && !extEnd && sch.timeSlot) {
+                  const parts = sch.timeSlot.split("-");
+                  if (parts.length === 2) {
+                    extStart = parseTimeToMinutes(parts[0].trim());
+                    extEnd = parseTimeToMinutes(parts[1].trim());
                   }
-                  let extStart = sch.startTime ? parseTimeToMinutes(sch.startTime) : 0;
-                  let extEnd = sch.endTime ? parseTimeToMinutes(sch.endTime) : 0;
-                  if (!extStart && !extEnd && sch.timeSlot) {
-                    const parts = sch.timeSlot.split("-");
-                    if (parts.length === 2) {
-                      extStart = parseTimeToMinutes(parts[0].trim());
-                      extEnd = parseTimeToMinutes(parts[1].trim());
-                    }
-                  }
-                  return (newStartMin < extEnd && newEndMin > extStart);
-                });
-
-                if (hasOverlap) {
-                  setScheduleErrorMessage(`Ya existe un bloque de clases registrado para el día ${formSchedule.dayOfWeek} en el rango horario solicitado (${finalStart} - ${finalEnd}), o se cruza con él.`);
-                  return;
                 }
+                return (newStartMin < extEnd && newEndMin > extStart);
+              });
 
-                setScheduleErrorMessage(null);
+              if (hasOverlap) {
+                setScheduleErrorMessage(`Ya existe un bloque de clases registrado para el día ${formSchedule.dayOfWeek} en el rango ${finalStart} - ${finalEnd}.`);
+                return;
+              }
 
-                const id = "sch_" + Date.now();
-                const newSchedule = {
-                  id,
-                  dayOfWeek: formSchedule.dayOfWeek,
-                  startTime: finalStart,
-                  endTime: finalEnd,
-                  timeSlot: computedTimeSlot,
-                  shiftId: currentShiftId
-                };
-                const next = [...schedules, newSchedule];
-                saveDb("schedules", next, setSchedules);
-                
-                const firstShift = shifts.find(sh => sh.id === currentShiftId) || shifts[0];
-                const fallbackStart = firstShift ? firstShift.startTime : "08:00 AM";
-                const fallbackStartMin = parseTimeToMinutes(fallbackStart);
-                const fallbackEnd = formatMinutesToTime(fallbackStartMin + 50);
+              setScheduleErrorMessage(null);
 
-                setFormSchedule({ 
-                  id: "", 
-                  dayOfWeek: formSchedule.dayOfWeek,
-                  startTime: fallbackStart, 
-                  endTime: fallbackEnd, 
-                  timeSlot: "", 
-                  shiftId: currentShiftId 
-                });
-              }}
-              className="space-y-4 text-xs font-semibold"
-            >
+              const id = "sch_" + Date.now();
+              const newSchedule = {
+                id,
+                dayOfWeek: formSchedule.dayOfWeek,
+                startTime: finalStart,
+                endTime: finalEnd,
+                timeSlot: computedTimeSlot,
+                shiftId: currentShiftId
+              };
+              const next = [...schedules, newSchedule];
+              saveDb("schedules", next, setSchedules);
+              
+              const firstShift = shifts.find(sh => sh.id === currentShiftId) || shifts[0];
+              const fallbackStart = firstShift ? firstShift.startTime : "08:00 AM";
+              const fallbackStartMin = parseTimeToMinutes(fallbackStart);
+              const fallbackEnd = formatMinutesToTime(fallbackStartMin + 50);
+
+              setFormSchedule({ 
+                id: "", 
+                dayOfWeek: formSchedule.dayOfWeek,
+                startTime: fallbackStart, 
+                endTime: fallbackEnd, 
+                timeSlot: "", 
+                shiftId: currentShiftId 
+              });
+              setShowScheduleForm(false);
+            }}
+            className="space-y-4 text-xs font-semibold"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div>
                 <label className="block text-[10px] text-slate-500 font-bold uppercase">Día Académico *</label>
                 <select 
@@ -322,7 +364,7 @@ export function ShiftsTab({ shifts, schedules, saveDb, setShifts, setSchedules }
                     setFormSchedule({ ...formSchedule, dayOfWeek: e.target.value });
                     setScheduleErrorMessage(null);
                   }}
-                  className="w-full mt-1 p-2 bg-slate-50 border rounded-md font-bold"
+                  className="w-full mt-1 p-2 bg-white border rounded-lg font-bold"
                 >
                   {["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"].map(d => (
                     <option key={d} value={d}>{d}</option>
@@ -331,7 +373,7 @@ export function ShiftsTab({ shifts, schedules, saveDb, setShifts, setSchedules }
               </div>
 
               <div>
-                <label className="block text-[10px] text-slate-500 font-bold uppercase">Turno de Clase Coincidente *</label>
+                <label className="block text-[10px] text-slate-500 font-bold uppercase">Turno Vinculado *</label>
                 <select
                   required
                   value={currentShiftId}
@@ -350,7 +392,7 @@ export function ShiftsTab({ shifts, schedules, saveDb, setShifts, setSchedules }
                     });
                     setScheduleErrorMessage(null);
                   }}
-                  className="w-full mt-1 p-2 bg-slate-50 border rounded-md font-bold"
+                  className="w-full mt-1 p-2 bg-white border rounded-lg font-bold"
                 >
                   {shifts.map(sh => (
                     <option key={sh.id} value={sh.id}>
@@ -360,115 +402,198 @@ export function ShiftsTab({ shifts, schedules, saveDb, setShifts, setSchedules }
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] text-slate-500 font-bold uppercase">Hora de Inicio *</label>
-                  <select 
-                    required 
-                    value={currentStartTime}
-                    onChange={(e) => {
-                      const newStart = e.target.value;
-                      const newStartMin = parseTimeToMinutes(newStart);
-                      const newEnds = markers.filter(m => parseTimeToMinutes(m) > newStartMin);
-                      const newEnd = newEnds.includes(formSchedule.endTime) ? formSchedule.endTime : (newEnds[0] || "");
-                      setFormSchedule({ 
-                        ...formSchedule, 
-                        startTime: newStart,
-                        endTime: newEnd
-                      });
-                      setScheduleErrorMessage(null);
-                    }}
-                    className="w-full mt-1 p-2 bg-slate-50 border rounded-md font-bold text-slate-800 font-mono"
-                  >
-                    {startOptions.map((st, idx) => (
-                      <option key={st} value={st}>
-                        {st} (Hora {idx + 1})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] text-slate-500 font-bold uppercase">Hora de Fin *</label>
-                  <select 
-                    required 
-                    value={currentEndTime}
-                    onChange={(e) => {
-                      setFormSchedule({ 
-                        ...formSchedule, 
-                        endTime: e.target.value 
-                      });
-                      setScheduleErrorMessage(null);
-                    }}
-                    className="w-full mt-1 p-2 bg-slate-50 border rounded-md font-bold text-slate-800 font-mono"
-                  >
-                    {endOptions.map((et) => {
-                      const originalStartMin = parseTimeToMinutes(currentStartTime);
-                      const currentEndMin = parseTimeToMinutes(et);
-                      const totalPedagogicalHours = Math.round((currentEndMin - originalStartMin) / 50);
-                      return (
-                        <option key={et} value={et}>
-                          {totalPedagogicalHours} {totalPedagogicalHours === 1 ? 'Hora' : 'Horas'} (Hasta {et})
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
+              <div>
+                <label className="block text-[10px] text-slate-500 font-bold uppercase">Hora de Inicio *</label>
+                <select 
+                  required 
+                  value={currentStartTime}
+                  onChange={(e) => {
+                    const newStart = e.target.value;
+                    const newStartMin = parseTimeToMinutes(newStart);
+                    const newEnds = markers.filter(m => parseTimeToMinutes(m) > newStartMin);
+                    const newEnd = newEnds.includes(formSchedule.endTime) ? formSchedule.endTime : (newEnds[0] || "");
+                    setFormSchedule({ 
+                      ...formSchedule, 
+                      startTime: newStart,
+                      endTime: newEnd
+                    });
+                    setScheduleErrorMessage(null);
+                  }}
+                  className="w-full mt-1 p-2 bg-white border rounded-lg font-bold text-slate-800 font-mono"
+                >
+                  {startOptions.map((st, idx) => (
+                    <option key={st} value={st}>
+                      {st} (Hora {idx + 1})
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <Button type="submit" className="w-full bg-[#9F062A] hover:bg-[#800521] text-white uppercase text-[10px] font-black tracking-wider">
+              <div>
+                <label className="block text-[10px] text-slate-500 font-bold uppercase">Hora de Fin *</label>
+                <select 
+                  required 
+                  value={currentEndTime}
+                  onChange={(e) => {
+                    setFormSchedule({ 
+                      ...formSchedule, 
+                      endTime: e.target.value 
+                    });
+                    setScheduleErrorMessage(null);
+                  }}
+                  className="w-full mt-1 p-2 bg-white border rounded-lg font-bold text-slate-800 font-mono"
+                >
+                  {endOptions.map((et) => {
+                    const originalStartMin = parseTimeToMinutes(currentStartTime);
+                    const currentEndMin = parseTimeToMinutes(et);
+                    const totalPedagogicalHours = Math.round((currentEndMin - originalStartMin) / 50);
+                    return (
+                      <option key={et} value={et}>
+                        {totalPedagogicalHours} {totalPedagogicalHours === 1 ? 'Hora' : 'Horas'} (Hasta {et})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setShowScheduleForm(false)}
+                className="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50 font-bold text-xs cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <Button type="submit" className="bg-slate-900 hover:bg-slate-800 text-white uppercase text-[10px] font-black tracking-wider px-6">
                 Guardar Horario Académico
               </Button>
-            </form>
-          </div>
-
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-            <div className="p-4 bg-slate-50 border-b border-slate-200">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest leading-none">Matriz de Horarios Habilitados</h3>
             </div>
-            <table className="w-full text-left text-xs text-slate-600">
-              <thead className="bg-slate-100 uppercase tracking-wider text-[9px] font-black text-slate-500 border-b border-slate-200">
+          </form>
+        </div>
+      )}
+
+      {/* SECCIÓN 1: TABLA DE TURNOS A TODO LO ANCHO */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+        <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest leading-none flex items-center gap-2">
+            <Clock className="w-3.5 h-3.5 text-[#9F062A]" />
+            Turnos Habilitados ({shifts.length})
+          </h3>
+          <span className="text-[11px] font-bold text-slate-500 font-mono">
+            Jornadas Oficiales
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-600">
+            <thead className="bg-slate-100 uppercase tracking-wider text-[9px] font-black text-slate-500 border-b border-slate-200">
+              <tr>
+                <th className="p-3.5 pl-5">Nombre del Turno</th>
+                <th className="p-3.5">Horario Regulado de Ingreso y Salida</th>
+                <th className="p-3.5 text-right pr-5">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-semibold text-slate-800">
+              {shifts.length === 0 ? (
                 <tr>
-                  <th className="p-3">Día Comercial</th>
-                  <th className="p-3">Turno Relacionado</th>
-                  <th className="p-3">Rango Horario de Clase</th>
-                  <th className="p-3 text-right">Acciones</th>
+                  <td colSpan={3} className="p-8 text-center text-slate-400 font-semibold text-xs">
+                    No existen turnos configurados.
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-semibold text-slate-800">
-                {schedules.map(item => {
+              ) : (
+                shifts.map(item => (
+                  <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="p-3.5 pl-5 font-black text-[#9F062A] text-sm">
+                      Turno {item.name}
+                    </td>
+                    <td className="p-3.5 font-mono font-bold text-slate-900">
+                      {item.startTime} a {item.endTime}
+                    </td>
+                    <td className="p-3.5 text-right pr-5">
+                      <button 
+                        onClick={() => {
+                          const next = shifts.filter(s => s.id !== item.id);
+                          saveDb("shifts", next, setShifts);
+                        }}
+                        className="text-red-500 hover:text-red-800 cursor-pointer p-1.5 rounded hover:bg-red-50"
+                        title="Eliminar turno"
+                      >
+                        <Trash2 className="w-4 h-4 ml-auto" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* SECCIÓN 2: TABLA DE MATRIZ DE HORARIOS A TODO LO ANCHO */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+        <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest leading-none flex items-center gap-2">
+            <CalendarDays className="w-3.5 h-3.5 text-[#9F062A]" />
+            Matriz de Horarios de Clase Habilitados ({schedules.length})
+          </h3>
+          <span className="text-[11px] font-bold text-slate-500 font-mono">
+            Franjas Semanales
+          </span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-600">
+            <thead className="bg-slate-100 uppercase tracking-wider text-[9px] font-black text-slate-500 border-b border-slate-200">
+              <tr>
+                <th className="p-3.5 pl-5">Día de Semana</th>
+                <th className="p-3.5">Turno Asignado</th>
+                <th className="p-3.5">Rango Horario del Bloque</th>
+                <th className="p-3.5 text-right pr-5">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-semibold text-slate-800">
+              {schedules.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="p-8 text-center text-slate-400 font-semibold text-xs">
+                    No existen bloques de horarios registrados.
+                  </td>
+                </tr>
+              ) : (
+                schedules.map(item => {
                   const associatedShift = shifts.find(s => s.id === item.shiftId);
                   return (
-                    <tr key={item.id} className="hover:bg-slate-50/50">
-                      <td className="p-3 font-black text-slate-900">{item.dayOfWeek}</td>
-                      <td className="p-3">
+                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="p-3.5 pl-5 font-black text-slate-900">{item.dayOfWeek}</td>
+                      <td className="p-3.5">
                         {associatedShift ? (
-                          <span className="inline-block text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
+                          <span className="inline-block text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-0.5 rounded-full font-bold">
                             Turno {associatedShift.name}
                           </span>
                         ) : (
-                          <span className="text-[10px] text-slate-450 italic">No especificado</span>
+                          <span className="text-[10px] text-slate-400 italic">No especificado</span>
                         )}
                       </td>
-                      <td className="p-3 font-mono text-xs text-[#9F062A] font-black">{item.startTime && item.endTime ? `${item.startTime} - ${item.endTime}` : item.timeSlot}</td>
-                      <td className="p-3 text-right">
+                      <td className="p-3.5 font-mono text-xs text-[#9F062A] font-black">
+                        {item.startTime && item.endTime ? `${item.startTime} - ${item.endTime}` : item.timeSlot}
+                      </td>
+                      <td className="p-3.5 text-right pr-5">
                         <button 
                           onClick={() => {
                             const next = schedules.filter(s => s.id !== item.id);
                             saveDb("schedules", next, setSchedules);
                           }}
-                          className="text-red-650 hover:text-red-800 cursor-pointer"
+                          className="text-red-500 hover:text-red-800 cursor-pointer p-1.5 rounded hover:bg-red-50"
+                          title="Eliminar bloque horario"
                         >
                           <Trash2 className="w-4 h-4 ml-auto" />
                         </button>
                       </td>
                     </tr>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
+                })
+              )}
+            </tbody>
+          </table>
         </div>
-
       </div>
     </PageTransition>
   );

@@ -26,6 +26,16 @@ import { ReportsTab } from "./tabs/ReportsTab";
 import { SupportTab } from "./tabs/SupportTab";
 import AcademicCalendarBoard from "../shared/AcademicCalendarBoard";
 
+const DEFAULT_INITIAL_PERIODS: MpaPeriod[] = [
+  { id: "demo-2026-ii", name: "Periodo 2026-II", startDate: "2026-08-10", endDate: "2026-12-18", status: "Activo", isActive: true },
+  { id: "demo-2027-i", name: "Periodo 2027-I", startDate: "2027-03-22", endDate: "2027-07-30", status: "Planificación", isActive: false }
+];
+
+const DEFAULT_INITIAL_CAREERS: MpaCareer[] = [
+  { id: "electronica", code: "EIND", name: "Electricidad Industrial", description: "Formación técnica en instalaciones, operación y mantenimiento de sistemas eléctricos industriales.", durationSemesters: 6, status: "Activo" },
+  { id: "contabilidad", code: "CONT", name: "Contabilidad", description: "Formación técnica en registro contable, tributación, costos y análisis financiero.", durationSemesters: 6, status: "Activo" }
+];
+
 interface MpaDashboardProps {
   onLogout: () => void;
   onGoToPortal?: () => void;
@@ -38,19 +48,33 @@ export default function MpaDashboard({ onLogout, onGoToPortal }: MpaDashboardPro
     "classrooms" | "shifts" | "groups" | "program" | "reports" | "support" | "calendar"
   >("periods");
 
-  // State collections
-  const [periods, setPeriods] = useState<MpaPeriod[]>([]);
-  const [careers, setCareers] = useState<MpaCareer[]>([]);
-  const [courses, setCourses] = useState<MpaCourse[]>([]);
-  const [curriculum, setCurriculum] = useState<MpaCurriculumItem[]>([]);
-  const [curriculumVersions, setCurriculumVersions] = useState<MpaCurriculumVersion[]>([]);
-  const [shifts, setShifts] = useState<MpaShift[]>([]);
-  const [schedules, setSchedules] = useState<MpaSchedule[]>([]);
-  const [classrooms, setClassrooms] = useState<MpaClassroom[]>([]);
-  const [groups, setGroups] = useState<MpaAcademicGroup[]>([]);
-  const [teachers, setTeachers] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<MpaProgramTask[]>([]);
-  const [loading, setLoading] = useState(true);
+  const readCached = <T,>(key: string, fallback: T): T => {
+    try {
+      const item = localStorage.getItem(`mpa_db_${key}`);
+      return item ? JSON.parse(item) : fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
+  // State collections with instant local cache recovery and solid defaults
+  const [periods, setPeriods] = useState<MpaPeriod[]>(() => {
+    const cached = readCached("periods", []);
+    return cached.length > 0 ? cached : DEFAULT_INITIAL_PERIODS;
+  });
+  const [careers, setCareers] = useState<MpaCareer[]>(() => {
+    const cached = readCached("careers", []);
+    return cached.length > 0 ? cached : DEFAULT_INITIAL_CAREERS;
+  });
+  const [courses, setCourses] = useState<MpaCourse[]>(() => readCached("courses", []));
+  const [curriculum, setCurriculum] = useState<MpaCurriculumItem[]>(() => readCached("curriculum", []));
+  const [curriculumVersions, setCurriculumVersions] = useState<MpaCurriculumVersion[]>(() => readCached("curriculum_versions", []));
+  const [shifts, setShifts] = useState<MpaShift[]>(() => readCached("shifts", []));
+  const [schedules, setSchedules] = useState<MpaSchedule[]>(() => readCached("schedules", []));
+  const [classrooms, setClassrooms] = useState<MpaClassroom[]>(() => readCached("classrooms", []));
+  const [groups, setGroups] = useState<MpaAcademicGroup[]>(() => readCached("groups", []));
+  const [teachers, setTeachers] = useState<any[]>(() => readCached("teachers", []));
+  const [tasks, setTasks] = useState<MpaProgramTask[]>(() => readCached("tasks", []));
   const [syncError, setSyncError] = useState("");
   const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
   const pendingSaves = useRef<Partial<Record<MpaKey, Promise<unknown>>>>({});
@@ -231,7 +255,6 @@ export default function MpaDashboard({ onLogout, onGoToPortal }: MpaDashboardPro
         </header>
 
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain relative">
-          {loading ? <div className="p-8 text-sm text-slate-600">Cargando planificación académica...</div> : (
           <AnimatePresence mode="wait">
             {activeTab === "periods" && (
               <PeriodsTab 
@@ -366,10 +389,9 @@ export default function MpaDashboard({ onLogout, onGoToPortal }: MpaDashboardPro
             )}
 
             {activeTab === "calendar" && (
-              <div className="p-5 md:p-8"><AcademicCalendarBoard editable periods={periods} /></div>
+              <div className="p-5 md:p-6"><AcademicCalendarBoard editable periods={periods} /></div>
             )}
           </AnimatePresence>
-          )}
         </div>
       </main>
 

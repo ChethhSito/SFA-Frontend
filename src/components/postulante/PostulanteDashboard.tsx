@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FileText, CreditCard, Award, Upload, CheckCircle2,
   XCircle, LayoutDashboard, Landmark, Headset, Info,
-  GraduationCap, Coins
+  GraduationCap, Coins, Sparkles, ArrowRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Applicant, Enrollment } from "../../types";
@@ -52,6 +52,16 @@ function PostulanteDashboardInner({
 }: PostulanteDashboardProps) {
   const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   const { label: periodLabel, year: periodYear } = useApplicantPeriod();
+
+  const currentProgram = ACADEMIC_PROGRAMS.find(p => p.id === applicant.programId) || {
+    id: applicant.programId,
+    name: applicant.programId,
+    code: (applicant.programId || "").toUpperCase(),
+    duration: "",
+    title: "",
+    description: ""
+  };
+
   // Active Navigation Tab State
   const [activeTab, setActiveTab] = useState<"dashboard" | "documentos" | "pagos" | "resultados" | "soporte" | "matricula">("dashboard");
   const [toast, setToast] = useState<ToastNotice | null>(null);
@@ -215,6 +225,17 @@ function PostulanteDashboardInner({
 
   const globalProgressPercentage = Math.round((approvedCount / totalDocs) * 100);
   const isActuallyAdmitted = applicant.admitted === true || applicant.admitted === "ADMITIDO";
+
+  // Notificación Toast temporal y no invasiva al confirmarse la vacante oficial
+  useEffect(() => {
+    if (isActuallyAdmitted) {
+      const key = `sfa_toast_admitted_${applicant.dni}`;
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "1");
+        notify(`¡Felicidades! Ha alcanzado una vacante oficial en ${currentProgram.name}.`, "success");
+      }
+    }
+  }, [isActuallyAdmitted, applicant.dni, currentProgram.name]);
 
   // Normalizar pago si se declaró voucher pero no existe archivo físico de imagen
   const storedVoucher = applicant.paymentVoucherUrl || (applicant.dni ? localStorage.getItem(`sfa_voucher_data_${applicant.dni}`) : null) || undefined;
@@ -486,15 +507,6 @@ function PostulanteDashboardInner({
     }
   };
 
-  const currentProgram = ACADEMIC_PROGRAMS.find(p => p.id === applicant.programId) || {
-    id: applicant.programId,
-    name: applicant.programId,
-    code: (applicant.programId || "").toUpperCase(),
-    duration: "",
-    title: "",
-    description: ""
-  };
-
   // Nav items list for Sidebar
   const sidebarItems = [
     { id: "dashboard", label: "Inicio / Mi Resumen", icon: LayoutDashboard },
@@ -522,8 +534,52 @@ function PostulanteDashboardInner({
         userProfile={{
           name: `${applicant.name} ${applicant.lastName}`,
           role: periodLabel ? `Postulante ${periodLabel}` : "Postulante",
+          status: isActuallyAdmitted ? "ADMITIDO" : "ACTIVO",
           avatarBg: "bg-gradient-to-br from-[#8B0020] to-[#590013] text-amber-300 font-black border border-amber-400/40"
         }}
+        extraContent={
+          isActuallyAdmitted ? (
+            <div className="bg-emerald-50/90 border border-emerald-200/90 rounded-xl p-3 text-left space-y-2 shadow-3xs animate-fade-in">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
+                    ¡Ingreso Confirmado!
+                  </span>
+                </div>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              </div>
+
+              <div>
+                <h5 className="text-[11px] font-black text-slate-900 leading-tight">
+                  Vacante Adjudicada
+                </h5>
+                <span className="text-[9.5px] font-bold text-emerald-700 block mt-0.5">
+                  {currentProgram.name}
+                </span>
+              </div>
+
+              <div className="pt-0.5 flex flex-col gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("resultados")}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-wider py-1.5 px-2.5 rounded-lg shadow-3xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Award className="w-3.5 h-3.5" />
+                  <span>Ver Constancia</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("matricula")}
+                  className="w-full bg-white hover:bg-emerald-50 text-emerald-850 text-[9.5px] font-bold uppercase tracking-wider py-1 px-2 rounded-lg border border-emerald-300 flex items-center justify-center gap-1 transition-all cursor-pointer"
+                >
+                  <span>Pagar Matrícula</span>
+                  <ArrowRight className="w-3 h-3 text-emerald-600" />
+                </button>
+              </div>
+            </div>
+          ) : null
+        }
       />
 
       {/* MAIN DASHBOARD CONTENT AREA */}
@@ -556,24 +612,6 @@ function PostulanteDashboardInner({
             </div>
           </div>
         </div>
-
-
-        {/* ALERTS DISPLAY */}
-        {applicant.admitted === true && (
-          <AlertBox
-            variant="success"
-            title="¡FELICIDADES! VACANTE OFICIAL ALCANZADA"
-            message={`Ha sido ADMITIDO oficialmente en la carrera técnica de ${currentProgram.name}. Ya puede acceder a la pestaña de 'Pago de Matrícula' y descargar su Constancia de Admisión.`}
-            action={
-              <button
-                onClick={() => setIsConstanciaModalOpen(true)}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-[10px] uppercase px-3 py-1.5 rounded-md cursor-pointer"
-              >
-                Ver Constancia
-              </button>
-            }
-          />
-        )}
 
         {/* ACTIVE TAB CONTENT RENDER */}
         {activeTab === "dashboard" && (
