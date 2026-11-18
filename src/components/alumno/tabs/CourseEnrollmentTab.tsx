@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { BookOpen, CheckCircle2, Download, FileText, Printer, ShieldCheck } from 'lucide-react';
 import { Enrollment, MpaAcademicGroup, MpaClassroom, MpaCourse, MpaCurriculumItem, MpaPeriod, MpaProgramTask, MpaShift, Program, StudentPersonalData } from '../../../types';
+import { generateMatriculaPdf, generateManualMatriculaPdf } from '../../../utils/matriculaPdf';
 
 interface PlanningData {
   periods: MpaPeriod[];
@@ -90,52 +91,35 @@ export default function CourseEnrollmentTab({
     window.print();
   };
 
-  const handleDownloadConstancia = () => {
-    const textContent = `
-========================================================================
-MINISTERIO DE EDUCACIÓN - REPÚBLICA DEL PERÚ
-INSTITUTO DE EDUCACIÓN SUPERIOR TECNOLÓGICO PÚBLICO
-"SAN FRANCISCO DE ASÍS"
-R.M. N° 0233-80-ED • R.D. N° 0458-2005-ED
-DIRECCIÓN GENERAL • SECRETARÍA GENERAL ACADÉMICA
-========================================================================
+  const handleDownloadConstancia = async () => {
+    await generateMatriculaPdf({
+      studentName: personalData?.name || "Mateo Sebastián",
+      studentLastName: personalData?.lastName || "Quispe Rojas",
+      dni: enrollment.studentDni || personalData?.dni || "74859612",
+      studentCode,
+      programName,
+      period: periodLabel,
+      cycle: "Ciclo I",
+      shift: enrollment.shift || "Mañana",
+      courses: registeredCoursesList.map((c) => ({
+        code: c.code,
+        name: c.name,
+        credits: c.credits,
+        cycle: c.cycle,
+        type: c.type,
+        group: c.group,
+        tsg: c.tsg,
+        status: c.status,
+      })),
+      totalCredits,
+      totalCourses: registeredCoursesList.length,
+      maxCredits: 22,
+      paymentStatus: "PAGADO (S/. 250.00)",
+    });
+  };
 
-FICHA OFICIAL DE MATRÍCULA REGULAR
-PERIODO ACADÉMICO: ${periodLabel}
-
-DATOS DEL ESTUDIANTE:
-------------------------------------------------------------------------
-CÓDIGO ÚNICO        : ${studentCode}
-APELLIDOS Y NOMBRES : ${studentFullName.toUpperCase()}
-DOCUMENTO DNI       : ${enrollment.studentDni}
-PROGRAMA DE ESTUDIOS: ${programName.toUpperCase()}
-CICLO MATRICULADO   : CICLO I (REGULAR)
-GRUPO ASIGNADO      : ${studentGroup?.name || "EI-I-A"}
-TURNO               : ${enrollment.shift?.toUpperCase() || "MAÑANA"}
-ESTADO DE MATRÍCULA : MATRICULADO (ORDINARIO)
-ESTADO DE PAGO      : S/. 250.00 (VALIDADO - CAJA Y TESORERÍA)
-------------------------------------------------------------------------
-
-RELACIÓN DE ASIGNATURAS MATRICULADAS:
-${registeredCoursesList.map((c, i) => `${i + 1}. [${c.code}] ${c.name.padEnd(48, ' ')} | ${c.credits} Cred. | ${c.type} | Grupo ${c.group}`).join('\n')}
-------------------------------------------------------------------------
-TOTAL ASIGNATURAS INSCRITAS : ${registeredCoursesList.length}
-TOTAL CRÉDITOS ACADÉMICOS   : ${totalCredits} CRÉDITOS
-MÁXIMO PERMITIDO (CICLO I)  : 22 CRÉDITOS
-
-Validez institucional acreditada ante el Ministerio de Educación.
-========================================================================
-    `.trim();
-
-    const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `Ficha_Matricula_SFA_${enrollment.studentDni}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleDownloadManual = async () => {
+    await generateManualMatriculaPdf();
   };
 
   return (
@@ -309,7 +293,7 @@ Validez institucional acreditada ante el Ministerio de Educación.
           <div className="pt-2 border-t border-slate-100 text-center">
             <button
               type="button"
-              onClick={handleDownloadConstancia}
+              onClick={handleDownloadManual}
               className="text-[#800521] hover:text-[#66041a] hover:underline text-[10.5px] font-bold inline-flex items-center gap-1 cursor-pointer"
             >
               <FileText className="w-3.5 h-3.5" />

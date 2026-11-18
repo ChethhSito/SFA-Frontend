@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { Applicant, Enrollment, Program } from "../../../types";
 import { Award, CheckCircle2, Download, ExternalLink, GraduationCap, Printer, ShieldCheck, X } from "lucide-react";
 import Button from "../../ui/Button";
+import { generateMatriculaPdf } from "../../../utils/matriculaPdf";
 
 interface MatriculaConfirmationModalProps {
   isOpen: boolean;
@@ -78,77 +80,56 @@ export const MatriculaConfirmationModal: React.FC<MatriculaConfirmationModalProp
     }
   };
 
-  const handleDownloadConstancia = () => {
+  const handleDownloadConstancia = async () => {
     setIsDownloading(true);
 
-    setTimeout(() => {
-      const textContent = `
-========================================================================
-MINISTERIO DE EDUCACIÓN - REPÚBLICA DEL PERÚ
-INSTITUTO DE EDUCACIÓN SUPERIOR TECNOLÓGICO PÚBLICO
-"SAN FRANCISCO DE ASÍS"
-R.M. N° 0233-80-ED • R.D. N° 0458-2005-ED
-DIRECCIÓN GENERAL • SECRETARÍA GENERAL ACADÉMICA
-========================================================================
-
-CONSTANCIA OFICIAL DE MATRÍCULA REGULAR
-N° COM-2027-I-${applicant.dni}
-
-La Secretaría Académica del IESTP "San Francisco de Asís" HACE CONSTAR:
-
-Que el estudiante:
-------------------------------------------------------------------------
-APELLIDOS Y NOMBRES : ${applicant.lastName.toUpperCase()}, ${applicant.name.toUpperCase()}
-DOCUMENTO DE IDENTIDAD: DNI ${applicant.dni}
-CÓDIGO DE MATRÍCULA  : ${studentCode}
-PROGRAMA DE ESTUDIOS : ${currentProgram.name.toUpperCase()}
-NIVEL FORMATIVO      : PROFESIONAL TÉCNICO (3 AÑOS / 6 CICLOS)
-PERIODO ACADÉMICO    : ${periodLabel}
-CICLO MATRICULADO    : CICLO I (PRIMER SEMESTRE ORDINARIO)
-TURNO ASIGNADO       : ${assignedShift.toUpperCase()}
-CONDICIÓN ACADÉMICA  : ALUMNO REGULAR ORDINARIO
-DERECHO DE MATRÍCULA : S/. 250.00 (VALIDADO - CAJA Y TESORERÍA)
-------------------------------------------------------------------------
-
-RELACIÓN DE ASIGNATURAS REGISTRADAS (CARGA ACADÉMICA CICLO I):
-1. EIND-101 | Fundamentos de Electricidad y Circuitos CC      | 4 Créditos
-2. EIND-102 | Instalaciones Eléctricas de Edificaciones       | 4 Créditos
-3. EIND-103 | Seguridad e Higiene Industrial en Baja Tensión  | 3 Créditos
-4. EIND-104 | Matemática Aplicada a la Tecnología Eléctrica   | 3 Créditos
-5. EIND-105 | Comunicación y Tecnologías Digitales            | 2 Créditos
-------------------------------------------------------------------------
-TOTAL DE CRÉDITOS INSCRITOS: 16 CRÉDITOS ACADÉMICOS
-
-El presente documento certifica la condición de Alumno Regular en este
-Instituto Superior Tecnológico Público para los fines académicos,
-administrativos y de trámite de carné estudiantil que correspondan.
-
-Emitido con Firma y Sello Digital con Validez Nacional.
-Fecha de Emisión: 17 de Noviembre de 2026.
-========================================================================
-      `.trim();
-
-      const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `Constancia_Matricula_SFA_${applicant.dni}.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+    try {
+      await generateMatriculaPdf({
+        studentName: applicant.name,
+        studentLastName: applicant.lastName,
+        dni: applicant.dni,
+        studentCode,
+        programName: currentProgram.name,
+        period: periodLabel,
+        cycle: "Ciclo I",
+        shift: assignedShift,
+        courses: [
+          { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, cycle: 1, type: "Obligatorio", group: "EI-I-A", tsg: "Teoría / Taller", status: "MATRICULADO" },
+          { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, cycle: 1, type: "Obligatorio", group: "EI-I-A", tsg: "Taller", status: "MATRICULADO" },
+          { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, cycle: 1, type: "Obligatorio", group: "EI-I-A", tsg: "Teoría / Taller", status: "MATRICULADO" },
+          { code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, cycle: 1, type: "General", group: "EI-I-A", tsg: "Práctica", status: "MATRICULADO" },
+          { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2, cycle: 1, type: "General", group: "EI-I-A", tsg: "Teoría / Taller", status: "MATRICULADO" },
+        ],
+        totalCredits: 16,
+        totalCourses: 5,
+        maxCredits: 22,
+        paymentStatus: "PAGADO (S/. 250.00)",
+      });
 
       setIsDownloading(false);
       setHasDownloaded(true);
       try {
         localStorage.setItem(`sfa_matricula_downloaded_${applicant.dni}`, "true");
       } catch {}
-    }, 800);
+    } catch (err) {
+      console.error("Error generating matricula pdf", err);
+      setIsDownloading(false);
+    }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-2xl w-full border border-slate-200 shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-left">
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div 
+        className="bg-white rounded-2xl max-w-2xl w-full border border-slate-200 shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-left my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-[#800521] to-[#590013] text-white px-6 py-4 flex items-center justify-between border-b border-amber-400/40 shrink-0">
@@ -359,7 +340,8 @@ Fecha de Emisión: 17 de Noviembre de 2026.
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 });
 

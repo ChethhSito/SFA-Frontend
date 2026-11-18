@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { CheckCircle2, Clock, XCircle, Upload, FileText, Eye, ShieldCheck, X, BookOpen, Check } from "lucide-react";
 import { StudentPersonalData, Enrollment, AcademicProgram, Graduation } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
@@ -74,15 +75,18 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
 
   return (
     <PageTransition id="profile" className="space-y-6">
-      {/* Modal de Vista Previa de Documento Requisitorial - Responsivo y Sin Cortes */}
-      {previewDoc && (
+      {/* Modal de Vista Previa de Documento Requisitorial - Montado en Portal para evitar cortes */}
+      {previewDoc && typeof document !== "undefined" && createPortal(
         <div 
-          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
           onClick={(e) => {
             if (e.target === e.currentTarget) setPreviewDoc(null);
           }}
         >
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[85vh] overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
+          <div 
+            className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[85vh] overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header */}
             <div className="bg-[#800521] text-white px-5 py-3.5 flex items-center justify-between shrink-0 shadow-xs">
               <div className="flex items-center gap-2.5">
@@ -106,11 +110,11 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 {previewDoc.fileDataUrl ? (
                   /* RENDERIZADO DE IMAGEN REAL SUBIDA */
                   <div className="w-full flex flex-col items-center justify-center space-y-2">
-                    <div className="max-h-[300px] w-full flex items-center justify-center overflow-hidden bg-slate-900/5 rounded-lg p-2 border border-slate-200">
+                    <div className="max-h-[220px] w-full flex items-center justify-center overflow-hidden bg-slate-900/5 rounded-lg p-2 border border-slate-200">
                       <img 
                         src={previewDoc.fileDataUrl} 
                         alt={previewDoc.title}
-                        className="max-h-[280px] max-w-full object-contain rounded shadow-sm border border-slate-300"
+                        className="max-h-[200px] max-w-full object-contain rounded shadow-sm border border-slate-300"
                       />
                     </div>
                     <div className="flex items-center gap-2 text-[10px] text-slate-600 font-mono font-bold mt-1">
@@ -123,14 +127,14 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                   </div>
                 ) : previewDoc.key === "fotoFile" || previewDoc.fileName.toLowerCase().match(/\.(png|jpg|jpeg|webp)$/) ? (
                   /* VISUALIZACIÓN DE FOTO CARNET OFICIAL */
-                  <div className="w-full flex flex-col items-center justify-center py-3 space-y-3">
-                    <div className="w-36 h-48 bg-white rounded-lg border-2 border-slate-300 shadow-md p-2 flex flex-col items-center justify-between relative overflow-hidden">
+                  <div className="w-full flex flex-col items-center justify-center py-2 space-y-2">
+                    <div className="w-32 h-40 bg-white rounded-lg border-2 border-slate-300 shadow-md p-2 flex flex-col items-center justify-between relative overflow-hidden">
                       <div className="w-full flex justify-between items-center text-[7px] font-black uppercase text-slate-400 border-b pb-1">
                         <span>IESTP SFA</span>
                         <span>2026-I</span>
                       </div>
-                      <div className="w-24 h-32 rounded bg-gradient-to-b from-slate-100 to-slate-200 border border-slate-300 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
-                        <div className="w-14 h-14 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center font-extrabold text-lg shadow-xs border-2 border-white">
+                      <div className="w-20 h-24 rounded bg-gradient-to-b from-slate-100 to-slate-200 border border-slate-300 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
+                        <div className="w-12 h-12 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center font-extrabold text-base shadow-xs border-2 border-white">
                           {personalData.name.charAt(0)}{personalData.lastName.charAt(0)}
                         </div>
                         <span className="text-[7px] font-bold text-slate-500 mt-1 uppercase tracking-tight">Fondo Blanco</span>
@@ -149,7 +153,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                   </div>
                 ) : (
                   /* VISUALIZACIÓN DE EXPEDIENTE DOCUMENTARIO FOLIADO */
-                  <div className="w-full flex flex-col items-center justify-center py-3 space-y-3">
+                  <div className="w-full flex flex-col items-center justify-center py-2 space-y-2">
                     <div className="w-full max-w-xs bg-slate-50 rounded-lg border border-slate-300 shadow-xs p-4 space-y-2.5 relative border-t-4 border-t-[#800521]">
                       <div className="flex justify-between items-center border-b border-slate-200 pb-1.5 text-[8px] font-bold text-slate-400 uppercase">
                         <span>SECRETARÍA ACADÉMICA</span>
@@ -218,7 +222,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Hero Banner Borgoña Institucional */}

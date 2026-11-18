@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { Printer } from "lucide-react";
 import { Enrollment, Applicant, AdmissionPeriod, StudentPersonalData } from "../../../types";
 import Button from "../../ui/Button";
@@ -56,9 +57,19 @@ export const FichaEstudianteModal: React.FC<FichaEstudianteModalProps> = ({
   const periodName = admissionPeriods.find((p) => p.id === app?.periodId)?.name || "Convocatoria no registrada";
   const code = app?.applicantCode || `REG-${enr.studentDni.slice(0, 4)}`;
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full text-slate-800 relative flex flex-col max-h-[90vh]">
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-900/75 backdrop-blur-xs flex items-center justify-center p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div 
+        className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full text-slate-800 relative flex flex-col max-h-[90vh] my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header Actions */}
         <div className="bg-slate-50 border-b border-slate-150 px-5 py-3 flex justify-between items-center shrink-0">
           <span className="text-[10px] uppercase font-extrabold text-slate-500 tracking-wider flex items-center gap-1">
@@ -195,6 +206,7 @@ export const FichaEstudianteModal: React.FC<FichaEstudianteModalProps> = ({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
