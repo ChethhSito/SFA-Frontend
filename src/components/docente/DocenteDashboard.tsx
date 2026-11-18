@@ -499,7 +499,7 @@ export default function DocenteDashboard({
       {notice ? <Toast notice={notice} onClose={closeNotice} /> : null}
 
       {/* 1. SIDEBAR PRINCIPAL */}
-      <div className={`hidden md:block shrink-0 relative transition-all duration-300 ease-in-out ${isMainSidebarCollapsed ? "w-0" : "w-64"}`}>
+      <div className={`hidden md:block shrink-0 relative z-30 transition-all duration-300 ease-in-out ${isMainSidebarCollapsed ? "w-0" : "w-64"}`}>
         <div className={`w-64 h-full transition-opacity duration-200 overflow-hidden ${isMainSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
           <SidebarPrincipal
             teacherDni={teacherDni}
@@ -525,20 +525,26 @@ export default function DocenteDashboard({
           />
         </div>
 
-        {/* Desplegable / botón flotante en el centro vertical de los sidebars para ocultarlo o expandirlo */}
+        {/* Desplegable / botón flotante 1: MENÚ PRINCIPAL (MÁS GRANDE - 34px) */}
         <button
           type="button"
           onClick={() => setIsMainSidebarCollapsed(!isMainSidebarCollapsed)}
           title={isMainSidebarCollapsed ? "Expandir menú principal" : "Ocultar menú principal"}
-          className="absolute -right-3.5 top-1/2 -translate-y-1/2 z-40 bg-white hover:bg-amber-50 text-slate-700 hover:text-[#800521] border border-slate-300 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer hover:scale-110 active:scale-95"
+          className={`absolute top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border-2 border-slate-300 hover:border-[#800521] w-[34px] h-[34px] rounded-full flex items-center justify-center shadow-md hover:shadow-xl transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
+            isMainSidebarCollapsed ? "left-2" : "-right-[17px]"
+          }`}
         >
-          {isMainSidebarCollapsed ? <ChevronRight className="w-4 h-4 text-[#800521]" /> : <ChevronLeft className="w-4 h-4 text-[#800521]" />}
+          {isMainSidebarCollapsed ? (
+            <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+          ) : (
+            <ChevronLeft className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />
+          )}
         </button>
       </div>
 
       {/* 2. SIDEBAR SECUNDARIO CURRICULAR DINÁMICO */}
       {selectedCourseId && activeTab === "curso" && (
-        <div className={`hidden md:block shrink-0 relative transition-all duration-300 ease-in-out ${isCourseSidebarCollapsed ? "w-0" : "w-64"}`}>
+        <div className={`hidden md:block shrink-0 relative z-20 transition-all duration-300 ease-in-out ${isCourseSidebarCollapsed ? "w-0" : "w-64"}`}>
           <div className={`w-64 h-full transition-opacity duration-200 overflow-hidden ${isCourseSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
             <SidebarCurso
               courseId={selectedCourseId}
@@ -558,14 +564,22 @@ export default function DocenteDashboard({
             />
           </div>
 
-          {/* Desplegable / botón flotante en el centro vertical del menú de curso */}
+          {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (MÁS PEQUEÑO - 26px) */}
           <button
             type="button"
             onClick={() => setIsCourseSidebarCollapsed(!isCourseSidebarCollapsed)}
             title={isCourseSidebarCollapsed ? "Expandir semanas del curso" : "Ocultar semanas del curso"}
-            className="absolute -right-3.5 top-1/2 -translate-y-1/2 z-40 bg-white hover:bg-amber-50 text-slate-700 hover:text-[#800521] border border-slate-300 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer hover:scale-110 active:scale-95"
+            className={`absolute top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border border-slate-300 hover:border-[#800521] w-[26px] h-[26px] rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
+              isCourseSidebarCollapsed 
+                ? (isMainSidebarCollapsed ? "left-12" : "left-2.5") 
+                : "-right-[13px]"
+            }`}
           >
-            {isCourseSidebarCollapsed ? <ChevronRight className="w-4 h-4 text-[#800521]" /> : <ChevronLeft className="w-4 h-4 text-[#800521]" />}
+            {isCourseSidebarCollapsed ? (
+              <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            ) : (
+              <ChevronLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
+            )}
           </button>
         </div>
       )}
@@ -681,7 +695,7 @@ export default function DocenteDashboard({
       )}
 
       {/* 3. PRIMARY CONTENT AREA WORKSPACE */}
-      <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-slate-50 relative pt-14 md:pt-0">
+      <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-slate-50 relative z-10 pt-14 md:pt-0">
         <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
 
           {/* TAB 1: DASHBOARD (HOME) */}

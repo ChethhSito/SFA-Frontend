@@ -132,7 +132,7 @@ export default function SidebarCurso({
       </div>
 
       {/* Main Secondary Links Scroll Box */}
-      <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+      <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-slate-100 pr-0.5">
         
         {/* GENERAL VIEW BUTTON */}
         <div className="p-2 shrink-0 space-y-1">
