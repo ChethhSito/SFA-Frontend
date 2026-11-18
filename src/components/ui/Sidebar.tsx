@@ -430,14 +430,18 @@ export default function Sidebar({
 
       {/* 3. Sticky and Collapsible Sidebar on Desktop Screens */}
       <aside className={`hidden md:flex flex-col h-full bg-white border-r border-slate-200 shadow-xs shrink-0 select-none relative z-30 transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-64"} ${className}`}>
-        {/* Toggle arrow button on the right edge */}
+        {/* Toggle arrow button on the right edge (Center Vertical - Institutional Floating) */}
         <button
           type="button"
           onClick={() => setIsCollapsed(!isCollapsed)}
           title={isCollapsed ? "Expandir menú lateral" : "Colapsar menú lateral"}
-          className="absolute -right-3.5 top-6 z-40 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#800521] border border-slate-300 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"
+          className="absolute -right-[17px] top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border-2 border-slate-300 hover:border-[#800521] w-[34px] h-[34px] rounded-full flex items-center justify-center shadow-md hover:shadow-xl transition-all cursor-pointer hover:scale-110 active:scale-95 group"
         >
-          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          {isCollapsed ? (
+            <ChevronRight className="w-4.5 h-4.5 transition-transform group-hover:translate-x-0.5" />
+          ) : (
+            <ChevronLeft className="w-4.5 h-4.5 transition-transform group-hover:-translate-x-0.5" />
+          )}
         </button>
 
         {renderSidebarContent(isCollapsed)}
