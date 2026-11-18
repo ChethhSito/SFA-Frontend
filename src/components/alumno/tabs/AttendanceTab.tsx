@@ -117,7 +117,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
               Control de Asistencia del Estudiante
             </h2>
             <p className="text-xs text-white/90 font-medium max-w-2xl">
-              Seguimiento de puntualidad presencial, registro de sesiones dictadas en taller y control del quórum reglamentario del 70%.
+              Seguimiento de puntualidad presencial, registro de sesiones dictadas en taller y control de asistencia mínima reglamentaria del 70%.
             </p>
           </div>
 

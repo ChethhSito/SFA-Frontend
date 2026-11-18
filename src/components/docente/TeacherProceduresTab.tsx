@@ -230,7 +230,7 @@ export default function TeacherProceduresTab({ teacherDni }: { teacherDni: strin
               </p>
             </div>
             <span className="text-[10px] bg-amber-50 text-amber-900 border border-amber-200 font-black px-2.5 py-1 rounded-full uppercase">
-              TUPA SFA 2026
+              TUPA SFA Vigente (2027)
             </span>
           </div>
 

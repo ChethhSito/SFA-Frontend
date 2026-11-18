@@ -128,7 +128,7 @@ export default function ControlAsistenciaPrincipal({
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
-              PORTAL DEL DOCENTE • QUÓRUM Y SEGUIMIENTO ACADÉMICO
+              PORTAL DEL DOCENTE • CONTROL Y SEGUIMIENTO ACADÉMICO
             </span>
             <h1 className="text-2xl md:text-3.5xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
               Control Consolidado de Asistencia
@@ -140,7 +140,7 @@ export default function ControlAsistenciaPrincipal({
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <div className="text-left bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
-              <span className="text-[9px] text-amber-300 font-extrabold block uppercase mb-0.5 tracking-wider">Quórum Global</span>
+              <span className="text-[9px] text-amber-300 font-extrabold block uppercase mb-0.5 tracking-wider">Asistencia General</span>
               <span className="text-xs font-black text-emerald-400 font-mono">
                 {totalStatesCount ? `${attendanceRate.toFixed(1)}%` : "100.0%"}
               </span>
@@ -191,7 +191,7 @@ export default function ControlAsistenciaPrincipal({
       {/* Aggregate metrics KPIs rows */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-3xs p-5 text-left">
-          <span className="text-[9.5px] text-slate-400 font-extrabold uppercase tracking-widest block font-mono">Quórum de Asistencia</span>
+          <span className="text-[9.5px] text-slate-400 font-extrabold uppercase tracking-widest block font-mono">Tasa de Asistencia</span>
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-2xl font-black text-emerald-600 font-mono">{totalStatesCount ? `${attendanceRate.toFixed(1)}%` : "100%"}</span>
             <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded uppercase">Regular</span>

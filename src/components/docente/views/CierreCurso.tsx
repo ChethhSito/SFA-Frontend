@@ -169,7 +169,7 @@ export function CierreCurso({ course, weeksCount, materialsCount, assignmentsCou
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[9px] uppercase font-bold">SEMESTRE LECTIVO</span>
-                  <span className="text-slate-900">Periodo 2026-I Regular</span>
+                  <span className="text-slate-900">{course.period || "Periodo 2027-I Regular"}</span>
                 </div>
               </div>
 

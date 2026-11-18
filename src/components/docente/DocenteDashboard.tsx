@@ -752,7 +752,7 @@ export default function DocenteDashboard({
 
                 <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-3xs flex items-center justify-between text-left hover:shadow-md transition-all">
                   <div className="space-y-1">
-                    <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Quórum de Asistencia</span>
+                    <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Tasa de Asistencia</span>
                     <span className="text-2xl font-black text-emerald-600 block font-display tracking-tight">{globalStats.attendanceRate}%</span>
                     <span className="text-[10px] text-slate-500 font-bold block">Registro oficial al día</span>
                   </div>

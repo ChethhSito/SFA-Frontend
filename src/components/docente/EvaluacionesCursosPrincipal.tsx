@@ -17,34 +17,49 @@ interface EvaluacionesCursosPrincipalProps {
 }
 
 const COURSE_FORMULAS: { [code: string]: CourseFormula } = {
-  "EE-101": {
-    courseCode: "EE-101",
-    expression: "0.05*PYT1 + 0.10*PYT2 + 0.20*PYT3 + 0.15*PYT4 + 0.50*SUP1",
+  "EIND-101": {
+    courseCode: "EIND-101",
+    expression: "0.30*PC1 + 0.30*PC2 + 0.40*EX_FINAL",
     variables: [
-      { id: "PYT1", label: "Proyecto 1 (PYT1)", weight: 0.05 },
-      { id: "PYT2", label: "Proyecto 2 (PYT2)", weight: 0.10 },
-      { id: "PYT3", label: "Proyecto 3 (PYT3)", weight: 0.20 },
-      { id: "PYT4", label: "Proyecto 4 (PYT4)", weight: 0.15 },
-      { id: "SUP1", label: "Examen Supervisor (SUP1)", weight: 0.50 },
+      { id: "PC1", label: "Práctica 1 (PC1)", weight: 0.30 },
+      { id: "PC2", label: "Práctica 2 (PC2)", weight: 0.30 },
+      { id: "EX_FINAL", label: "Examen Final (EX_FINAL)", weight: 0.40 },
     ],
   },
-  "EE-102": {
-    courseCode: "EE-102",
-    expression: "0.20*PC1 + 0.20*PC2 + 0.20*PC3 + 0.40*EX_FINAL",
+  "EIND-102": {
+    courseCode: "EIND-102",
+    expression: "0.25*LAB1 + 0.25*LAB2 + 0.50*PROY_FINAL",
     variables: [
-      { id: "PC1", label: "Práctica 1 (PC1)", weight: 0.20 },
-      { id: "PC2", label: "Práctica 2 (PC2)", weight: 0.20 },
-      { id: "PC3", label: "Práctica 3 (PC3)", weight: 0.20 },
-      { id: "EX_FINAL", label: "Examen Final (EX)", weight: 0.40 },
+      { id: "LAB1", label: "Laboratorio Tableros (LAB1)", weight: 0.25 },
+      { id: "LAB2", label: "Laboratorio Redes BT (LAB2)", weight: 0.25 },
+      { id: "PROY_FINAL", label: "Proyecto Edificaciones", weight: 0.50 },
     ],
   },
-  "SY-301": {
-    courseCode: "SY-301",
-    expression: "0.30*EDT + 0.30*SCRUM + 0.40*PMBOK_FINAL",
+  "EIND-103": {
+    courseCode: "EIND-103",
+    expression: "0.30*EV1 + 0.30*EV2 + 0.40*EX_FINAL",
     variables: [
-      { id: "EDT", label: "Entregable EDT", weight: 0.30 },
-      { id: "SCRUM", label: "Sprint Scrum", weight: 0.30 },
-      { id: "PMBOK_FINAL", label: "Memoria PMBOK", weight: 0.40 },
+      { id: "EV1", label: "Seguridad Industrial (EV1)", weight: 0.30 },
+      { id: "EV2", label: "Normativa BT (EV2)", weight: 0.30 },
+      { id: "EX_FINAL", label: "Evaluación Modular", weight: 0.40 },
+    ],
+  },
+  "EIND-104": {
+    courseCode: "EIND-104",
+    expression: "0.30*PC1 + 0.30*PC2 + 0.40*EX_FINAL",
+    variables: [
+      { id: "PC1", label: "Práctica Calificada 1", weight: 0.30 },
+      { id: "PC2", label: "Práctica Calificada 2", weight: 0.30 },
+      { id: "EX_FINAL", label: "Examen de Unidad", weight: 0.40 },
+    ],
+  },
+  "EIND-105": {
+    courseCode: "EIND-105",
+    expression: "0.30*TAREA + 0.30*PART + 0.40*EX_FINAL",
+    variables: [
+      { id: "TAREA", label: "Talleres Digitales (TAREA)", weight: 0.30 },
+      { id: "PART", label: "Participación Técnica", weight: 0.30 },
+      { id: "EX_FINAL", label: "Evaluación Integral", weight: 0.40 },
     ],
   },
   "default": {
@@ -92,9 +107,20 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
   const selectedCourse = courses.find((c) => c.id === selectedCourseId) || null;
   const formula = selectedCourse ? (COURSE_FORMULAS[selectedCourse.code] || COURSE_FORMULAS["default"]) : COURSE_FORMULAS["default"];
 
-  const roster = useMemo(() => enrollments.filter((enrollment) =>
-    enrollment.academicStatus === "MATRICULADO" && enrollment.programId === (selectedCourse?.careerId || selectedCourse?.career))
-    .map((enrollment) => studentsList[enrollment.studentDni]).filter(Boolean), [enrollments, studentsList, selectedCourse]);
+  const roster = useMemo(() => {
+    const targetProg = (selectedCourse?.careerId || selectedCourse?.career || "").toLowerCase().trim();
+    const matched = enrollments.filter((enrollment) => {
+      const isMat = enrollment.academicStatus === "MATRICULADO" || enrollment.academicStatus === "ADMITIDO";
+      if (!isMat) return false;
+      const prog = (enrollment.programId || "").toLowerCase().trim();
+      if (!targetProg) return true;
+      return prog.includes(targetProg) || targetProg.includes(prog);
+    }).map((enrollment) => studentsList[enrollment.studentDni]).filter(Boolean);
+
+    if (matched.length > 0) return matched;
+    const allValid = Object.values(studentsList);
+    return allValid.length > 0 ? allValid : [];
+  }, [enrollments, studentsList, selectedCourse]);
   const sheetData = useMemo(() => {
     const sheet: Record<string, string> = {};
     assignments.filter((assignment) => assignment.courseId === selectedCourseId && assignment.title.startsWith("[Planilla] "))

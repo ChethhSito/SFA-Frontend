@@ -14,30 +14,49 @@ interface TeacherProfileTabProps {
 }
 
 export default function TeacherProfileTab({ teacher, teacherDni, onShowNotice }: TeacherProfileTabProps) {
-  const [form, setForm] = useState({
-    name: teacher?.name || 'Manuel',
-    lastName: teacher?.lastName || 'Ramos Salazar',
-    dni: teacher?.dni || teacherDni,
-    email: teacher?.email || 'mramos@iestpsfa.edu.pe',
-    personalEmail: 'm.ramos.salazar@gmail.com',
-    phone: '+51 987 654 321',
-    address: 'Av. Universitaria 1420, Lima',
-    specialty: teacher?.specialty || 'Control de Motores, PLC, Automatización Industrial',
-    degree: 'Ingeniero Electricista — Reg. CIP 184592',
-    pin: '1234',
-    notifyTasks: true,
-    notifyAbsences: true,
+  const currentDni = teacher?.dni || teacherDni || '99887766';
+  const storageKey = `sfa_teacher_profile_${currentDni}`;
+
+  const [form, setForm] = useState(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    const fullName = teacher?.name || 'Manuel';
+    const emailPrefix = fullName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return {
+      name: teacher?.name || 'Manuel',
+      lastName: teacher?.lastName || 'Ramos Salazar',
+      dni: currentDni,
+      email: teacher?.email || `${emailPrefix}@iestpsfa.edu.pe`,
+      personalEmail: (teacher as any)?.personalEmail || (teacher?.email ? teacher.email.replace('@iestpsfa.edu.pe', '@gmail.com') : ''),
+      phone: teacher?.phone || (teacher as any)?.telefono || '+51 984 512 890',
+      address: (teacher as any)?.address || 'Av. Universitaria 1420, Lima',
+      specialty: teacher?.specialty || 'Control de Motores, PLC, Automatización Industrial',
+      degree: (teacher as any)?.degree || 'Ingeniero Electricista — Reg. CIP 184592',
+      pin: '1234',
+      notifyTasks: true,
+      notifyAbsences: true,
+    };
   });
 
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  const initials = `${form.name.charAt(0)}${form.lastName.charAt(0)}`.toUpperCase();
+  const initials = `${(form.name || 'D').charAt(0)}${(form.lastName || 'T').charAt(0)}`.toUpperCase();
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setSavedSuccess(false);
+
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(form));
+    } catch (err) {
+      console.error('Error saving profile to localStorage:', err);
+    }
 
     setTimeout(() => {
       setSaving(false);
@@ -50,7 +69,7 @@ export default function TeacherProfileTab({ teacher, teacherDni, onShowNotice }:
         });
       }
       setTimeout(() => setSavedSuccess(false), 4000);
-    }, 600);
+    }, 400);
   };
 
   return (
@@ -188,11 +207,11 @@ export default function TeacherProfileTab({ teacher, teacherDni, onShowNotice }:
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Vigencia:</span>
-                <span className="font-bold text-emerald-600">2026 - 2028 (Conforme)</span>
+                <span className="font-bold text-emerald-600">Periodo Activo 2027 (Acreditado)</span>
               </div>
               <div className="flex justify-between pt-1 border-t border-slate-200">
                 <span className="text-slate-400">PIN de Firma:</span>
-                <span className="font-bold text-[#800521]">•••• (PIN: 1234)</span>
+                <span className="font-bold text-[#800521]">•••• (PIN Acreditado)</span>
               </div>
             </div>
           </div>

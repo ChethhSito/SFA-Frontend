@@ -34,41 +34,64 @@ export default function AvisosReportesPrincipal({
 }: AvisosReportesPrincipalProps) {
   const [subTab, setSubTab] = useState<"avisos" | "comunicados" | "reportes">(initialSubTab);
 
-  // Core Data Lists
-  const [instNotices, setInstNotices] = useState<AvisoItem[]>([
-    {
-      id: "avis-1",
-      sender: "Coordinación Académica",
-      title: "Cierre de Carga de Syllabus - Semana 8",
-      body: "Se solicita a toda la plana de catedráticos regularizar los registros de asistencia y notas parciales correspondientes a la primera mitad del semestre para consolidación de reportes.",
-      date: "2026-06-01"
-    },
-    {
-      id: "avis-2",
-      sender: "Administración",
-      title: "Recursos y Equipamiento en Laboratorios",
-      body: "Se han actualizado las plataformas y herramientas educativas para las prácticas institucionales. Validar operatividad antes de las sesiones prácticas.",
-      date: "2026-05-28"
-    },
-    {
-      id: "avis-3",
-      sender: "Dirección General",
-      title: "Mantenimiento Preventivo de Servidores Intranet",
-      body: "Se interrumpirá el acceso a los portales docente y alumno el día de mañana de 02:00 AM a 05:00 AM por actualización de base de datos regular.",
-      date: "2026-05-25"
+  // Core Data Lists with localStorage persistence and dynamic 2027 dates
+  const [instNotices, setInstNotices] = useState<AvisoItem[]>(() => {
+    try {
+      const stored = localStorage.getItem("sfa_inst_notices");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
     }
-  ]);
+    return [
+      {
+        id: "avis-1",
+        sender: "Coordinación Académica",
+        title: "Cierre de Carga de Syllabus y Actas Parciales",
+        body: "Se solicita a toda la plana de catedráticos regularizar los registros de asistencia y notas parciales correspondientes al módulo en curso para consolidación de reportes institucionales.",
+        date: "2027-03-25"
+      },
+      {
+        id: "avis-2",
+        sender: "Administración",
+        title: "Recursos y Equipamiento en Laboratorios Tecnológicos",
+        body: "Se han actualizado las plataformas y herramientas educativas para las prácticas institucionales en talleres y laboratorios. Validar operatividad antes de las sesiones prácticas.",
+        date: "2027-03-22"
+      },
+      {
+        id: "avis-3",
+        sender: "Dirección General",
+        title: "Mantenimiento Preventivo de Servidores Intranet",
+        body: "Se interrumpirá el acceso a los portales docente y alumno el día de mañana de 02:00 AM a 05:00 AM por actualización de base de datos y optimización de servicios de red.",
+        date: "2027-03-18"
+      }
+    ];
+  });
 
-  const [acadComms, setAcadComms] = useState<ComunicadoItem[]>([
-    {
-      id: "comm-1",
-      senderName: teacherName,
-      courseCode: courses[0]?.code || "General",
-      title: "Publicación de Guía de Aprendizaje e Indicaciones",
-      body: "Estimados estudiantes, se han publicado los materiales lectivos y rúbricas de evaluación correspondientes a las unidades temáticas del semestre.",
-      date: "2026-06-02"
+  const [acadComms, setAcadComms] = useState<ComunicadoItem[]>(() => {
+    try {
+      const stored = localStorage.getItem("sfa_teacher_comms");
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
     }
-  ]);
+    return [
+      {
+        id: "comm-1",
+        senderName: teacherName,
+        courseCode: courses[0]?.code || "EIND-101",
+        title: "Publicación de Guía de Aprendizaje e Indicaciones",
+        body: "Estimados estudiantes, se han publicado los materiales lectivos y rúbricas de evaluación correspondientes a las unidades temáticas del semestre en vigor.",
+        date: "2027-03-24"
+      }
+    ];
+  });
+
+  // Dynamic hours calculation based on real courses
+  const totalWeeklyHours = useMemo(() => {
+    if (!courses || courses.length === 0) return 8;
+    return courses.reduce((acc, c) => acc + (c.credits ? c.credits * 2 : 4), 0);
+  }, [courses]);
+  const totalMonthlyHours = totalWeeklyHours * 4;
 
   // Form states for publishing academic communication
   const [newTitle, setNewTitle] = useState("");
@@ -88,7 +111,14 @@ export default function AvisosReportesPrincipal({
       date: new Date().toISOString().split("T")[0]
     };
 
-    setAcadComms([newItem, ...acadComms]);
+    const updated = [newItem, ...acadComms];
+    setAcadComms(updated);
+    try {
+      localStorage.setItem("sfa_teacher_comms", JSON.stringify(updated));
+    } catch (err) {
+      console.error("Error saving sfa_teacher_comms:", err);
+    }
+
     setNewTitle("");
     setNewBody("");
 
@@ -102,7 +132,13 @@ export default function AvisosReportesPrincipal({
   };
 
   const handleDeleteComm = (id: string) => {
-    setAcadComms(acadComms.filter((c) => c.id !== id));
+    const updated = acadComms.filter((c) => c.id !== id);
+    setAcadComms(updated);
+    try {
+      localStorage.setItem("sfa_teacher_comms", JSON.stringify(updated));
+    } catch (err) {
+      console.error("Error updating sfa_teacher_comms:", err);
+    }
   };
 
   return (
@@ -415,11 +451,11 @@ export default function AvisosReportesPrincipal({
               <div className="font-semibold text-slate-650 leading-relaxed space-y-1.5">
                 <div className="flex justify-between">
                   <span>Horas Contratadas:</span>
-                  <span className="font-bold text-slate-900">32 Horas Mensuales</span>
+                  <span className="font-bold text-slate-900">{totalMonthlyHours} Horas Mensuales ({totalWeeklyHours} hrs/sem)</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Horas Dictadas Sincronizadas:</span>
-                  <span className="font-bold text-emerald-600 font-mono">32 Horas Sustentadas</span>
+                  <span className="font-bold text-emerald-600 font-mono">{totalMonthlyHours} Horas Sustentadas</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Estado de conformidad:</span>
