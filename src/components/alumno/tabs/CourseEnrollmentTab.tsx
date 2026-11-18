@@ -124,37 +124,40 @@ export default function CourseEnrollmentTab({
 
   return (
     <div className="space-y-4 text-left">
-      {/* 1. Header Bar institucional limpio y compacto (Estilo Universidad) */}
-      <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-3xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#800521]" />
-            <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-              Matrícula {periodLabel}
+      {/* 1. Hero Banner Borgoña Institucional Oficial */}
+      <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-5">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+              PORTAL DEL ESTUDIANTE • MATRÍCULA ACADÉMICA
+            </span>
+            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+              Matrícula Periodo {periodLabel}
             </h2>
+            <p className="text-xs text-white/90 font-medium max-w-2xl font-mono">
+              Código Oficial: <span className="text-amber-300 font-bold">{studentCode}</span> • Estudiante: <span className="text-white font-bold">{studentFullName}</span>
+            </p>
           </div>
-          <p className="text-xs font-mono font-bold text-slate-500 mt-0.5">
-            {studentCode} - {studentFullName}
-          </p>
-        </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg shadow-3xs transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <Printer className="w-3.5 h-3.5 text-slate-500" />
-            <span>Imprimir</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleDownloadConstancia}
-            className="bg-[#800521] hover:bg-[#66041a] text-white text-xs font-extrabold uppercase tracking-wider px-3.5 py-1.5 rounded-lg shadow-3xs transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5 text-amber-300" />
-            <span>Constancia</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/30 text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer backdrop-blur-xs"
+            >
+              <Printer className="w-4 h-4 text-slate-200" />
+              <span>Imprimir</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadConstancia}
+              className="bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black uppercase tracking-wider px-4 py-2 rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <Download className="w-4 h-4 text-slate-950" />
+              <span>Constancia PDF</span>
+            </button>
+          </div>
         </div>
       </div>
 

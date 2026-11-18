@@ -86,24 +86,38 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
             <div className="bg-[#800521] h-full rounded-full transition-all duration-1000" style={{ width: "3%" }} />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs font-semibold text-slate-600 pt-2 border-t border-slate-50">
-            <div>
-              <span className="text-[9px] text-slate-400 uppercase block font-bold">Periodo Actual</span>
-              <span className="text-[#9F062A] block font-bold text-sm mt-0.5">{currentPeriod}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5 text-xs font-semibold text-slate-600 pt-3 border-t border-slate-100 items-stretch">
+            <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-100 flex flex-col justify-center">
+              <span className="text-[9px] text-slate-400 uppercase block font-bold tracking-wider">Periodo Actual</span>
+              <span className="text-[#800521] block font-extrabold text-sm mt-0.5">{currentPeriod}</span>
             </div>
-            <div>
-              <span className="text-[9px] text-slate-400 uppercase block font-bold">Grupos / Secciones</span>
-              <span className="text-slate-800 block font-bold text-sm mt-0.5 truncate">
+            <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-100 flex flex-col justify-center">
+              <span className="text-[9px] text-slate-400 uppercase block font-bold tracking-wider">Grupos / Secciones</span>
+              <span className="text-slate-800 block font-extrabold text-sm mt-0.5 truncate" title={scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || "Ciclo I - Turno " + (enrollment.shift || "Mañana")}>
                 {scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || "Ciclo I - Turno " + (enrollment.shift || "Mañana")}
               </span>
             </div>
-            <div className="col-span-2 md:col-span-1 bg-amber-50 rounded-lg p-2.5 flex items-center gap-2 border border-amber-100 shrink-0">
-              <Clock className="w-4 h-4 text-amber-600 shrink-0" />
-              <div className="min-w-0">
-                <span className="text-[8px] text-amber-700 uppercase font-black block leading-none">Próxima Sesión ({nextClassTime})</span>
-                <span className="text-[10px] text-slate-800 font-bold block mt-1 truncate" title={nextClassText}>
-                  {nextClassText}
-                </span>
+            <div className="col-span-1 sm:col-span-2 xl:col-span-1 bg-gradient-to-br from-amber-50 to-amber-100/60 rounded-xl p-3 flex items-start gap-2.5 border border-amber-200/90 shadow-2xs">
+              <div className="p-1.5 rounded-lg bg-amber-500/15 text-amber-800 shrink-0 mt-0.5 border border-amber-300/50">
+                <Clock className="w-4 h-4 text-amber-700" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[8.5px] bg-amber-200/80 text-amber-900 font-black px-1.5 py-0.5 rounded tracking-wide uppercase">
+                    Próxima Sesión
+                  </span>
+                  <span className="text-[10px] text-amber-800 font-bold">
+                    {nextClassTime}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-900 font-extrabold block mt-1 leading-snug break-words">
+                  {nextCourse?.name || (nextTask ? 'Unidad Didáctica' : 'Programación oficial en curso por MPA')}
+                </div>
+                {nextClassroom?.name && (
+                  <span className="text-[10px] text-amber-900/80 font-medium block mt-0.5 truncate">
+                    📍 {nextClassroom.name}
+                  </span>
+                )}
               </div>
             </div>
           </div>

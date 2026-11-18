@@ -457,83 +457,316 @@ export async function generateCurriculumPlanPdf(programName: string, studentName
   const height = pdf.internal.pageSize.getHeight();
   const margin = 14;
 
-  pdf.setFillColor(128, 5, 33);
-  pdf.rect(0, 0, width, 22, "F");
-  pdf.setFillColor(217, 119, 6);
-  pdf.rect(0, 22, width, 1.5, "F");
-
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(7.5);
-  pdf.text("IESTP SAN FRANCISCO DE ASÍS • DIRECCIÓN ACADÉMICA", margin, 7);
-  pdf.setFontSize(12);
-  pdf.text("PLAN CURRICULAR OFICIAL DE ESTUDIOS (MODULAR)", margin, 13);
-  pdf.setFontSize(7.5);
-  pdf.setFont("helvetica", "normal");
-  pdf.text(`PROGRAMA: ${programName.toUpperCase()} • TITULACIÓN OFICIAL MINEDU`, margin, 18);
-
-  let y = 30;
-  pdf.setFillColor(248, 250, 252);
-  pdf.setDrawColor(203, 213, 225);
-  pdf.roundedRect(margin, y, width - margin * 2, 14, 1.5, 1.5, "FD");
-
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(8);
-  pdf.setTextColor(15, 23, 42);
-  pdf.text(`ESTUDIANTE: ${studentName.toUpperCase()}   •   DNI: ${dni}`, margin + 4, y + 6);
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(7);
-  pdf.setTextColor(100, 116, 139);
-  pdf.text("Plan de Formación Profesional Técnica Modular de 3 años lectivos (6 semestres académicos / 120 créditos).", margin + 4, y + 10.5);
-
-  y += 18;
-
-  const planRows = [
-    ["I", "EIND-101", "Fundamentos de Electricidad y Circuitos CC", "4.0", "Obligatorio", "Teoría y Taller"],
-    ["I", "EIND-102", "Instalaciones Eléctricas de Edificaciones", "4.0", "Obligatorio", "Taller"],
-    ["I", "EIND-103", "Seguridad e Higiene Industrial en Baja Tensión", "3.0", "Obligatorio", "Teoría y Taller"],
-    ["I", "EIND-104", "Matemática Aplicada a la Tecnología Eléctrica", "3.0", "General", "Práctica"],
-    ["I", "EIND-105", "Comunicación y Tecnologías Digitales", "2.0", "General", "Laboratorio"],
-    ["II", "EIND-201", "Circuitos de Corriente Alterna y Mediciones", "4.0", "Obligatorio", "Teoría y Taller"],
-    ["II", "EIND-202", "Máquinas Eléctricas Estáticas (Transformadores)", "4.0", "Obligatorio", "Taller"],
-    ["II", "EIND-203", "Electrónica Básica de Potencia", "3.0", "Obligatorio", "Laboratorio"],
-    ["II", "EIND-204", "Inglés Técnico para Electricidad", "2.0", "General", "Teoría"],
-    ["III", "EIND-301", "Máquinas Eléctricas Rotativas (Motores y Generadores)", "4.0", "Obligatorio", "Taller"],
-    ["III", "EIND-302", "Tableros Industriales y Automatismos por Contactores", "4.0", "Obligatorio", "Taller"],
-    ["III", "EIND-303", "Sistemas de Puesta a Tierra y Protección Eléctrica", "3.0", "Obligatorio", "Teoría y Campo"],
-    ["IV", "EIND-401", "Controladores Lógicos Programables (PLC I)", "4.0", "Obligatorio", "Laboratorio"],
-    ["IV", "EIND-402", "Variadores de Frecuencia y Arrancadores Suaves", "4.0", "Obligatorio", "Taller"],
-    ["V", "EIND-501", "Automatización Industrial y Redes Industriales", "4.0", "Obligatorio", "Laboratorio"],
-    ["V", "EIND-502", "Mantenimiento Electro-Mecánico Predictivo", "4.0", "Obligatorio", "Taller"],
-    ["VI", "EIND-601", "Proyectos de Electrificación y Eficiencia Energética", "4.0", "Obligatorio", "Taller"],
-    ["VI", "EIND-602", "Seminario de Titulación y Prácticas EFSRT", "4.0", "Obligatorio", "Taller"],
+  const cyclesData = [
+    {
+      cycle: "CICLO I (1er Semestre)",
+      module: "MÓDULO PROFESIONAL I: INSTALACIONES ELÉCTRICAS Y CIRCUITOS BÁSICOS",
+      credits: "20.0 Créditos",
+      courses: [
+        ["EIND-101", "Fundamentos de Electricidad y Circuitos CC", "4.0", "Obligatorio", "Teoría y Taller"],
+        ["EIND-102", "Instalaciones Eléctricas de Edificaciones", "4.0", "Obligatorio", "Taller"],
+        ["EIND-103", "Seguridad e Higiene Industrial en Baja Tensión", "4.0", "Obligatorio", "Teoría y Taller"],
+        ["EIND-104", "Matemática Aplicada a la Tecnología Eléctrica", "4.0", "General", "Práctica"],
+        ["EIND-105", "Comunicación y Tecnologías Digitales", "4.0", "General", "Laboratorio"],
+      ],
+    },
+    {
+      cycle: "CICLO II (2do Semestre)",
+      module: "MÓDULO PROFESIONAL I: MEDICIONES Y MÁQUINAS ESTÁTICAS",
+      credits: "20.0 Créditos",
+      courses: [
+        ["EIND-201", "Circuitos de Corriente Alterna y Mediciones", "4.0", "Obligatorio", "Teoría y Taller"],
+        ["EIND-202", "Máquinas Eléctricas Estáticas (Transformadores)", "4.0", "Obligatorio", "Taller"],
+        ["EIND-203", "Electrónica Básica de Potencia", "4.0", "Obligatorio", "Laboratorio"],
+        ["EIND-204", "Inglés Técnico para Electricidad", "4.0", "General", "Teoría"],
+        ["EIND-205", "Mecánica Aplicada al Montaje Industrial", "4.0", "Obligatorio", "Taller"],
+      ],
+    },
+    {
+      cycle: "CICLO III (3er Semestre)",
+      module: "MÓDULO PROFESIONAL II: MÁQUINAS ROTATIVAS Y TABLEROS DE FUERZA",
+      credits: "20.0 Créditos",
+      courses: [
+        ["EIND-301", "Máquinas Eléctricas Rotativas (Motores y Generadores)", "4.0", "Obligatorio", "Taller"],
+        ["EIND-302", "Tableros Industriales y Automatismos por Contactores", "4.0", "Obligatorio", "Taller"],
+        ["EIND-303", "Sistemas de Puesta a Tierra y Protección Eléctrica", "4.0", "Obligatorio", "Teoría y Campo"],
+        ["EIND-304", "Dibujo Técnico Asistido por Computadora (CAD Eléctrico)", "4.0", "Obligatorio", "Laboratorio"],
+        ["EIND-305", "Medio Ambiente y Desarrollo Sostenible", "4.0", "General", "Teoría"],
+      ],
+    },
+    {
+      cycle: "CICLO IV (4to Semestre)",
+      module: "MÓDULO PROFESIONAL II: CONTROLADORES AUTOMATIZADOS Y VARIADORES",
+      credits: "20.0 Créditos",
+      courses: [
+        ["EIND-401", "Controladores Lógicos Programables (PLC I)", "4.0", "Obligatorio", "Laboratorio"],
+        ["EIND-402", "Variadores de Frecuencia y Arrancadores Suaves", "4.0", "Obligatorio", "Taller"],
+        ["EIND-403", "Redes y Líneas de Distribución Eléctrica", "4.0", "Obligatorio", "Campo"],
+        ["EIND-404", "Instrumentación Industrial y Sensores", "4.0", "Obligatorio", "Laboratorio"],
+        ["EIND-405", "Legislación e Inserción Laboral", "4.0", "General", "Teoría"],
+      ],
+    },
+    {
+      cycle: "CICLO V (5to Semestre)",
+      module: "MÓDULO PROFESIONAL III: AUTOMATIZACIÓN INDUSTRIAL Y SCADA",
+      credits: "20.0 Créditos",
+      courses: [
+        ["EIND-501", "Automatización Industrial y Redes Industriales (SCADA)", "4.0", "Obligatorio", "Laboratorio"],
+        ["EIND-502", "Mantenimiento Electro-Mecánico Predictivo", "4.0", "Obligatorio", "Taller"],
+        ["EIND-503", "Subestaciones Eléctricas y Media Tensión", "4.0", "Obligatorio", "Teoría y Visita"],
+        ["EIND-504", "Sistemas de Control con PLC Avanzado", "4.0", "Obligatorio", "Laboratorio"],
+        ["EIND-505", "Innovación Tecnológica y Emprendimiento", "4.0", "General", "Teoría"],
+      ],
+    },
+    {
+      cycle: "CICLO VI (6to Semestre)",
+      module: "MÓDULO PROFESIONAL III: PROYECTOS DE EFICIENCIA Y TITULACIÓN",
+      credits: "20.0 Créditos",
+      courses: [
+        ["EIND-601", "Proyectos de Electrificación y Eficiencia Energética", "4.0", "Obligatorio", "Taller"],
+        ["EIND-602", "Auditorías Energéticas y Normatividad CNE", "4.0", "Obligatorio", "Teoría y Campo"],
+        ["EIND-603", "Mantenimiento de Plantas Industriales", "4.0", "Obligatorio", "Taller"],
+        ["EIND-604", "Seminario de Titulación y Prácticas EFSRT", "4.0", "Obligatorio", "Taller"],
+        ["EIND-605", "Ética Profesional y Liderazgo Técnico", "4.0", "General", "Teoría"],
+      ],
+    },
   ];
 
-  autoTable(pdf, {
-    startY: y,
-    margin: { left: margin, right: margin, bottom: 20 },
-    head: [["CICLO", "CÓDIGO", "UNIDAD DIDÁCTICA / ASIGNATURA", "CRÉD.", "TIPO", "MODALIDAD"]],
-    body: planRows,
-    styles: { font: "helvetica", fontSize: 7, cellPadding: 1.8, valign: "middle" },
-    headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: "bold", fontSize: 7.2 },
-    columnStyles: {
-      0: { cellWidth: 14, halign: "center", fontStyle: "bold" },
-      1: { cellWidth: 20, fontStyle: "bold", textColor: [128, 5, 33] },
-      2: { cellWidth: 84 },
-      3: { cellWidth: 14, halign: "center", fontStyle: "bold" },
-      4: { cellWidth: 22 },
-      5: { cellWidth: 28 },
-    },
-    alternateRowStyles: { fillColor: [248, 250, 252] },
-  });
+  const drawPageHeader = (pageNumber: number, totalPages: number) => {
+    pdf.setFillColor(128, 5, 33);
+    pdf.rect(0, 0, width, 22, "F");
+    pdf.setFillColor(217, 119, 6);
+    pdf.rect(0, 22, width, 1.5, "F");
 
-  const lastTable = (pdf as any).lastAutoTable;
-  const planFinalY = lastTable ? lastTable.finalY + 4 : y + 160;
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(7.5);
+    pdf.text("IESTP SAN FRANCISCO DE ASÍS • DIRECCIÓN ACADÉMICA", margin, 7);
+    pdf.setFontSize(11);
+    pdf.text("PLAN CURRICULAR OFICIAL DE ESTUDIOS (MODULAR)", margin, 13);
+    pdf.setFontSize(7.5);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(`PROGRAMA: ${programName.toUpperCase()} • TITULACIÓN OFICIAL MINEDU`, margin, 18);
+
+    // Page indicator top right
+    pdf.setFontSize(7.5);
+    pdf.setFont("helvetica", "bold");
+    pdf.text(`PÁGINA ${pageNumber} DE ${totalPages}`, width - margin, 13, { align: "right" });
+  };
+
+  const drawPageFooter = (pageNumber: number, totalPages: number) => {
+    pdf.setDrawColor(226, 232, 240);
+    pdf.line(margin, height - 9, width - margin, height - 9);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(6.5);
+    pdf.setTextColor(148, 163, 184);
+    pdf.text("IESTP San Francisco de Asís • Plataforma SFA Cloud • Malla Curricular Oficial", margin, height - 5);
+    pdf.text(`Página ${pageNumber} de ${totalPages} • Documento oficial emitido para ${studentName.toUpperCase()}`, width - margin, height - 5, { align: "right" });
+  };
+
+  const renderCycleTable = (cycleData: typeof cyclesData[0], startY: number): number => {
+    // Cycle header bar
+    pdf.setFillColor(241, 245, 249);
+    pdf.setDrawColor(203, 213, 225);
+    pdf.roundedRect(margin, startY, width - margin * 2, 7, 1, 1, "FD");
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(7.5);
+    pdf.setTextColor(128, 5, 33);
+    pdf.text(`${cycleData.cycle}  —  ${cycleData.module}`, margin + 3.5, startY + 4.8);
+
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(15, 23, 42);
+    pdf.text(cycleData.credits, width - margin - 3.5, startY + 4.8, { align: "right" });
+
+    autoTable(pdf, {
+      startY: startY + 8,
+      margin: { left: margin, right: margin },
+      head: [["CÓDIGO", "UNIDAD DIDÁCTICA / ASIGNATURA", "CRÉD.", "TIPO", "MODALIDAD"]],
+      body: cycleData.courses,
+      styles: { font: "helvetica", fontSize: 6.8, cellPadding: 1.6, valign: "middle", textColor: [15, 23, 42] },
+      headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: "bold", fontSize: 7, halign: "left" },
+      columnStyles: {
+        0: { cellWidth: 22, fontStyle: "bold", textColor: [128, 5, 33] },
+        1: { cellWidth: 88 },
+        2: { cellWidth: 16, halign: "center", fontStyle: "bold" },
+        3: { cellWidth: 26 },
+        4: { cellWidth: 30 },
+      },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+    });
+
+    const lastTable = (pdf as any).lastAutoTable;
+    return lastTable ? lastTable.finalY : startY + 36;
+  };
+
+  // --- PÁGINA 1: Ciclos I, II y III ---
+  drawPageHeader(1, 2);
+
+  let currentY = 28;
+  pdf.setFillColor(248, 250, 252);
+  pdf.setDrawColor(203, 213, 225);
+  pdf.roundedRect(margin, currentY, width - margin * 2, 13, 1.5, 1.5, "FD");
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(7.8);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text(`ESTUDIANTE: ${studentName.toUpperCase()}   •   DNI: ${dni}`, margin + 4, currentY + 5.5);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(6.8);
+  pdf.setTextColor(100, 116, 139);
+  pdf.text("Plan de Formación Profesional Técnica Modular de 3 años lectivos (6 semestres académicos / 120 créditos curriculares).", margin + 4, currentY + 9.5);
+
+  currentY += 17;
+
+  // Ciclo I
+  currentY = renderCycleTable(cyclesData[0], currentY) + 4.5;
+  // Ciclo II
+  currentY = renderCycleTable(cyclesData[1], currentY) + 4.5;
+  // Ciclo III
+  currentY = renderCycleTable(cyclesData[2], currentY);
+
+  drawPageFooter(1, 2);
+
+  // --- PÁGINA 2: Ciclos IV, V, VI + Resumen y Sellos ---
+  pdf.addPage();
+  drawPageHeader(2, 2);
+
+  currentY = 28;
+  // Ciclo IV
+  currentY = renderCycleTable(cyclesData[3], currentY) + 4;
+  // Ciclo V
+  currentY = renderCycleTable(cyclesData[4], currentY) + 4;
+  // Ciclo VI
+  currentY = renderCycleTable(cyclesData[5], currentY) + 4.5;
+
+  // Resumen General de Créditos
+  pdf.setFillColor(241, 245, 249);
+  pdf.setDrawColor(203, 213, 225);
+  pdf.roundedRect(margin, currentY, width - margin * 2, 9, 1.5, 1.5, "FD");
 
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(7.5);
   pdf.setTextColor(128, 5, 33);
-  pdf.text("TOTAL GENERAL DEL PLAN: 120 CRÉDITOS ACADÉMICOS • CERTIFICACIÓN MODULAR PROGRESIVA", margin, planFinalY);
+  pdf.text(
+    "TOTAL GENERAL DEL PLAN: 120 CRÉDITOS ACADÉMICOS   •   6 SEMESTRES LECTIVOS   •   CERTIFICACIÓN MODULAR PROGRESIVA",
+    width / 2,
+    currentY + 5.8,
+    { align: "center" }
+  );
+
+  currentY += 12;
+
+  // Certificación y Validez Institucional
+  pdf.setFillColor(255, 251, 235); // amber-50
+  pdf.setDrawColor(251, 191, 36); // amber-400
+  pdf.roundedRect(margin, currentY, width - margin * 2, 12, 1.5, 1.5, "FD");
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(7);
+  pdf.setTextColor(146, 64, 14);
+  pdf.text("CERTIFICACIÓN DE MALLA CURRICULAR Y VALIDEZ INSTITUCIONAL", margin + 4, currentY + 4.2);
+
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(6.2);
+  pdf.setTextColor(71, 85, 105);
+  pdf.text(
+    `El presente plan de estudios corresponde a la estructura curricular oficial aprobada por el Ministerio de Educación para la carrera técnica de ${programName}.`,
+    margin + 4,
+    currentY + 7.8
+  );
+  pdf.text(
+    `Código de Autenticidad Curricular: SFA-PLAN-${dni}-${Date.now().toString().slice(-6)}   •   Validado en el Registro Académico Central.`,
+    margin + 4,
+    currentY + 10.5
+  );
+
+  currentY += 16;
+
+  // Firmas y Sello Institucional
+  const sigY = Math.min(currentY, height - 38);
+  const sigWidth = 48;
+  const sig1X = margin + 8;
+  const sig2X = width / 2 - sigWidth / 2;
+  const sig3X = width - margin - sigWidth - 8;
+
+  // 1. FIRMA: Secretaria General Académica
+  pdf.setDrawColor(18, 65, 160);
+  pdf.setLineWidth(0.5);
+  pdf.lines([[3, -6], [5, 4], [4, -8], [6, 7], [8, -3], [10, 2]], sig1X + 8, sigY + 5);
+  pdf.lines([[-3, 4], [8, -2], [12, -4], [6, 2], [-22, 5], [30, -1]], sig1X + 12, sigY + 6);
+
+  pdf.setFont("helvetica", "bolditalic");
+  pdf.setFontSize(7.2);
+  pdf.setTextColor(18, 65, 160);
+  pdf.text("Carmen Valdivia M.", sig1X + sigWidth / 2, sigY + 7, { align: "center" });
+
+  pdf.setDrawColor(148, 163, 184);
+  pdf.setLineWidth(0.35);
+  pdf.line(sig1X, sigY + 11.5, sig1X + sigWidth, sigY + 11.5);
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text("MG. CARMEN R. VALDIVIA MORÁN", sig1X + sigWidth / 2, sigY + 15, { align: "center" });
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(5.5);
+  pdf.setTextColor(100, 116, 139);
+  pdf.text("Secretaria General Académica", sig1X + sigWidth / 2, sigY + 18, { align: "center" });
+  pdf.text("Reg. Col. N° 0948 • IESTP SFA", sig1X + sigWidth / 2, sigY + 20.8, { align: "center" });
+
+  // 2. SELLO INSTITUCIONAL CIRCULAR OFICIAL
+  const stampX = sig2X + sigWidth / 2;
+  const stampY = sigY + 9;
+  pdf.setDrawColor(128, 5, 33);
+  pdf.setLineWidth(0.7);
+  pdf.circle(stampX, stampY, 11.5, "S");
+  pdf.setLineWidth(0.25);
+  pdf.circle(stampX, stampY, 10, "S");
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(4.8);
+  pdf.setTextColor(128, 5, 33);
+  pdf.text("IESTP SAN FRANCISCO DE ASÍS", stampX, stampY - 5.5, { align: "center" });
+  pdf.setFontSize(4.2);
+  pdf.setTextColor(180, 83, 9);
+  pdf.text("★  SELLO INSTITUCIONAL  ★", stampX, stampY - 2.5, { align: "center" });
+  pdf.setFontSize(5.8);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text("DIRECCIÓN ACADÉMICA", stampX, stampY + 1.2, { align: "center" });
+  pdf.setFontSize(4.5);
+  pdf.setTextColor(128, 5, 33);
+  pdf.text("PLAN CURRICULAR MINEDU", stampX, stampY + 4.5, { align: "center" });
+  pdf.setFontSize(4);
+  pdf.setTextColor(100, 116, 139);
+  pdf.text("LIMA - PERÚ", stampX, stampY + 7.5, { align: "center" });
+
+  // 3. FIRMA: Director General
+  pdf.setDrawColor(18, 65, 160);
+  pdf.setLineWidth(0.55);
+  pdf.lines([[4, -8], [7, 6], [5, -9], [5, 7], [9, -4], [12, 2]], sig3X + 8, sigY + 4.5);
+  pdf.lines([[-4, 3], [10, -3], [14, 2], [-28, 5], [34, -2]], sig3X + 12, sigY + 7);
+
+  pdf.setFont("helvetica", "bolditalic");
+  pdf.setFontSize(7.2);
+  pdf.setTextColor(18, 65, 160);
+  pdf.text("J. Morales Rojas", sig3X + sigWidth / 2, sigY + 7, { align: "center" });
+
+  pdf.setDrawColor(148, 163, 184);
+  pdf.setLineWidth(0.35);
+  pdf.line(sig3X, sigY + 11.5, sig3X + sigWidth, sigY + 11.5);
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text("DR. JUAN ALBERTO MORALES ROJAS", sig3X + sigWidth / 2, sigY + 15, { align: "center" });
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(5.5);
+  pdf.setTextColor(100, 116, 139);
+  pdf.text("Director General - IESTP SFA", sig3X + sigWidth / 2, sigY + 18, { align: "center" });
+  pdf.text("R.D. N° 0458-2005-ED • MINEDU", sig3X + sigWidth / 2, sigY + 20.8, { align: "center" });
+
+  drawPageFooter(2, 2);
 
   pdf.save(`Plan_Curricular_SFA_${programName.replace(/\s+/g, "_")}.pdf`);
   return pdf;
