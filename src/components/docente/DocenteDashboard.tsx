@@ -14,6 +14,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import PageHeader from "../ui/PageHeader";
 import PageTransition from "../ui/PageTransition";
 import AlertBox from "../ui/AlertBox";
+import Sidebar from "../ui/Sidebar";
 
 // Modular Docente Components
 import { ROSTER, getWeekTheme, WeeklyObservation } from "./DocenteTypes";
@@ -506,49 +507,47 @@ export default function DocenteDashboard({
     <div id="docente-viewport" className="flex h-screen w-full overflow-hidden bg-slate-100 select-none text-left font-sans">
       {notice ? <Toast notice={notice} onClose={closeNotice} /> : null}
 
-      {/* 1. SIDEBAR PRINCIPAL */}
-      <div className={`hidden md:block shrink-0 relative z-30 transition-all duration-300 ease-in-out ${isMainSidebarCollapsed ? "w-0" : "w-64"}`}>
-        <div className={`w-64 h-full transition-opacity duration-200 overflow-hidden ${isMainSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
-          <SidebarPrincipal
-            teacherDni={teacherDni}
-            teacher={currentTeacher}
-            courses={teacherCourses}
-            selectedCourseId={selectedCourseId}
-            onSelectCourse={(courseId) => {
-              setSelectedCourseId(courseId);
-              if (courseId) {
-                setActiveSection("general");
-                setActiveTab("curso");
-              } else {
-                setActiveTab("dashboard");
-              }
-            }}
-            activeTab={activeTab === "curso" ? "cursos" : activeTab}
-            setActiveTab={(tab) => {
-              setActiveTab(tab);
-              setSelectedCourseId(null);
-            }}
-            onLogout={onLogout}
-            onGoToPortal={onGoToPortal}
-          />
-        </div>
-
-        {/* Desplegable / botón flotante 1: MENÚ PRINCIPAL (MÁS GRANDE - 34px) */}
-        <button
-          type="button"
-          onClick={() => setIsMainSidebarCollapsed(!isMainSidebarCollapsed)}
-          title={isMainSidebarCollapsed ? "Expandir menú principal" : "Ocultar menú principal"}
-          className={`absolute top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border-2 border-slate-300 hover:border-[#800521] w-[34px] h-[34px] rounded-full flex items-center justify-center shadow-md hover:shadow-xl transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
-            isMainSidebarCollapsed ? "left-2" : "-right-[17px]"
-          }`}
-        >
-          {isMainSidebarCollapsed ? (
-            <ChevronRight className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
-          ) : (
-            <ChevronLeft className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />
-          )}
-        </button>
-      </div>
+      {/* 1. SIDEBAR PRINCIPAL (Mismo componente institucional estándar) */}
+      <Sidebar
+        institution={{
+          name: "IESTP SFA",
+          subtitle: "Portal Docente"
+        }}
+        user={{
+          name: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Manuel Ramos Salazar",
+          role: currentTeacher?.specialty || "Control de Motores, PLC, Automatización",
+          status: currentTeacher?.status?.toUpperCase() || "DISPONIBLE"
+        }}
+        sections={[
+          {
+            title: "CONSOLA DOCENTE",
+            items: [
+              { label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" />, route: "dashboard", active: selectedCourseId === null && activeTab === "dashboard" },
+              { label: "Mis Cursos", icon: <BookOpen className="w-4 h-4" />, route: "cursos", active: activeTab === "cursos" || selectedCourseId !== null },
+              { label: "Mi Horario", icon: <Clock className="w-4 h-4" />, route: "horario", active: selectedCourseId === null && activeTab === "horario" },
+              { label: "Control de Asistencia", icon: <Users className="w-4 h-4" />, route: "control_asistencia", active: selectedCourseId === null && activeTab === "control_asistencia" },
+              { label: "Avisos y Reportes", icon: <Megaphone className="w-4 h-4" />, route: "avisos_reportes", active: selectedCourseId === null && activeTab === "avisos_reportes" },
+              { label: "Evaluaciones de Cursos", icon: <FileSpreadsheet className="w-4 h-4" />, route: "evaluaciones_cursos", active: selectedCourseId === null && activeTab === "evaluaciones_cursos" },
+              { label: "Guías y Reglamentos", icon: <LibraryBig className="w-4 h-4" />, route: "guias", active: selectedCourseId === null && activeTab === "guias" },
+              { label: "Calendario Académico", icon: <Calendar className="w-4 h-4" />, route: "calendar", active: selectedCourseId === null && activeTab === "calendar" },
+              { label: "Mis Trámites", icon: <FileText className="w-4 h-4" />, route: "tramites", active: selectedCourseId === null && activeTab === "tramites" },
+              { label: "Configuración", icon: <Settings className="w-4 h-4" />, route: "configuracion", active: selectedCourseId === null && activeTab === "configuracion" }
+            ]
+          }
+        ]}
+        isCollapsed={isMainSidebarCollapsed}
+        onToggleCollapse={setIsMainSidebarCollapsed}
+        onItemClick={(route) => {
+          setSelectedCourseId(null);
+          if (route === "cursos") {
+            setActiveTab("cursos");
+          } else {
+            setActiveTab(route);
+          }
+        }}
+        onLogout={onLogout}
+        onGoToPortal={onGoToPortal}
+      />
 
       {/* 2. SIDEBAR SECUNDARIO CURRICULAR DINÁMICO */}
       {selectedCourseId && activeTab === "curso" && (

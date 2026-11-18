@@ -59,6 +59,8 @@ export interface SidebarProps {
   onGoToPortal?: () => void;
   extraContent?: ReactNode;
   className?: string;
+  isCollapsed?: boolean;
+  onToggleCollapse?: (collapsed: boolean) => void;
 }
 
 export default function Sidebar({
@@ -76,11 +78,20 @@ export default function Sidebar({
   onLogout,
   onGoToPortal,
   extraContent,
-  className = ""
+  className = "",
+  isCollapsed: propIsCollapsed,
+  onToggleCollapse
 }: SidebarProps) {
   const [isOpenMobile, setIsOpenMobile] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCollapsed = propIsCollapsed !== undefined ? propIsCollapsed : internalCollapsed;
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+
+  const handleToggleCollapse = () => {
+    const next = !isCollapsed;
+    setInternalCollapsed(next);
+    if (onToggleCollapse) onToggleCollapse(next);
+  };
 
   // Resolve institution header values
   const instName = institution?.name || title || "SFA Admisión";
@@ -433,7 +444,7 @@ export default function Sidebar({
         {/* Toggle arrow button on the right edge (Center Vertical - Institutional Floating) */}
         <button
           type="button"
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          onClick={handleToggleCollapse}
           title={isCollapsed ? "Expandir menú lateral" : "Colapsar menú lateral"}
           className="absolute -right-[17px] top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border-2 border-slate-300 hover:border-[#800521] w-[34px] h-[34px] rounded-full flex items-center justify-center shadow-md hover:shadow-xl transition-all cursor-pointer hover:scale-110 active:scale-95 group"
         >
