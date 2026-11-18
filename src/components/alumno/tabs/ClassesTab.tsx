@@ -670,14 +670,70 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
               <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
                 {selectedClassWeekOption === "asistencia" && (() => {
-                  if (attendanceLoading) return <p role="status">Cargando asistencias...</p>;
-                  if (attendanceError) return <p role="alert" className="text-red-700">{attendanceError}</p>;
+                  if (attendanceLoading) return <p role="status" className="p-4 text-xs font-bold text-slate-500">Cargando registros de asistencia...</p>;
+                  if (attendanceError) return <p role="alert" className="p-4 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">{attendanceError}</p>;
                   const records = studentAttendanceRecords(attendance, activeCourse.attendanceCourseIds || [activeCourse.id, activeCourse.code], studentDni).filter((record) => record.week === selectedClassWeek);
-                  return <div className="space-y-3 text-sm">
-                    <p className="font-bold">Asistencia registrada de la semana {selectedClassWeek}</p>
-                    {records.length ? records.map((record) => <div key={record.id} className="flex justify-between border rounded-lg p-3"><span>{record.date}</span><span>{record.statusMap[studentDni]}</span></div>)
-                      : <p>No hay registros vinculados a esta semana. Consulta el resumen de Asistencia para los registros diarios sin semana asignada.</p>}
-                  </div>;
+                  
+                  return (
+                    <div className="space-y-4 text-left font-sans">
+                      <div className="border-b border-slate-150 pb-3 flex items-center justify-between">
+                        <div>
+                          <h4 className="text-xs font-black uppercase text-slate-900 tracking-tight">
+                            Asistencia de la Semana {selectedClassWeek}
+                          </h4>
+                          <p className="text-[11px] text-slate-500 font-medium">
+                            Historial de sesiones y control de puntualidad en taller.
+                          </p>
+                        </div>
+                        <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-full text-[10.5px] font-black font-mono">
+                          {records.length} {records.length === 1 ? "sesión" : "sesiones"}
+                        </span>
+                      </div>
+
+                      {records.length > 0 ? (
+                        <div className="space-y-2.5">
+                          {records.map((record) => {
+                            const status = record.statusMap[studentDni] || "Sin registrar";
+                            let badgeClass = "bg-slate-100 text-slate-650 border-slate-200";
+                            if (status === "Presente") badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                            else if (status === "Tardanza") badgeClass = "bg-amber-50 text-amber-700 border-amber-200";
+                            else if (status === "Falta") badgeClass = "bg-rose-50 text-rose-700 border-rose-200";
+                            else if (status === "Justificado") badgeClass = "bg-blue-50 text-blue-700 border-blue-200";
+
+                            return (
+                              <div key={record.id} className="p-3.5 bg-slate-50/70 border border-slate-200 rounded-xl flex items-center justify-between transition-colors">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[#800521]">
+                                    <Calendar className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                    <span className="font-mono text-xs font-black text-slate-800 block">
+                                      Fecha: {record.date}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-bold block">
+                                      Sesión regular programada en horario oficial
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border ${badgeClass}`}>
+                                  {status}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center space-y-1.5">
+                          <Clock className="w-6 h-6 text-slate-300" />
+                          <p className="text-xs font-black text-slate-700 uppercase tracking-tight">No hay sesiones registradas en esta semana</p>
+                          <p className="text-[11px] text-slate-400 font-medium max-w-sm">
+                            El docente registrará la lista al momento de iniciar las horas lectivas presenciales.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
                 })()}
 
                 {selectedClassWeekOption === "materiales" && (() => {
@@ -926,14 +982,19 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 })()}
 
                 {selectedClassWeekOption === "observaciones" && (
-                  <div className="space-y-3 font-sans">
-                    <div className="bg-sky-50 text-sky-900 border border-sky-100 p-3 rounded-lg text-[11px] font-bold flex items-center gap-2">
-                      <Bookmark className="w-4 h-4 text-sky-600 shrink-0" />
-                      <span>Bitácora de seguimiento escolar. Anotaciones registradas por el docente encargado de aula para la <strong>Semana {selectedClassWeek}</strong>.</span>
+                  <div className="space-y-4 font-sans text-left">
+                    <div className="bg-[#800521]/5 text-[#800521] border border-[#800521]/15 p-3.5 rounded-xl text-[11px] font-bold flex items-center gap-2">
+                      <Bookmark className="w-4 h-4 text-[#800521] shrink-0" />
+                      <span>Bitácora de seguimiento escolar y formativo para la <strong>Semana {selectedClassWeek}</strong>.</span>
                     </div>
-                    <p className="text-xs text-slate-500 italic p-4 text-center border rounded-lg bg-slate-50/50">
-                      No se registran observaciones disciplinarias ni de rendimiento para esta semana en su ficha del alumno.
-                    </p>
+
+                    <div className="p-8 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center space-y-1.5">
+                      <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Expediente Conforme</h4>
+                      <p className="text-[11px] text-slate-400 font-medium max-w-sm">
+                        No se registran observaciones disciplinarias ni de rendimiento para esta semana en su ficha del estudiante.
+                      </p>
+                    </div>
                   </div>
                 )}
 

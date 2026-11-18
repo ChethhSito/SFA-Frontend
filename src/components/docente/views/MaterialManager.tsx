@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Upload, Trash2 } from "lucide-react";
+import { Upload, Trash2, FileText, BookOpen, AlertCircle, CheckCircle2, Download } from "lucide-react";
 import { CourseMaterial } from "../../../types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import Button from "../../ui/Button";
@@ -30,110 +30,192 @@ export function MaterialManager({ courseId, week, materials, onPublishMaterial, 
         setFile(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
-    } finally { setSaving(false); }
+    } finally { 
+      setSaving(false); 
+    }
   };
 
-  const getFileIconColor = (type: string) => {
-    switch (type.toUpperCase()) {
-      case "PDF": return "text-rose-650 bg-rose-50 border-rose-200";
-      case "WORD": return "text-blue-600 bg-blue-50 border-blue-100";
-      case "POWERPOINT": return "text-orange-500 bg-orange-50 border-orange-100";
-      case "EXCEL": return "text-emerald-700 bg-emerald-50 border-emerald-100";
-      case "VIDEO": return "text-purple-650 bg-purple-50 border-purple-100";
-      default: return "text-slate-600 bg-slate-50 border-slate-250";
+  const getFileBadge = (fileName: string) => {
+    const ext = (fileName.split(".").pop() || "PDF").toUpperCase();
+    switch (ext) {
+      case "PDF":
+        return { label: "PDF", bg: "bg-rose-50 text-rose-700 border-rose-200" };
+      case "DOC":
+      case "DOCX":
+        return { label: "WORD", bg: "bg-blue-50 text-blue-700 border-blue-200" };
+      case "PPT":
+      case "PPTX":
+        return { label: "PPT", bg: "bg-orange-50 text-orange-700 border-orange-200" };
+      case "XLS":
+      case "XLSX":
+        return { label: "EXCEL", bg: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+      case "MP4":
+        return { label: "VIDEO", bg: "bg-purple-50 text-purple-700 border-purple-200" };
+      default:
+        return { label: ext, bg: "bg-slate-100 text-slate-700 border-slate-200" };
     }
   };
 
   return (
-    <div className="space-y-6 text-left">
+    <div className="space-y-6 text-left font-sans">
       <PageHeader
         title={`Semana ${week}: Publicación de Material Didáctico`}
-        subtitle="Comparta archivos lectivos estructurados para incentivar el estudio asíncrono."
-        icon={<Upload className="w-5 h-5 text-[#8B0026]" />}
+        subtitle="Comparta archivos lectivos estructurados para incentivar el estudio asíncrono y la preparación de taller."
+        icon={<Upload className="w-5 h-5 text-[#800521]" />}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1">
-          <CardHeader>
+        {/* Formulario de Carga */}
+        <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-3xs p-6 space-y-5">
+          <div className="border-b border-slate-150 pb-3 flex items-center justify-between">
             <div>
-              <CardTitle>Subir Nuevo Recurso</CardTitle>
-              <CardDescription>Escoja el formato y asigne un membrete didáctico</CardDescription>
+              <h3 className="text-sm font-black uppercase text-slate-900 tracking-tight">Subir Nuevo Recurso</h3>
+              <p className="text-xs text-slate-500 font-medium">Asigne el título y adjunte el archivo para la sesión.</p>
             </div>
-          </CardHeader>
-          <CardContent className="p-5">
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs font-bold text-slate-700">
-              <div>
-                <label className="block text-slate-500 uppercase text-[9.5px] tracking-wide mb-1">Título del Recurso</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej: Diapositivas de Arranque Estrella-Triángulo"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md font-semibold text-slate-800 focus:outline-[#8B0026]"
-                />
-              </div>
+            <FileText className="w-5 h-5 text-[#800521]" />
+          </div>
 
-              <div>
-                <label className="block text-slate-500 uppercase text-[9.5px] tracking-wide mb-1">Archivo real (máximo 10 MB)</label>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  required
-                  accept=".pdf,.docx,.pptx,.xlsx,.png,.jpg,.jpeg,.mp4"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  className="w-full px-3 py-2 border rounded-md font-mono text-slate-800 focus:outline-[#8B0026]"
-                />
-              </div>
-
-              <Button type="submit" disabled={saving} variant="primary" fullWidth className="font-black text-[10px] py-3 uppercase tracking-wider bg-[#8B0026] text-white">
-                <Upload className="w-4 h-4 mr-1.5" /> {saving ? "Subiendo..." : "Publicar Material"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader>
+          <form onSubmit={handleSubmit} className="space-y-4 text-xs font-bold text-slate-700">
             <div>
-              <CardTitle>Archivos Publicados en Semana {week}</CardTitle>
-              <CardDescription>Syllabus correspondientes regulados por el docente titular</CardDescription>
+              <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">
+                Título del Recurso Didáctico
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Ej: Diapositivas de Arranque Estrella-Triángulo"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-[#800521] focus:bg-white transition-all placeholder:text-slate-400"
+              />
             </div>
-          </CardHeader>
-          <CardContent className="p-5">
-            <div className="space-y-3">
-              {materials.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 italic font-bold">
-                  <p>No ha publicado materiales en esta semana aún.</p>
-                  <p className="text-[10px] mt-1 text-slate-400">Complete el formulario adjunto para dar de alta su primera lectura.</p>
+
+            <div>
+              <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">
+                Archivo Lectivo (Máximo 10 MB)
+              </label>
+              
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-slate-200 hover:border-[#800521]/50 bg-slate-50/70 hover:bg-slate-50 rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-1.5 group"
+              >
+                <div className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-500 group-hover:text-[#800521] group-hover:border-[#800521] flex items-center justify-center transition-colors">
+                  <Upload className="w-4 h-4" />
                 </div>
-              ) : (
-                materials.map((mat) => (
-                  <div key={mat.id} className="p-3.5 bg-slate-50/70 hover:bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between transition-colors gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`p-2.5 rounded-lg border font-black text-[10px] uppercase font-mono ${getFileIconColor(mat.fileName.split(".").pop() || "pdf")}`}>
-                        {mat.fileName.split(".").pop()?.toUpperCase() || "ZIP"}
+                {file ? (
+                  <div className="space-y-0.5 max-w-full">
+                    <span className="font-mono text-xs font-black text-slate-800 block truncate">{file.name}</span>
+                    <span className="text-[10px] text-emerald-600 font-bold block">{(file.size / 1024 / 1024).toFixed(2)} MB adjunto</span>
+                  </div>
+                ) : (
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-extrabold text-slate-700 block">Haga clic para seleccionar archivo</span>
+                    <span className="text-[9.5px] text-slate-400 font-medium block">PDF, DOCX, PPTX, XLSX, MP4</span>
+                  </div>
+                )}
+              </div>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                required
+                accept=".pdf,.docx,.pptx,.xlsx,.png,.jpg,.jpeg,.mp4"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="hidden"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={saving || !title.trim() || !file}
+              className="w-full bg-[#800521] hover:bg-[#66041a] text-white font-extrabold text-xs uppercase px-5 py-3 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95 disabled:bg-slate-200 disabled:text-slate-500 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Upload className="w-4 h-4 text-amber-300" />
+              <span>{saving ? "Subiendo material..." : "Publicar Material"}</span>
+            </button>
+          </form>
+        </div>
+
+        {/* Listado de Materiales Publicados */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-3xs p-6 space-y-4">
+          <div className="border-b border-slate-150 pb-3 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-black uppercase text-slate-900 tracking-tight">
+                Archivos Publicados en Semana {week}
+              </h3>
+              <p className="text-xs text-slate-500 font-medium">
+                Recursos pedagógicos habilitados para los alumnos de la asignatura.
+              </p>
+            </div>
+            <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-full text-xs font-black font-mono">
+              {materials.length} {materials.length === 1 ? "recurso" : "recursos"}
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {materials.length === 0 ? (
+              <div className="p-10 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center space-y-2">
+                <div className="w-12 h-12 rounded-2xl bg-[#800521]/10 text-[#800521] border border-[#800521]/20 flex items-center justify-center mb-1">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">
+                  No hay materiales lectivos publicados
+                </h4>
+                <p className="text-xs text-slate-400 font-medium max-w-sm">
+                  Utilice el panel lateral para dar de alta diapositivas, hojas de operación o lecturas para la Semana {week}.
+                </p>
+              </div>
+            ) : (
+              materials.map((mat) => {
+                const badge = getFileBadge(mat.fileName);
+
+                return (
+                  <div 
+                    key={mat.id} 
+                    className="p-4 bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between transition-all gap-4"
+                  >
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className={`w-11 h-11 rounded-xl border flex items-center justify-center font-black text-xs font-mono shrink-0 shadow-3xs ${badge.bg}`}>
+                        {badge.label}
                       </div>
-                      <div className="min-w-0 text-left">
-                        <span className="font-extrabold text-slate-900 block truncate text-xs">{mat.title}</span>
-                        <span className="text-[10px] text-slate-400 font-bold block mt-0.5">
-                          Archivo: {mat.storedFileName ? <a href={courseFileUrl('materials', mat.id)} className="font-mono underline text-blue-600">{mat.fileName}</a> : <span className="font-mono">{mat.fileName} (registro antiguo sin archivo)</span>} • Publicado: {mat.date}
+                      <div className="min-w-0 text-left space-y-0.5">
+                        <span className="font-extrabold text-slate-900 block truncate text-xs">
+                          {mat.title}
                         </span>
+                        <div className="flex items-center gap-2 text-[10.5px] text-slate-400 font-bold">
+                          {mat.storedFileName ? (
+                            <a 
+                              href={courseFileUrl('materials', mat.id)} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="font-mono text-[#800521] hover:underline flex items-center gap-1"
+                            >
+                              <Download className="w-3 h-3" />
+                              {mat.fileName}
+                            </a>
+                          ) : (
+                            <span className="font-mono">{mat.fileName}</span>
+                          )}
+                          <span>•</span>
+                          <span>Publicado: {mat.date}</span>
+                        </div>
                       </div>
                     </div>
+
                     <button
+                      type="button"
                       onClick={() => onDeleteMaterial(mat.id)}
-                      className="p-2 text-slate-400 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer shrink-0"
-                      title="Eliminar material"
+                      className="p-2 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-all cursor-pointer shrink-0"
+                      title="Eliminar material didáctico"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                );
+              })
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -130,11 +130,12 @@ export const ROSTER: StudentRosterItem[] = new Proxy([] as StudentRosterItem[], 
  */
 export const getWeekTheme = (courseCode: string, week: number, courseName?: string) => {
   const name = courseName || "la Unidad Didáctica";
+  const cleanName = name.replace(/^fundamentos\s+de\s+/i, "");
   const unitNumber = Math.ceil(week / 4);
 
   if (week === 1) {
     return {
-      topic: `Semana 1: Introducción, Fundamentos y Lineamientos de ${name}`,
+      topic: `Semana 1: Introducción y Lineamientos de ${cleanName}`,
       desc: `Presentación del syllabus, evaluación diagnóstica inicial y fundamentos conceptuales de ${name}.`
     };
   }
