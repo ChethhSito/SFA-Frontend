@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { 
   Clock3, LayoutGrid, ListFilter, MapPin, Printer, 
-  UserRound, X, Coffee, BookOpen, CheckCircle2,
+  UserRound, X, BookOpen, 
   CalendarDays, School, Sparkles
 } from "lucide-react";
 import { 
@@ -26,16 +26,28 @@ interface ScheduleTabProps {
 }
 
 const DAYS_SHORT = [
-  { full: "Lunes", label: "LUN", shortName: "Lunes" },
-  { full: "Martes", label: "MAR", shortName: "Martes" },
-  { full: "Miércoles", label: "MIÉ", shortName: "Miércoles" },
-  { full: "Jueves", label: "JUE", shortName: "Jueves" },
-  { full: "Viernes", label: "VIE", shortName: "Viernes" },
-  { full: "Sábado", label: "SÁB", shortName: "Sábado" },
+  { full: "Lunes", label: "LUN" },
+  { full: "Martes", label: "MAR" },
+  { full: "Miércoles", label: "MIÉ" },
+  { full: "Jueves", label: "JUE" },
+  { full: "Viernes", label: "VIE" },
+  { full: "Sábado", label: "SÁB" },
 ] as const;
 
-// Official Fallback Catalogs for Electricidad Industrial (Ciclo I)
+// Franjas horarias reales de turno mañana (sin recesos de colegio)
+const TIME_BLOCKS = [
+  { id: "b1", label: "08:00 AM - 10:00 AM", startMin: 480, endMin: 600, tag: "08:00 - 10:00" },
+  { id: "hueco", label: "10:00 AM - 11:00 AM", startMin: 600, endMin: 660, tag: "10:00 - 11:00" },
+  { id: "b2", label: "11:00 AM - 01:00 PM", startMin: 660, endMin: 780, tag: "11:00 - 01:00" },
+] as const;
+
+// Catálogos oficiales de fallback para Electricidad Industrial
 const COURSE_CATALOG: Record<string, { code: string; name: string; credits: number }> = {
+  "cur_ei_101": { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4 },
+  "cur_ei_102": { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4 },
+  "cur_ei_103": { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3 },
+  "cur_ei_104": { code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3 },
+  "cur_ei_105": { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2 },
   "EIND-101": { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4 },
   "EIND-102": { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4 },
   "EIND-103": { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3 },
@@ -44,159 +56,29 @@ const COURSE_CATALOG: Record<string, { code: string; name: string; credits: numb
 };
 
 const TEACHER_CATALOG: Record<string, string> = {
+  "99887766": "Ing. Manuel Ramos Salazar",
+  "44556677": "Ing. Carlos Alberto Mendoza Quispe",
+  "66778899": "Ing. Jorge Luis Paucar Silva",
+  "88990011": "Lic. Fernando Gabriel Díaz Torres",
+  "77889900": "Lic. Sofía Lorena Valenzuela Ríos",
   "40112233": "Ing. Manuel Ramos Salazar",
   "41223344": "Ing. Carlos Alberto Mendoza Quispe",
   "42334455": "Ing. Jorge Luis Paucar Silva",
   "43445566": "Lic. Fernando Gabriel Díaz Torres",
-  "44556677": "Lic. Sofía Lorena Valenzuela Ríos",
+  "44556677_old": "Lic. Sofía Lorena Valenzuela Ríos",
 };
 
 const CLASSROOM_CATALOG: Record<string, string> = {
+  "aula_101": "Aula 101 - Pabellón A",
+  "aula_102": "Aula 102 - Pabellón A",
+  "lab_elec_1": "Taller de Máquinas Eléctricas y Tableros",
+  "lab_elec_2": "Laboratorio de Cómputo y Simulación",
+  "lab_elec_3": "Taller de Instalaciones Eléctricas y Redes BT",
   "aula-101": "Aula 101 - Pabellón A",
   "aula-102": "Aula 102 - Pabellón A",
-  "aula-103": "Aula 103 - Pabellón A",
   "taller-maquinas": "Taller de Máquinas Eléctricas y Tableros",
   "taller-redes": "Taller de Instalaciones Eléctricas y Redes BT",
-  "taller-seguridad": "Taller de Seguridad Industrial y Primeros Auxilios",
-  "lab-computo": "Laboratorio de Cómputo 02",
-  "lab-circuitos": "Laboratorio de Circuitos y Mediciones Eléctricas",
 };
-
-// Realistic full morning shift schedule (Turno Mañana 08:00 AM - 01:00 PM)
-const DEFAULT_ELECTRICIDAD_TASKS: MpaProgramTask[] = [
-  {
-    id: "task-ei-101-teoria",
-    groupId: "EI-I-A",
-    courseId: "EIND-101",
-    teacherDni: "40112233",
-    classroomId: "aula-101",
-    dayOfWeek: "Lunes",
-    startTime: "08:00 AM",
-    endTime: "10:15 AM",
-    sessionType: "Teoría",
-    pedagogicalHours: 3
-  },
-  {
-    id: "task-ei-101-taller",
-    groupId: "EI-I-A",
-    courseId: "EIND-101",
-    teacherDni: "40112233",
-    classroomId: "taller-maquinas",
-    dayOfWeek: "Lunes",
-    startTime: "10:45 AM",
-    endTime: "01:00 PM",
-    sessionType: "Taller",
-    pedagogicalHours: 3
-  },
-  {
-    id: "task-ei-102-teoria",
-    groupId: "EI-I-A",
-    courseId: "EIND-102",
-    teacherDni: "41223344",
-    classroomId: "aula-102",
-    dayOfWeek: "Martes",
-    startTime: "08:00 AM",
-    endTime: "10:15 AM",
-    sessionType: "Teoría",
-    pedagogicalHours: 3
-  },
-  {
-    id: "task-ei-102-taller",
-    groupId: "EI-I-A",
-    courseId: "EIND-102",
-    teacherDni: "41223344",
-    classroomId: "taller-redes",
-    dayOfWeek: "Martes",
-    startTime: "10:45 AM",
-    endTime: "01:00 PM",
-    sessionType: "Taller",
-    pedagogicalHours: 3
-  },
-  {
-    id: "task-ei-103-teoria",
-    groupId: "EI-I-A",
-    courseId: "EIND-103",
-    teacherDni: "42334455",
-    classroomId: "aula-101",
-    dayOfWeek: "Miércoles",
-    startTime: "08:00 AM",
-    endTime: "09:40 AM",
-    sessionType: "Teoría",
-    pedagogicalHours: 2
-  },
-  {
-    id: "task-ei-104-teoria",
-    groupId: "EI-I-A",
-    courseId: "EIND-104",
-    teacherDni: "43445566",
-    classroomId: "aula-103",
-    dayOfWeek: "Miércoles",
-    startTime: "09:40 AM",
-    endTime: "11:20 AM",
-    sessionType: "Teoría",
-    pedagogicalHours: 2
-  },
-  {
-    id: "task-ei-103-taller",
-    groupId: "EI-I-A",
-    courseId: "EIND-103",
-    teacherDni: "42334455",
-    classroomId: "taller-seguridad",
-    dayOfWeek: "Miércoles",
-    startTime: "11:20 AM",
-    endTime: "01:00 PM",
-    sessionType: "Taller",
-    pedagogicalHours: 2
-  },
-  {
-    id: "task-ei-105-lab",
-    groupId: "EI-I-A",
-    courseId: "EIND-105",
-    teacherDni: "44556677",
-    classroomId: "lab-computo",
-    dayOfWeek: "Jueves",
-    startTime: "08:00 AM",
-    endTime: "10:15 AM",
-    sessionType: "Laboratorio",
-    pedagogicalHours: 3
-  },
-  {
-    id: "task-ei-104-practica",
-    groupId: "EI-I-A",
-    courseId: "EIND-104",
-    teacherDni: "43445566",
-    classroomId: "aula-103",
-    dayOfWeek: "Jueves",
-    startTime: "11:15 AM",
-    endTime: "01:00 PM",
-    sessionType: "Práctica",
-    pedagogicalHours: 2
-  },
-  {
-    id: "task-ei-101-lab",
-    groupId: "EI-I-A",
-    courseId: "EIND-101",
-    teacherDni: "40112233",
-    classroomId: "lab-circuitos",
-    dayOfWeek: "Viernes",
-    startTime: "08:00 AM",
-    endTime: "10:15 AM",
-    sessionType: "Laboratorio",
-    pedagogicalHours: 3
-  },
-  {
-    id: "task-ei-102-practica",
-    groupId: "EI-I-A",
-    courseId: "EIND-102",
-    teacherDni: "41223344",
-    classroomId: "taller-redes",
-    dayOfWeek: "Viernes",
-    startTime: "10:45 AM",
-    endTime: "01:00 PM",
-    sessionType: "Taller",
-    pedagogicalHours: 3
-  }
-];
 
 const THEMES: Record<string, { bg: string; border: string; text: string; sub: string; badge: string }> = {
   "EIND-101": { 
@@ -256,11 +138,7 @@ export function ScheduleTab({ currentProgram, studentTasks = [], mpaPlanningData
   const [viewMode, setViewMode] = useState<"matrix" | "cards">("matrix");
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<MpaProgramTask | null>(null);
 
-  // Use realistic full morning shift schedule if incoming tasks are incomplete
-  const activeSessions: MpaProgramTask[] = studentTasks.length >= 8 
-    ? studentTasks 
-    : DEFAULT_ELECTRICIDAD_TASKS;
-
+  const activeSessions = studentTasks;
   const groupName = studentGroup?.name || "EI-I-A";
 
   const getCourseData = (task: MpaProgramTask) => {
@@ -331,26 +209,20 @@ export function ScheduleTab({ currentProgram, studentTasks = [], mpaPlanningData
     );
   };
 
-  // Filter tasks by day and morning block
-  const getBlock1Tasks = (dayName: string) => {
+  // Encontrar las tareas que caen dentro de cada franja horaria para un día específico
+  const getTasksForSlot = (dayName: string, slotStartMin: number, slotEndMin: number) => {
     return activeSessions.filter((t) => {
       if (t.dayOfWeek !== dayName) return false;
-      const startMin = parseTimeToMinutes(t.startTime);
-      return startMin < parseTimeToMinutes("10:15 AM");
-    });
-  };
-
-  const getBlock2Tasks = (dayName: string) => {
-    return activeSessions.filter((t) => {
-      if (t.dayOfWeek !== dayName) return false;
-      const startMin = parseTimeToMinutes(t.startTime);
-      return startMin >= parseTimeToMinutes("10:15 AM");
+      const tStart = parseTimeToMinutes(t.startTime);
+      const tEnd = parseTimeToMinutes(t.endTime);
+      // Tarea inicia dentro de la franja o se solapa activamente
+      return tStart < slotEndMin && tEnd > slotStartMin;
     });
   };
 
   return (
     <PageTransition id="schedule" className="space-y-6 text-left">
-      {/* 1. Hero Header Borgoña Institucional con Parámetros Académicos Reales */}
+      {/* 1. Hero Header Borgoña Institucional */}
       <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500">
         <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521] to-slate-950/80 opacity-95" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -402,7 +274,7 @@ export function ScheduleTab({ currentProgram, studentTasks = [], mpaPlanningData
           </div>
         </div>
 
-        {/* Real Academic Shift Ribbon */}
+        {/* Cinta de Parámetros Académicos Reales */}
         <div className="relative z-10 mt-5 pt-4 border-t border-white/15 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
           <div className="flex items-center gap-2 text-white/90">
             <Clock3 className="w-4 h-4 text-amber-300 shrink-0" />
@@ -414,15 +286,15 @@ export function ScheduleTab({ currentProgram, studentTasks = [], mpaPlanningData
           <div className="flex items-center gap-2 text-white/90">
             <BookOpen className="w-4 h-4 text-amber-300 shrink-0" />
             <div>
-              <span className="text-[10px] uppercase font-bold text-white/60 block">Carga Lectiva</span>
-              <span className="font-extrabold text-white">24 Horas Pedagógicas</span>
+              <span className="text-[10px] uppercase font-bold text-white/60 block">Régimen Lectivo</span>
+              <span className="font-extrabold text-white">20 Horas Semanales</span>
             </div>
           </div>
           <div className="flex items-center gap-2 text-white/90">
             <School className="w-4 h-4 text-amber-300 shrink-0" />
             <div>
               <span className="text-[10px] uppercase font-bold text-white/60 block">Modalidad</span>
-              <span className="font-extrabold text-white">Presencial Teórico-Práctica</span>
+              <span className="font-extrabold text-white">Presencial (Teoría & Taller)</span>
             </div>
           </div>
           <div className="flex items-center gap-2 text-white/90">
@@ -435,14 +307,14 @@ export function ScheduleTab({ currentProgram, studentTasks = [], mpaPlanningData
         </div>
       </div>
 
-      {/* 2. Grid Matrix Universitaria (Lunes a Sábado con Bloques de Mañana y Receso) */}
+      {/* 2. Grid Matrix Universitaria (Lunes a Sábado con franjas horarias y huecos reales) */}
       {viewMode === "matrix" ? (
         <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-3xs">
           <table className="w-full min-w-[1020px] border-collapse text-left table-fixed">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-center">
                 <th className="w-36 border-r border-slate-200 p-3.5 text-xs font-black uppercase text-slate-700">
-                  Franja Horaria
+                  Hora
                 </th>
                 {DAYS_SHORT.map((day) => (
                   <th key={day.full} className="border-r border-slate-200 p-3.5 text-xs font-black uppercase text-slate-800 last:border-r-0">
@@ -452,111 +324,37 @@ export function ScheduleTab({ currentProgram, studentTasks = [], mpaPlanningData
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {/* BLOQUE MATUTINO 1: 08:00 AM - 10:15 AM */}
-              <tr className="min-h-[140px]">
-                <th scope="row" className="border-r border-slate-200 bg-slate-50/70 p-3.5 align-top text-center text-xs font-mono font-bold text-slate-700 select-none">
-                  <div className="space-y-1">
-                    <span className="inline-block bg-[#800521]/10 text-[#800521] font-black text-[9px] uppercase px-1.5 py-0.5 rounded font-mono">
-                      Bloque 1
+              {TIME_BLOCKS.map((slot) => (
+                <tr key={slot.id} className="min-h-[120px]">
+                  {/* Etiqueta de Hora en el eje izquierdo */}
+                  <th scope="row" className="border-r border-slate-200 bg-slate-50/60 p-3.5 align-middle text-center text-xs font-mono font-bold text-slate-700 select-none">
+                    <p className="font-black text-slate-800 text-xs">{slot.tag}</p>
+                    <span className="text-[9.5px] text-slate-400 font-medium block mt-0.5">
+                      {slot.id === "hueco" ? "Ventana libre" : "Sesión regular"}
                     </span>
-                    <p className="font-black text-slate-900 text-xs">08:00 AM</p>
-                    <p className="text-[11px] text-slate-500 font-medium">10:15 AM</p>
-                    <span className="text-[9.5px] text-slate-400 font-semibold block pt-1">Teoría & Lab</span>
-                  </div>
-                </th>
-                {DAYS_SHORT.map((day) => {
-                  const tasks = getBlock1Tasks(day.full);
-                  return (
-                    <td key={day.full} className="border-r border-slate-200 p-2 align-top last:border-r-0 hover:bg-slate-50/40 transition-colors">
-                      {tasks.length > 0 ? (
-                        <div className="space-y-2">
-                          {tasks.map((task) => renderTaskCard(task))}
-                        </div>
-                      ) : (
-                        <div className="h-28 flex flex-col items-center justify-center text-slate-300">
-                          <span className="text-[11px] font-mono select-none">Sin clases</span>
-                        </div>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
+                  </th>
 
-              {/* FRANJA DE RECESO Y VENTANAS: 10:15 AM - 10:45 AM */}
-              <tr className="bg-amber-50/40 border-y border-amber-200/80">
-                <th scope="row" className="border-r border-slate-200 bg-amber-100/50 p-2.5 align-middle text-center text-xs font-mono font-bold text-amber-900 select-none">
-                  <div className="flex items-center justify-center gap-1 text-[10px]">
-                    <Coffee className="w-3.5 h-3.5 text-amber-700" />
-                    <span>10:15 - 10:45</span>
-                  </div>
-                </th>
-                {DAYS_SHORT.map((day) => {
-                  if (day.full === "Miércoles") {
-                    return (
-                      <td key={day.full} className="border-r border-slate-200 p-2 text-center align-middle">
-                        <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-full inline-block">
-                          Transición Pedagógica (11:20 AM)
-                        </span>
-                      </td>
-                    );
-                  }
-                  if (day.full === "Jueves") {
-                    return (
-                      <td key={day.full} className="border-r border-slate-200 p-2 text-center align-middle">
-                        <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                          <BookOpen className="w-3 h-3" />
-                          Ventana Libre / Biblioteca (10:15 - 11:15)
-                        </span>
-                      </td>
-                    );
-                  }
-                  if (day.full === "Sábado") {
-                    return (
-                      <td key={day.full} className="border-r border-slate-200 p-2 text-center align-middle last:border-r-0">
-                        <span className="text-[10px] text-slate-400 font-medium">-</span>
-                      </td>
-                    );
-                  }
-                  return (
-                    <td key={day.full} className="border-r border-slate-200 p-2 text-center align-middle">
-                      <span className="text-[10px] font-extrabold text-amber-900 bg-amber-100/70 border border-amber-200 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                        <Coffee className="w-3 h-3 text-amber-700" />
-                        Receso Institucional (Refrigerio)
-                      </span>
-                    </td>
-                  );
-                })}
-              </tr>
+                  {/* Columnas de Lunes a Sábado */}
+                  {DAYS_SHORT.map((day) => {
+                    const tasksInSlot = getTasksForSlot(day.full, slot.startMin, slot.endMin);
 
-              {/* BLOQUE MATUTINO 2: 10:45 AM - 01:00 PM */}
-              <tr className="min-h-[140px]">
-                <th scope="row" className="border-r border-slate-200 bg-slate-50/70 p-3.5 align-top text-center text-xs font-mono font-bold text-slate-700 select-none">
-                  <div className="space-y-1">
-                    <span className="inline-block bg-[#800521]/10 text-[#800521] font-black text-[9px] uppercase px-1.5 py-0.5 rounded font-mono">
-                      Bloque 2
-                    </span>
-                    <p className="font-black text-slate-900 text-xs">10:45 AM</p>
-                    <p className="text-[11px] text-slate-500 font-medium">01:00 PM</p>
-                    <span className="text-[9.5px] text-slate-400 font-semibold block pt-1">Talleres & Práctica</span>
-                  </div>
-                </th>
-                {DAYS_SHORT.map((day) => {
-                  const tasks = getBlock2Tasks(day.full);
-                  return (
-                    <td key={day.full} className="border-r border-slate-200 p-2 align-top last:border-r-0 hover:bg-slate-50/40 transition-colors">
-                      {tasks.length > 0 ? (
-                        <div className="space-y-2">
-                          {tasks.map((task) => renderTaskCard(task))}
-                        </div>
-                      ) : (
-                        <div className="h-28 flex flex-col items-center justify-center text-slate-300">
-                          <span className="text-[11px] font-mono select-none">Sin clases</span>
-                        </div>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
+                    return (
+                      <td key={day.full} className="border-r border-slate-200 p-2 align-top last:border-r-0 hover:bg-slate-50/30 transition-colors">
+                        {tasksInSlot.length > 0 ? (
+                          <div className="space-y-2">
+                            {tasksInSlot.map((task) => renderTaskCard(task))}
+                          </div>
+                        ) : (
+                          /* Hueco universitario normal: celda limpia sin textos ni adornos de colegio */
+                          <div className="h-24 flex items-center justify-center">
+                            <span className="text-[11px] text-slate-300 font-mono select-none">···</span>
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -564,7 +362,10 @@ export function ScheduleTab({ currentProgram, studentTasks = [], mpaPlanningData
         /* VISTA DE TARJETAS POR DÍA (Lunes a Sábado) */
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3 text-left">
           {DAYS_SHORT.map((day) => {
-            const daySessions = activeSessions.filter((task) => task.dayOfWeek === day.full);
+            const daySessions = activeSessions
+              .filter((task) => task.dayOfWeek === day.full)
+              .sort((a, b) => parseTimeToMinutes(a.startTime) - parseTimeToMinutes(b.startTime));
+
             return (
               <section key={day.full} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-3xs flex flex-col justify-between">
                 <div>
@@ -573,8 +374,8 @@ export function ScheduleTab({ currentProgram, studentTasks = [], mpaPlanningData
                       <span className="w-2.5 h-2.5 rounded-full bg-[#800521]" />
                       <h3 className="text-base font-black uppercase text-slate-900 tracking-tight">{day.full}</h3>
                     </div>
-                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                      {daySessions.length} {daySessions.length === 1 ? "sesión" : "sesiones"}
+                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full font-mono">
+                      {daySessions.length} {daySessions.length === 1 ? "clase" : "clases"}
                     </span>
                   </div>
 
@@ -592,7 +393,7 @@ export function ScheduleTab({ currentProgram, studentTasks = [], mpaPlanningData
 
                 {daySessions.length > 0 && (
                   <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[10.5px] font-semibold text-slate-500">
-                    <span>Horario matutino</span>
+                    <span>Turno Mañana</span>
                     <span className="font-mono font-bold text-slate-700">08:00 AM - 01:00 PM</span>
                   </div>
                 )}

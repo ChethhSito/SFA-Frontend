@@ -213,136 +213,124 @@ export default function AlumnoDashboard({
   // Realistic full morning shift schedule (Turno Mañana 08:00 AM - 01:00 PM) for Ciclo I Electricidad Industrial
   const DEFAULT_ELECTRICIDAD_TASKS = useMemo(() => [
     {
-      id: "task-ei-101-teoria",
+      id: "prog_ei_1_teo",
       groupId: "EI-I-A",
-      courseId: "EIND-101",
-      teacherDni: "40112233",
-      classroomId: "aula-101",
+      courseId: "cur_ei_101",
+      teacherDni: "99887766",
+      classroomId: "aula_101",
       dayOfWeek: "Lunes",
       startTime: "08:00 AM",
-      endTime: "10:15 AM",
+      endTime: "10:00 AM",
       sessionType: "Teoría",
-      pedagogicalHours: 3
+      pedagogicalHours: 2
     },
     {
-      id: "task-ei-101-taller",
+      id: "prog_ei_1_tal",
       groupId: "EI-I-A",
-      courseId: "EIND-101",
-      teacherDni: "40112233",
-      classroomId: "taller-maquinas",
+      courseId: "cur_ei_101",
+      teacherDni: "99887766",
+      classroomId: "lab_elec_1",
       dayOfWeek: "Lunes",
-      startTime: "10:45 AM",
+      startTime: "11:00 AM",
       endTime: "01:00 PM",
-      sessionType: "Taller",
-      pedagogicalHours: 3
-    },
-    {
-      id: "task-ei-102-teoria",
-      groupId: "EI-I-A",
-      courseId: "EIND-102",
-      teacherDni: "41223344",
-      classroomId: "aula-102",
-      dayOfWeek: "Martes",
-      startTime: "08:00 AM",
-      endTime: "10:15 AM",
-      sessionType: "Teoría",
-      pedagogicalHours: 3
-    },
-    {
-      id: "task-ei-102-taller",
-      groupId: "EI-I-A",
-      courseId: "EIND-102",
-      teacherDni: "41223344",
-      classroomId: "taller-redes",
-      dayOfWeek: "Martes",
-      startTime: "10:45 AM",
-      endTime: "01:00 PM",
-      sessionType: "Taller",
-      pedagogicalHours: 3
-    },
-    {
-      id: "task-ei-103-teoria",
-      groupId: "EI-I-A",
-      courseId: "EIND-103",
-      teacherDni: "42334455",
-      classroomId: "aula-101",
-      dayOfWeek: "Miércoles",
-      startTime: "08:00 AM",
-      endTime: "09:40 AM",
-      sessionType: "Teoría",
+      sessionType: "Laboratorio",
       pedagogicalHours: 2
     },
     {
-      id: "task-ei-104-teoria",
+      id: "prog_ei_2_teo",
       groupId: "EI-I-A",
-      courseId: "EIND-104",
-      teacherDni: "43445566",
-      classroomId: "aula-103",
-      dayOfWeek: "Miércoles",
-      startTime: "09:40 AM",
-      endTime: "11:20 AM",
-      sessionType: "Teoría",
-      pedagogicalHours: 2
-    },
-    {
-      id: "task-ei-103-taller",
-      groupId: "EI-I-A",
-      courseId: "EIND-103",
-      teacherDni: "42334455",
-      classroomId: "taller-seguridad",
-      dayOfWeek: "Miércoles",
-      startTime: "11:20 AM",
-      endTime: "01:00 PM",
-      sessionType: "Taller",
-      pedagogicalHours: 2
-    },
-    {
-      id: "task-ei-105-lab",
-      groupId: "EI-I-A",
-      courseId: "EIND-105",
+      courseId: "cur_ei_102",
       teacherDni: "44556677",
-      classroomId: "lab-computo",
-      dayOfWeek: "Jueves",
+      classroomId: "aula_102",
+      dayOfWeek: "Martes",
       startTime: "08:00 AM",
-      endTime: "10:15 AM",
-      sessionType: "Laboratorio",
-      pedagogicalHours: 3
-    },
-    {
-      id: "task-ei-104-practica",
-      groupId: "EI-I-A",
-      courseId: "EIND-104",
-      teacherDni: "43445566",
-      classroomId: "aula-103",
-      dayOfWeek: "Jueves",
-      startTime: "11:15 AM",
-      endTime: "01:00 PM",
-      sessionType: "Práctica",
+      endTime: "10:00 AM",
+      sessionType: "Teoría",
       pedagogicalHours: 2
     },
     {
-      id: "task-ei-101-lab",
+      id: "prog_ei_2_tal",
       groupId: "EI-I-A",
-      courseId: "EIND-101",
-      teacherDni: "40112233",
-      classroomId: "lab-circuitos",
-      dayOfWeek: "Viernes",
-      startTime: "08:00 AM",
-      endTime: "10:15 AM",
+      courseId: "cur_ei_102",
+      teacherDni: "44556677",
+      classroomId: "lab_elec_3",
+      dayOfWeek: "Martes",
+      startTime: "11:00 AM",
+      endTime: "01:00 PM",
       sessionType: "Laboratorio",
-      pedagogicalHours: 3
+      pedagogicalHours: 2
     },
     {
-      id: "task-ei-102-practica",
+      id: "prog_ei_3_teo",
       groupId: "EI-I-A",
-      courseId: "EIND-102",
-      teacherDni: "41223344",
-      classroomId: "taller-redes",
-      dayOfWeek: "Viernes",
-      startTime: "10:45 AM",
+      courseId: "cur_ei_103",
+      teacherDni: "66778899",
+      classroomId: "aula_101",
+      dayOfWeek: "Miércoles",
+      startTime: "08:00 AM",
+      endTime: "10:00 AM",
+      sessionType: "Teoría",
+      pedagogicalHours: 2
+    },
+    {
+      id: "prog_ei_3_tal",
+      groupId: "EI-I-A",
+      courseId: "cur_ei_103",
+      teacherDni: "66778899",
+      classroomId: "lab_elec_1",
+      dayOfWeek: "Miércoles",
+      startTime: "11:00 AM",
       endTime: "01:00 PM",
-      sessionType: "Taller",
-      pedagogicalHours: 3
+      sessionType: "Laboratorio",
+      pedagogicalHours: 2
+    },
+    {
+      id: "prog_ei_5_lab",
+      groupId: "EI-I-A",
+      courseId: "cur_ei_105",
+      teacherDni: "77889900",
+      classroomId: "aula_101",
+      dayOfWeek: "Jueves",
+      startTime: "08:00 AM",
+      endTime: "10:00 AM",
+      sessionType: "Laboratorio",
+      pedagogicalHours: 2
+    },
+    {
+      id: "prog_ei_4_pra",
+      groupId: "EI-I-A",
+      courseId: "cur_ei_104",
+      teacherDni: "88990011",
+      classroomId: "aula_101",
+      dayOfWeek: "Jueves",
+      startTime: "11:00 AM",
+      endTime: "01:00 PM",
+      sessionType: "Teoría",
+      pedagogicalHours: 2
+    },
+    {
+      id: "prog_ei_1_med",
+      groupId: "EI-I-A",
+      courseId: "cur_ei_101",
+      teacherDni: "99887766",
+      classroomId: "lab_elec_1",
+      dayOfWeek: "Viernes",
+      startTime: "08:00 AM",
+      endTime: "10:00 AM",
+      sessionType: "Laboratorio",
+      pedagogicalHours: 2
+    },
+    {
+      id: "prog_ei_2_mon",
+      groupId: "EI-I-A",
+      courseId: "cur_ei_102",
+      teacherDni: "44556677",
+      classroomId: "lab_elec_3",
+      dayOfWeek: "Viernes",
+      startTime: "11:00 AM",
+      endTime: "01:00 PM",
+      sessionType: "Laboratorio",
+      pedagogicalHours: 2
     }
   ], []);
 
@@ -400,6 +388,11 @@ export default function AlumnoDashboard({
       const classroomObj = mpaPlanningData.classrooms.find((c: any) => c.id === primaryTask?.classroomId);
 
       const courseFallbackNames: Record<string, { name: string; code: string; credits: number }> = {
+        "cur_ei_101": { name: "Fundamentos de Electricidad y Circuitos CC", code: "EIND-101", credits: 4 },
+        "cur_ei_102": { name: "Instalaciones Eléctricas de Edificaciones", code: "EIND-102", credits: 4 },
+        "cur_ei_103": { name: "Seguridad e Higiene Industrial en Baja Tensión", code: "EIND-103", credits: 3 },
+        "cur_ei_104": { name: "Matemática Aplicada a la Tecnología Eléctrica", code: "EIND-104", credits: 3 },
+        "cur_ei_105": { name: "Comunicación y Tecnologías Digitales", code: "EIND-105", credits: 2 },
         "EIND-101": { name: "Fundamentos de Electricidad y Circuitos CC", code: "EIND-101", credits: 4 },
         "EIND-102": { name: "Instalaciones Eléctricas de Edificaciones", code: "EIND-102", credits: 4 },
         "EIND-103": { name: "Seguridad e Higiene Industrial en Baja Tensión", code: "EIND-103", credits: 3 },
@@ -408,22 +401,28 @@ export default function AlumnoDashboard({
       };
 
       const teacherFallbackNames: Record<string, string> = {
+        "99887766": "Ing. Manuel Ramos Salazar",
+        "44556677": "Ing. Carlos Alberto Mendoza Quispe",
+        "66778899": "Ing. Jorge Luis Paucar Silva",
+        "88990011": "Lic. Fernando Gabriel Díaz Torres",
+        "77889900": "Lic. Sofía Lorena Valenzuela Ríos",
         "40112233": "Ing. Manuel Ramos Salazar",
         "41223344": "Ing. Carlos Alberto Mendoza Quispe",
         "42334455": "Ing. Jorge Luis Paucar Silva",
-        "43445566": "Lic. Fernando Gabriel Díaz Torres",
-        "44556677": "Lic. Sofía Lorena Valenzuela Ríos"
+        "43445566": "Lic. Fernando Gabriel Díaz Torres"
       };
 
       const classroomFallbackNames: Record<string, string> = {
+        "aula_101": "Aula 101 - Pabellón A",
+        "aula_102": "Aula 102 - Pabellón A",
+        "lab_elec_1": "Taller de Máquinas Eléctricas y Tableros",
+        "lab_elec_2": "Laboratorio de Cómputo y Simulación",
+        "lab_elec_3": "Taller de Instalaciones Eléctricas y Redes BT",
         "aula-101": "Aula 101 - Pabellón A",
         "aula-102": "Aula 102 - Pabellón A",
         "aula-103": "Aula 103 - Pabellón A",
         "taller-maquinas": "Taller de Máquinas Eléctricas y Tableros",
-        "taller-redes": "Taller de Instalaciones Eléctricas y Redes BT",
-        "taller-seguridad": "Taller de Seguridad Industrial y Primeros Auxilios",
-        "lab-computo": "Laboratorio de Cómputo 02",
-        "lab-circuitos": "Laboratorio de Circuitos y Mediciones Eléctricas"
+        "taller-redes": "Taller de Instalaciones Eléctricas y Redes BT"
       };
 
       const fallback = courseFallbackNames[courseId] || courseFallbackNames[courseObj?.code || ""];
