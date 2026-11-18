@@ -532,8 +532,14 @@ export default function AlumnoDashboard({
             )}
 
             {activeTab === "enrollment" && (
-              <CourseEnrollmentTab enrollment={enrollment} studentGroup={studentGroup}
-                data={mpaPlanningData} onSaved={onUpdateEnrollment} />
+              <CourseEnrollmentTab
+                enrollment={enrollment}
+                studentGroup={studentGroup}
+                data={mpaPlanningData}
+                onSaved={onUpdateEnrollment}
+                personalData={personalData}
+                currentProgram={currentProgram}
+              />
             )}
 
             {activeTab === "schedule" && (

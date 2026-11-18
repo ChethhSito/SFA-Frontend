@@ -399,91 +399,119 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                   const validatedCount = docList.filter(d => d.status === "Validado").length;
 
                   return (
-                    <>
-                      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100 text-[11px] font-semibold text-slate-600 shrink-0 mb-4">
-                        <span className="text-slate-600 flex items-center gap-1.5 font-bold">
-                          <ShieldCheck className="w-4 h-4 text-emerald-600" /> Carpeta Requisitorial del Alumno
-                        </span>
-                        <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">
-                          {validatedCount} de {docList.length} documentos validados
+                    <div className="space-y-4">
+                      {/* Institutional Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-slate-900 to-slate-800 text-white p-3.5 rounded-xl border border-slate-700 shadow-xs">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400">
+                            <ShieldCheck className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-black uppercase tracking-wider text-white">
+                              Carpeta Requisitorial del Estudiante
+                            </h4>
+                            <p className="text-[10px] text-slate-300 font-medium">
+                              Expediente oficial validado ante Secretaría General del IESTP San Francisco de Asís
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/80 px-2.5 py-1 rounded-full border border-emerald-500/40 shrink-0 self-start sm:self-auto font-mono">
+                          {validatedCount} de {docList.length} Validados
                         </span>
                       </div>
 
-                      {docList.map((doc, idx) => {
-                        const isValidated = doc.status === "Validado";
-                        const isPending = doc.status === "Pendiente";
-                        const isObserved = doc.status === "Observado";
+                      {/* Clean Documents Table */}
+                      <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs divide-y divide-slate-100">
+                        {docList.map((doc, idx) => {
+                          const isValidated = doc.status === "Validado";
+                          const isPending = doc.status === "Pendiente";
+                          const isObserved = doc.status === "Observado";
 
-                        return (
-                          <div key={idx} className="p-4 border border-slate-100 bg-slate-50/50 rounded-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-slate-200 transition-colors">
-                            <div className="space-y-1.5">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-slate-800">{doc.title}</span>
-                                {doc.mandatory && <span className="text-[8px] bg-red-100 text-[#800521] font-black px-1.5 py-0.5 rounded leading-none">Obligatorio</span>}
-                              </div>
-                              <p className="text-[10px] text-slate-400 font-medium">Requisito digital escaneado a color en formato PDF o JPG continuo.</p>
-                              {doc.fileName && (
-                                <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-600 font-semibold bg-white border border-slate-200 px-2 py-0.5 rounded w-fit">
-                                  <FileText className="w-3.5 h-3.5 text-slate-400" />
-                                  <span>{doc.fileName}</span>
+                          return (
+                            <div key={idx} className="p-3.5 hover:bg-slate-50/70 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3">
+                              <div className="flex items-start gap-3 min-w-0">
+                                <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 shrink-0 mt-0.5">
+                                  <FileText className="w-4 h-4 text-[#800521]" />
                                 </div>
-                              )}
-                            </div>
-
-                            <div className="flex flex-col md:flex-row items-start md:items-center gap-2 shrink-0 w-full md:w-auto">
-                              <div>
-                                {isValidated && (
-                                  <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded font-extrabold uppercase inline-flex items-center gap-1.5 shadow-2xs">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Validado
-                                  </span>
-                                )}
-                                {isPending && (
-                                  <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded font-extrabold uppercase inline-flex items-center gap-1.5 animate-pulse">
-                                    <Clock className="w-3.5 h-3.5 text-amber-500" /> Pendiente
-                                  </span>
-                                )}
-                                {isObserved && (
-                                  <span className="text-[10px] bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded font-extrabold uppercase inline-flex items-center gap-1.5">
-                                    <XCircle className="w-3.5 h-3.5 text-red-500" /> Observado
-                                  </span>
-                                )}
+                                <div className="space-y-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs font-black text-slate-900 leading-snug">
+                                      {doc.title}
+                                    </span>
+                                    {doc.mandatory && (
+                                      <span className="text-[8.5px] bg-rose-50 text-[#800521] border border-rose-200 font-extrabold uppercase px-1.5 py-0.2 rounded leading-none">
+                                        Obligatorio
+                                      </span>
+                                    )}
+                                  </div>
+                                  {doc.fileName && (
+                                    <div className="flex items-center gap-1.5 text-[10.5px] font-mono text-slate-600 font-semibold">
+                                      <span className="bg-slate-100 border border-slate-200 px-2 py-0.5 rounded truncate max-w-xs block">
+                                        {doc.fileName}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
 
-                              <div className="flex items-center gap-1.5">
-                                {doc.fileName && (
-                                  <button
-                                    onClick={() => setPreviewDoc({
-                                      title: doc.title,
-                                      fileName: doc.fileName || "",
-                                      key: doc.key,
-                                      fileDataUrl: doc.fileDataUrl
-                                    })}
-                                    className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] uppercase font-bold py-1 px-2.5 rounded transition-all inline-flex items-center gap-1 cursor-pointer select-none"
-                                    title="Ver documento adjunto"
-                                  >
-                                    <Eye className="w-3 h-3 text-slate-600" /> Ver
-                                  </button>
-                                )}
+                              <div className="flex items-center justify-between md:justify-end gap-2.5 shrink-0 pt-1 md:pt-0 border-t md:border-t-0 border-slate-100">
+                                <div>
+                                  {isValidated && (
+                                    <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full font-black uppercase inline-flex items-center gap-1">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Validado
+                                    </span>
+                                  )}
+                                  {isPending && (
+                                    <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full font-black uppercase inline-flex items-center gap-1">
+                                      <Clock className="w-3.5 h-3.5 text-amber-600" /> Pendiente
+                                    </span>
+                                  )}
+                                  {isObserved && (
+                                    <span className="text-[10px] bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full font-black uppercase inline-flex items-center gap-1">
+                                      <XCircle className="w-3.5 h-3.5 text-rose-600" /> Observado
+                                    </span>
+                                  )}
+                                </div>
 
-                                <label className="bg-[#800521] hover:bg-[#9F062A] text-white text-[10px] uppercase font-bold py-1 px-3 rounded transition-all inline-flex items-center gap-1 cursor-pointer select-none">
-                                  <Upload className="w-3 h-3 text-amber-300" /> {isValidated ? "Actualizar" : "Subir archivo"}
-                                  <input 
-                                    type="file" 
-                                    accept="image/*,.pdf" 
-                                    className="hidden" 
-                                    onChange={(e) => {
-                                      if (e.target.files?.[0]) {
-                                        handleFileUpload(doc.key, e.target.files[0]);
-                                      }
-                                    }}
-                                  />
-                                </label>
+                                <div className="flex items-center gap-1.5">
+                                  {doc.fileName && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setPreviewDoc({
+                                        title: doc.title,
+                                        fileName: doc.fileName || "",
+                                        key: doc.key,
+                                        fileDataUrl: doc.fileDataUrl
+                                      })}
+                                      className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-[10px] uppercase font-bold py-1 px-2.5 rounded-lg transition-all inline-flex items-center gap-1 cursor-pointer select-none shadow-3xs"
+                                      title="Ver documento adjunto"
+                                    >
+                                      <Eye className="w-3 h-3 text-slate-500" />
+                                      <span>Ver</span>
+                                    </button>
+                                  )}
+
+                                  <label className="bg-[#800521] hover:bg-[#66041a] text-white text-[10px] uppercase font-bold py-1 px-3 rounded-lg transition-all inline-flex items-center gap-1 cursor-pointer select-none shadow-3xs">
+                                    <Upload className="w-3 h-3 text-amber-300" />
+                                    <span>{isValidated ? "Actualizar" : "Subir archivo"}</span>
+                                    <input 
+                                      type="file" 
+                                      accept="image/*,.pdf" 
+                                      className="hidden" 
+                                      onChange={(e) => {
+                                        if (e.target.files?.[0]) {
+                                          handleFileUpload(doc.key, e.target.files[0]);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </>
+                          );
+                        })}
+                      </div>
+                    </div>
                   );
                 })()}
               </div>
@@ -607,25 +635,6 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Available billing methods footer */}
-          <div className="mt-8 pt-6 border-t border-slate-100">
-            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block mb-3 text-center">CANALES DE PAGO HABILITADOS EN CAJA</span>
-            <div className="grid grid-cols-3 gap-3 max-w-md mx-auto">
-              <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-lg text-center">
-                <span className="text-[10px] font-bold text-slate-700 block">Tarjeta de Crédito</span>
-                <span className="text-[8px] text-slate-400 block mt-0.5">Visa, Mastercard</span>
-              </div>
-              <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-lg text-center">
-                <span className="text-[10px] font-bold text-slate-700 block">Ventanilla de Caja</span>
-                <span className="text-[8px] text-slate-400 block mt-0.5">Campus Central</span>
-              </div>
-              <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-lg text-center">
-                <span className="text-[10px] font-bold text-slate-700 block">Banca Digital / Yape</span>
-                <span className="text-[8px] text-slate-400 block mt-0.5">Confirmación Inmediata</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
