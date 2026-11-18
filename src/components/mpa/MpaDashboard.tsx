@@ -107,8 +107,6 @@ export default function MpaDashboard({ onLogout, onGoToPortal }: MpaDashboardPro
       } catch (error) {
         if (!active) return;
         setSyncError(`Sin conexión con el backend MPA: ${error instanceof Error ? error.message : "error desconocido"}. No se cargaron los datos académicos.`);
-      } finally {
-        if (active) setLoading(false);
       }
     }
     void loadMpa();
