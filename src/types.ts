@@ -299,6 +299,7 @@ export interface MpaCourse {
   labHours?: number;
   status?: "Activo" | "Inactivo";
   careerId?: string;
+  cycle?: number;
   referenceCycle?: number;
   type?: "General" | "Especialidad";
 }

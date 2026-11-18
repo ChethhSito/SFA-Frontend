@@ -105,9 +105,12 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = React.memo(({
   const isObserved = myEnrollment.paymentStatus === "Observado";
 
   const cycleCourses = REAL_MPA_COURSES.filter(
-    (c) => c.careerId === applicant.programId && c.referenceCycle === 1
+    (c) =>
+      c.careerId === applicant.programId &&
+      (Number(c.cycle ?? c.referenceCycle) === 1 || Number(c.referenceCycle ?? c.cycle) === 1)
   );
-  const totalCredits = cycleCourses.reduce((acc, c) => acc + (c.credits || 0), 0) || 24;
+  const totalCredits =
+    cycleCourses.reduce((acc, c) => acc + (c.credits || 0), 0) || 16;
 
   return (
     <PageTransition id="matricula" className="space-y-6 text-left">
@@ -655,7 +658,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = React.memo(({
                     {c.code}
                   </span>
                   <span className="text-[9.5px] font-bold uppercase tracking-wider px-2 py-0.5 rounded text-slate-500 bg-white/80 border border-slate-200">
-                    {c.type === "especificos" ? "Especialidad" : "Empleabilidad"}
+                    {c.type === "especificos" || c.type === "Especialidad" ? "Especialidad" : (c.type || "General")}
                   </span>
                 </div>
                 <h4 className="text-xs font-black text-slate-800 leading-snug">
