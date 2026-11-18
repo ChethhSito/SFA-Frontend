@@ -1,6 +1,6 @@
 import { AttendanceRecord } from "../../../types";
 import { studentAttendanceRecords } from "../../../utils/attendance";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { 
   Zap, Cpu, Sliders, Award, ChevronRight, ChevronDown, BookOpen, Clock, CheckCircle2, 
   Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark, MapPin, GraduationCap
@@ -68,24 +68,64 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   const classesCoursesData = enrichedCourses;
   const activeCourse = classesCoursesData.find(c => c.name === selectedCourseDetail);
   const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
-  const [selectedComponentFilter, setSelectedComponentFilter] = useState<string>("all");
+  const [activeCourseComponentId, setActiveCourseComponentId] = useState<string | null>(null);
 
-  const courseComponents = useMemo(() => {
+  const subComponents = useMemo(() => {
     if (!activeCourse) return [];
     if (activeCourse.code === "EIND-101" || activeCourse.code?.startsWith("EIND-101")) {
       return [
-        { id: "all", label: "Todos los Componentes", badge: "Consolidado", code: activeCourse.code },
-        { id: "teo", label: "Teoría", badge: "Teoría", code: "EIND-101-TEO", schedule: "Lunes 08:00 AM - 10:00 AM", classroom: "Aula 101 - Pabellón A", teacher: activeCourse.teacherName || "Manuel Ramos Salazar" },
-        { id: "tal", label: "Taller", badge: "Taller", code: "EIND-101-TAL", schedule: "Lunes 11:00 AM - 01:00 PM", classroom: "Taller de Máquinas Eléctricas y Tableros", teacher: activeCourse.teacherName || "Manuel Ramos Salazar" },
-        { id: "lab", label: "Laboratorio", badge: "Laboratorio", code: "EIND-101-LAB", schedule: "Viernes 08:00 AM - 10:00 AM", classroom: "Laboratorio de Cómputo y Simulación", teacher: activeCourse.teacherName || "Manuel Ramos Salazar" },
+        {
+          id: "teo",
+          code: "EIND-101-TEO",
+          name: "Fundamentos de Electricidad y Circuitos CC (Teoría)",
+          shortLabel: "Teoría",
+          badge: "Teoría Presencial",
+          schedule: "Lunes 08:00 AM - 10:00 AM",
+          classroom: "Aula 101 - Pabellón A",
+          teacher: activeCourse.teacherName || "Manuel Ramos Salazar",
+          credits: 2,
+          hours: "2 Horas Pedagógicas",
+          description: "Fundamentos conceptuales, leyes eléctricas de Kirchhoff, análisis de mallas y cálculo de circuitos de corriente continua.",
+          dbCourseId: "6afc831d1bbefb1d4e11dd0e"
+        },
+        {
+          id: "tal",
+          code: "EIND-101-TAL",
+          name: "Fundamentos de Electricidad y Circuitos CC (Taller)",
+          shortLabel: "Taller",
+          badge: "Taller Práctico",
+          schedule: "Lunes 11:00 AM - 01:00 PM",
+          classroom: "Taller de Máquinas Eléctricas y Tableros",
+          teacher: activeCourse.teacherName || "Manuel Ramos Salazar",
+          credits: 2,
+          hours: "2 Horas Pedagógicas",
+          description: "Montaje físico de tableros eléctricos industriales, cableado estructurado, uso de EPP y conexionado de circuitos de fuerza.",
+          dbCourseId: "6afe1412016eccb3be7af0eb"
+        },
+        {
+          id: "lab",
+          code: "EIND-101-LAB",
+          name: "Fundamentos de Electricidad y Circuitos CC (Laboratorio)",
+          shortLabel: "Laboratorio",
+          badge: "Laboratorio y Mediciones",
+          schedule: "Viernes 08:00 AM - 10:00 AM",
+          classroom: "Laboratorio de Cómputo y Simulación",
+          teacher: activeCourse.teacherName || "Manuel Ramos Salazar",
+          credits: 1,
+          hours: "2 Horas Pedagógicas",
+          description: "Simulación de circuitos eléctricos en software CAD/CAE, osciloscopios digitales y emisión de reportes técnicos de laboratorio.",
+          dbCourseId: "6afe141f016eccb3be7af0ec"
+        }
       ];
     }
-    return [
-      { id: "all", label: "Todos los Componentes", badge: "Consolidado", code: activeCourse.code },
-      { id: "teo", label: "Teoría", badge: "Teoría", code: `${activeCourse.code}-TEO`, schedule: activeCourse.schedule, classroom: activeCourse.classroom, teacher: activeCourse.teacherName },
-      { id: "tal", label: "Práctica / Taller", badge: "Taller", code: `${activeCourse.code}-TAL`, schedule: activeCourse.schedule, classroom: activeCourse.classroom, teacher: activeCourse.teacherName }
-    ];
+    return [];
   }, [activeCourse]);
+
+  useEffect(() => {
+    setActiveCourseComponentId(null);
+  }, [selectedCourseDetail]);
+
+  const selectedComponent = subComponents.find((c) => c.id === activeCourseComponentId) || null;
 
   const renderCourseIcon = (iconName: string, className = "w-4 h-4") => {
     switch (iconName) {
@@ -261,6 +301,112 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     );
   }
 
+  if (subComponents.length > 1 && !activeCourseComponentId) {
+    return (
+      <PageTransition id="classes-components-list" className="space-y-6 text-left font-sans">
+        {/* Banner Institucional del Curso */}
+        <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-8 overflow-hidden text-left border-b-4 border-amber-500">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/80 opacity-95" />
+          <div className="relative z-10 space-y-3 max-w-4xl">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-3 py-1 rounded-sm font-mono">
+                UNIDAD DIDÁCTICA • {activeCourse.code} • {activeCourse.credits || 4} CRÉDITOS
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedCourseDetail("")}
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer"
+              >
+                ← Volver a Mis Asignaturas
+              </button>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight leading-tight">
+              {activeCourse.name}
+            </h2>
+            <p className="text-xs text-slate-200 font-medium leading-relaxed max-w-2xl">
+              Esta asignatura modular se estructura en <strong>{subComponents.length} componentes pedagógicos independientes</strong>. Seleccione el entorno lectivo al que desea acceder para revisar materiales, consultar asistencias y entregar tareas:
+            </p>
+          </div>
+        </div>
+
+        {/* Grid de Tarjetas de Componentes */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {subComponents.map((comp) => (
+            <div
+              key={comp.id}
+              className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group hover:border-[#800521]/40"
+            >
+              <div>
+                {/* Header de la Tarjeta */}
+                <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                  <span className="font-mono text-xs font-black text-[#800521] bg-white border border-slate-200 px-2 py-0.5 rounded-md">
+                    {comp.code}
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#800521]/10 text-[#800521] border border-[#800521]/20">
+                    {comp.badge}
+                  </span>
+                </div>
+
+                {/* Contenido Principal */}
+                <div className="p-5 space-y-4 text-left">
+                  <h3 className="text-base font-black text-slate-900 group-hover:text-[#800521] transition-colors leading-snug">
+                    {comp.name}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                    {comp.description}
+                  </p>
+
+                  <div className="space-y-2.5 pt-3 border-t border-slate-100 text-xs">
+                    <div className="flex items-start gap-2">
+                      <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-[9px] uppercase font-bold text-slate-400 block leading-none">Horario de Sesión</span>
+                        <span className="font-mono font-extrabold text-[#800521] text-[11px] block mt-0.5">{comp.schedule}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-[9px] uppercase font-bold text-slate-400 block leading-none">Ambiente / Laboratorio</span>
+                        <span className="font-extrabold text-slate-700 text-[11px] block mt-0.5">{comp.classroom}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <Users className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-[9px] uppercase font-bold text-slate-400 block leading-none">Docente Titular</span>
+                        <span className="font-extrabold text-slate-700 text-[11px] block mt-0.5">{comp.teacher}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botón de Entrada */}
+              <div className="p-5 pt-0 bg-white">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveCourseComponentId(comp.id);
+                    setActiveCourseSection("general");
+                    setSelectedClassWeek(1);
+                    setSelectedClassWeekOption("materiales");
+                  }}
+                  className="w-full bg-[#800521] hover:bg-[#66041a] text-white py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group-hover:scale-[1.01]"
+                >
+                  <span>Ingresar a {comp.shortLabel}</span>
+                  <ChevronRight className="w-4 h-4 text-amber-300 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </PageTransition>
+    );
+  }
+
   const getMappedCourseId = (code: string) => {
     if (code === "EE-101") return "cur-elec-1"; 
     if (code === "EE-403") return "cur-elec-2"; 
@@ -271,23 +417,31 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   const activeCourseDbId = getMappedCourseId(activeCourse.code);
 
   const filteredDBMaterials = materials.filter(m => {
-    const courseMatches = activeCourse.attendanceCourseIds?.includes(m.courseId) || m.courseId === activeCourse.id || m.courseId === activeCourseDbId;
     const weekMatches = m.title.includes(`[Semana ${selectedClassWeek}]`) || m.title.includes(`Semana ${selectedClassWeek}`);
-    if (!courseMatches || !weekMatches) return false;
-    if (selectedComponentFilter === "teo") return m.courseId.includes("teo") || m.title.toLowerCase().includes("teor") || (!m.courseId.includes("tal") && !m.courseId.includes("lab") && !m.title.toLowerCase().includes("taller") && !m.title.toLowerCase().includes("lab"));
-    if (selectedComponentFilter === "tal") return m.courseId.includes("tal") || m.title.toLowerCase().includes("taller");
-    if (selectedComponentFilter === "lab") return m.courseId.includes("lab") || m.title.toLowerCase().includes("lab") || m.title.toLowerCase().includes("simula");
-    return true;
+    if (!weekMatches) return false;
+    if (selectedComponent) {
+      return m.courseId === selectedComponent.dbCourseId ||
+             m.courseId === selectedComponent.code ||
+             (selectedComponent.id === "teo" && (m.courseId.includes("teo") || m.title.toLowerCase().includes("teor"))) ||
+             (selectedComponent.id === "tal" && (m.courseId.includes("tal") || m.title.toLowerCase().includes("taller"))) ||
+             (selectedComponent.id === "lab" && (m.courseId.includes("lab") || m.title.toLowerCase().includes("lab") || m.title.toLowerCase().includes("simula")));
+    }
+    const courseMatches = activeCourse.attendanceCourseIds?.includes(m.courseId) || m.courseId === activeCourse.id || m.courseId === activeCourseDbId;
+    return courseMatches;
   });
 
   const filteredDBAssignments = assignments.filter(a => {
-    const courseMatches = activeCourse.attendanceCourseIds?.includes(a.courseId) || a.courseId === activeCourse.id || a.courseId === activeCourseDbId;
     const weekMatches = a.kind !== "assessment" && (a.title.includes(`[Semana ${selectedClassWeek}]`) || a.title.includes(`Semana ${selectedClassWeek}`));
-    if (!courseMatches || !weekMatches) return false;
-    if (selectedComponentFilter === "teo") return a.courseId.includes("teo") || a.title.toLowerCase().includes("teor");
-    if (selectedComponentFilter === "tal") return a.courseId.includes("tal") || a.title.toLowerCase().includes("taller");
-    if (selectedComponentFilter === "lab") return a.courseId.includes("lab") || a.title.toLowerCase().includes("lab") || a.title.toLowerCase().includes("simula");
-    return true;
+    if (!weekMatches) return false;
+    if (selectedComponent) {
+      return a.courseId === selectedComponent.dbCourseId ||
+             a.courseId === selectedComponent.code ||
+             (selectedComponent.id === "teo" && (a.courseId.includes("teo") || a.title.toLowerCase().includes("teor"))) ||
+             (selectedComponent.id === "tal" && (a.courseId.includes("tal") || a.title.toLowerCase().includes("taller"))) ||
+             (selectedComponent.id === "lab" && (a.courseId.includes("lab") || a.title.toLowerCase().includes("lab") || a.title.toLowerCase().includes("simula")));
+    }
+    const courseMatches = activeCourse.attendanceCourseIds?.includes(a.courseId) || a.courseId === activeCourse.id || a.courseId === activeCourseDbId;
+    return courseMatches;
   });
 
   const handleSimulateHWUpload = (asgId: string, customFileName: string) => {
@@ -336,15 +490,35 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
       {/* LEFT SUB-SIDEBAR: Estructura Académica */}
       <aside className="w-full md:w-64 shrink-0 bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden select-none text-left">
         <div className="p-4 border-b border-slate-200 bg-slate-50/50">
-          <span className="text-[9px] font-black text-[#8B0026] bg-red-50 border border-red-150 px-2 py-0.5 rounded-sm select-none block w-max uppercase tracking-widest font-mono">
-            Asignatura: {activeCourse.code}
-          </span>
-          <h3 className="text-xs font-black text-slate-900 tracking-tight block mt-1.5 truncate uppercase" title={activeCourse.name}>
-            {activeCourse.name}
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[9px] font-black text-[#8B0026] bg-red-50 border border-red-150 px-2 py-0.5 rounded-sm select-none block w-max uppercase tracking-widest font-mono">
+              {selectedComponent ? selectedComponent.code : `Asignatura: ${activeCourse.code}`}
+            </span>
+            {selectedComponent && (
+              <span className="text-[8.5px] font-black text-[#800521] bg-[#800521]/10 border border-[#800521]/20 px-1.5 py-0.5 rounded uppercase">
+                {selectedComponent.shortLabel}
+              </span>
+            )}
+          </div>
+          <h3 className="text-xs font-black text-slate-900 tracking-tight block mt-1.5 truncate uppercase" title={selectedComponent ? selectedComponent.name : activeCourse.name}>
+            {selectedComponent ? selectedComponent.name : activeCourse.name}
           </h3>
           <p className="text-[9px] text-[#CFA020] font-bold tracking-wider uppercase block mt-1">
-            Estructura Académica
+            {selectedComponent ? selectedComponent.badge : "Estructura Académica"}
           </p>
+
+          {subComponents.length > 1 && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveCourseComponentId(null);
+                setActiveCourseSection("general");
+              }}
+              className="mt-3 w-full bg-white hover:bg-slate-100 text-[#800521] border border-slate-200 hover:border-[#800521]/30 rounded-lg text-[9.5px] font-black py-2 px-2 flex items-center justify-center gap-1.5 uppercase transition-all shadow-2xs cursor-pointer"
+            >
+              <span>← Cambiar Componente</span>
+            </button>
+          )}
         </div>
 
         <div className="p-2 space-y-1 divide-y divide-slate-100/50 max-h-[500px] overflow-y-auto">
@@ -471,14 +645,30 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
             <div className="relative bg-[#800521] text-white rounded-xl shadow-md p-6 overflow-hidden text-left border-b-4 border-amber-500">
               <div className="absolute inset-0 bg-linear-gradient(to right,rgba(128,5,33,0.95),rgba(0,0,0,0.65))" />
               <div className="relative z-10 space-y-2">
-                <span className="bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-widest px-3 py-1 w-max select-none rounded-xs block font-mono">
-                  INTRANET ACADÉMICA • PORTAL ALUMNO
-                </span>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-widest px-3 py-1 w-max select-none rounded-xs block font-mono">
+                    {selectedComponent ? `${selectedComponent.code} • ${selectedComponent.badge}` : `INTRANET ACADÉMICA • ${activeCourse.code}`}
+                  </span>
+                  {subComponents.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveCourseComponentId(null);
+                        setActiveCourseSection("general");
+                      }}
+                      className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg px-3 py-1 text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>← Cambiar Componente</span>
+                    </button>
+                  )}
+                </div>
                 <h2 className="text-xl md:text-2xl font-black font-display tracking-tight leading-none pt-1">
-                  {activeCourse.name}
+                  {selectedComponent ? selectedComponent.name : activeCourse.name}
                 </h2>
                 <p className="text-xs text-slate-200 font-medium tracking-wide">
-                  Plan Curricular IESTP San Francisco de Asís • Ciclo Académico Regular
+                  {selectedComponent 
+                    ? `Ambiente: ${selectedComponent.classroom} • Horario: ${selectedComponent.schedule} • Docente: ${selectedComponent.teacher}`
+                    : `Plan Curricular IESTP San Francisco de Asís • Ciclo Académico Regular`}
                 </p>
               </div>
             </div>
@@ -511,22 +701,20 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               <div className="lg:col-span-8 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs text-left">
                 <div className="p-4 border-b border-slate-200 bg-slate-50/40">
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 font-display">
-                    FICHA TÉCNICA DE LA ASIGNATURA ASIGNADA
+                    {selectedComponent ? `FICHA TÉCNICA: ${selectedComponent.badge.toUpperCase()}` : "FICHA TÉCNICA DE LA ASIGNATURA"}
                   </h3>
                 </div>
                 <div className="p-4 divide-y divide-slate-100 text-xs text-slate-700 font-medium leading-relaxed">
                   {[
-                    { k: "Código del curso:", v: activeCourse.code },
-                    { k: "Nombre del curso:", v: activeCourse.name },
+                    { k: "Código de Unidad / Componente:", v: selectedComponent ? selectedComponent.code : activeCourse.code },
+                    { k: "Nombre oficial:", v: selectedComponent ? selectedComponent.name : activeCourse.name },
                     { k: "Carrera Profesional:", v: currentProgram?.name || "ELECTRICIDAD INDUSTRIAL" },
-                    { k: "Grupo Académico:", v: activeCourse.group || "Grupo A" },
-                    { k: "Malla / Diseño Curricular:", v: activeCourse.curriculum || "Diseño Curricular Modular (Vigente)" },
-                    { k: "Créditos Académicos:", v: `${activeCourse.credits} Créditos Oficiales` },
-                    { k: "Aula o Laboratorio:", v: activeCourse.classroom },
-                    { k: "Capacidad del grupo:", v: `${activeCourse.studentCount || 0} cupos` },
-                    { k: "Horario Lectivo Oficial:", v: activeCourse.schedule },
+                    { k: "Modalidad formativa:", v: selectedComponent ? selectedComponent.badge : "Presencial Regular" },
+                    { k: "Créditos Académicos:", v: `${selectedComponent ? selectedComponent.credits : activeCourse.credits} Créditos Oficiales` },
+                    { k: "Ambiente / Taller:", v: selectedComponent ? selectedComponent.classroom : activeCourse.classroom },
+                    { k: "Horario Lectivo Oficial:", v: selectedComponent ? selectedComponent.schedule : activeCourse.schedule },
                     { k: "Rango de Semestre:", v: activeCourse.dates || "2027-03-22 / 2027-07-30 (Regular)" },
-                    { k: "Docente asignado:", v: activeCourse.teacherName || "Por asignar" }
+                    { k: "Docente Titular:", v: selectedComponent ? selectedComponent.teacher : (activeCourse.teacherName || "Manuel Ramos Salazar") }
                   ].map((row, rIdx) => (
                     <div key={rIdx} className="flex justify-between py-2.5">
                       <span className="text-slate-400 font-bold uppercase text-[10px]">{row.k}</span>
@@ -556,44 +744,6 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 </div>
               </div>
             </div>
-
-            {courseComponents.length > 1 && (
-              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs text-left p-5 space-y-3">
-                <div className="border-b border-slate-150 pb-2 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xs font-black uppercase tracking-wider text-[#800521]">
-                      Componentes Formativos de la Asignatura
-                    </h3>
-                    <p className="text-[11px] text-slate-500 font-medium">
-                      Distribución de ambientes físicos, docentes titulares y sesiones lectivas independientes.
-                    </p>
-                  </div>
-                  <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono">
-                    {courseComponents.filter(c => c.id !== "all").length} Componentes
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-                  {courseComponents.filter(c => c.id !== "all").map(comp => (
-                    <div key={comp.id} className="p-3.5 bg-slate-50/70 border border-slate-200 rounded-xl space-y-2 text-left">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-[10px] font-black text-slate-500">{comp.code}</span>
-                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-white border border-slate-200 text-[#800521]">
-                          {comp.badge}
-                        </span>
-                      </div>
-                      <span className="font-extrabold text-slate-900 text-xs block leading-tight">
-                        {comp.label}
-                      </span>
-                      <div className="text-[10.5px] text-slate-600 space-y-1 pt-1.5 border-t border-slate-200/60">
-                        <p><strong className="text-slate-500 font-bold">Docente:</strong> {comp.teacher}</p>
-                        <p><strong className="text-slate-500 font-bold">Ambiente:</strong> {comp.classroom}</p>
-                        <p className="font-mono font-bold text-[#800521] pt-0.5">{comp.schedule}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -601,7 +751,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           <div className="space-y-6">
             <PageHeader
               title="Horarios Lectivos Oficiales"
-              subtitle="Distribución horaria presencial programada para el semestre en vigor."
+              subtitle={selectedComponent ? `Programación horaria para: ${selectedComponent.name}` : "Distribución horaria presencial programada para el semestre en vigor."}
               icon={<Clock className="w-5 h-5 text-[#8B0026]" />}
             />
             
@@ -609,25 +759,39 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               <Card className="border border-slate-200">
                 <CardHeader className="flex flex-row items-center justify-between border-b pb-4 bg-slate-50/40">
                   <div>
-                    <span className="text-[10px] text-amber-600 font-black uppercase block font-mono">Sesión Programada</span>
-                    <CardTitle className="uppercase text-slate-800 text-sm mt-1">Clase Teórica - Práctica</CardTitle>
+                    <span className="text-[10px] text-amber-600 font-black uppercase block font-mono">
+                      {selectedComponent ? selectedComponent.badge : "Sesión Programada"}
+                    </span>
+                    <CardTitle className="uppercase text-slate-800 text-sm mt-1">
+                      {selectedComponent ? selectedComponent.shortLabel : "Clase Teórica - Práctica"}
+                    </CardTitle>
                   </div>
                   <span className="px-2.5 py-1 bg-[#8B0026]/10 text-[#8B0026] border border-[#8B0026]/20 font-black text-[9px] uppercase rounded-sm">
-                    {activeCourse.schedule.split(" ")[0]}
+                    {selectedComponent ? selectedComponent.schedule.split(" ")[0] : activeCourse.schedule.split(" ")[0]}
                   </span>
                 </CardHeader>
                 <CardContent className="p-5 space-y-3.5 text-xs text-slate-600 font-bold leading-normal">
                   <div className="flex justify-between border-b pb-1.5">
                     <span className="text-slate-400 font-semibold">Horario Establecido:</span>
-                    <span className="text-slate-900 font-mono font-extrabold">{activeCourse.schedule.substring(activeCourse.schedule.indexOf(" ") + 1)}</span>
+                    <span className="text-slate-900 font-mono font-extrabold">
+                      {selectedComponent ? selectedComponent.schedule : activeCourse.schedule}
+                    </span>
                   </div>
                   <div className="flex justify-between border-b pb-1.5">
                     <span className="text-slate-400 font-semibold">Aula / Laboratorio:</span>
-                    <span className="text-[#8B0026] uppercase font-extrabold">{activeCourse.classroom}</span>
+                    <span className="text-[#8B0026] uppercase font-extrabold">
+                      {selectedComponent ? selectedComponent.classroom : activeCourse.classroom}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b pb-1.5">
+                    <span className="text-slate-400 font-semibold">Docente Titular:</span>
+                    <span className="text-slate-900 uppercase font-extrabold">
+                      {selectedComponent ? selectedComponent.teacher : (activeCourse.teacherName || "Manuel Ramos Salazar")}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400 font-semibold">Frecuencia de Repetición:</span>
-                    <span className="text-slate-900 uppercase font-black tracking-wide text-[10.5px]">Semanal síncrono</span>
+                    <span className="text-slate-900 uppercase font-black tracking-wide text-[10.5px]">Semanal síncrono presencial</span>
                   </div>
                 </CardContent>
               </Card>
@@ -735,50 +899,22 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               </div>
 
               <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-                {/* Component Filter Switcher */}
-                {courseComponents.length > 1 && (
-                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-left">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                        Filtrar por Componente:
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {courseComponents.map((comp) => {
-                        const isSelected = selectedComponentFilter === comp.id;
-                        return (
-                          <button
-                            key={comp.id}
-                            type="button"
-                            onClick={() => setSelectedComponentFilter(comp.id)}
-                            className={`px-3 py-1.5 rounded-lg text-[10.5px] font-black uppercase transition-all flex items-center gap-1.5 cursor-pointer border ${
-                              isSelected
-                                ? "bg-[#800521] text-white border-[#800521] shadow-xs"
-                                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
-                            }`}
-                          >
-                            <span>{comp.label}</span>
-                            {comp.id !== "all" && (
-                              <span className={`text-[8.5px] font-mono px-1 py-0.2 rounded ${isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
-                                {comp.badge}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
                 {selectedClassWeekOption === "asistencia" && (() => {
                   if (attendanceLoading) return <p role="status" className="p-4 text-xs font-bold text-slate-500">Cargando registros de asistencia...</p>;
                   if (attendanceError) return <p role="alert" className="p-4 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">{attendanceError}</p>;
-                  const records = studentAttendanceRecords(attendance, activeCourse.attendanceCourseIds || [activeCourse.id, activeCourse.code], studentDni)
+                  
+                  const targetCourseIds = selectedComponent
+                    ? [selectedComponent.code, selectedComponent.dbCourseId, selectedComponent.id]
+                    : (activeCourse.attendanceCourseIds || [activeCourse.id, activeCourse.code]);
+
+                  const records = studentAttendanceRecords(attendance, targetCourseIds, studentDni)
                     .filter((record) => record.week === selectedClassWeek)
                     .filter((record) => {
-                      if (selectedComponentFilter === "teo") return record.courseId.includes("teo") || (record as any).sessionType === "Teoría";
-                      if (selectedComponentFilter === "tal") return record.courseId.includes("tal") || (record as any).sessionType === "Taller";
-                      if (selectedComponentFilter === "lab") return record.courseId.includes("lab") || (record as any).sessionType === "Laboratorio";
+                      if (!selectedComponent) return true;
+                      const cId = (record.courseId || "").toLowerCase();
+                      if (selectedComponent.id === "teo") return cId.includes("teo") || record.courseId === selectedComponent.code || (record as any).sessionType === "Teoría";
+                      if (selectedComponent.id === "tal") return cId.includes("tal") || record.courseId === selectedComponent.code || (record as any).sessionType === "Taller";
+                      if (selectedComponent.id === "lab") return cId.includes("lab") || record.courseId === selectedComponent.code || (record as any).sessionType === "Laboratorio";
                       return true;
                     });
                   
@@ -787,10 +923,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                       <div className="border-b border-slate-150 pb-3 flex items-center justify-between">
                         <div>
                           <h4 className="text-xs font-black uppercase text-slate-900 tracking-tight">
-                            Asistencia de la Semana {selectedClassWeek}
+                            Asistencia: {selectedComponent ? selectedComponent.shortLabel : "Sesión Lectiva"} • Semana {selectedClassWeek}
                           </h4>
                           <p className="text-[11px] text-slate-500 font-medium">
-                            Historial de sesiones y control de puntualidad en taller.
+                            {selectedComponent ? `${selectedComponent.classroom} • ${selectedComponent.schedule} • Docente: ${selectedComponent.teacher}` : "Historial de sesiones y control de puntualidad en taller."}
                           </p>
                         </div>
                         <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-full text-[10.5px] font-black font-mono">
