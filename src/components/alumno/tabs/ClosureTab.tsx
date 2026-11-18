@@ -3,6 +3,7 @@ import { Printer, Download, Award, CheckCircle2, Mail, FileText, ClipboardList }
 import { StudentPersonalData, Enrollment, AcademicProgram, CycleStatus, Course } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
 import Toast, { ToastNotice } from "../../ui/Toast";
+import { generateMatriculaPdf, generateCurriculumPlanPdf, generateBoletaNotasPdf } from "../../../utils/matriculaPdf";
 
 interface ClosureTabProps {
   personalData: StudentPersonalData;
@@ -95,10 +96,11 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
     },
     "20": {
       "I": [
-        { code: "EE-101", name: "Introducción a la Electricidad", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-102", name: "Matemática Aplicada I", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 2, pr: 2 },
-        { code: "EE-103", name: "Dibujo Técnico Industrial", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "EE-104", name: "Seguridad y Salud Ocupacional", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
+        { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
+        { code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", type: "General", credits: 3, status: "Matriculado", teo: 2, pr: 2 },
+        { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", type: "General", credits: 2, status: "Matriculado", teo: 1, pr: 2 }
       ],
       "II": [
         { code: "EE-201", name: "Electricidad Básica y Mediciones", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
@@ -207,12 +209,13 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
               </span>
             </div>
             <button
-              onClick={() => {
-                setToastNotice({
-                  title: "Ficha Curricular Generada",
-                  message: "Se ha descargado la copia oficial del plan de estudios con las firmas digitales de secretaría.",
-                  type: "success"
-                });
+              type="button"
+              onClick={async () => {
+                await generateCurriculumPlanPdf(
+                  currentProgram?.name || "Electricidad Industrial",
+                  `${personalData.name} ${personalData.lastName}`,
+                  personalData.dni
+                );
               }}
               className="bg-white hover:bg-amber-50 text-slate-900 font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-2 select-none cursor-pointer transition-all shadow-md border border-white/30"
             >
@@ -288,17 +291,17 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
           <div className="bg-white rounded-xl border border-slate-100 shadow-xs overflow-hidden text-left">
             {(() => {
               const cyclePeriodDisplayMap: Record<string, string> = {
-                "VI": "Periodo 2026 - II",
-                "V": "Periodo 2026 - I",
-                "IV": "Periodo 2025 - II",
-                "III": "Periodo 2025 - I",
-                "II": "Periodo 2024 - II",
-                "I": "Periodo 2024 - I",
+                "VI": "Periodo 2029 - II",
+                "V": "Periodo 2029 - I",
+                "IV": "Periodo 2028 - II",
+                "III": "Periodo 2028 - I",
+                "II": "Periodo 2027 - II",
+                "I": "Periodo 2027 - I",
               };
               return (
                 <div className="bg-slate-50 border-b border-slate-150 px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <span id="label-cycle-selected" className="text-xs font-black text-slate-700 uppercase tracking-wide leading-none">
-                    Ciclo {selectedQueryCycle} - Unidades Registradas ({cyclePeriodDisplayMap[selectedQueryCycle] || "Periodo 2026 - I"})
+                    Ciclo {selectedQueryCycle} - Unidades Registradas ({cyclePeriodDisplayMap[selectedQueryCycle] || "Periodo 2027 - I"})
                   </span>
                   <span className="text-[10px] font-bold text-slate-500 bg-white border px-2.5 py-1 rounded-lg shadow-sm">
                     Créditos de Ciclo: {cycleCreditsSum?.toFixed(1)}
@@ -354,35 +357,27 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block mb-4">Requisitos Oficiales para Certificación y Egreso</span>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-3 border rounded-lg bg-slate-50/50 border-slate-100 flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+              <div className={`p-3.5 border rounded-xl flex items-center gap-3 ${isPromoted ? "bg-slate-50/50 border-slate-200" : "bg-emerald-50/40 border-emerald-200"}`}>
+                <CheckCircle2 className={`w-5 h-5 shrink-0 ${isPromoted ? "text-emerald-600" : "text-emerald-600"}`} />
                 <div>
                   <span className="text-xs font-bold text-slate-800 block">Créditos Curriculares</span>
-                  <span className="text-[10px] text-slate-500 mt-0.5 block font-bold">120 / 120 Créditos aprobados. Requisito al día.</span>
+                  <span className="text-[10.5px] text-slate-600 mt-0.5 block font-bold">
+                    {isPromoted ? "120 / 120 Créditos aprobados. Requisito al día." : `${cycleCreditsSum || 16}.0 / 120 Créditos. Ciclo I matriculado y en curso.`}
+                  </span>
                 </div>
               </div>
 
-              <div className="p-3 border rounded-lg bg-slate-50/50 border-slate-100 flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                <div>
-                  <span className="text-xs font-bold text-slate-800 block">Proyección Social / Comunitario</span>
-                  <span className="text-[10px] text-slate-500 mt-0.5 block font-bold">Servicio social complementario acreditado.</span>
+              <div className={`p-3.5 border rounded-xl flex items-center gap-3 ${isPromoted ? "bg-slate-50/50 border-slate-200" : "bg-slate-50/50 border-slate-200"}`}>
+                <div className={`h-5 w-5 rounded-full flex items-center justify-center font-black text-[10px] shrink-0 ${
+                  isPromoted ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                }`}>
+                  {isPromoted ? "✓" : "!"}
                 </div>
-              </div>
-
-              <div className="p-3 border rounded-lg bg-slate-50/50 border-slate-100 flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                 <div>
-                  <span className="text-xs font-bold text-slate-800 block">Certificación de Idioma Extranjero</span>
-                  <span className="text-[10px] text-slate-500 mt-0.5 block font-bold font-mono">Suficiencia inglés validado Nivel B2 Académico.</span>
-                </div>
-              </div>
-
-              <div className="p-3 border rounded-lg bg-white border-slate-200 flex items-center gap-3">
-                <div className="h-5 w-5 rounded-full border border-amber-300 bg-amber-50 text-amber-600 flex items-center justify-center font-black text-[10px] shrink-0 animate-pulse">!</div>
-                <div>
-                  <span className="text-xs font-bold text-slate-800 block">Prácticas Pre-Profesionales</span>
-                  <span className="text-[10px] text-slate-500 mt-0.5 block font-bold">Validación modular de prácticas en curso académico.</span>
+                  <span className="text-xs font-bold text-slate-800 block">Prácticas Pre-Profesionales (EFSRT)</span>
+                  <span className="text-[10.5px] text-slate-600 mt-0.5 block font-bold">
+                    {isPromoted ? "Módulos I, II y III acreditados formalmente." : "Se habilitan formalmente tras la culminación del Ciclo II/III."}
+                  </span>
                 </div>
               </div>
             </div>
@@ -404,12 +399,14 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                   strokeWidth="10" 
                   fill="transparent" 
                   strokeDasharray="314" 
-                  strokeDashoffset={314 - (314 * (weightedGpa / 20))}
+                  strokeDashoffset={314 - (314 * (isPromoted ? (weightedGpa / 20) : 0))}
                   className="transition-all duration-300" 
                 />
               </svg>
               <div className="absolute flex flex-col justify-center items-center">
-                <span className="text-3xl font-black text-slate-800 tracking-tighter">{weightedGpa}</span>
+                <span className="text-3xl font-black text-slate-800 tracking-tighter">
+                  {isPromoted ? weightedGpa : "--"}
+                </span>
                 <span className="text-[8px] text-slate-400 uppercase font-black">sobre 20</span>
               </div>
             </div>
@@ -417,16 +414,21 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             <div className="text-xs font-semibold">
               <span className="text-slate-500">Rendimiento Estimado: </span>
               <span className={`font-black ${
-                weightedGpa >= 16 ? "text-emerald-600" : weightedGpa >= 13 ? "text-slate-800" : "text-rose-600"
+                isPromoted 
+                  ? (weightedGpa >= 16 ? "text-emerald-600" : "text-slate-800")
+                  : "text-amber-600"
               }`}>
-                {weightedGpa >= 16 ? "Sobresaliente" : weightedGpa >= 13 ? "Aceptable" : "Bajo Rendimiento"}
+                {isPromoted 
+                  ? (weightedGpa >= 16 ? "Sobresaliente" : "Aceptable")
+                  : "Semestre en curso (Pendiente de Calificaciones)"
+                }
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-4 border-t border-slate-100 text-xs font-semibold">
               <div className="p-2 bg-slate-50 rounded">
                 <span className="text-[9px] text-slate-400 uppercase font-bold block">Créditos de Ciclo</span>
-                <span className="text-slate-900 font-mono text-sm font-black block mt-1">{cycleCreditsSum?.toFixed(1) || "0.0"}</span>
+                <span className="text-slate-900 font-mono text-sm font-black block mt-1">{cycleCreditsSum?.toFixed(1) || "16.0"}</span>
               </div>
               <div className="p-2 bg-slate-50 rounded">
                 <span className="text-[9px] text-slate-400 uppercase font-bold block">Cursos de Ciclo</span>
@@ -479,43 +481,78 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
           </div>
 
           <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-xs space-y-4">
-            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Descarga de Documentación</span>
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Descarga de Documentación Oficial</span>
             
             <div className="space-y-2">
               <button 
-                onClick={() => setToastNotice({
-                  id: Date.now(),
-                  message: `Generando y descargando Boleta Oficial de Notas (${selectedQueryCycle} Ciclo).`,
-                  kind: "info",
-                })}
-                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all"
+                type="button"
+                onClick={async () => {
+                  await generateBoletaNotasPdf(
+                    selectedQueryCycle,
+                    `${personalData.name} ${personalData.lastName}`,
+                    personalData.dni,
+                    currentProgram?.name || "Electricidad Industrial",
+                    activeCoursesList.map((c) => ({
+                      code: c.code,
+                      name: c.name,
+                      credits: c.credits,
+                      grade: c.simGrade,
+                    }))
+                  );
+                }}
+                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all shadow-2xs"
               >
                 <span className="flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-slate-400" /> Boleta de Notas ({selectedQueryCycle} Ciclo)</span>
-                <Download className="w-3.5 h-3.5 text-slate-400" />
+                <Download className="w-3.5 h-3.5 text-[#800521]" />
               </button>
 
               <button 
-                onClick={() => setToastNotice({
-                  id: Date.now(),
-                  message: "Abriendo Plan Curricular Completo del Estudiante firmado digitalmente.",
-                  kind: "info",
-                })}
-                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all"
+                type="button"
+                onClick={async () => {
+                  await generateCurriculumPlanPdf(
+                    currentProgram?.name || "Electricidad Industrial",
+                    `${personalData.name} ${personalData.lastName}`,
+                    personalData.dni
+                  );
+                }}
+                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all shadow-2xs"
               >
                 <span className="flex items-center gap-2"><ClipboardList className="w-3.5 h-3.5 text-slate-400" /> Plan Curricular Completo</span>
-                <Download className="w-3.5 h-3.5 text-slate-400" />
+                <Download className="w-3.5 h-3.5 text-[#800521]" />
               </button>
 
               <button 
-                onClick={() => setToastNotice({
-                  id: Date.now(),
-                  message: "Descargando Ficha de Matrícula Consolidada semestre activo.",
-                  kind: "info",
-                })}
-                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all"
+                type="button"
+                onClick={async () => {
+                  await generateMatriculaPdf({
+                    studentName: personalData.name,
+                    studentLastName: personalData.lastName,
+                    dni: personalData.dni,
+                    studentCode: personalData.dni ? `202710001` : "202710001",
+                    programName: currentProgram?.name || "Electricidad Industrial",
+                    period: "2027-I",
+                    cycle: "Ciclo I",
+                    shift: enrollment.shift || "Mañana",
+                    courses: activeCoursesList.map((c) => ({
+                      code: c.code,
+                      name: c.name,
+                      credits: c.credits,
+                      cycle: selectedQueryCycle,
+                      type: c.type,
+                      group: "EI-I-A",
+                      tsg: "Teoría / Taller",
+                      status: isPromoted ? "APROBADO" : "MATRICULADO",
+                    })),
+                    totalCredits: cycleCreditsSum || 16,
+                    totalCourses: activeCoursesList.length,
+                    maxCredits: 22,
+                    paymentStatus: "PAGADO (S/. 250.00)",
+                  });
+                }}
+                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all shadow-2xs"
               >
                 <span className="flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-slate-400" /> Ficha de Matrícula Activa</span>
-                <Download className="w-3.5 h-3.5 text-slate-400" />
+                <Download className="w-3.5 h-3.5 text-[#800521]" />
               </button>
             </div>
           </div>
