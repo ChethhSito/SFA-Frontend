@@ -1270,10 +1270,10 @@ export default function DocenteDashboard({
                           <span className="bg-white/20 text-amber-300 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm inline-block select-none font-mono">
                             {selectedCourse.code} • {selectedWeekOption.toUpperCase()}
                           </span>
-                          <h2 className="text-lg md:text-xl font-black text-white tracking-tight uppercase leading-snug truncate">
+                          <h2 className="text-lg md:text-xl font-black text-white tracking-tight uppercase leading-snug break-words">
                             {getWeekTheme(selectedCourse.code, selectedWeek, selectedCourse.name).topic}
                           </h2>
-                          <p className="text-xs text-white/90 font-medium font-mono line-clamp-1">
+                          <p className="text-xs text-white/90 font-medium font-mono leading-relaxed break-words">
                             {getWeekTheme(selectedCourse.code, selectedWeek, selectedCourse.name).desc}
                           </p>
                         </div>

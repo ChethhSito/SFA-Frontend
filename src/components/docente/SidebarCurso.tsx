@@ -123,7 +123,7 @@ export default function SidebarCurso({
         <span className="text-[9px] font-black text-[#8B0026] bg-red-50 border border-red-200 px-2 py-0.5 rounded-sm select-none block w-max uppercase tracking-widest font-mono">
           Asignatura: {courseCode}
         </span>
-        <h3 className="text-xs font-black text-slate-900 tracking-tight block mt-1.5 truncate uppercase" title={courseName}>
+        <h3 className="text-xs font-black text-slate-900 tracking-tight block mt-1.5 leading-snug break-words uppercase" title={courseName}>
           {courseName}
         </h3>
         <p className="text-[9px] text-[#CFA020] font-bold tracking-wider uppercase block mt-1">

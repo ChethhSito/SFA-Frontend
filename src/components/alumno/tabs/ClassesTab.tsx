@@ -500,7 +500,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               </span>
             )}
           </div>
-          <h3 className="text-xs font-black text-slate-900 tracking-tight block mt-1.5 truncate uppercase" title={selectedComponent ? selectedComponent.name : activeCourse.name}>
+          <h3 className="text-xs font-black text-slate-900 tracking-tight block mt-1.5 leading-snug break-words uppercase" title={selectedComponent ? selectedComponent.name : activeCourse.name}>
             {selectedComponent ? selectedComponent.name : activeCourse.name}
           </h3>
           <p className="text-[9px] text-[#CFA020] font-bold tracking-wider uppercase block mt-1">
@@ -884,17 +884,32 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           const weekTheme = getLocalWeekTheme(activeCourse.code, selectedClassWeek);
           return (
             <div className="space-y-6">
-              <div className="p-4 bg-white border border-slate-200 rounded-xl text-left font-sans flex items-start gap-4">
-                <div className="h-10 w-10 bg-[#8B0026]/10 text-[#8B0026] border border-red-150 rounded-xl flex items-center justify-center font-black text-sm shrink-0">
-                  S{selectedClassWeek}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-extrabold text-slate-900 text-sm leading-tight uppercase">
-                    Tema: {weekTheme.topic}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 font-semibold block mt-1">
-                    {weekTheme.desc}
-                  </p>
+              {/* Themed Week Header Banner (Idéntico estilo institucional que Docente) */}
+              <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 overflow-hidden text-left border-b-4 border-amber-500">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521] to-slate-950/85 opacity-95" />
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-amber-400 text-slate-950 rounded-2xl flex flex-col items-center justify-center font-black shrink-0 shadow-md">
+                      <span className="text-[9px] uppercase font-mono tracking-tighter leading-none">SEMANA</span>
+                      <span className="text-2xl leading-none font-display">{selectedClassWeek}</span>
+                    </div>
+                    <div className="space-y-1 min-w-0">
+                      <span className="bg-white/20 text-amber-300 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm inline-block select-none font-mono">
+                        {selectedComponent ? selectedComponent.code : activeCourse.code} • {selectedClassWeekOption.toUpperCase()}
+                      </span>
+                      <h2 className="text-lg md:text-xl font-black text-white tracking-tight uppercase leading-snug break-words">
+                        {weekTheme.topic}
+                      </h2>
+                      <p className="text-xs text-white/90 font-medium font-mono leading-relaxed break-words">
+                        {weekTheme.desc}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] font-mono font-bold bg-black/30 border border-white/20 px-3 py-1.5 rounded-xl uppercase text-amber-300">
+                      Periodo 2027-I
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -904,74 +919,108 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   if (attendanceError) return <p role="alert" className="p-4 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">{attendanceError}</p>;
                   
                   const targetCourseIds = selectedComponent
-                    ? [selectedComponent.code, selectedComponent.dbCourseId, selectedComponent.id]
-                    : (activeCourse.attendanceCourseIds || [activeCourse.id, activeCourse.code]);
+                    ? [selectedComponent.dbCourseId, selectedComponent.code, selectedComponent.id]
+                    : (activeCourse.attendanceCourseIds || [activeCourse.id, activeCourse.code, activeCourseDbId]);
 
-                  const records = studentAttendanceRecords(attendance, targetCourseIds, studentDni)
-                    .filter((record) => record.week === selectedClassWeek)
-                    .filter((record) => {
-                      if (!selectedComponent) return true;
-                      const cId = (record.courseId || "").toLowerCase();
-                      if (selectedComponent.id === "teo") return cId.includes("teo") || record.courseId === selectedComponent.code || (record as any).sessionType === "Teoría";
-                      if (selectedComponent.id === "tal") return cId.includes("tal") || record.courseId === selectedComponent.code || (record as any).sessionType === "Taller";
-                      if (selectedComponent.id === "lab") return cId.includes("lab") || record.courseId === selectedComponent.code || (record as any).sessionType === "Laboratorio";
-                      return true;
-                    });
-                  
+                  const records = (attendance || []).filter((record) => {
+                    if (record.week !== selectedClassWeek) return false;
+                    const cId = record.courseId || "";
+                    const matchCourse = targetCourseIds.includes(cId) ||
+                      (selectedComponent?.dbCourseId && cId === selectedComponent.dbCourseId) ||
+                      (selectedComponent?.code && cId === selectedComponent.code) ||
+                      (selectedComponent?.id === "teo" && (cId.toLowerCase().includes("teo") || (record as any).sessionType === "Teoría")) ||
+                      (selectedComponent?.id === "tal" && (cId.toLowerCase().includes("tal") || (record as any).sessionType === "Taller")) ||
+                      (selectedComponent?.id === "lab" && (cId.toLowerCase().includes("lab") || (record as any).sessionType === "Laboratorio"));
+                    
+                    if (!matchCourse) return false;
+                    return record.statusMap && record.statusMap[studentDni] !== undefined;
+                  });
+
+                  const formatSessionDate = (rawDate: string) => {
+                    if (!rawDate) return "Fecha no especificada";
+                    const parts = rawDate.split("-");
+                    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    return rawDate;
+                  };
+
                   return (
                     <div className="space-y-4 text-left font-sans">
-                      <div className="border-b border-slate-150 pb-3 flex items-center justify-between">
-                        <div>
-                          <h4 className="text-xs font-black uppercase text-slate-900 tracking-tight">
-                            Asistencia: {selectedComponent ? selectedComponent.shortLabel : "Sesión Lectiva"} • Semana {selectedClassWeek}
-                          </h4>
-                          <p className="text-[11px] text-slate-500 font-medium">
-                            {selectedComponent ? `${selectedComponent.classroom} • ${selectedComponent.schedule} • Docente: ${selectedComponent.teacher}` : "Historial de sesiones y control de puntualidad en taller."}
-                          </p>
+                      {/* Institutional Section Header Box (Same as Docente) */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-red-50 text-[#800521] border border-red-200 flex items-center justify-center font-black shrink-0">
+                            <Users className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-black uppercase text-slate-900 tracking-tight">
+                              Semana {selectedClassWeek}: Control Diario de Asistencia
+                            </h3>
+                            <p className="text-xs text-slate-500 font-medium">
+                              {selectedComponent ? `${selectedComponent.classroom} • ${selectedComponent.schedule} • Docente: ${selectedComponent.teacher}` : "Historial de sesiones dictadas y control de puntualidad."}
+                            </p>
+                          </div>
                         </div>
-                        <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-full text-[10.5px] font-black font-mono">
-                          {records.length} {records.length === 1 ? "sesión" : "sesiones"}
+                        <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full text-xs font-black font-mono shrink-0">
+                          {records.length} {records.length === 1 ? "Sesión Registrada" : "Sesiones Registradas"}
                         </span>
                       </div>
 
                       {records.length > 0 ? (
-                        <div className="space-y-2.5">
+                        <div className="space-y-3">
                           {records.map((record) => {
                             const status = record.statusMap[studentDni] || "Sin registrar";
                             let badgeClass = "bg-slate-100 text-slate-650 border-slate-200";
-                            if (status === "Presente") badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
-                            else if (status === "Tardanza") badgeClass = "bg-amber-50 text-amber-700 border-amber-200";
-                            else if (status === "Falta") badgeClass = "bg-rose-50 text-rose-700 border-rose-200";
-                            else if (status === "Justificado") badgeClass = "bg-blue-50 text-blue-700 border-blue-200";
+                            let statusIcon = <Clock className="w-4 h-4 text-slate-400" />;
+                            if (status === "Presente") {
+                              badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                              statusIcon = <CheckCircle2 className="w-4 h-4 text-emerald-600" />;
+                            } else if (status === "Tardanza") {
+                              badgeClass = "bg-amber-50 text-amber-700 border-amber-200";
+                              statusIcon = <Clock className="w-4 h-4 text-amber-600" />;
+                            } else if (status === "Falta") {
+                              badgeClass = "bg-rose-50 text-rose-700 border-rose-200";
+                              statusIcon = <AlertCircle className="w-4 h-4 text-rose-600" />;
+                            } else if (status === "Justificado") {
+                              badgeClass = "bg-blue-50 text-blue-700 border-blue-200";
+                              statusIcon = <CheckCircle className="w-4 h-4 text-blue-600" />;
+                            }
 
                             return (
-                              <div key={record.id} className="p-3.5 bg-slate-50/70 border border-slate-200 rounded-xl flex items-center justify-between transition-colors">
-                                <div className="flex items-center gap-2.5">
-                                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[#800521]">
-                                    <Calendar className="w-4 h-4" />
+                              <div key={record.id || (record as any)._id} className="p-4 bg-white border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs hover:border-[#800521]/30 transition-all">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-[#800521] shrink-0 font-mono">
+                                    <Calendar className="w-5 h-5" />
                                   </div>
                                   <div>
-                                    <span className="font-mono text-xs font-black text-slate-800 block">
-                                      Fecha: {record.date}
-                                    </span>
-                                    <span className="text-[10px] text-slate-400 font-bold block">
-                                      Sesión regular programada en horario oficial
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-sm font-black text-slate-900">
+                                        Fecha: {formatSessionDate(record.date)}
+                                      </span>
+                                      <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 font-mono">
+                                        {selectedComponent ? selectedComponent.badge : "Dictado Regular"}
+                                      </span>
+                                    </div>
+                                    <span className="text-xs text-slate-500 font-medium block mt-0.5">
+                                      {selectedComponent ? `${selectedComponent.classroom} • Horario: ${selectedComponent.schedule} • Docente: ${selectedComponent.teacher}` : activeCourse.schedule}
                                     </span>
                                   </div>
                                 </div>
 
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border ${badgeClass}`}>
-                                  {status}
-                                </span>
+                                <div className="flex items-center gap-2 self-end sm:self-center">
+                                  <span className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase font-mono border flex items-center gap-1.5 ${badgeClass}`}>
+                                    {statusIcon}
+                                    <span>{status}</span>
+                                  </span>
+                                </div>
                               </div>
                             );
                           })}
                         </div>
                       ) : (
-                        <div className="p-8 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center space-y-1.5">
-                          <Clock className="w-6 h-6 text-slate-300" />
+                        <div className="p-10 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center space-y-2">
+                          <Clock className="w-8 h-8 text-slate-300" />
                           <p className="text-xs font-black text-slate-700 uppercase tracking-tight">No hay sesiones registradas en esta semana</p>
-                          <p className="text-[11px] text-slate-400 font-medium max-w-sm">
+                          <p className="text-xs text-slate-400 font-medium max-w-sm">
                             El docente registrará la lista al momento de iniciar las horas lectivas presenciales.
                           </p>
                         </div>
