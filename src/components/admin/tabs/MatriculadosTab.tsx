@@ -248,7 +248,7 @@ export const MatriculadosTab: React.FC<MatriculadosTabProps> = ({
                           </td>
                           <td className="p-4 text-center font-black text-slate-800 font-mono">CICLO I</td>
                           <td className="p-4 text-center">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-850 hover:bg-emerald-150 border border-emerald-250 rounded-full text-[9px] font-black uppercase tracking-wider select-none animate-pulse">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-850 hover:bg-emerald-150 border border-emerald-250 rounded-full text-[9px] font-black uppercase tracking-wider select-none">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 inline-block" />
                               Matrícula Regular
                             </span>

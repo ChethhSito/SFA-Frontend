@@ -571,7 +571,7 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = ({
                           </span>
                         ) : isPending ? (
                           <span className="text-[9px] font-bold text-amber-700 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Voucher por Validar
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Voucher por Validar
                           </span>
                         ) : isObserved ? (
                           <span className="text-[9px] font-bold text-rose-700 flex items-center gap-1">

@@ -99,10 +99,10 @@ export const MatriculaTab: React.FC<MatriculaTabProps> = React.memo(({
     };
   }
 
-  const isPaid = myEnrollment.paymentStatus === "Validado";
-  const isEnrolled = myEnrollment.academicStatus === "MATRICULADO";
-  const isPending = myEnrollment.paymentStatus === "Pendiente";
-  const isObserved = myEnrollment.paymentStatus === "Observado";
+  const isPaid = myEnrollment.paymentStatus === "Validado" || myEnrollment.academicStatus === "MATRICULADO";
+  const isEnrolled = myEnrollment.academicStatus === "MATRICULADO" || applicant.folderStatus === "Enrolled";
+  const isPending = !isEnrolled && !isPaid && myEnrollment.paymentStatus === "Pendiente";
+  const isObserved = !isEnrolled && myEnrollment.paymentStatus === "Observado";
 
   const cycleCourses = REAL_MPA_COURSES.filter(
     (c) =>

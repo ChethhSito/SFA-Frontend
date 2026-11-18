@@ -115,6 +115,15 @@ export async function createEnrollment(enrollment: Partial<Enrollment>): Promise
   });
 }
 
+export async function fetchEnrollmentByDni(studentDni: string): Promise<Enrollment | null> {
+  const item = await fetchJson<any>(`/enrollments/${studentDni}`);
+  if (!item) return null;
+  return {
+    ...item,
+    id: item.id || item._id
+  } as Enrollment;
+}
+
 export async function updateEnrollment(studentDni: string, data: Partial<Enrollment>): Promise<Enrollment | null> {
   return fetchJson<Enrollment>(`/enrollments/${studentDni}`, {
     method: "PATCH",
