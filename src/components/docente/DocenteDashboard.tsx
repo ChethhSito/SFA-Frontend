@@ -461,18 +461,26 @@ export default function DocenteDashboard({
 
   // Course schedule is sourced from the same MPA programming as Mi Horario.
   const getCourseSchedulesList = (courseCode: string) => {
-    const mpaCourse = scheduleData?.courses.find((course) => course.code === courseCode);
+    const baseCode = courseCode.replace(/-(TEO|TAL|LAB)$/, "");
+    const componentType = courseCode.endsWith("-TEO") ? "Teoría" : courseCode.endsWith("-TAL") ? "Taller" : courseCode.endsWith("-LAB") ? "Laboratorio" : null;
+    const mpaCourse = scheduleData?.courses.find((course) => course.code === courseCode || course.code === baseCode);
     if (!mpaCourse) return [];
-    return currentTeacherSessions.filter((task) => task.courseId === mpaCourse.id)
-      .map((task) => ({
-        type: task.sessionType,
-        day: task.dayOfWeek || "Sin día",
-        start: task.startTime || "",
-        end: task.endTime || "",
-        classroom: scheduleData?.classrooms.find((classroom) => classroom.id === task.classroomId)?.name || task.classroomId,
-        group: scheduleData?.groups.find((group) => group.id === task.groupId)?.name || task.groupId,
-        freq: "Semanal",
-      }));
+    return currentTeacherSessions.filter((task) => {
+      if (task.courseId !== mpaCourse.id) return false;
+      if (!componentType) return true;
+      if (componentType === "Teoría") return task.sessionType === "Teoría" || (task.dayOfWeek === "Lunes" && task.startTime?.includes("08:00"));
+      if (componentType === "Taller") return (task.sessionType === "Laboratorio" || task.sessionType === "Taller") && task.dayOfWeek === "Lunes" && task.startTime?.includes("11:00");
+      if (componentType === "Laboratorio") return (task.sessionType === "Laboratorio" || task.sessionType === "Taller") && task.dayOfWeek === "Viernes";
+      return true;
+    }).map((task) => ({
+      type: task.sessionType,
+      day: task.dayOfWeek || "Sin día",
+      start: task.startTime || "",
+      end: task.endTime || "",
+      classroom: scheduleData?.classrooms.find((classroom) => classroom.id === task.classroomId)?.name || task.classroomId,
+      group: scheduleData?.groups.find((group) => group.id === task.groupId)?.name || task.groupId,
+      freq: "Semanal",
+    }));
   };
   const getCourseScheduleSummary = (courseCode: string) => {
     const rows = getCourseSchedulesList(courseCode);

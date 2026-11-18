@@ -436,7 +436,12 @@ export default function AlumnoDashboard({
         return `${t.dayOfWeek || "Lunes"} ${t.startTime || "08:00 AM"} - ${t.endTime || "01:00 PM"}`;
       }).join(" / ");
 
-      const relatedDbCourses = courses.filter((cItem: any) => cItem.code === courseCode || cItem.id === courseId || (cItem as any)._id === courseId);
+      const relatedDbCourses = courses.filter((cItem: any) =>
+        cItem.code === courseCode ||
+        cItem.code?.startsWith(`${courseCode}-`) ||
+        cItem.id === courseId ||
+        (cItem as any)._id === courseId
+      );
       const dynamicAttendanceIds = Array.from(new Set([
         `cur-${courseId}`,
         courseId,
@@ -511,11 +516,21 @@ export default function AlumnoDashboard({
     let description = c.description || `Unidad didáctica del plan curricular para la carrera de ${currentProgram?.name || "Electricidad Industrial"}. Enfocada en desarrollar competencias profesionales esenciales del sector tecnológico nacional.`;
 
     const formula = "Calificaciones registradas por evaluación";
-    const relatedDbCourses = courses.filter((course) => course.code === c.code || course.id === c.id || (course as any)._id === c.id);
+    const relatedDbCourses = courses.filter((course) =>
+      course.code === c.code ||
+      course.code?.startsWith(`${c.code}-`) ||
+      course.id === c.id ||
+      (course as any)._id === c.id
+    );
     const relatedCourse = relatedDbCourses[0];
     const evaluationsList = assignments.filter((assignment) => {
-      const matchIds = [c.id, c.code, relatedCourse?.id, (relatedCourse as any)?._id].filter(Boolean);
-      return matchIds.includes(assignment.courseId);
+      const matchIds = new Set<string>([c.id, c.code]);
+      relatedDbCourses.forEach((rc: any) => {
+        if (rc.id) matchIds.add(rc.id);
+        if (rc._id) matchIds.add(rc._id);
+        if (rc.code) matchIds.add(rc.code);
+      });
+      return matchIds.has(assignment.courseId);
     }).map((assignment, index) => {
       const submission = assignment.submissions.find((item) => item.studentDni === studentDni);
       return { name: assignment.title, sub: assignment.description, prefix: `EV${index + 1}`,
