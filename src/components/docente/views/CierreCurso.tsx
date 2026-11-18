@@ -37,17 +37,34 @@ export function CierreCurso({ course, weeksCount, materialsCount, assignmentsCou
   };
 
   return (
-    <div className="space-y-6 text-left relative">
+    <div className="space-y-6 text-left relative font-sans">
       {/* Toast Notification */}
       {toastNotice && (
         <Toast notice={toastNotice} onClose={() => setToastNotice(null)} />
       )}
 
-      <PageHeader
-        title="CIERRE DE CURSO: Cómputo Final de Evaluación"
-        subtitle="Cierre formal de asignatura académica regulada. Genere actas nominales autorizadas con firma digital de DNI."
-        icon={<CheckCircle2 className="w-5 h-5 text-[#8B0026]" />}
-      />
+      {/* 1. Header Borgoña Institucional */}
+      <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-8 overflow-hidden text-left border-b-4 border-amber-500">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521] to-slate-950/85 opacity-95" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+              ASIGNATURA: {course.code} • ACTA FINAL DE CIERRE
+            </span>
+            <h1 className="text-2xl md:text-3.5xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+              Cierre de Curso: {course.name}
+            </h1>
+            <p className="text-xs text-white/90 font-medium max-w-2xl font-mono">
+              Consolidación final de notas, emisión de acta nominal oficial con firma digital certificada y envío a Secretaría General.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={`text-[10px] font-black uppercase px-3.5 py-2 rounded-xl border shadow-sm ${isSigned ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-amber-400 text-slate-950 border-amber-500'}`}>
+              {isSigned ? '✓ Acta Oficial Firmada' : 'Pendiente de Firma'}
+            </span>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Summary */}

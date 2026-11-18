@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { FileSpreadsheet } from "lucide-react";
-import PageHeader from "../ui/PageHeader";
+import { FileSpreadsheet, BookOpen, Users, Award, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { Course, CourseAssignment, StudentPersonalData, Enrollment } from "../../types";
 import Toast, { ToastNotice } from "../ui/Toast";
 
@@ -243,33 +242,76 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
   };
 
   return (
-    <div id="evaluaciones-cursos-sheet-screen" className="space-y-6 text-left relative">
+    <div id="evaluaciones-cursos-sheet-screen" className="space-y-6 text-left relative font-sans">
       
       {notification ? <Toast notice={notification} onClose={closeNotification} /> : null}
 
-      <PageHeader
-        title="Evaluación Unificada por Curso"
-        subtitle="Gestione el rendimiento del portafolio del docente de acuerdo con las fórmulas ponderadas nacionales vigentes."
-        icon={<FileSpreadsheet className="w-5 h-5 text-[#8B0026]" />}
-      />
-
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-white border border-slate-200 rounded-xl gap-4 shadow-xs">
-        <div className="space-y-0.5">
-          <span className="text-[10px] text-[#CFA020] font-bold uppercase tracking-widest block font-mono">Planilla y Fórmulas Complejas</span>
-          <h4 className="text-sm font-extrabold text-slate-850 uppercase">Seleccione curso a evaluar</h4>
-        </div>
+      {/* 1. Header Borgoña Institucional */}
+      <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-8 overflow-hidden text-left border-b-4 border-amber-500">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521] to-slate-950/85 opacity-95" />
         
-        <select
-          value={selectedCourseId}
-          onChange={(e) => setSelectedCourseId(e.target.value)}
-          className="w-full md:w-80 px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-black text-slate-800 focus:outline-[#8B0026]"
-        >
-          {courses.map((c) => (
-            <option key={c.id} value={c.id}>
-              [{c.code}] {c.name}
-            </option>
-          ))}
-        </select>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+              PORTAL DEL DOCENTE • REGISTRO Y ACTAS DE CALIFICACIONES
+            </span>
+            <h1 className="text-2xl md:text-3.5xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+              Evaluación Curricular por Curso
+            </h1>
+            <p className="text-xs text-white/90 font-medium max-w-2xl font-mono">
+              Planilla digital con registro seguro de notas bajo firma digital (PIN), fórmulas ponderadas oficiales y consolidado de actas.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+            <div className="bg-white/10 border border-white/20 rounded-xl p-1.5 backdrop-blur-xs flex items-center gap-2">
+              <span className="text-[10px] uppercase font-bold text-amber-300 pl-2 hidden sm:inline font-mono">Curso:</span>
+              <select
+                value={selectedCourseId}
+                onChange={(e) => setSelectedCourseId(e.target.value)}
+                className="bg-white text-slate-900 font-extrabold text-xs py-2 px-3 rounded-lg border-0 cursor-pointer transition-all outline-none"
+              >
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id} className="text-slate-900 bg-white">
+                    [{c.code}] {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Cinta de Parámetros */}
+        <div className="relative z-10 mt-5 pt-4 border-t border-white/15 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div className="flex items-center gap-2 text-white/90">
+            <BookOpen className="w-4 h-4 text-amber-300 shrink-0" />
+            <div>
+              <span className="text-[10px] uppercase font-bold text-white/60 block">Asignatura Activa</span>
+              <span className="font-extrabold text-white truncate max-w-[150px] block">{selectedCourse?.name || 'Seleccione'}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-white/90">
+            <Users className="w-4 h-4 text-amber-300 shrink-0" />
+            <div>
+              <span className="text-[10px] uppercase font-bold text-white/60 block">Alumnos Evaluados</span>
+              <span className="font-extrabold text-white">{roster.length} Matriculado{roster.length === 1 ? '' : 's'}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-white/90">
+            <Award className="w-4 h-4 text-amber-300 shrink-0" />
+            <div>
+              <span className="text-[10px] uppercase font-bold text-white/60 block">Escala Calificación</span>
+              <span className="font-extrabold text-white">Vigesimal (00 - 20)</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-white/90">
+            <ShieldCheck className="w-4 h-4 text-amber-300 shrink-0" />
+            <div>
+              <span className="text-[10px] uppercase font-bold text-white/60 block">Seguridad Acta</span>
+              <span className="font-extrabold text-white">Firma PIN Homologada</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {selectedCourse ? (

@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { Info, Mail, Megaphone, FileText, Download, Plus, Trash2, Shield, Calendar, User } from "lucide-react";
+import { Info, Mail, Megaphone, FileText, Download, Plus, Trash2, Shield, Calendar, User, ShieldCheck, School, Clock3, CheckCircle2 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../ui/Card";
 import Button from "../ui/Button";
-import PageHeader from "../ui/PageHeader";
 import { Course } from "../../types";
 
 interface AvisosReportesPrincipalProps {
@@ -107,44 +106,100 @@ export default function AvisosReportesPrincipal({
   };
 
   return (
-    <div id="avisos-reportes-principal-container" className="space-y-6 text-left">
-      <PageHeader
-        title="Canales de Avisos y Reportes Oficiales"
-        subtitle="Regule comunicados públicos para su alumnado y supervise reportes administrativos e institucionales de acreditación escolar."
-        icon={<Megaphone className="w-5 h-5 text-[#8B0026]" />}
-      />
+    <div id="avisos-reportes-principal-container" className="space-y-6 text-left font-sans">
+      {/* 1. Header Borgoña Institucional */}
+      <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-8 overflow-hidden text-left border-b-4 border-amber-500">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521] to-slate-950/85 opacity-95" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+              PORTAL DEL DOCENTE • COMUNICACIÓN Y REPORTES ACADÉMICOS
+            </span>
+            <h1 className="text-2xl md:text-3.5xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+              Avisos Institucionales y Reportes
+            </h1>
+            <p className="text-xs text-white/90 font-medium max-w-2xl font-mono">
+              Directivas oficiales de Dirección General, comunicados a sus comités estudiantiles y descarga de reportes curriculares.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <div className="text-left bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
+              <span className="text-[9px] text-amber-300 font-extrabold block uppercase mb-0.5 tracking-wider">Circulares</span>
+              <span className="text-xs font-black text-white font-mono">{instNotices.length} Activas</span>
+            </div>
+            <div className="text-left bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
+              <span className="text-[9px] text-amber-300 font-extrabold block uppercase mb-0.5 tracking-wider">Comunicados</span>
+              <span className="text-xs font-black text-emerald-400 font-mono">{acadComms.length} Emitidos</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Cinta de Parámetros */}
+        <div className="relative z-10 mt-5 pt-4 border-t border-white/15 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div className="flex items-center gap-2 text-white/90">
+            <ShieldCheck className="w-4 h-4 text-amber-300 shrink-0" />
+            <div>
+              <span className="text-[10px] uppercase font-bold text-white/60 block">Emisión Oficial</span>
+              <span className="font-extrabold text-white">Canal Institucional SFA</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-white/90">
+            <School className="w-4 h-4 text-amber-300 shrink-0" />
+            <div>
+              <span className="text-[10px] uppercase font-bold text-white/60 block">Destinatarios</span>
+              <span className="font-extrabold text-white">Plana Docente & Alumnos</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-white/90">
+            <Clock3 className="w-4 h-4 text-amber-300 shrink-0" />
+            <div>
+              <span className="text-[10px] uppercase font-bold text-white/60 block">Frecuencia</span>
+              <span className="font-extrabold text-white">Actualización Continua</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-white/90">
+            <CheckCircle2 className="w-4 h-4 text-amber-300 shrink-0" />
+            <div>
+              <span className="text-[10px] uppercase font-bold text-white/60 block">Validez</span>
+              <span className="font-extrabold text-white">Régimen Semestre 2027-I</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Selector SubTabs Button Groups */}
-      <div className="flex bg-slate-100 p-1.5 rounded-xl border w-full font-sans select-none">
+      <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-full font-sans select-none gap-1">
         <button
           onClick={() => setSubTab("avisos")}
-          className={`flex-1 max-w-sm py-2 px-4 rounded-lg text-xs font-extrabold uppercase transition-all tracking-wide ${
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black uppercase transition-all tracking-wider cursor-pointer ${
             subTab === "avisos"
-              ? "bg-[#8B0026] text-white shadow-sm font-black"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-[#800521] text-white shadow-md font-black"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
           }`}
         >
-          Avisos Institucionales
+          Avisos Institucionales ({instNotices.length})
         </button>
         <button
           onClick={() => setSubTab("comunicados")}
-          className={`flex-1 max-w-sm py-2 px-4 rounded-lg text-xs font-extrabold uppercase transition-all tracking-wide ${
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black uppercase transition-all tracking-wider cursor-pointer ${
             subTab === "comunicados"
-              ? "bg-[#8B0026] text-white shadow-sm font-black"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-[#800521] text-white shadow-md font-black"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
           }`}
         >
-          Comunicados Académicos
+          Mis Comunicados ({acadComms.length})
         </button>
         <button
           onClick={() => setSubTab("reportes")}
-          className={`flex-1 max-w-sm py-2 px-4 rounded-lg text-xs font-extrabold uppercase transition-all tracking-wide ${
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black uppercase transition-all tracking-wider cursor-pointer ${
             subTab === "reportes"
-              ? "bg-[#8B0026] text-white shadow-sm font-black"
-              : "text-slate-600 hover:text-slate-900"
+              ? "bg-[#800521] text-white shadow-md font-black"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
           }`}
         >
-          Reportes Generales
+          Reportes de Avance
         </button>
       </div>
 
@@ -259,9 +314,9 @@ export default function AvisosReportesPrincipal({
                     type="submit"
                     variant="primary"
                     fullWidth
-                    className="font-black text-[10.5px] py-3 uppercase tracking-wider bg-[#8B0026] text-white"
+                    className="font-black text-[10.5px] py-3 uppercase tracking-wider bg-[#800521] hover:bg-[#66041a] text-white rounded-xl cursor-pointer shadow-md"
                   >
-                    <Plus className="w-4 h-4 mr-1.5" /> Publicar Comunicado
+                    <Plus className="w-4 h-4 mr-1.5 text-amber-300" /> Publicar Comunicado
                   </Button>
                 </div>
               </form>

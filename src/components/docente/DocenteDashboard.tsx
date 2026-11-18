@@ -33,6 +33,7 @@ import GuidesLibrary from "../shared/GuidesLibrary";
 import AcademicCalendarBoard from "../shared/AcademicCalendarBoard";
 import TeacherProceduresTab from "./TeacherProceduresTab";
 import TeacherScheduleTab, { TeacherScheduleData } from "./TeacherScheduleTab";
+import TeacherProfileTab from "./TeacherProfileTab";
 import { fetchMpaCollection } from "../../services/mpaApi";
 import { fileToBase64, fetchCourseObservations, createCourseObservation, deleteCourseObservation } from "../../services/api";
 
@@ -680,7 +681,7 @@ export default function DocenteDashboard({
       )}
 
       {/* 3. PRIMARY CONTENT AREA WORKSPACE */}
-      <main className="flex-1 overflow-y-auto bg-slate-50 relative pt-14 md:pt-0">
+      <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-slate-50 relative pt-14 md:pt-0">
         <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
 
           {/* TAB 1: DASHBOARD (HOME) */}
@@ -1142,39 +1143,11 @@ export default function DocenteDashboard({
 
           {/* TAB 6: CONFIGURACION PERSONAL */}
           {selectedCourseId === null && activeTab === "configuracion" && (
-            <PageTransition id="config-tab" className="space-y-6 text-left">
-              <PageHeader
-                title="Configuración de Cuenta Docente"
-                subtitle="Firma digital homologada, correo de contacto y habilitaciones institucionales del docente."
-                icon={<Settings className="w-6 h-6 text-[#8B0026]" />}
-              />
-              <Card className="max-w-xl mx-auto text-left font-sans text-xs border border-slate-150">
-                <CardHeader>
-                  <CardTitle>Información del Docente Titular</CardTitle>
-                </CardHeader>
-                <CardContent className="p-5 space-y-4">
-                  <div className="grid grid-cols-2 gap-4 font-bold text-slate-700">
-                    <div>
-                      <label className="block text-slate-450 uppercase text-[9px] mb-1 font-black">Nombre Completo</label>
-                      <input type="text" disabled value={currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Docente IESTP"} className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-bold" />
-                    </div>
-                    <div>
-                      <label className="block text-slate-450 uppercase text-[9px] mb-1 font-black">DNI de Certificación</label>
-                      <input type="text" disabled value={currentTeacher?.dni || teacherDni} className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-mono font-bold" />
-                    </div>
-                    <div>
-                      <label className="block text-slate-450 uppercase text-[9px] mb-1 font-black">E-mail Institucional</label>
-                      <input type="text" disabled value={currentTeacher?.email || "docente@iestpsfa.edu.pe"} className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-bold" />
-                    </div>
-                    <div>
-                      <label className="block text-slate-450 uppercase text-[9px] mb-1 font-black">Especialidad Principal</label>
-                      <input type="text" disabled value={currentTeacher?.specialty || "Cátedra Universitaria & Tecnológica"} className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-bold" />
-                    </div>
-                  </div>
-                  <AlertBox variant="success" title="Firma Certificada" description="Acuerdo con directiva nacional, su firma digital mediante DNI se encuentra homologada en la pasarela académica del IESTP San Francisco de Asís." className="mt-2 text-[10.5px]" />
-                </CardContent>
-              </Card>
-            </PageTransition>
+            <TeacherProfileTab
+              teacher={currentTeacher}
+              teacherDni={effectiveTeacherDni}
+              onShowNotice={(n) => setNotice(n)}
+            />
           )}
 
           {/* COURSE INTEGRATION SUB SECTIONS (Selected course context) */}
@@ -1193,51 +1166,66 @@ export default function DocenteDashboard({
 
               {/* SECTION B: HORARIOS LECTIVOS SCREEN */}
               {activeSection === "horarios" && (
-                <PageTransition id="curso-horarios" className="space-y-6 text-left">
-                  <PageHeader
-                    title="Horarios Lectivos Oficiales"
-                    subtitle="Distribución horaria presencial programada para el semestre en vigor."
-                    icon={<Clock className="w-5 h-5 text-[#8B0026]" />}
-                  />
+                <PageTransition id="curso-horarios" className="space-y-6 text-left font-sans">
+                  <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-8 overflow-hidden text-left border-b-4 border-amber-500">
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521] to-slate-950/85 opacity-95" />
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-1.5">
+                        <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+                          ASIGNATURA: {selectedCourse.code} • HORARIO DE CLASES
+                        </span>
+                        <h2 className="text-2xl md:text-3.5xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+                          Horarios Lectivos: {selectedCourse.name}
+                        </h2>
+                        <p className="text-xs text-white/90 font-medium max-w-2xl font-mono">
+                          Distribución horaria presencial programada en MPA para las sesiones de teoría y taller del semestre 2027-I.
+                        </p>
+                      </div>
+                      <div className="bg-white/10 border border-white/20 px-3.5 py-2.5 rounded-xl shadow-inner text-xs shrink-0">
+                        <span className="text-[9px] uppercase font-bold text-amber-300 block font-mono">Sesiones Semanales</span>
+                        <span className="font-extrabold text-white text-xs uppercase">{getCourseSchedulesList(selectedCourse.code).length} Bloques</span>
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {getCourseSchedulesList(selectedCourse.code).map((sch, idx) => (
-                      <Card key={idx} className="border border-slate-150">
-                        <CardHeader className="flex flex-row items-center justify-between border-b pb-4 bg-slate-50/40">
+                      <div key={idx} className="bg-white rounded-2xl border border-slate-200 shadow-3xs overflow-hidden text-left">
+                        <div className="flex flex-row items-center justify-between p-5 border-b border-slate-150 bg-slate-50/50">
                           <div>
-                            <span className="text-[10px] text-[#CFA020] font-black uppercase tracking-wider block font-mono">Sesión programada</span>
-                            <CardTitle className="uppercase text-slate-800 text-sm mt-1">Clase {sch.type}</CardTitle>
+                            <span className="text-[10px] text-amber-600 font-black uppercase tracking-wider block font-mono">Sesión MPA</span>
+                            <h3 className="uppercase text-slate-900 text-sm font-black mt-0.5">Clase {sch.type}</h3>
                           </div>
-                          <span className="px-2.5 py-1 bg-[#8B0026]/10 text-[#8B0026] border border-[#8B0026]/20 font-black text-[9px] uppercase rounded-sm">
+                          <span className="px-3 py-1 bg-[#800521] text-white font-black text-[10px] uppercase rounded-lg shadow-2xs">
                             {sch.day}
                           </span>
-                        </CardHeader>
-                        <CardContent className="p-5 space-y-3.5 text-xs text-slate-600 font-bold leading-normal">
-                          <div className="flex justify-between border-b pb-1.5">
+                        </div>
+                        <div className="p-5 space-y-3 text-xs text-slate-650 font-bold leading-normal">
+                          <div className="flex justify-between border-b border-slate-100 pb-2">
                             <span className="text-slate-400 font-semibold">Hora de Inicio:</span>
                             <span className="text-slate-900 font-mono font-extrabold">{sch.start}</span>
                           </div>
-                          <div className="flex justify-between border-b pb-1.5">
+                          <div className="flex justify-between border-b border-slate-100 pb-2">
                             <span className="text-slate-400 font-semibold">Hora de Finalización:</span>
                             <span className="text-slate-900 font-mono font-extrabold">{sch.end}</span>
                           </div>
-                          <div className="flex justify-between border-b pb-1.5">
-                            <span className="text-slate-400 font-semibold">Aula / Laboratorio:</span>
-                            <span className="text-[#8B0026] uppercase font-extrabold">{sch.classroom}</span>
+                          <div className="flex justify-between border-b border-slate-100 pb-2">
+                            <span className="text-slate-400 font-semibold">Aula / Taller:</span>
+                            <span className="text-[#800521] uppercase font-black">{sch.classroom}</span>
                           </div>
-                          <div className="flex justify-between border-b pb-1.5">
-                            <span className="text-slate-400 font-semibold">Grupo:</span>
-                            <span className="text-slate-900 uppercase font-extrabold">{sch.group}</span>
+                          <div className="flex justify-between border-b border-slate-100 pb-2">
+                            <span className="text-slate-400 font-semibold">Grupo Formativo:</span>
+                            <span className="text-slate-900 uppercase font-black">{sch.group}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-400 font-semibold">Frecuencia de Repetición:</span>
-                            <span className="text-slate-900 uppercase font-black tracking-wide text-[10.5px]">{sch.freq}</span>
+                            <span className="text-slate-400 font-semibold">Frecuencia:</span>
+                            <span className="text-slate-900 uppercase font-black text-[10.5px]">{sch.freq}</span>
                           </div>
-                        </CardContent>
-                      </Card>
+                        </div>
+                      </div>
                     ))}
                     {getCourseSchedulesList(selectedCourse.code).length === 0 && (
-                      <p className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">Esta asignatura no tiene horario registrado para este docente en MPA.</p>
+                      <p className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600 font-bold">Esta asignatura no tiene horario registrado para este docente en MPA.</p>
                     )}
                   </div>
                 </PageTransition>
@@ -1245,19 +1233,33 @@ export default function DocenteDashboard({
 
               {/* SECTION C: 16 WEEKS INTERACTIVE OPERATIONS SUB VIEW */}
               {activeSection === "week" && (
-                <div className="space-y-6 block">
+                <div className="space-y-6 block text-left font-sans">
                   {/* Themed Week Header Banner */}
-                  <div className="p-4 bg-white border border-slate-200 rounded-xl text-left font-sans flex items-start gap-4">
-                    <div className="h-10 w-10 bg-[#8B0026]/10 text-[#8B0026] border border-red-150 rounded-xl flex items-center justify-center font-black text-sm shrink-0">
-                      S{selectedWeek}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-extrabold text-slate-900 text-sm leading-tight uppercase">
-                        Tema: {getWeekTheme(selectedCourse.code, selectedWeek, selectedCourse.name).topic}
-                      </h3>
-                      <p className="text-[11px] text-slate-500 font-semibold block mt-1">
-                        {getWeekTheme(selectedCourse.code, selectedWeek, selectedCourse.name).desc}
-                      </p>
+                  <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 overflow-hidden text-left border-b-4 border-amber-500">
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521] to-slate-950/85 opacity-95" />
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-amber-400 text-slate-950 rounded-2xl flex flex-col items-center justify-center font-black shrink-0 shadow-md">
+                          <span className="text-[9px] uppercase font-mono tracking-tighter leading-none">SEMANA</span>
+                          <span className="text-2xl leading-none font-display">{selectedWeek}</span>
+                        </div>
+                        <div className="space-y-1 min-w-0">
+                          <span className="bg-white/20 text-amber-300 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm inline-block select-none font-mono">
+                            {selectedCourse.code} • {selectedWeekOption.toUpperCase()}
+                          </span>
+                          <h2 className="text-lg md:text-xl font-black text-white tracking-tight uppercase leading-snug truncate">
+                            {getWeekTheme(selectedCourse.code, selectedWeek, selectedCourse.name).topic}
+                          </h2>
+                          <p className="text-xs text-white/90 font-medium font-mono line-clamp-1">
+                            {getWeekTheme(selectedCourse.code, selectedWeek, selectedCourse.name).desc}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] font-mono font-bold bg-black/30 border border-white/20 px-3 py-1.5 rounded-xl uppercase text-amber-300">
+                          Periodo 2027-I
+                        </span>
+                      </div>
                     </div>
                   </div>
 
