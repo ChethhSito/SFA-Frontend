@@ -69,6 +69,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   const activeCourse = classesCoursesData.find(c => c.name === selectedCourseDetail);
   const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
   const [activeCourseComponentId, setActiveCourseComponentId] = useState<string | null>(null);
+  const [isStructureSidebarCollapsed, setIsStructureSidebarCollapsed] = useState(false);
 
   const subComponents = useMemo(() => {
     if (!activeCourse) return [];
@@ -487,18 +488,45 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
   return (
     <PageTransition id="classes-workspace" className="flex flex-col md:flex-row gap-6 items-start text-left">
+      {/* COLLAPSED STRUCTURE STRIP BUTTON (Desktop) */}
+      {isStructureSidebarCollapsed && (
+        <div className="hidden md:flex shrink-0 bg-white border border-slate-200 rounded-2xl p-2.5 flex-col items-center gap-3 shadow-xs">
+          <button
+            type="button"
+            onClick={() => setIsStructureSidebarCollapsed(false)}
+            title="Expandir semanas del curso"
+            className="w-9 h-9 bg-red-50 hover:bg-[#800521] text-[#800521] hover:text-white border border-red-200/80 rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-xs hover:scale-105"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <span className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest [writing-mode:vertical-lr] rotate-180 py-2 select-none">
+            Estructura Académica
+          </span>
+        </div>
+      )}
+
       {/* LEFT SUB-SIDEBAR: Estructura Académica */}
-      <aside className="w-full md:w-64 shrink-0 bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden select-none text-left">
+      <aside className={`${isStructureSidebarCollapsed ? "hidden" : "w-full md:w-64"} shrink-0 bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden select-none text-left transition-all duration-200`}>
         <div className="p-4 border-b border-slate-200 bg-slate-50/50">
           <div className="flex items-center justify-between gap-1">
             <span className="text-[9px] font-black text-[#8B0026] bg-red-50 border border-red-150 px-2 py-0.5 rounded-sm select-none block w-max uppercase tracking-widest font-mono">
               {selectedComponent ? selectedComponent.code : `Asignatura: ${activeCourse.code}`}
             </span>
-            {selectedComponent && (
-              <span className="text-[8.5px] font-black text-[#800521] bg-[#800521]/10 border border-[#800521]/20 px-1.5 py-0.5 rounded uppercase">
-                {selectedComponent.shortLabel}
-              </span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {selectedComponent && (
+                <span className="text-[8.5px] font-black text-[#800521] bg-[#800521]/10 border border-[#800521]/20 px-1.5 py-0.5 rounded uppercase font-mono">
+                  {selectedComponent.shortLabel}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsStructureSidebarCollapsed(true)}
+                title="Colapsar estructura de semanas"
+                className="hidden md:flex p-1 text-slate-400 hover:text-[#800521] hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
           <h3 className="text-xs font-black text-slate-900 tracking-tight block mt-1.5 leading-snug break-words uppercase" title={selectedComponent ? selectedComponent.name : activeCourse.name}>
             {selectedComponent ? selectedComponent.name : activeCourse.name}
