@@ -68,6 +68,24 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   const classesCoursesData = enrichedCourses;
   const activeCourse = classesCoursesData.find(c => c.name === selectedCourseDetail);
   const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
+  const [selectedComponentFilter, setSelectedComponentFilter] = useState<string>("all");
+
+  const courseComponents = useMemo(() => {
+    if (!activeCourse) return [];
+    if (activeCourse.code === "EIND-101" || activeCourse.code?.startsWith("EIND-101")) {
+      return [
+        { id: "all", label: "Todos los Componentes", badge: "Consolidado", code: activeCourse.code },
+        { id: "teo", label: "Teoría", badge: "Teoría", code: "EIND-101-TEO", schedule: "Lunes 08:00 AM - 10:00 AM", classroom: "Aula 101 - Pabellón A", teacher: activeCourse.teacherName || "Manuel Ramos Salazar" },
+        { id: "tal", label: "Taller", badge: "Taller", code: "EIND-101-TAL", schedule: "Lunes 11:00 AM - 01:00 PM", classroom: "Taller de Máquinas Eléctricas y Tableros", teacher: activeCourse.teacherName || "Manuel Ramos Salazar" },
+        { id: "lab", label: "Laboratorio", badge: "Laboratorio", code: "EIND-101-LAB", schedule: "Viernes 08:00 AM - 10:00 AM", classroom: "Laboratorio de Cómputo y Simulación", teacher: activeCourse.teacherName || "Manuel Ramos Salazar" },
+      ];
+    }
+    return [
+      { id: "all", label: "Todos los Componentes", badge: "Consolidado", code: activeCourse.code },
+      { id: "teo", label: "Teoría", badge: "Teoría", code: `${activeCourse.code}-TEO`, schedule: activeCourse.schedule, classroom: activeCourse.classroom, teacher: activeCourse.teacherName },
+      { id: "tal", label: "Práctica / Taller", badge: "Taller", code: `${activeCourse.code}-TAL`, schedule: activeCourse.schedule, classroom: activeCourse.classroom, teacher: activeCourse.teacherName }
+    ];
+  }, [activeCourse]);
 
   const renderCourseIcon = (iconName: string, className = "w-4 h-4") => {
     switch (iconName) {
@@ -254,12 +272,22 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
   const filteredDBMaterials = materials.filter(m => {
     const courseMatches = activeCourse.attendanceCourseIds?.includes(m.courseId) || m.courseId === activeCourse.id || m.courseId === activeCourseDbId;
-    return courseMatches && (m.title.includes(`[Semana ${selectedClassWeek}]`) || m.title.includes(`Semana ${selectedClassWeek}`));
+    const weekMatches = m.title.includes(`[Semana ${selectedClassWeek}]`) || m.title.includes(`Semana ${selectedClassWeek}`);
+    if (!courseMatches || !weekMatches) return false;
+    if (selectedComponentFilter === "teo") return m.courseId.includes("teo") || m.title.toLowerCase().includes("teor") || (!m.courseId.includes("tal") && !m.courseId.includes("lab") && !m.title.toLowerCase().includes("taller") && !m.title.toLowerCase().includes("lab"));
+    if (selectedComponentFilter === "tal") return m.courseId.includes("tal") || m.title.toLowerCase().includes("taller");
+    if (selectedComponentFilter === "lab") return m.courseId.includes("lab") || m.title.toLowerCase().includes("lab") || m.title.toLowerCase().includes("simula");
+    return true;
   });
 
   const filteredDBAssignments = assignments.filter(a => {
     const courseMatches = activeCourse.attendanceCourseIds?.includes(a.courseId) || a.courseId === activeCourse.id || a.courseId === activeCourseDbId;
-    return courseMatches && a.kind !== "assessment" && (a.title.includes(`[Semana ${selectedClassWeek}]`) || a.title.includes(`Semana ${selectedClassWeek}`));
+    const weekMatches = a.kind !== "assessment" && (a.title.includes(`[Semana ${selectedClassWeek}]`) || a.title.includes(`Semana ${selectedClassWeek}`));
+    if (!courseMatches || !weekMatches) return false;
+    if (selectedComponentFilter === "teo") return a.courseId.includes("teo") || a.title.toLowerCase().includes("teor");
+    if (selectedComponentFilter === "tal") return a.courseId.includes("tal") || a.title.toLowerCase().includes("taller");
+    if (selectedComponentFilter === "lab") return a.courseId.includes("lab") || a.title.toLowerCase().includes("lab") || a.title.toLowerCase().includes("simula");
+    return true;
   });
 
   const handleSimulateHWUpload = (asgId: string, customFileName: string) => {
@@ -528,6 +556,44 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 </div>
               </div>
             </div>
+
+            {courseComponents.length > 1 && (
+              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs text-left p-5 space-y-3">
+                <div className="border-b border-slate-150 pb-2 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-[#800521]">
+                      Componentes Formativos de la Asignatura
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      Distribución de ambientes físicos, docentes titulares y sesiones lectivas independientes.
+                    </p>
+                  </div>
+                  <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono">
+                    {courseComponents.filter(c => c.id !== "all").length} Componentes
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                  {courseComponents.filter(c => c.id !== "all").map(comp => (
+                    <div key={comp.id} className="p-3.5 bg-slate-50/70 border border-slate-200 rounded-xl space-y-2 text-left">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-[10px] font-black text-slate-500">{comp.code}</span>
+                        <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-white border border-slate-200 text-[#800521]">
+                          {comp.badge}
+                        </span>
+                      </div>
+                      <span className="font-extrabold text-slate-900 text-xs block leading-tight">
+                        {comp.label}
+                      </span>
+                      <div className="text-[10.5px] text-slate-600 space-y-1 pt-1.5 border-t border-slate-200/60">
+                        <p><strong className="text-slate-500 font-bold">Docente:</strong> {comp.teacher}</p>
+                        <p><strong className="text-slate-500 font-bold">Ambiente:</strong> {comp.classroom}</p>
+                        <p className="font-mono font-bold text-[#800521] pt-0.5">{comp.schedule}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -669,10 +735,52 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               </div>
 
               <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
+                {/* Component Filter Switcher */}
+                {courseComponents.length > 1 && (
+                  <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-left">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                        Filtrar por Componente:
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {courseComponents.map((comp) => {
+                        const isSelected = selectedComponentFilter === comp.id;
+                        return (
+                          <button
+                            key={comp.id}
+                            type="button"
+                            onClick={() => setSelectedComponentFilter(comp.id)}
+                            className={`px-3 py-1.5 rounded-lg text-[10.5px] font-black uppercase transition-all flex items-center gap-1.5 cursor-pointer border ${
+                              isSelected
+                                ? "bg-[#800521] text-white border-[#800521] shadow-xs"
+                                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900"
+                            }`}
+                          >
+                            <span>{comp.label}</span>
+                            {comp.id !== "all" && (
+                              <span className={`text-[8.5px] font-mono px-1 py-0.2 rounded ${isSelected ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
+                                {comp.badge}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {selectedClassWeekOption === "asistencia" && (() => {
                   if (attendanceLoading) return <p role="status" className="p-4 text-xs font-bold text-slate-500">Cargando registros de asistencia...</p>;
                   if (attendanceError) return <p role="alert" className="p-4 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">{attendanceError}</p>;
-                  const records = studentAttendanceRecords(attendance, activeCourse.attendanceCourseIds || [activeCourse.id, activeCourse.code], studentDni).filter((record) => record.week === selectedClassWeek);
+                  const records = studentAttendanceRecords(attendance, activeCourse.attendanceCourseIds || [activeCourse.id, activeCourse.code], studentDni)
+                    .filter((record) => record.week === selectedClassWeek)
+                    .filter((record) => {
+                      if (selectedComponentFilter === "teo") return record.courseId.includes("teo") || (record as any).sessionType === "Teoría";
+                      if (selectedComponentFilter === "tal") return record.courseId.includes("tal") || (record as any).sessionType === "Taller";
+                      if (selectedComponentFilter === "lab") return record.courseId.includes("lab") || (record as any).sessionType === "Laboratorio";
+                      return true;
+                    });
                   
                   return (
                     <div className="space-y-4 text-left font-sans">
