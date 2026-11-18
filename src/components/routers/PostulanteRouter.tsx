@@ -92,6 +92,34 @@ export default function PostulanteRouter({
 
   const currentDni = session || "";
 
+  const effectiveEnrollments = useMemo(() => {
+    let list = [...enrollments];
+    if (liveEnrollment) {
+      const idx = list.findIndex(e => e.studentDni === liveEnrollment.studentDni);
+      if (idx >= 0) {
+        list[idx] = { ...list[idx], ...liveEnrollment };
+      } else {
+        list.push(liveEnrollment);
+      }
+    }
+    try {
+      const saved = localStorage.getItem("sfa_enrollments");
+      if (saved) {
+        const parsed: Enrollment[] = JSON.parse(saved);
+        const mySaved = parsed.find(e => e.studentDni === currentDni);
+        if (mySaved) {
+          const idx = list.findIndex(e => e.studentDni === currentDni);
+          if (idx >= 0) {
+            list[idx] = { ...list[idx], ...mySaved };
+          } else {
+            list.push(mySaved);
+          }
+        }
+      }
+    } catch {}
+    return list;
+  }, [enrollments, liveEnrollment, currentDni]);
+
   let storedApp: Applicant | null = null;
   try {
     const rawStored = localStorage.getItem("sfa_applicants");
@@ -249,34 +277,6 @@ export default function PostulanteRouter({
       </div>
     );
   }
-
-  const effectiveEnrollments = useMemo(() => {
-    let list = [...enrollments];
-    if (liveEnrollment) {
-      const idx = list.findIndex(e => e.studentDni === liveEnrollment.studentDni);
-      if (idx >= 0) {
-        list[idx] = { ...list[idx], ...liveEnrollment };
-      } else {
-        list.push(liveEnrollment);
-      }
-    }
-    try {
-      const saved = localStorage.getItem("sfa_enrollments");
-      if (saved) {
-        const parsed: Enrollment[] = JSON.parse(saved);
-        const mySaved = parsed.find(e => e.studentDni === currentDni);
-        if (mySaved) {
-          const idx = list.findIndex(e => e.studentDni === currentDni);
-          if (idx >= 0) {
-            list[idx] = { ...list[idx], ...mySaved };
-          } else {
-            list.push(mySaved);
-          }
-        }
-      }
-    } catch {}
-    return list;
-  }, [enrollments, liveEnrollment, currentDni]);
 
   return (
     <PostulanteDashboard
