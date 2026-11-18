@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Users, BookOpen, Clock, FileText, CheckCircle, CheckCircle2,
-  Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronRight, ChevronLeft, BarChart3, Settings, AlertCircle, RefreshCw, FileSpreadsheet, Megaphone,
+  Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronRight, ChevronLeft, BarChart3, Settings, AlertCircle, RefreshCw, FileSpreadsheet, Megaphone, LibraryBig,
   MapPin, ShieldCheck, Menu, X, FileCheck, Clock3, School
 } from "lucide-react";
 import { Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, StudentPersonalData, Teacher, Enrollment, MpaPeriod, MpaAcademicGroup, MpaProgramTask, MpaCourse, MpaClassroom, MpaShift } from "../../types";
