@@ -436,6 +436,18 @@ export default function AlumnoDashboard({
         return `${t.dayOfWeek || "Lunes"} ${t.startTime || "08:00 AM"} - ${t.endTime || "01:00 PM"}`;
       }).join(" / ");
 
+      const relatedDbCourses = courses.filter((cItem: any) => cItem.code === courseCode || cItem.id === courseId || (cItem as any)._id === courseId);
+      const dynamicAttendanceIds = Array.from(new Set([
+        `cur-${courseId}`,
+        courseId,
+        courseCode,
+        courseObj?.id,
+        courseObj?.code,
+        ...relatedDbCourses.map((rc: any) => rc.id),
+        ...relatedDbCourses.map((rc: any) => (rc as any)._id),
+        ...relatedDbCourses.map((rc: any) => rc.code)
+      ].filter(Boolean)));
+
       return {
         id: `cur-${courseId}`,
         name: courseName,
@@ -452,7 +464,8 @@ export default function AlumnoDashboard({
         endDate: mpaPlanningData.periods?.find((p: any) => p.id === studentGroup?.periodId)?.endDate || "2027-07-30",
         studentCount: studentGroup?.capacity || 30,
         description: `Unidad didáctica curricular matriculada. Plan de estudios de la carrera técnica de ${enrollment.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad"}.`,
-        formula: "NF = (EP1 * 0.20) + (TR1 * 0.15) + (EC1 * 0.15) + (PF1 * 0.50)"
+        formula: "NF = (EP1 * 0.20) + (TR1 * 0.15) + (EC1 * 0.15) + (PF1 * 0.50)",
+        attendanceCourseIds: dynamicAttendanceIds
       };
     });
   }, [studentTasks, mpaPlanningData, enrollment, studentGroup]);
@@ -498,13 +511,28 @@ export default function AlumnoDashboard({
     let description = c.description || `Unidad didáctica del plan curricular para la carrera de ${currentProgram?.name || "Electricidad Industrial"}. Enfocada en desarrollar competencias profesionales esenciales del sector tecnológico nacional.`;
 
     const formula = "Calificaciones registradas por evaluación";
-    const relatedCourse = courses.find((course) => course.code === c.code);
-    const evaluationsList = assignments.filter((assignment) =>
-      [c.id, c.code, relatedCourse?.id].includes(assignment.courseId)).map((assignment, index) => {
+    const relatedDbCourses = courses.filter((course) => course.code === c.code || course.id === c.id || (course as any)._id === c.id);
+    const relatedCourse = relatedDbCourses[0];
+    const evaluationsList = assignments.filter((assignment) => {
+      const matchIds = [c.id, c.code, relatedCourse?.id, (relatedCourse as any)?._id].filter(Boolean);
+      return matchIds.includes(assignment.courseId);
+    }).map((assignment, index) => {
       const submission = assignment.submissions.find((item) => item.studentDni === studentDni);
       return { name: assignment.title, sub: assignment.description, prefix: `EV${index + 1}`,
         weight: "Sin ponderación", grade: submission?.grade === undefined ? "NR" : submission.grade };
     });
+
+    const idSet = new Set<string>();
+    [c.id, c.code, c.id?.replace(/^cur-/, '')].filter(Boolean).forEach((id: string) => idSet.add(id));
+    if (Array.isArray(c.attendanceCourseIds)) {
+      c.attendanceCourseIds.forEach((id: string) => idSet.add(id));
+    }
+    relatedDbCourses.forEach((rc: any) => {
+      if (rc.id) idSet.add(rc.id);
+      if (rc._id) idSet.add(rc._id);
+      if (rc.code) idSet.add(rc.code);
+    });
+    const finalAttendanceCourseIds = Array.from(idSet);
 
     return {
       id: c.id,
@@ -521,7 +549,7 @@ export default function AlumnoDashboard({
       iconType,
       description,
       formula,
-      attendanceCourseIds: [c.id, c.code, relatedCourse?.id].filter(Boolean),
+      attendanceCourseIds: finalAttendanceCourseIds,
       evaluations: evaluationsList
     };
   });
@@ -736,7 +764,7 @@ export default function AlumnoDashboard({
                 expandedAttendanceCourse={expandedAttendanceCourse}
                 setExpandedAttendanceCourse={setExpandedAttendanceCourse}
                 setActiveTab={setActiveTab}
-                studentCourses={studentCourses}
+                studentCourses={enrichedCourses}
                 studentTasks={studentTasks}
                 mpaPlanningData={mpaPlanningData}
                 studentGroup={studentGroup}

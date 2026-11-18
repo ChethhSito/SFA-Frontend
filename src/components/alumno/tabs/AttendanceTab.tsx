@@ -246,9 +246,56 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                         </div>
                       </div>
 
-                      <div className="bg-white p-3 rounded-lg border text-xs space-y-2">
-                        <p className="font-bold">Registros diarios del alumno</p>
-                        {c.records.length ? c.records.map((record) => <p key={record.id}>{record.date}: {record.statusMap[activeDni]}</p>) : <p>Sin registros de asistencia.</p>}
+                      <div className="bg-white p-4 rounded-xl border border-slate-200/80 text-xs space-y-3">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                          <p className="font-extrabold text-[#800521] uppercase text-[11px] tracking-wider flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-amber-600" />
+                            Historial de Sesiones Registradas
+                          </p>
+                          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
+                            {c.records.length} {c.records.length === 1 ? "sesión registrada" : "sesiones registradas"}
+                          </span>
+                        </div>
+
+                        {c.records.length ? (
+                          <div className="space-y-2">
+                            {c.records.map((record) => {
+                              const status = record.statusMap[activeDni];
+                              const statusConfig = {
+                                Presente: { bg: "bg-emerald-50/80", text: "text-emerald-700", border: "border-emerald-200", icon: CheckCircle2, label: "Asistencia Confirmada" },
+                                Tardanza: { bg: "bg-amber-50/80", text: "text-amber-700", border: "border-amber-200", icon: Clock, label: "Tardanza Justificada" },
+                                Falta: { bg: "bg-rose-50/80", text: "text-rose-700", border: "border-rose-200", icon: AlertTriangle, label: "Inasistencia Injustificada" },
+                                Justificado: { bg: "bg-blue-50/80", text: "text-blue-700", border: "border-blue-200", icon: FileText, label: "Permiso / Justificado" }
+                              }[status] || { bg: "bg-slate-50", text: "text-slate-700", border: "border-slate-200", icon: Clock, label: status };
+
+                              const StatusIcon = statusConfig.icon;
+
+                              return (
+                                <div key={record.id || `${record.courseId}-${record.date}`} className={`flex items-center justify-between p-2.5 rounded-lg border ${statusConfig.border} ${statusConfig.bg}`}>
+                                  <div className="flex items-center gap-2.5">
+                                    <StatusIcon className={`w-4 h-4 ${statusConfig.text} shrink-0`} />
+                                    <div>
+                                      <span className="font-black text-slate-800 text-[11px] block">
+                                        Fecha: {record.date.split("-").reverse().join("/")}
+                                      </span>
+                                      <span className="text-[10px] text-slate-500 font-medium block">
+                                        Semana {record.week || 1} • Sesión Formativa
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-md border ${statusConfig.border} bg-white ${statusConfig.text}`}>
+                                    {status}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-center py-4 bg-slate-50/50 rounded-lg border border-dashed border-slate-200">
+                            <Clock className="w-5 h-5 text-slate-400 mx-auto mb-1" />
+                            <p className="text-slate-500 text-xs font-semibold">Sin registros de asistencia cargados en este periodo.</p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="bg-white p-3.5 rounded-lg border border-slate-200/80 text-xs space-y-1">
