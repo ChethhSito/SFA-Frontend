@@ -164,7 +164,7 @@ export default function Sidebar({
     return renderItemIcon(instLogo);
   };
 
-  const SidebarContent = ({ collapsed = false }: { collapsed?: boolean }) => (
+  const renderSidebarContent = (collapsed = false) => (
     <div className="flex flex-col h-full bg-white relative z-20">
       {/* Header of Institution */}
       <div className={`p-4 flex items-center border-b border-slate-100 ${collapsed ? "justify-center" : "gap-3"}`}>
@@ -247,6 +247,7 @@ export default function Sidebar({
                 return (
                   <div key={itemIdx} className="space-y-0.5">
                     <button
+                      type="button"
                       title={collapsed ? item.label : undefined}
                       onClick={() => {
                         if (hasSubItems && !collapsed) {
@@ -420,7 +421,7 @@ export default function Sidebar({
                 </button>
               </div>
               <div className="w-full h-full">
-                <SidebarContent />
+                {renderSidebarContent(false)}
               </div>
             </motion.div>
           </>
@@ -431,6 +432,7 @@ export default function Sidebar({
       <aside className={`hidden md:flex flex-col h-full bg-white border-r border-slate-200 shadow-xs shrink-0 select-none relative z-30 transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-64"} ${className}`}>
         {/* Toggle arrow button on the right edge */}
         <button
+          type="button"
           onClick={() => setIsCollapsed(!isCollapsed)}
           title={isCollapsed ? "Expandir menú lateral" : "Colapsar menú lateral"}
           className="absolute -right-3.5 top-6 z-40 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#800521] border border-slate-300 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"
@@ -438,7 +440,7 @@ export default function Sidebar({
           {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
 
-        <SidebarContent collapsed={isCollapsed} />
+        {renderSidebarContent(isCollapsed)}
       </aside>
     </>
   );

@@ -390,28 +390,28 @@ export default function AlumnoDashboard({
             title: "ACADÉMICO",
             items: [
               {
+                label: "Consulta Académica",
+                icon: <ClipboardList className="w-4 h-4" />,
+                route: "closure",
+                active: activeTab === "closure"
+              },
+              {
                 label: "Matrícula de Cursos",
                 icon: <BookOpen className="w-4 h-4" />,
                 route: "enrollment",
                 active: activeTab === "enrollment"
               },
               {
-                label: "Mi Horario",
-                icon: <Calendar className="w-4 h-4" />,
-                route: "schedule",
-                active: activeTab === "schedule"
-              },
-              {
-                label: "Calendario Académico",
-                icon: <Calendar className="w-4 h-4" />,
-                route: "calendar",
-                active: activeTab === "calendar"
-              },
-              {
                 label: "Mis Cursos",
                 icon: <BookOpen className="w-4 h-4" />,
                 route: "classes",
                 active: activeTab === "classes"
+              },
+              {
+                label: "Mi Horario",
+                icon: <Calendar className="w-4 h-4" />,
+                route: "schedule",
+                active: activeTab === "schedule"
               },
               {
                 label: "Mis Calificaciones",
@@ -426,10 +426,10 @@ export default function AlumnoDashboard({
                 active: activeTab === "attendance"
               },
               {
-                label: "Consulta Académica",
-                icon: <ClipboardList className="w-4 h-4" />,
-                route: "closure",
-                active: activeTab === "closure"
+                label: "Calendario Académico",
+                icon: <Calendar className="w-4 h-4" />,
+                route: "calendar",
+                active: activeTab === "calendar"
               }
             ]
           },
