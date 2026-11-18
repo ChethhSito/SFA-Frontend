@@ -60,7 +60,7 @@ export function CierreCurso({ course, weeksCount, materialsCount, assignmentsCou
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <span className={`text-[10px] font-black uppercase px-3.5 py-2 rounded-xl border shadow-sm ${isSigned ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-amber-400 text-slate-950 border-amber-500'}`}>
-              {isSigned ? '✓ Acta Oficial Firmada' : 'Pendiente de Firma'}
+              {isSigned ? 'Acta Oficial Firmada' : 'Pendiente de Firma'}
             </span>
           </div>
         </div>

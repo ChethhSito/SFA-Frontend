@@ -225,7 +225,7 @@ export function ResumenCurso({
                     ? "bg-emerald-50 text-emerald-800 border-emerald-300" 
                     : "bg-rose-50 text-rose-800 border-rose-300"
                 }`}>
-                  {isApproved ? "✓ Promedio Aprobatorio" : "⚠ En Seguimiento"}
+                  {isApproved ? "Promedio Aprobatorio" : "En Seguimiento"}
                 </span>
                 <p className="text-slate-500 text-xs font-semibold">
                   Promedio ponderado de {studentsCount} estudiante{studentsCount === 1 ? "" : "s"} matriculado{studentsCount === 1 ? "" : "s"}.

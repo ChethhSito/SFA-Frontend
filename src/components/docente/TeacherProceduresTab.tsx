@@ -203,7 +203,7 @@ export default function TeacherProceduresTab({ teacherDni }: { teacherDni: strin
 
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
                 <span className="text-[11px] font-bold text-slate-500">
-                  {isSelected ? '✓ Trámite seleccionado' : 'Haga clic para seleccionar'}
+                  {isSelected ? 'Trámite seleccionado' : 'Haga clic para seleccionar'}
                 </span>
                 <span className={`font-black uppercase text-[10px] tracking-wider flex items-center gap-1 ${
                   isSelected ? 'text-[#800521]' : 'text-slate-400'
@@ -413,8 +413,9 @@ export default function TeacherProceduresTab({ teacherDni }: { teacherDni: strin
                         <span>Descargar Documento Firmado</span>
                       </a>
                     ) : isValidated ? (
-                      <p className="text-[11px] font-extrabold text-purple-700 bg-purple-50 p-2 rounded-lg border border-purple-200 text-center">
-                        ✓ En Despacho de Secretaría para Firma Digital
+                      <p className="text-[11px] font-extrabold text-purple-700 bg-purple-50 p-2 rounded-lg border border-purple-200 text-center flex items-center justify-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                        <span>En Despacho de Secretaría para Firma Digital</span>
                       </p>
                     ) : (
                       <>

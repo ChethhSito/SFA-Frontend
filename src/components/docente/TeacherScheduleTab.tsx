@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { 
   CalendarDays, Clock3, MapPin, RefreshCw, Users, Printer, 
-  LayoutGrid, ListFilter, School, BookOpen, Clock, AlertCircle, CheckCircle2 
+  LayoutGrid, ListFilter, School, BookOpen, Clock, AlertCircle, CheckCircle2, X 
 } from 'lucide-react';
 import { MpaAcademicGroup, MpaClassroom, MpaCourse, MpaPeriod, MpaProgramTask, MpaShift } from '../../types';
 
@@ -29,6 +29,15 @@ const TIME_BLOCKS = [
   { id: 'hueco', label: '10:00 AM - 11:00 AM', startMin: 600, endMin: 660, tag: '10:00 - 11:00' },
   { id: 'b2', label: '11:00 AM - 01:00 PM', startMin: 660, endMin: 780, tag: '11:00 - 01:00' },
 ] as const;
+
+const TEACHER_CATALOG: Record<string, string> = {
+  "99887766": "Ing. Manuel Ramos Salazar",
+  "44556677": "Ing. Carlos Alberto Mendoza Quispe",
+  "66778899": "Ing. Jorge Luis Paucar Silva",
+  "88990011": "Lic. Fernando Gabriel Díaz Torres",
+  "77889900": "Lic. Sofía Lorena Valenzuela Ríos",
+  "40112233": "Ing. Manuel Ramos Salazar",
+};
 
 const THEMES: Record<string, { bg: string; border: string; text: string; sub: string; badge: string }> = {
   'EIND-101': { 
@@ -213,10 +222,16 @@ export default function TeacherScheduleTab({ teacherDni, data, loading, error, o
     );
   };
 
+  const teacherFullName = TEACHER_CATALOG[teacherDni] || 'Ing. Manuel Ramos Salazar';
+
   return (
     <section className="space-y-6 text-left font-sans">
-      {/* 1. Header Borgoña Institucional */}
-      <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-8 overflow-hidden text-left border-b-4 border-amber-500">
+      {/* ============================================================== */}
+      {/* 1. VISTA INTERACTIVA WEB (OCULTA AL IMPRIMIR)                  */}
+      {/* ============================================================== */}
+      <div className="screen-only space-y-6">
+        {/* Header Borgoña Institucional */}
+        <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-8 overflow-hidden text-left border-b-4 border-amber-500">
         <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521] to-slate-950/85 opacity-95" />
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -448,8 +463,8 @@ export default function TeacherScheduleTab({ teacherDni, data, loading, error, o
                   {courseById.get(selectedTaskDetail.courseId)?.name || COURSE_CATALOG[selectedTaskDetail.courseId]?.name || selectedTaskDetail.courseId}
                 </h3>
               </div>
-              <button onClick={() => setSelectedTaskDetail(null)} className="text-slate-400 hover:text-slate-700 text-lg font-bold p-1">
-                ✕
+              <button onClick={() => setSelectedTaskDetail(null)} className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors" title="Cerrar">
+                <X className="w-4 h-4 text-slate-500" />
               </button>
             </div>
 
@@ -483,6 +498,180 @@ export default function TeacherScheduleTab({ teacherDni, data, loading, error, o
           </div>
         </div>
       )}
+      </div>
+
+      {/* ============================================================== */}
+      {/* 2. DOCUMENTO IMPRESO OFICIAL (VISIBLE EXCLUSIVAMENTE AL IMPRIMIR) */}
+      {/* ============================================================== */}
+      <div className="print-only hidden p-2 font-sans text-slate-900 bg-white">
+        {/* Encabezado Oficial Institucional */}
+        <div className="flex items-center justify-between border-b-2 border-slate-900 pb-3 mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-[#800521] text-white flex items-center justify-center font-black text-lg border-2 border-amber-400 shrink-0">
+              SFA
+            </div>
+            <div>
+              <h1 className="text-xs font-black uppercase tracking-tight text-slate-950">
+                INSTITUTO DE EDUCACIÓN SUPERIOR TECNOLÓGICO PÚBLICO "SAN FRANCISCO DE ASÍS"
+              </h1>
+              <p className="text-[9.5px] font-bold text-slate-700 uppercase">
+                DIRECCIÓN GENERAL • JEFATURA DE PLANIFICACIÓN ACADÉMICA (MPA)
+              </p>
+              <p className="text-[8.5px] font-mono text-slate-500">
+                R.D. N° 0458-2005-ED • Licenciamiento Institucional MINEDU
+              </p>
+            </div>
+          </div>
+          <div className="text-right border-l-2 border-slate-300 pl-4 space-y-0.5">
+            <span className="text-[8.5px] font-black uppercase text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded block text-center">
+              HORARIO OFICIAL DE CLASES
+            </span>
+            <p className="text-[11px] font-black text-slate-900 uppercase">Período 2027-I</p>
+            <p className="text-[8.5px] text-slate-500 font-mono">22/03/2027 - 30/07/2027</p>
+          </div>
+        </div>
+
+        {/* Ficha Membretada del Docente */}
+        <div className="border border-slate-600 bg-slate-50 rounded-lg p-2.5 mb-3 grid grid-cols-4 gap-2 text-[10px]">
+          <div>
+            <span className="text-[8.5px] uppercase font-bold text-slate-500 block">Docente Titular:</span>
+            <span className="font-black text-slate-950 uppercase">{teacherFullName}</span>
+          </div>
+          <div>
+            <span className="text-[8.5px] uppercase font-bold text-slate-500 block">DNI Oficial:</span>
+            <span className="font-mono font-black text-slate-950">{teacherDni}</span>
+          </div>
+          <div>
+            <span className="text-[8.5px] uppercase font-bold text-slate-500 block">Programa de Estudios:</span>
+            <span className="font-black text-slate-950 uppercase">Electricidad Industrial</span>
+          </div>
+          <div>
+            <span className="text-[8.5px] uppercase font-bold text-slate-500 block">Régimen Laboral:</span>
+            <span className="font-black text-slate-950">Tiempo Completo (40 Hrs)</span>
+          </div>
+          <div>
+            <span className="text-[8.5px] uppercase font-bold text-slate-500 block">Turno Asignado:</span>
+            <span className="font-black text-slate-950">Mañana (08:00 AM - 01:00 PM)</span>
+          </div>
+          <div>
+            <span className="text-[8.5px] uppercase font-bold text-slate-500 block">Carga Semanal:</span>
+            <span className="font-black text-slate-950">{sessions.length} Bloques de Clase</span>
+          </div>
+          <div>
+            <span className="text-[8.5px] uppercase font-bold text-slate-500 block">Sede Central:</span>
+            <span className="font-black text-slate-950">Campus Principal • Pabellón A</span>
+          </div>
+          <div>
+            <span className="text-[8.5px] uppercase font-bold text-slate-500 block">Fecha de Emisión:</span>
+            <span className="font-mono font-bold text-slate-700">{new Date().toLocaleDateString('es-PE')}</span>
+          </div>
+        </div>
+
+        {/* Tabla Landscape Oficial A4 Completa (Lunes a Sábado) */}
+        <table className="w-full border-collapse text-left border-2 border-slate-900 table-fixed text-[9.5px]">
+          <thead>
+            <tr className="bg-slate-200 border-b-2 border-slate-900 text-center font-black uppercase text-slate-950">
+              <th className="w-[14%] border-r border-slate-600 p-2 text-center">Hora / Bloque</th>
+              {DAYS_SHORT.map((day) => (
+                <th key={day.full} className="w-[14.33%] border-r border-slate-600 p-2 text-center last:border-r-0">
+                  {day.full}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-600">
+            {TIME_BLOCKS.map((slot) => (
+              <tr key={slot.id} className="min-h-[70px]">
+                <th scope="row" className="border-r border-slate-600 bg-slate-100 p-2 text-center font-mono align-middle">
+                  <p className="font-black text-slate-950 text-[10.5px]">{slot.tag}</p>
+                  <span className="text-[8.5px] text-slate-500 font-semibold block mt-0.5">
+                    {slot.id === 'hueco' ? 'Ventana Libre' : 'Sesión Regular'}
+                  </span>
+                </th>
+
+                {DAYS_SHORT.map((day) => {
+                  const tasksInSlot = getTasksForSlot(day.full, slot.startMin, slot.endMin);
+
+                  if (slot.id === 'hueco' && tasksInSlot.length === 0) {
+                    return (
+                      <td key={day.full} className="border-r border-slate-600 p-2 text-center align-middle bg-slate-50 text-slate-400 font-mono text-[9px] italic last:border-r-0">
+                        Ventana de Autoestudio Técnico
+                      </td>
+                    );
+                  }
+
+                  if (tasksInSlot.length === 0) {
+                    return (
+                      <td key={day.full} className="border-r border-slate-600 p-2 text-center align-middle text-slate-300 font-mono text-xs last:border-r-0">
+                        --
+                      </td>
+                    );
+                  }
+
+                  return (
+                    <td key={day.full} className="border-r border-slate-600 p-2 align-top last:border-r-0 space-y-1 bg-white">
+                      {tasksInSlot.map((task) => {
+                        const course = courseById.get(task.courseId);
+                        const catalogCourse = COURSE_CATALOG[task.courseId] || COURSE_CATALOG[course?.code || ''];
+                        const group = groupById.get(task.groupId);
+                        const classroom = classroomById.get(task.classroomId);
+                        const classroomName = classroom?.name || CLASSROOM_CATALOG[task.classroomId] || task.classroomId;
+                        const courseCode = course?.code || catalogCourse?.code || task.courseId;
+                        const courseName = course?.name || catalogCourse?.name || task.courseId;
+
+                        return (
+                          <div key={task.id} className="border border-slate-400 rounded p-1.5 bg-slate-50 space-y-0.5 leading-tight">
+                            <div className="flex justify-between items-center text-[8.5px] font-bold">
+                              <span className="font-mono bg-slate-200 px-1 rounded">{courseCode}</span>
+                              <span className="uppercase text-slate-600">{task.sessionType || 'Teoría & Taller'}</span>
+                            </div>
+                            <p className="font-black text-slate-900 uppercase text-[9.5px] leading-tight">
+                              {courseName}
+                            </p>
+                            <div className="text-[8.5px] text-slate-600 font-semibold space-y-0.5 pt-0.5">
+                              <p className="font-mono text-slate-900 font-bold">{task.startTime} - {task.endTime}</p>
+                              <p className="truncate font-bold text-[#800521]">{classroomName}</p>
+                              <p className="text-slate-500">Grupo: {group?.name || task.groupId}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Firmas y Sellos Institucionales */}
+        <div className="mt-8 pt-4 grid grid-cols-3 gap-6 text-center text-[9.5px]">
+          <div className="space-y-1">
+            <div className="border-b border-slate-800 w-4/5 mx-auto h-10" />
+            <p className="font-black uppercase text-slate-900">{teacherFullName}</p>
+            <p className="text-slate-600 font-bold">Docente Titular de Asignatura</p>
+            <p className="text-[8.5px] font-mono text-slate-500">DNI: {teacherDni}</p>
+          </div>
+          <div className="space-y-1">
+            <div className="border-b border-slate-800 w-4/5 mx-auto h-10" />
+            <p className="font-black uppercase text-slate-900">Jefatura de Planificación Académica</p>
+            <p className="text-slate-600 font-bold">IESTP San Francisco de Asís</p>
+            <p className="text-[8.5px] font-mono text-slate-500">Validado en MPA</p>
+          </div>
+          <div className="space-y-1">
+            <div className="border-b border-slate-800 w-4/5 mx-auto h-10" />
+            <p className="font-black uppercase text-slate-900">Dirección General / Secretaría</p>
+            <p className="text-slate-600 font-bold">IESTP San Francisco de Asís</p>
+            <p className="text-[8.5px] font-mono text-slate-500">R.D. N° 0458-2005-ED</p>
+          </div>
+        </div>
+
+        {/* Pie Legal */}
+        <div className="mt-4 pt-2 border-t border-slate-300 flex justify-between items-center text-[8px] text-slate-500 font-mono">
+          <span>Documento oficial expedido por el Sistema Integrado SFA. Prohibida su alteración o adulteración.</span>
+          <span>Impreso el {new Date().toLocaleDateString('es-PE')} a las {new Date().toLocaleTimeString('es-PE')}</span>
+        </div>
+      </div>
     </section>
   );
 }

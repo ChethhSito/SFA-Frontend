@@ -96,5 +96,73 @@ input[type="password"]::-webkit-credentials-auto-fill-button {
   height: 0 !important;
 }
 
+/* ==========================================================================
+   ESTILOS OFICIALES DE IMPRESIÓN (A4 LANDSCAPE / FORMAL SFA)
+   ========================================================================== */
+@media print {
+  @page {
+    size: landscape;
+    margin: 8mm 10mm;
+  }
+
+  html, body {
+    background: #FFFFFF !important;
+    color: #0F172A !important;
+    font-size: 11px !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ocultar todos los elementos de navegación y de pantalla */
+  aside,
+  nav,
+  header,
+  button,
+  .no-print,
+  .sidebar,
+  [role="navigation"],
+  #docente-viewport > div:first-child,
+  #docente-viewport > button,
+  .fixed,
+  .sticky {
+    display: none !important;
+  }
+
+  /* Restablecer altura y desbordes para que ocupe todo el ancho horizontal */
+  #docente-viewport,
+  #root,
+  main,
+  .max-w-7xl {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    position: static !important;
+    display: block !important;
+    background: #FFFFFF !important;
+  }
+
+  /* Reglas de visibilidad condicional para impresión */
+  .print-only {
+    display: block !important;
+  }
+
+  .screen-only {
+    display: none !important;
+  }
+
+  /* Forzar colores de fondo de badges y franjas */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
 
 

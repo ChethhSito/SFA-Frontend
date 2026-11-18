@@ -732,7 +732,7 @@ export default function DocenteDashboard({
                   <div className="space-y-1">
                     <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Alumnos a Cargo</span>
                     <span className="text-2xl font-black text-slate-900 block font-display tracking-tight">{globalStats.totalStudents} Alumno{globalStats.totalStudents === 1 ? "" : "s"}</span>
-                    <span className="text-[10px] text-emerald-600 font-bold block">✓ Matrículas Regulares</span>
+                    <span className="text-[10px] text-emerald-600 font-bold block">Matrículas Regulares</span>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 border border-blue-100 flex items-center justify-center shrink-0">
                     <Users className="w-6 h-6" />
@@ -907,8 +907,9 @@ export default function DocenteDashboard({
                                     {task.startTime} - {task.endTime}
                                   </span>
                                   <span>•</span>
-                                  <span className="truncate text-[#800521] font-bold">
-                                    📍 {classroom?.name || task.classroomId}
+                                  <span className="truncate text-[#800521] font-bold flex items-center gap-1">
+                                    <MapPin className="w-3 h-3 text-[#800521] shrink-0" />
+                                    <span>{classroom?.name || task.classroomId}</span>
                                   </span>
                                 </div>
                               </div>

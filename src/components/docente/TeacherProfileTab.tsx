@@ -149,7 +149,7 @@ export default function TeacherProfileTab({ teacher, teacherDni, onShowNotice }:
               <div className="flex items-center justify-between text-slate-600">
                 <span className="font-bold">Estado de Cuenta:</span>
                 <span className="text-emerald-700 font-extrabold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[10px] uppercase">
-                  ✓ Habilitado
+                  Habilitado
                 </span>
               </div>
               <div className="flex items-center justify-between text-slate-600">
