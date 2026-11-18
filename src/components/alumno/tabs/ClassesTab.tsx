@@ -1,6 +1,6 @@
 import { AttendanceRecord } from "../../../types";
 import { studentAttendanceRecords } from "../../../utils/attendance";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   Zap, Cpu, Sliders, Award, ChevronRight, ChevronDown, BookOpen, Clock, CheckCircle2, 
   Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark, MapPin, GraduationCap
