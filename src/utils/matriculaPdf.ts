@@ -1,3 +1,5 @@
+import { SFA_LOGO_BASE64 } from "./sfaLogo";
+
 export interface MatriculaCourseRow {
   code: string;
   name: string;
@@ -27,6 +29,169 @@ export interface MatriculaPdfData {
   date?: string;
 }
 
+/**
+ * Encabezado institucional oficial unificado con logo SFA.
+ * Garantiza espacio suficiente a izquierda y derecha evitando colisiones de texto.
+ */
+function drawInstitutionalHeader(
+  pdf: any,
+  width: number,
+  margin: number,
+  titleText: string,
+  badgeTitle: string = "SECRETARÍA GENERAL ACADÉMICA",
+  badgeSubtitle: string = "REGISTRO DE MATRÍCULA",
+  pageIndicator?: string
+) {
+  // Top header banner (27mm height)
+  pdf.setFillColor(128, 5, 33); // #800521 Borgoña institucional
+  pdf.rect(0, 0, width, 27, "F");
+
+  // Gold accent strip
+  pdf.setFillColor(217, 119, 6); // amber-600
+  pdf.rect(0, 27, width, 1.8, "F");
+
+  // Logo Oficial SFA con contenedor blanco nítido
+  pdf.setFillColor(255, 255, 255);
+  pdf.roundedRect(margin, 3.5, 20, 20, 2.5, 2.5, "F");
+  try {
+    pdf.addImage(SFA_LOGO_BASE64, "JPEG", margin + 1, 4.5, 18, 18);
+  } catch {
+    // Fallback silencioso si el motor del viewer no soporta addImage
+  }
+
+  // Textos Institucionales al lado del Logo (inician en margin + 23.5)
+  const textX = margin + 23.5;
+  pdf.setTextColor(251, 191, 36); // amber-400
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(7);
+  pdf.text("REPÚBLICA DEL PERÚ  •  MINISTERIO DE EDUCACIÓN", textX, 7.5);
+
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(7.8);
+  pdf.text("INSTITUTO DE EDUCACIÓN SUPERIOR TECNOLÓGICO PÚBLICO", textX, 11.8);
+
+  pdf.setFontSize(11.5);
+  pdf.text("“SAN FRANCISCO DE ASÍS”", textX, 17);
+
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(241, 245, 249);
+  pdf.text("R.M. N° 0233-80-ED  •  R.D. N° 0458-2005-ED  •  LIMA - PERÚ", textX, 22.2);
+
+  // Badge Institucional alineado a la derecha sin superposición
+  const badgeWidth = 46;
+  const badgeX = width - margin - badgeWidth;
+  pdf.setFillColor(255, 255, 255);
+  pdf.setDrawColor(251, 191, 36);
+  pdf.roundedRect(badgeX, 5, badgeWidth, 16.5, 1.5, 1.5, "D");
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(6.5);
+  pdf.setTextColor(251, 191, 36);
+  pdf.text(badgeTitle, badgeX + badgeWidth / 2, 9.5, { align: "center" });
+
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(5.8);
+  pdf.setTextColor(255, 255, 255);
+  pdf.text(badgeSubtitle, badgeX + badgeWidth / 2, 14, { align: "center" });
+
+  pdf.setFontSize(5.2);
+  pdf.setTextColor(226, 232, 240);
+  pdf.text(pageIndicator || "PLATAFORMA SFA CLOUD", badgeX + badgeWidth / 2, 18, { align: "center" });
+}
+
+/**
+ * Firmas digitales fluidas y Sello Institucional Circular Oficial
+ * perfectamente espaciados sin choques ni superposiciones de texto.
+ */
+function drawOfficialSignaturesAndSeal(
+  pdf: any,
+  width: number,
+  margin: number,
+  sigY: number,
+  sealOffice: string = "REGISTRO DE MATRÍCULA"
+) {
+  const sigWidth = 52;
+  const sig1X = margin + 5;
+  const sig3X = width - margin - sigWidth - 5;
+  const stampX = width / 2;
+  const stampY = sigY + 8;
+
+  // 1. FIRMA: Secretaria General Académica (Izquierda)
+  pdf.setDrawColor(18, 65, 160); // Tinta azul institucional
+  pdf.setLineWidth(0.45);
+  pdf.lines([[4, -5], [6, 3], [5, -7], [7, 6], [10, -2], [12, 1]], sig1X + 8, sigY + 5);
+  pdf.lines([[-2, 3], [10, -2], [14, -3], [8, 2], [-18, 4], [26, -1]], sig1X + 12, sigY + 6);
+
+  pdf.setFont("helvetica", "bolditalic");
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(18, 65, 160);
+  pdf.text("Carmen Valdivia M.", sig1X + sigWidth / 2, sigY + 7, { align: "center" });
+
+  pdf.setDrawColor(148, 163, 184);
+  pdf.setLineWidth(0.35);
+  pdf.line(sig1X, sigY + 11.5, sig1X + sigWidth, sigY + 11.5);
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(6.8);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text("MG. CARMEN R. VALDIVIA MORÁN", sig1X + sigWidth / 2, sigY + 15, { align: "center" });
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(5.8);
+  pdf.setTextColor(100, 116, 139);
+  pdf.text("Secretaria General Académica", sig1X + sigWidth / 2, sigY + 18.2, { align: "center" });
+  pdf.text("Reg. Col. N° 0948 • IESTP SFA", sig1X + sigWidth / 2, sigY + 21, { align: "center" });
+
+  // 2. SELLO INSTITUCIONAL CIRCULAR OFICIAL (Centro - con más de 20mm de separación a los lados)
+  pdf.setDrawColor(128, 5, 33);
+  pdf.setLineWidth(0.75);
+  pdf.circle(stampX, stampY, 11.5, "S");
+  pdf.setLineWidth(0.25);
+  pdf.circle(stampX, stampY, 10, "S");
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(4.8);
+  pdf.setTextColor(128, 5, 33);
+  pdf.text("IESTP SAN FRANCISCO DE ASÍS", stampX, stampY - 5.5, { align: "center" });
+  pdf.setFontSize(4.2);
+  pdf.setTextColor(180, 83, 9);
+  pdf.text("★  SELLO INSTITUCIONAL  ★", stampX, stampY - 2.5, { align: "center" });
+  pdf.setFontSize(5.8);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text("DIRECCIÓN GENERAL", stampX, stampY + 1.2, { align: "center" });
+  pdf.setFontSize(4.5);
+  pdf.setTextColor(128, 5, 33);
+  pdf.text(sealOffice, stampX, stampY + 4.5, { align: "center" });
+  pdf.setFontSize(4);
+  pdf.setTextColor(100, 116, 139);
+  pdf.text("LIMA - PERÚ", stampX, stampY + 7.5, { align: "center" });
+
+  // 3. FIRMA: Director General (Derecha)
+  pdf.setDrawColor(18, 65, 160);
+  pdf.setLineWidth(0.5);
+  pdf.lines([[5, -7], [8, 5], [6, -8], [6, 6], [10, -3], [14, 2]], sig3X + 8, sigY + 4.5);
+  pdf.lines([[-3, 3], [12, -2], [16, 2], [-24, 4], [30, -2]], sig3X + 12, sigY + 6.5);
+
+  pdf.setFont("helvetica", "bolditalic");
+  pdf.setFontSize(7.5);
+  pdf.setTextColor(18, 65, 160);
+  pdf.text("J. Morales Rojas", sig3X + sigWidth / 2, sigY + 7, { align: "center" });
+
+  pdf.setDrawColor(148, 163, 184);
+  pdf.setLineWidth(0.35);
+  pdf.line(sig3X, sigY + 11.5, sig3X + sigWidth, sigY + 11.5);
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(6.8);
+  pdf.setTextColor(15, 23, 42);
+  pdf.text("DR. JUAN ALBERTO MORALES ROJAS", sig3X + sigWidth / 2, sigY + 15, { align: "center" });
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(5.8);
+  pdf.setTextColor(100, 116, 139);
+  pdf.text("Director General - IESTP SFA", sig3X + sigWidth / 2, sigY + 18.2, { align: "center" });
+  pdf.text("R.D. N° 0458-2005-ED • MINEDU", sig3X + sigWidth / 2, sigY + 21, { align: "center" });
+}
+
 export async function generateMatriculaPdf(data: MatriculaPdfData) {
   const [{ jsPDF }, { default: autoTable }] = await Promise.all([
     import("jspdf"),
@@ -45,118 +210,102 @@ export async function generateMatriculaPdf(data: MatriculaPdfData) {
     creator: "Sistema SFA Cloud",
   });
 
-  // Top header banner
-  pdf.setFillColor(128, 5, 33); // #800521 Borgoña institucional
-  pdf.rect(0, 0, width, 24, "F");
+  // 1. Header Institucional Oficial con Logo
+  drawInstitutionalHeader(
+    pdf,
+    width,
+    margin,
+    "“SAN FRANCISCO DE ASÍS”",
+    "SECRETARÍA ACADÉMICA",
+    "CONSTANCIA DE MATRÍCULA"
+  );
 
-  // Gold accent strip
-  pdf.setFillColor(217, 119, 6); // amber-600
-  pdf.rect(0, 24, width, 1.8, "F");
+  let y = 34;
 
-  // Header Texts
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(8);
-  pdf.text("REPÚBLICA DEL PERÚ • MINISTERIO DE EDUCACIÓN", margin, 7.5);
-
-  pdf.setFontSize(13);
-  pdf.text("INSTITUTO DE EDUCACIÓN SUPERIOR TECNOLÓGICO PÚBLICO", margin, 13);
-  pdf.setFontSize(15);
-  pdf.text("“SAN FRANCISCO DE ASÍS”", margin, 19.5);
-
-  // Resolution info (top right)
-  pdf.setFontSize(7);
-  pdf.setFont("helvetica", "normal");
-  pdf.text("R.M. N° 0233-80-ED • R.D. N° 0458-2005-ED", width - margin, 9, { align: "right" });
-  pdf.text("SECRETARÍA GENERAL ACADÉMICA", width - margin, 14, { align: "right" });
-  pdf.text("LIMA - PERÚ", width - margin, 18.5, { align: "right" });
-
-  let y = 33;
-
-  // Title box
+  // 2. Title Box Armónico
   pdf.setFillColor(248, 250, 252);
   pdf.setDrawColor(203, 213, 225);
-  pdf.roundedRect(margin, y, width - margin * 2, 16, 2, 2, "FD");
+  pdf.roundedRect(margin, y, width - margin * 2, 15, 1.5, 1.5, "FD");
 
   pdf.setTextColor(128, 5, 33);
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(12);
-  pdf.text("CONSTANCIA OFICIAL DE MATRÍCULA REGULAR", width / 2, y + 6.5, { align: "center" });
+  pdf.setFontSize(11.5);
+  pdf.text("CONSTANCIA OFICIAL DE MATRÍCULA REGULAR", width / 2, y + 6.2, { align: "center" });
 
   pdf.setTextColor(71, 85, 105);
   pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(8.5);
-  pdf.text(`PERIODO LECTIVO: ${data.period.toUpperCase()}   •   DOCUMENTO N°: COM-${data.period}-${data.dni}`, width / 2, y + 12, { align: "center" });
+  pdf.setFontSize(7.8);
+  pdf.text(`PERIODO LECTIVO: ${data.period.toUpperCase()}   •   DOCUMENTO N°: COM-${data.period}-${data.dni}`, width / 2, y + 11.2, { align: "center" });
 
-  y += 20;
+  y += 19;
 
-  // Student info card
+  // 3. Student Info Card
   pdf.setDrawColor(226, 232, 240);
   pdf.setFillColor(255, 255, 255);
-  pdf.roundedRect(margin, y, width - margin * 2, 38, 2, 2, "FD");
+  pdf.roundedRect(margin, y, width - margin * 2, 35, 1.5, 1.5, "FD");
 
   // Left stripe
   pdf.setFillColor(128, 5, 33);
-  pdf.roundedRect(margin, y, 2.5, 38, 1, 1, "F");
+  pdf.roundedRect(margin, y, 2.5, 35, 0.8, 0.8, "F");
 
-  pdf.setTextColor(15, 23, 42);
   const leftX = margin + 6;
-  const col2X = margin + 98;
+  const col2X = margin + 96;
 
   // Row 1
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(7.5);
+  pdf.setFontSize(7);
   pdf.setTextColor(100, 116, 139);
-  pdf.text("APELLIDOS Y NOMBRES:", leftX, y + 6);
+  pdf.text("APELLIDOS Y NOMBRES:", leftX, y + 5.5);
   pdf.setTextColor(15, 23, 42);
-  pdf.setFontSize(9);
-  pdf.text(`${data.studentLastName.toUpperCase()}, ${data.studentName.toUpperCase()}`, leftX, y + 10.5);
+  pdf.setFontSize(8.5);
+  pdf.text(`${data.studentLastName.toUpperCase()}, ${data.studentName.toUpperCase()}`, leftX, y + 9.8);
 
   pdf.setTextColor(100, 116, 139);
-  pdf.setFontSize(7.5);
-  pdf.text("CÓDIGO DE MATRÍCULA:", col2X, y + 6);
+  pdf.setFontSize(7);
+  pdf.text("CÓDIGO DE MATRÍCULA:", col2X, y + 5.5);
   pdf.setTextColor(128, 5, 33);
-  pdf.setFontSize(9.5);
-  pdf.text(data.studentCode, col2X, y + 10.5);
+  pdf.setFontSize(9);
+  pdf.text(data.studentCode, col2X, y + 9.8);
 
   // Row 2
   pdf.setTextColor(100, 116, 139);
-  pdf.setFontSize(7.5);
-  pdf.text("DOCUMENTO DE IDENTIDAD (DNI):", leftX, y + 16.5);
+  pdf.setFontSize(7);
+  pdf.text("DOCUMENTO DE IDENTIDAD (DNI):", leftX, y + 15.5);
   pdf.setTextColor(15, 23, 42);
-  pdf.setFontSize(9);
-  pdf.text(data.dni, leftX, y + 21);
+  pdf.setFontSize(8.5);
+  pdf.text(data.dni, leftX, y + 19.8);
 
   pdf.setTextColor(100, 116, 139);
-  pdf.setFontSize(7.5);
-  pdf.text("PROGRAMA FORMATIVO:", col2X, y + 16.5);
+  pdf.setFontSize(7);
+  pdf.text("PROGRAMA FORMATIVO:", col2X, y + 15.5);
   pdf.setTextColor(15, 23, 42);
-  pdf.setFontSize(9);
-  pdf.text(data.programName.toUpperCase(), col2X, y + 21);
+  pdf.setFontSize(8.5);
+  pdf.text((data.programName || "ELECTRICIDAD INDUSTRIAL").toUpperCase(), col2X, y + 19.8);
 
   // Row 3
   pdf.setTextColor(100, 116, 139);
-  pdf.setFontSize(7.5);
-  pdf.text("CICLO Y CONDICIÓN:", leftX, y + 27);
+  pdf.setFontSize(7);
+  pdf.text("CICLO Y CONDICIÓN:", leftX, y + 25.5);
   pdf.setTextColor(15, 23, 42);
-  pdf.setFontSize(9);
-  pdf.text(`${data.cycle.toUpperCase()}  •  ALUMNO REGULAR`, leftX, y + 31.5);
+  pdf.setFontSize(8);
+  pdf.text(`CICLO ${data.cycle}  •  ALUMNO REGULAR`, leftX, y + 29.8);
 
   pdf.setTextColor(100, 116, 139);
-  pdf.setFontSize(7.5);
-  pdf.text("TURNO Y DERECHO DE MATRÍCULA:", col2X, y + 27);
+  pdf.setFontSize(7);
+  pdf.text("TURNO Y DERECHO DE MATRÍCULA:", col2X, y + 25.5);
   pdf.setTextColor(5, 150, 105);
-  pdf.setFontSize(8.5);
-  pdf.text(`TURNO ${data.shift.toUpperCase()}  •  ${data.paymentStatus || "PAGADO (S/. 250.00)"}`, col2X, y + 31.5);
+  pdf.setFontSize(8);
+  pdf.text(`TURNO ${data.shift.toUpperCase()}  •  ${data.paymentStatus || "PAGADO (S/. 250.00)"}`, col2X, y + 29.8);
 
-  y += 43;
+  y += 40;
 
-  // Table of Enrolled Courses
+  // 4. Section Header
   pdf.setTextColor(128, 5, 33);
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(9.5);
+  pdf.setFontSize(7.8);
   pdf.text("ASIGNATURAS Y UNIDADES DIDÁCTICAS OFICIALES REGISTRADAS", margin, y);
 
+  // 5. Tabla Oficial con anchos calibrados para evitar partición de palabras ("menos cortado")
   autoTable(pdf, {
     startY: y + 2.5,
     margin: { left: margin, right: margin, bottom: 25 },
@@ -175,8 +324,8 @@ export async function generateMatriculaPdf(data: MatriculaPdfData) {
       : [["-", "No hay asignaturas registradas", "0", "-", "-", "-", "-", "-"]],
     styles: {
       font: "helvetica",
-      fontSize: 7.5,
-      cellPadding: 2.2,
+      fontSize: 7.2,
+      cellPadding: 2,
       valign: "middle",
       textColor: [15, 23, 42],
     },
@@ -184,153 +333,73 @@ export async function generateMatriculaPdf(data: MatriculaPdfData) {
       fillColor: [15, 23, 42],
       textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 7.5,
+      fontSize: 7.2,
       halign: "left",
     },
     columnStyles: {
       0: { cellWidth: 20, fontStyle: "bold", textColor: [128, 5, 33] },
-      1: { cellWidth: 58 },
-      2: { cellWidth: 12, halign: "center", fontStyle: "bold" },
-      3: { cellWidth: 12, halign: "center" },
+      1: { cellWidth: 62 },
+      2: { cellWidth: 15, halign: "center", fontStyle: "bold" },
+      3: { cellWidth: 14, halign: "center" },
       4: { cellWidth: 18 },
-      5: { cellWidth: 14, halign: "center" },
-      6: { cellWidth: 22 },
-      7: { cellWidth: 26, halign: "center", textColor: [5, 150, 105], fontStyle: "bold" },
+      5: { cellWidth: 15, halign: "center" },
+      6: { cellWidth: 20 },
+      7: { cellWidth: 18, halign: "center", textColor: [5, 150, 105], fontStyle: "bold" },
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252],
     },
   });
 
-  // Table footer summary
   const lastTable = (pdf as any).lastAutoTable;
-  let finalY = lastTable ? lastTable.finalY + 3 : y + 60;
+  let finalY = lastTable ? lastTable.finalY + 3.5 : y + 60;
 
-  // Summary box
+  // 6. Summary Box
   pdf.setFillColor(241, 245, 249);
   pdf.setDrawColor(203, 213, 225);
-  pdf.roundedRect(margin, finalY, width - margin * 2, 10, 1.5, 1.5, "FD");
+  pdf.roundedRect(margin, finalY, width - margin * 2, 9, 1.2, 1.2, "FD");
 
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(8);
+  pdf.setFontSize(7.5);
   pdf.setTextColor(51, 65, 85);
   pdf.text(
     `TOTAL DE ASIGNATURAS: ${data.totalCourses}         •         CRÉDITOS INSCRITOS: ${data.totalCredits}         •         LÍMITE PERMITIDO: ${data.maxCredits} CRÉDITOS`,
     width / 2,
-    finalY + 6.5,
+    finalY + 5.8,
     { align: "center" }
   );
 
-  finalY += 13.5;
+  finalY += 13;
 
-  // Legal declaration & verification code
+  // 7. Legal Certification Box
   pdf.setFillColor(255, 251, 235); // amber-50
   pdf.setDrawColor(251, 191, 36); // amber-400
-  pdf.roundedRect(margin, finalY, width - margin * 2, 14, 1.5, 1.5, "FD");
+  pdf.roundedRect(margin, finalY, width - margin * 2, 13, 1.5, 1.5, "FD");
 
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(7.5);
+  pdf.setFontSize(7.2);
   pdf.setTextColor(146, 64, 14);
-  pdf.text("CERTIFICACIÓN DE MATRÍCULA Y VALIDEZ INSTITUCIONAL", margin + 4, finalY + 4.5);
+  pdf.text("CERTIFICACIÓN DE MATRÍCULA Y VALIDEZ INSTITUCIONAL", margin + 4, finalY + 4.2);
 
   pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(6.8);
+  pdf.setFontSize(6.5);
   pdf.setTextColor(71, 85, 105);
   pdf.text(
     "La presente constancia digital certifica formalmente la matrícula regular del estudiante en el IESTP San Francisco de Asís.",
     margin + 4,
-    finalY + 8.2
+    finalY + 7.8
   );
   pdf.text(
     `Código de Verificación Digital: SFA-MAT-${data.period}-${data.dni}-${Date.now().toString().slice(-6)}   •   Validación en servidor institucional.`,
     margin + 4,
-    finalY + 11.5
+    finalY + 11
   );
 
-  finalY += 18;
+  finalY += 17;
 
-  // Signatures / Stamps
-  const sigY = Math.min(finalY, height - 36);
-  const sigWidth = 50;
-  const sig1X = margin + 8;
-  const sig2X = width / 2 - sigWidth / 2;
-  const sig3X = width - margin - sigWidth - 8;
-
-  // 1. FIRMA: Secretaria General Académica
-  pdf.setDrawColor(18, 65, 160); // Blue ink
-  pdf.setLineWidth(0.5);
-  pdf.lines([[3, -6], [5, 4], [4, -8], [6, 7], [8, -3], [10, 2]], sig1X + 8, sigY + 6);
-  pdf.lines([[-3, 4], [8, -2], [12, -4], [6, 2], [-22, 5], [30, -1]], sig1X + 12, sigY + 7);
-
-  pdf.setFont("helvetica", "bolditalic");
-  pdf.setFontSize(7.5);
-  pdf.setTextColor(18, 65, 160);
-  pdf.text("Carmen Valdivia M.", sig1X + sigWidth / 2, sigY + 8, { align: "center" });
-
-  pdf.setDrawColor(148, 163, 184);
-  pdf.setLineWidth(0.35);
-  pdf.line(sig1X, sigY + 13, sig1X + sigWidth, sigY + 13);
-
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(6.8);
-  pdf.setTextColor(15, 23, 42);
-  pdf.text("MG. CARMEN R. VALDIVIA MORÁN", sig1X + sigWidth / 2, sigY + 16.5, { align: "center" });
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(5.8);
-  pdf.setTextColor(100, 116, 139);
-  pdf.text("Secretaria General Académica", sig1X + sigWidth / 2, sigY + 19.8, { align: "center" });
-  pdf.text("Reg. Col. N° 0948 • IESTP SFA", sig1X + sigWidth / 2, sigY + 22.8, { align: "center" });
-
-  // 2. SELLO INSTITUCIONAL CIRCULAR OFICIAL
-  const stampX = sig2X + sigWidth / 2;
-  const stampY = sigY + 10;
-  pdf.setDrawColor(128, 5, 33);
-  pdf.setLineWidth(0.75);
-  pdf.circle(stampX, stampY, 12.5, "S");
-  pdf.setLineWidth(0.25);
-  pdf.circle(stampX, stampY, 10.8, "S");
-
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(5);
-  pdf.setTextColor(128, 5, 33);
-  pdf.text("IESTP SAN FRANCISCO DE ASÍS", stampX, stampY - 6.2, { align: "center" });
-  pdf.setFontSize(4.5);
-  pdf.setTextColor(180, 83, 9);
-  pdf.text("★  SELLO INSTITUCIONAL  ★", stampX, stampY - 2.8, { align: "center" });
-  pdf.setFontSize(6.2);
-  pdf.setTextColor(15, 23, 42);
-  pdf.text("DIRECCIÓN GENERAL", stampX, stampY + 1.2, { align: "center" });
-  pdf.setFontSize(4.8);
-  pdf.setTextColor(128, 5, 33);
-  pdf.text("REGISTRO DE MATRÍCULA", stampX, stampY + 4.8, { align: "center" });
-  pdf.setFontSize(4.2);
-  pdf.setTextColor(100, 116, 139);
-  pdf.text("LIMA - PERÚ", stampX, stampY + 8, { align: "center" });
-
-  // 3. FIRMA: Director General
-  pdf.setDrawColor(18, 65, 160);
-  pdf.setLineWidth(0.55);
-  pdf.lines([[4, -8], [7, 6], [5, -9], [5, 7], [9, -4], [12, 2]], sig3X + 8, sigY + 5);
-  pdf.lines([[-4, 3], [10, -3], [14, 2], [-28, 5], [34, -2]], sig3X + 12, sigY + 8);
-
-  pdf.setFont("helvetica", "bolditalic");
-  pdf.setFontSize(7.5);
-  pdf.setTextColor(18, 65, 160);
-  pdf.text("J. Morales Rojas", sig3X + sigWidth / 2, sigY + 8, { align: "center" });
-
-  pdf.setDrawColor(148, 163, 184);
-  pdf.setLineWidth(0.35);
-  pdf.line(sig3X, sigY + 13, sig3X + sigWidth, sigY + 13);
-
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(6.8);
-  pdf.setTextColor(15, 23, 42);
-  pdf.text("DR. JUAN ALBERTO MORALES ROJAS", sig3X + sigWidth / 2, sigY + 16.5, { align: "center" });
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(5.8);
-  pdf.setTextColor(100, 116, 139);
-  pdf.text("Director General - IESTP SFA", sig3X + sigWidth / 2, sigY + 19.8, { align: "center" });
-  pdf.text("R.D. N° 0458-2005-ED • MINEDU", sig3X + sigWidth / 2, sigY + 22.8, { align: "center" });
+  // 8. Signatures & Seal armónicos sin choque
+  const sigY = Math.min(finalY, height - 38);
+  drawOfficialSignaturesAndSeal(pdf, width, margin, sigY, "REGISTRO DE MATRÍCULA");
 
   // Footer bar
   pdf.setDrawColor(226, 232, 240);
@@ -341,7 +410,6 @@ export async function generateMatriculaPdf(data: MatriculaPdfData) {
   pdf.text("Documento oficial generado por la Plataforma Digital SFA Cloud • Con valor legal ante el MINEDU", margin, height - 4.5);
   pdf.text(`Fecha de emisión: ${data.date || new Date().toLocaleDateString("es-PE")}`, width - margin, height - 4.5, { align: "right" });
 
-  // Trigger download as .pdf
   pdf.save(`Constancia_Matricula_SFA_${data.dni}.pdf`);
   return pdf;
 }
@@ -362,23 +430,16 @@ export async function generateManualMatriculaPdf() {
     author: "IESTP San Francisco de Asís",
   });
 
-  // Header Banner
-  pdf.setFillColor(128, 5, 33);
-  pdf.rect(0, 0, width, 24, "F");
-  pdf.setFillColor(217, 119, 6);
-  pdf.rect(0, 24, width, 1.8, "F");
+  drawInstitutionalHeader(
+    pdf,
+    width,
+    margin,
+    "“SAN FRANCISCO DE ASÍS”",
+    "DIRECCIÓN ACADÉMICA",
+    "MANUAL DE MATRÍCULA"
+  );
 
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(8);
-  pdf.text("IESTP SAN FRANCISCO DE ASÍS • DIRECCIÓN ACADÉMICA", margin, 8);
-  pdf.setFontSize(13);
-  pdf.text("MANUAL DEL ESTUDIANTE: PROCESO DE MATRÍCULA REGULAR", margin, 15);
-  pdf.setFontSize(8);
-  pdf.setFont("helvetica", "normal");
-  pdf.text("GUÍA OPERATIVA PASO A PASO PARA EL REGISTRO DE ASIGNATURAS Y EXPEDIENTE", margin, 20);
-
-  let y = 32;
+  let y = 33;
 
   const addSection = (title: string, content: string[]) => {
     pdf.setFillColor(241, 245, 249);
@@ -386,13 +447,13 @@ export async function generateManualMatriculaPdf() {
     pdf.roundedRect(margin, y, width - margin * 2, 7.5, 1, 1, "FD");
 
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(8.5);
+    pdf.setFontSize(8.2);
     pdf.setTextColor(128, 5, 33);
     pdf.text(title, margin + 4, y + 5);
     y += 11;
 
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(8);
+    pdf.setFontSize(7.8);
     pdf.setTextColor(51, 65, 85);
 
     content.forEach((paragraph) => {
@@ -532,28 +593,6 @@ export async function generateCurriculumPlanPdf(programName: string, studentName
     },
   ];
 
-  const drawPageHeader = (pageNumber: number, totalPages: number) => {
-    pdf.setFillColor(128, 5, 33);
-    pdf.rect(0, 0, width, 22, "F");
-    pdf.setFillColor(217, 119, 6);
-    pdf.rect(0, 22, width, 1.5, "F");
-
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(7.5);
-    pdf.text("IESTP SAN FRANCISCO DE ASÍS • DIRECCIÓN ACADÉMICA", margin, 7);
-    pdf.setFontSize(11);
-    pdf.text("PLAN CURRICULAR OFICIAL DE ESTUDIOS (MODULAR)", margin, 13);
-    pdf.setFontSize(7.5);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(`PROGRAMA: ${programName.toUpperCase()} • TITULACIÓN OFICIAL MINEDU`, margin, 18);
-
-    // Page indicator top right
-    pdf.setFontSize(7.5);
-    pdf.setFont("helvetica", "bold");
-    pdf.text(`PÁGINA ${pageNumber} DE ${totalPages}`, width - margin, 13, { align: "right" });
-  };
-
   const drawPageFooter = (pageNumber: number, totalPages: number) => {
     pdf.setDrawColor(226, 232, 240);
     pdf.line(margin, height - 9, width - margin, height - 9);
@@ -565,7 +604,6 @@ export async function generateCurriculumPlanPdf(programName: string, studentName
   };
 
   const renderCycleTable = (cycleData: typeof cyclesData[0], startY: number): number => {
-    // Cycle header bar
     pdf.setFillColor(241, 245, 249);
     pdf.setDrawColor(203, 213, 225);
     pdf.roundedRect(margin, startY, width - margin * 2, 7, 1, 1, "FD");
@@ -601,9 +639,17 @@ export async function generateCurriculumPlanPdf(programName: string, studentName
   };
 
   // --- PÁGINA 1: Ciclos I, II y III ---
-  drawPageHeader(1, 2);
+  drawInstitutionalHeader(
+    pdf,
+    width,
+    margin,
+    "“SAN FRANCISCO DE ASÍS”",
+    "DIRECCIÓN ACADÉMICA",
+    "PLAN CURRICULAR MODULAR",
+    "PÁGINA 1 DE 2"
+  );
 
-  let currentY = 28;
+  let currentY = 32;
   pdf.setFillColor(248, 250, 252);
   pdf.setDrawColor(203, 213, 225);
   pdf.roundedRect(margin, currentY, width - margin * 2, 13, 1.5, 1.5, "FD");
@@ -611,7 +657,7 @@ export async function generateCurriculumPlanPdf(programName: string, studentName
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(7.8);
   pdf.setTextColor(15, 23, 42);
-  pdf.text(`ESTUDIANTE: ${studentName.toUpperCase()}   •   DNI: ${dni}`, margin + 4, currentY + 5.5);
+  pdf.text(`ESTUDIANTE: ${studentName.toUpperCase()}   •   DNI: ${dni}   •   PROGRAMA: ${programName.toUpperCase()}`, margin + 4, currentY + 5.5);
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(6.8);
   pdf.setTextColor(100, 116, 139);
@@ -630,9 +676,17 @@ export async function generateCurriculumPlanPdf(programName: string, studentName
 
   // --- PÁGINA 2: Ciclos IV, V, VI + Resumen y Sellos ---
   pdf.addPage();
-  drawPageHeader(2, 2);
+  drawInstitutionalHeader(
+    pdf,
+    width,
+    margin,
+    "“SAN FRANCISCO DE ASÍS”",
+    "DIRECCIÓN ACADÉMICA",
+    "PLAN CURRICULAR MODULAR",
+    "PÁGINA 2 DE 2"
+  );
 
-  currentY = 28;
+  currentY = 32;
   // Ciclo IV
   currentY = renderCycleTable(cyclesData[3], currentY) + 4;
   // Ciclo V
@@ -683,88 +737,9 @@ export async function generateCurriculumPlanPdf(programName: string, studentName
 
   currentY += 16;
 
-  // Firmas y Sello Institucional
+  // Firmas y Sello Institucional Armónico
   const sigY = Math.min(currentY, height - 38);
-  const sigWidth = 48;
-  const sig1X = margin + 8;
-  const sig2X = width / 2 - sigWidth / 2;
-  const sig3X = width - margin - sigWidth - 8;
-
-  // 1. FIRMA: Secretaria General Académica
-  pdf.setDrawColor(18, 65, 160);
-  pdf.setLineWidth(0.5);
-  pdf.lines([[3, -6], [5, 4], [4, -8], [6, 7], [8, -3], [10, 2]], sig1X + 8, sigY + 5);
-  pdf.lines([[-3, 4], [8, -2], [12, -4], [6, 2], [-22, 5], [30, -1]], sig1X + 12, sigY + 6);
-
-  pdf.setFont("helvetica", "bolditalic");
-  pdf.setFontSize(7.2);
-  pdf.setTextColor(18, 65, 160);
-  pdf.text("Carmen Valdivia M.", sig1X + sigWidth / 2, sigY + 7, { align: "center" });
-
-  pdf.setDrawColor(148, 163, 184);
-  pdf.setLineWidth(0.35);
-  pdf.line(sig1X, sigY + 11.5, sig1X + sigWidth, sigY + 11.5);
-
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(6.5);
-  pdf.setTextColor(15, 23, 42);
-  pdf.text("MG. CARMEN R. VALDIVIA MORÁN", sig1X + sigWidth / 2, sigY + 15, { align: "center" });
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(5.5);
-  pdf.setTextColor(100, 116, 139);
-  pdf.text("Secretaria General Académica", sig1X + sigWidth / 2, sigY + 18, { align: "center" });
-  pdf.text("Reg. Col. N° 0948 • IESTP SFA", sig1X + sigWidth / 2, sigY + 20.8, { align: "center" });
-
-  // 2. SELLO INSTITUCIONAL CIRCULAR OFICIAL
-  const stampX = sig2X + sigWidth / 2;
-  const stampY = sigY + 9;
-  pdf.setDrawColor(128, 5, 33);
-  pdf.setLineWidth(0.7);
-  pdf.circle(stampX, stampY, 11.5, "S");
-  pdf.setLineWidth(0.25);
-  pdf.circle(stampX, stampY, 10, "S");
-
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(4.8);
-  pdf.setTextColor(128, 5, 33);
-  pdf.text("IESTP SAN FRANCISCO DE ASÍS", stampX, stampY - 5.5, { align: "center" });
-  pdf.setFontSize(4.2);
-  pdf.setTextColor(180, 83, 9);
-  pdf.text("★  SELLO INSTITUCIONAL  ★", stampX, stampY - 2.5, { align: "center" });
-  pdf.setFontSize(5.8);
-  pdf.setTextColor(15, 23, 42);
-  pdf.text("DIRECCIÓN ACADÉMICA", stampX, stampY + 1.2, { align: "center" });
-  pdf.setFontSize(4.5);
-  pdf.setTextColor(128, 5, 33);
-  pdf.text("PLAN CURRICULAR MINEDU", stampX, stampY + 4.5, { align: "center" });
-  pdf.setFontSize(4);
-  pdf.setTextColor(100, 116, 139);
-  pdf.text("LIMA - PERÚ", stampX, stampY + 7.5, { align: "center" });
-
-  // 3. FIRMA: Director General
-  pdf.setDrawColor(18, 65, 160);
-  pdf.setLineWidth(0.55);
-  pdf.lines([[4, -8], [7, 6], [5, -9], [5, 7], [9, -4], [12, 2]], sig3X + 8, sigY + 4.5);
-  pdf.lines([[-4, 3], [10, -3], [14, 2], [-28, 5], [34, -2]], sig3X + 12, sigY + 7);
-
-  pdf.setFont("helvetica", "bolditalic");
-  pdf.setFontSize(7.2);
-  pdf.setTextColor(18, 65, 160);
-  pdf.text("J. Morales Rojas", sig3X + sigWidth / 2, sigY + 7, { align: "center" });
-
-  pdf.setDrawColor(148, 163, 184);
-  pdf.setLineWidth(0.35);
-  pdf.line(sig3X, sigY + 11.5, sig3X + sigWidth, sigY + 11.5);
-
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(6.5);
-  pdf.setTextColor(15, 23, 42);
-  pdf.text("DR. JUAN ALBERTO MORALES ROJAS", sig3X + sigWidth / 2, sigY + 15, { align: "center" });
-  pdf.setFont("helvetica", "normal");
-  pdf.setFontSize(5.5);
-  pdf.setTextColor(100, 116, 139);
-  pdf.text("Director General - IESTP SFA", sig3X + sigWidth / 2, sigY + 18, { align: "center" });
-  pdf.text("R.D. N° 0458-2005-ED • MINEDU", sig3X + sigWidth / 2, sigY + 20.8, { align: "center" });
+  drawOfficialSignaturesAndSeal(pdf, width, margin, sigY, "PLAN CURRICULAR MINEDU");
 
   drawPageFooter(2, 2);
 
@@ -783,22 +758,16 @@ export async function generateBoletaNotasPdf(cycle: string, studentName: string,
   const height = pdf.internal.pageSize.getHeight();
   const margin = 14;
 
-  pdf.setFillColor(128, 5, 33);
-  pdf.rect(0, 0, width, 22, "F");
-  pdf.setFillColor(217, 119, 6);
-  pdf.rect(0, 22, width, 1.5, "F");
+  drawInstitutionalHeader(
+    pdf,
+    width,
+    margin,
+    "“SAN FRANCISCO DE ASÍS”",
+    "SECRETARÍA ACADÉMICA",
+    "BOLETA DE CALIFICACIONES"
+  );
 
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(7.5);
-  pdf.text("IESTP SAN FRANCISCO DE ASÍS • SECRETARÍA GENERAL ACADÉMICA", margin, 7);
-  pdf.setFontSize(12);
-  pdf.text(`BOLETA OFICIAL DE CALIFICACIONES - CICLO ${cycle.toUpperCase()}`, margin, 13);
-  pdf.setFontSize(7.5);
-  pdf.setFont("helvetica", "normal");
-  pdf.text("REPORTE ACADÉMICO SEMESTRAL AUTENTICADO", margin, 18);
-
-  let y = 30;
+  let y = 33;
   pdf.setFillColor(248, 250, 252);
   pdf.setDrawColor(203, 213, 225);
   pdf.roundedRect(margin, y, width - margin * 2, 16, 1.5, 1.5, "FD");
@@ -827,31 +796,23 @@ export async function generateBoletaNotasPdf(cycle: string, studentName: string,
       c.grade !== undefined && c.grade > 0 ? c.grade.toString().padStart(2, "0") : "--",
       c.grade !== undefined && c.grade >= 13 ? "APROBADO" : "MATRICULADO (EN CURSO)",
     ]),
-    styles: { font: "helvetica", fontSize: 8, cellPadding: 2.5, valign: "middle" },
+    styles: { font: "helvetica", fontSize: 8, cellPadding: 2.2, valign: "middle" },
     headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: "bold", fontSize: 8 },
     columnStyles: {
       0: { cellWidth: 24, fontStyle: "bold", textColor: [128, 5, 33] },
-      1: { cellWidth: 84 },
+      1: { cellWidth: 80 },
       2: { cellWidth: 16, halign: "center", fontStyle: "bold" },
-      3: { cellWidth: 26, halign: "center", fontStyle: "bold" },
-      4: { cellWidth: 32, halign: "center", textColor: [5, 150, 105], fontStyle: "bold" },
+      3: { cellWidth: 28, halign: "center", fontStyle: "bold" },
+      4: { cellWidth: 34, halign: "center", textColor: [5, 150, 105], fontStyle: "bold" },
     },
     alternateRowStyles: { fillColor: [248, 250, 252] },
   });
 
   const lastTable = (pdf as any).lastAutoTable;
-  const boletaFinalY = lastTable ? lastTable.finalY + 6 : y + 80;
+  const boletaFinalY = lastTable ? lastTable.finalY + 8 : y + 80;
 
-  // Signatures on Boleta
-  const sigY = Math.min(boletaFinalY + 8, height - 35);
-  pdf.setDrawColor(18, 65, 160);
-  pdf.setLineWidth(0.5);
-  pdf.lines([[3, -6], [5, 4], [4, -8], [6, 7], [8, -3], [10, 2]], margin + 14, sigY);
-  pdf.line(margin + 8, sigY + 6, margin + 58, sigY + 6);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(6.5);
-  pdf.setTextColor(15, 23, 42);
-  pdf.text("SECRETARÍA ACADÉMICA SFA", margin + 33, sigY + 9.5, { align: "center" });
+  const sigY = Math.min(boletaFinalY + 6, height - 38);
+  drawOfficialSignaturesAndSeal(pdf, width, margin, sigY, "REGISTRO DE NOTAS");
 
   pdf.save(`Boleta_Notas_SFA_Ciclo_${cycle}_${dni}.pdf`);
   return pdf;
