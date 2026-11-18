@@ -123,16 +123,21 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
           </div>
         </div>
 
-        {/* Financial Quick balance card (Right Column) */}
-        <div className="bg-[#FFFFFF] border border-slate-150 rounded-xl p-6 shadow-xs flex flex-col justify-between">
+        {/* Financial Quick balance card (Right Column) - Institución Pública: Tasa Única */}
+        <div className="bg-white border border-slate-150 rounded-xl p-6 shadow-xs flex flex-col justify-between">
           <div>
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Estado de Cuenta</span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-black text-slate-900 tracking-tight">S/. 0.00</span>
-              <span className="text-xs text-emerald-600 font-bold">Al día</span>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Estado en Tesorería</span>
+              <span className="text-[9.5px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-extrabold px-2.5 py-0.5 rounded-full">
+                ✓ Matrícula Pagada
+              </span>
+            </div>
+            <div className="flex items-baseline gap-2 mt-2">
+              <span className="text-3xl font-black text-slate-900 tracking-tight">S/. 250.00</span>
+              <span className="text-xs text-emerald-600 font-bold">Tasa Única Cancelada</span>
             </div>
             <p className="text-[11px] text-slate-500 font-medium mt-2 leading-relaxed">
-              No tienes pagos pendientes para {currentPeriod}. ¡Matrícula y cuotas institucionales al día!
+              Como institución pública de educación superior, el IESTP San Francisco de Asís no cobra pensiones ni mensualidades. Su derecho de matrícula para {currentPeriod} se encuentra 100% cancelado en Caja Central.
             </p>
           </div>
 
@@ -141,9 +146,9 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
               setActiveTab("profile");
               setProfileInnerTab("payments");
             }}
-            className="w-full border border-slate-200 hover:border-[#800521] text-slate-700 hover:text-[#800521] font-bold py-2 rounded-lg text-xs text-center transition-all mt-6 cursor-pointer"
+            className="w-full border border-slate-200 hover:border-[#800521] text-slate-700 hover:text-[#800521] font-bold py-2 rounded-lg text-xs text-center transition-all mt-6 cursor-pointer flex items-center justify-center gap-1.5"
           >
-            Ver Historial de Pagos
+            <span>Ver Recibo de Matrícula</span>
           </button>
         </div>
       </div>

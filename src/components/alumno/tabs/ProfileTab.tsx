@@ -312,31 +312,23 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
           </div>
 
           {/* Estado de Pagos / Regularización */}
+          {/* Estado de Pagos / Matrícula Oficial */}
           <div className="bg-[#800521] text-white rounded-xl p-5 shadow-sm border-l-4 border-amber-400 flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-start mb-2">
                 <span className="bg-red-950/75 text-amber-300 font-extrabold text-[8px] uppercase tracking-widest px-2 py-0.5 rounded">
-                  Periodo 2026-I
+                  Periodo 2027-I
                 </span>
-                <span className="text-slate-100 font-bold text-[10px]">Vence: 30 de Mayo</span>
+                <span className="text-emerald-300 font-bold text-[10px]">Tasa Única Pagada</span>
               </div>
-              <span className="text-slate-200 text-[9px] uppercase font-bold tracking-wider block">Saldo Pendiente Regularización</span>
+              <span className="text-slate-200 text-[9px] uppercase font-bold tracking-wider block">Derecho de Matrícula Regular</span>
               <span className="text-2.5xl font-black text-amber-300 tracking-tight block mt-0.5">
-                {isPaidInvoice ? "S/. 0.00" : "S/. 450.00"}
+                S/. 250.00
               </span>
               <p className="text-[10px] text-slate-100 font-medium leading-relaxed mt-1.5">
-                {isPaidInvoice ? "Su cuenta y matrícula se encuentran totalmente al día en Caja Institucional." : "Pensión ordinaria del mes corriente. Por favor efectúe el pago para mantener habilitada su carpeta digital de ciclo."}
+                Como institución pública, el IESTP San Francisco de Asís no cobra pensiones mensuales. Su derecho de matrícula para el periodo 2027-I se encuentra 100% cancelado en Caja Central.
               </p>
             </div>
-
-            {!isPaidInvoice && (
-              <button 
-                onClick={handlePayInvoice}
-                className="w-full bg-white hover:bg-slate-100 text-[#800521] font-extrabold py-2 rounded-lg text-xs uppercase tracking-wider transition-all mt-4 shadow-sm cursor-pointer"
-              >
-                Pagar Ahora
-              </button>
-            )}
           </div>
         </div>
 

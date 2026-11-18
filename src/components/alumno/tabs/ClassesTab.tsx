@@ -3,7 +3,7 @@ import { studentAttendanceRecords } from "../../../utils/attendance";
 import React, { useState } from "react";
 import { 
   Zap, Cpu, Sliders, Award, ChevronRight, ChevronDown, BookOpen, Clock, CheckCircle2, 
-  Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark
+  Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark, MapPin
 } from "lucide-react";
 import { CourseMaterial, CourseAssignment, CourseEvaluation, AcademicProgram, StudentPersonalData } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
@@ -140,7 +140,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           </div>
         </div>
 
-        {/* Cards Grid */}
+        {/* Cards Grid Rediseñado Moderno */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {classesCoursesData.map((courseItem) => {
             const courseIds = courseItem.attendanceCourseIds || [courseItem.id];
@@ -150,59 +150,78 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               .map((submission) => Number(submission.grade));
             const averageGrade = grades.length ? (grades.reduce((sum, grade) => sum + grade, 0) / grades.length).toFixed(1) : "NR";
             return (
-              <Card key={courseItem.id} className="border border-slate-200/80 shadow-xs flex flex-col justify-between overflow-hidden bg-white hover:shadow-md transition-all duration-200">
-                <div className="p-5 border-b border-slate-100 bg-slate-50/40 space-y-2 text-left">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9.5px] font-black text-[#800521] bg-[#800521]/10 border border-[#800521]/25 px-2.5 py-1 rounded-xs font-mono">
+              <Card key={courseItem.id} className="group border border-slate-200/90 rounded-2xl shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden bg-white hover:-translate-y-1">
+                {/* Top Colored Accent Stripe */}
+                <div className="h-1.5 w-full bg-gradient-to-r from-[#800521] via-amber-500 to-slate-900" />
+                
+                <div className="p-5 pb-4 space-y-3 text-left">
+                  {/* Top Badges */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-[10px] font-black font-mono text-[#800521] bg-red-50 border border-red-200/80 px-2.5 py-1 rounded-md tracking-wider">
                       {courseItem.code}
                     </span>
-                    <span className="text-[9.5px] font-black text-amber-800 bg-amber-50 border border-amber-200 px-2 py-1 rounded-xs uppercase tracking-wider">
-                      {courseItem.credits} Créditos
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9.5px] font-black text-amber-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                        {courseItem.credits} Créditos
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        MATRICULADO
+                      </span>
+                    </div>
                   </div>
-                  <h3 className="text-sm font-black text-slate-900 tracking-tight leading-tight uppercase font-display pt-1">
+
+                  {/* Course Title */}
+                  <h3 className="text-base font-black text-slate-900 tracking-tight leading-snug group-hover:text-[#800521] transition-colors line-clamp-2">
                     {courseItem.name}
                   </h3>
-                </div>
 
-                <div className="p-5 space-y-2.5 text-xs text-slate-600 font-medium leading-relaxed divide-y divide-slate-100">
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-400 font-semibold uppercase text-[10px]">Carrera:</span>
-                    <span className="text-slate-800 font-extrabold uppercase text-[10.5px] truncate max-w-[180px]">
-                      {currentProgram?.name || "ELECTRICIDAD INDUSTRIAL"}
+                  {/* Professor / Mentor */}
+                  <div className="flex items-center gap-2 pt-0.5 text-slate-600">
+                    <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 shrink-0 font-bold text-[10px]">
+                      👨‍🏫
+                    </div>
+                    <span className="text-xs font-bold text-slate-700 truncate">
+                      {courseItem.teacherName || "Docente Asignado por Carrera"}
                     </span>
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-400 font-semibold uppercase text-[10px]">Grupo:</span>
-                    <span className="text-slate-800 font-bold uppercase">{courseItem.group || "Grupo A"}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-400 font-semibold uppercase text-[10px]">Currícula:</span>
-                    <span className="text-slate-800 font-mono font-bold text-slate-550">{courseItem.curriculum || "Diseño Curricular 2026"}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-400 font-semibold uppercase text-[10px]">Aula / Taller:</span>
-                    <span className="text-slate-800 font-extrabold text-[#800521] truncate max-w-[180px]">
-                      {courseItem.classroom}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-400 font-semibold uppercase text-[10px]">Capacidad del grupo:</span>
-                    <span className="text-slate-850 font-bold">{courseItem.studentCount || 0} cupos</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-400 font-semibold uppercase text-[10px]">Horario:</span>
-                    <span className="text-slate-800 font-mono font-extrabold text-slate-700 truncate max-w-[180px]">
-                      {courseItem.schedule}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 text-[10px]">
-                    <span className="text-slate-400 font-bold uppercase">Promedio Estimado:</span>
-                    <span className="text-[#800521] font-black font-mono text-xs">{averageGrade} / 20</span>
                   </div>
                 </div>
 
-                <div className="p-5 pt-0">
+                {/* Course Metadata Pill Boxes */}
+                <div className="px-5 py-3 bg-slate-50/70 border-t border-b border-slate-100 space-y-2 text-left">
+                  <div className="flex items-start gap-2 text-xs">
+                    <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block leading-none">Horario de Clases</span>
+                      <span className="text-[11px] font-extrabold text-slate-800 leading-tight block mt-0.5">
+                        {courseItem.schedule}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2 text-xs">
+                    <MapPin className="w-3.5 h-3.5 text-[#800521] shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block leading-none">Ambiente / Taller</span>
+                      <span className="text-[11px] font-extrabold text-[#800521] leading-tight block mt-0.5">
+                        {courseItem.classroom}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[10px]">
+                    <span className="text-slate-500 font-bold flex items-center gap-1">
+                      <Users className="w-3 h-3 text-slate-400" />
+                      Grupo {courseItem.group || "EI-I-A"} • {courseItem.studentCount || 35} cupos
+                    </span>
+                    <span className="font-mono font-black text-slate-700 bg-white border border-slate-200 px-1.5 py-0.5 rounded">
+                      Nota: {averageGrade} / 20
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <div className="p-4 bg-white text-left">
                   <button
                     onClick={() => {
                       setSelectedCourseDetail(courseItem.name);
@@ -210,9 +229,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                       setSelectedClassWeek(1);
                       setSelectedClassWeekOption("materiales");
                     }}
-                    className="w-full bg-[#800521] hover:bg-[#9F062A] text-white py-2.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer font-bold select-none"
+                    className="w-full bg-[#800521] hover:bg-[#66041a] text-white py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group-hover:scale-[1.01]"
                   >
-                    Gestionar Curso <ChevronRight className="w-4 h-4" />
+                    <span>Ingresar al Aula Virtual</span>
+                    <ChevronRight className="w-4 h-4 text-amber-300 group-hover:translate-x-0.5 transition-transform" />
                   </button>
                 </div>
               </Card>
