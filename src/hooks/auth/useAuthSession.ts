@@ -3,7 +3,7 @@ import { Role } from "../../types";
 
 const alertQueue: string[] = [];
 let globalAlertHandler: ((message: string) => void) | null = null;
-const staffRoles = new Set(["superadmin", "administrador", "docente", "mpa", "mge", "maf"]);
+const staffRoles = new Set(["superadmin", "administrador", "docente", "mpa", "mge", "maf", "secretaria"]);
 function hasValidStaffToken() {
   try {
     const payload = localStorage.getItem("sfa_staff_token")?.split(".")[0];
@@ -33,14 +33,14 @@ export function useAuthSession() {
         return { role: "404" as any, identifier: "" };
       }
       if (rawPath !== "" && rawPath !== "/") {
-        const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
+        const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf", "secretaria"];
         const hasSession = roles.some((r) => Boolean(localStorage.getItem(`sfa_session_${r}`)) && (!staffRoles.has(r) || hasValidStaffToken()));
         if (!hasSession) {
           return { role: "404" as any, identifier: "" };
         }
       }
     }
-    const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
+    const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf", "secretaria"];
     for (const r of roles) {
       const saved = localStorage.getItem(`sfa_session_${r}`);
       if (saved && (!staffRoles.has(r) || hasValidStaffToken())) {
@@ -72,7 +72,7 @@ export function useAuthSession() {
 
   const handleLogout = () => {
     localStorage.removeItem("sfa_staff_token");
-    const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
+    const roles: Role[] = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf", "secretaria"];
     roles.forEach((r) => localStorage.removeItem(`sfa_session_${r}`));
     setCurrentUser({ role: "portal", identifier: "" });
   };

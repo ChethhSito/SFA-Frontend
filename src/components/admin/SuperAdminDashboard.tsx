@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   ShieldCheck, Users, UserPlus, Lock, Key, ShieldAlert, CheckCircle, 
   Search, RefreshCw, LogOut, ArrowRight, LayoutDashboard, Database,
-  Settings, Filter, UserCheck, Eye, Compass, Layers, Activity, AlertCircle, Edit3, Trash2
+  Settings, Filter, UserCheck, Eye, Compass, Layers, Activity, AlertCircle, Edit3, Trash2, FileText
 } from "lucide-react";
 import { SystemUser, Role } from "../../types";
 import { fetchUsers, createUser, updateUser, deleteUser, resendStaffInvitation } from "../../services/api";
@@ -21,7 +21,7 @@ interface SuperAdminDashboardProps {
   onGoToPortal?: () => void;
 }
 
-const MANAGED_ROLES: Role[] = ['administrador', 'mpa', 'mge', 'maf', 'docente'];
+const MANAGED_ROLES: Role[] = ['administrador', 'mpa', 'mge', 'maf', 'secretaria', 'docente'];
 
 const DEFAULT_SYSTEM_USERS: SystemUser[] = [
   {
@@ -217,6 +217,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole,
     if (role === "mpa") moduleName = "MPA - Planificación Académica";
     else if (role === "mge") moduleName = "MGE - Gestión de Estudiantes";
     else if (role === "maf") moduleName = "MAF - Administración y Finanzas";
+    else if (role === "secretaria") moduleName = "Secretaría Académica - Emisión de Trámites";
     else if (role === "docente") moduleName = "Intranet Docente";
 
     setFormData((prev) => ({ ...prev, role, assignedModule: moduleName }));
@@ -336,6 +337,8 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole,
         return <span className="px-2.5 py-1 bg-emerald-100 text-emerald-900 font-black text-[10px] uppercase rounded-md border border-emerald-200">Gestor MGE</span>;
       case "maf":
         return <span className="px-2.5 py-1 bg-amber-100 text-amber-900 font-black text-[10px] uppercase rounded-md border border-amber-200">Gestor MAF</span>;
+      case "secretaria":
+        return <span className="px-2.5 py-1 bg-cyan-100 text-cyan-900 font-black text-[10px] uppercase rounded-md border border-cyan-200">Secretaría</span>;
       case "docente":
         return <span className="px-2.5 py-1 bg-indigo-100 text-indigo-900 font-black text-[10px] uppercase rounded-md border border-indigo-200">Docente</span>;
       case "alumno":
@@ -422,7 +425,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole,
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-3.5">
+        <div className="grid grid-cols-2 lg:grid-cols-7 gap-3.5">
           <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-xs space-y-1">
             <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">Cuentas gestionadas</span>
             <span className="text-2xl font-black text-slate-900 block">{users.length}</span>
@@ -442,6 +445,10 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole,
           <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl shadow-xs space-y-1">
             <span className="text-[10px] font-black uppercase text-amber-900 tracking-wider block">Gestores MAF</span>
             <span className="text-2xl font-black text-amber-900 block">{users.filter(u => u.role === "maf").length}</span>
+          </div>
+          <div className="bg-cyan-50 border border-cyan-200 p-4 rounded-xl shadow-xs space-y-1">
+            <span className="text-[10px] font-black uppercase text-cyan-900 tracking-wider block">Secretaría</span>
+            <span className="text-2xl font-black text-cyan-900 block">{users.filter(u => u.role === "secretaria").length}</span>
           </div>
           <div className="bg-indigo-50 border border-indigo-200 p-4 rounded-xl shadow-xs space-y-1">
             <span className="text-[10px] font-black uppercase text-indigo-900 tracking-wider block">Docentes</span>
@@ -489,6 +496,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole,
                     <option value="mpa">Gestor MPA</option>
                     <option value="mge">Gestor MGE</option>
                     <option value="maf">Gestor MAF</option>
+                    <option value="secretaria">Secretaría Académica</option>
                     <option value="docente">Docente</option>
                   </select>
                 </div>
@@ -626,7 +634,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole,
                       <h4 className="text-xs font-black uppercase text-purple-900">Super Administrador</h4>
                     </div>
                     <p className="text-[11px] text-slate-600 leading-relaxed font-semibold">
-                      Control total del sistema. Crea y administra gestores MAMC, MPA, MGE, MAF y Docentes. Gestiona auditorías y permisos globales.
+                      Control total del sistema. Crea y administra gestores MAMC, MPA, MGE, MAF, Secretaría y Docentes. Gestiona auditorías y permisos globales.
                     </p>
                   </div>
 
@@ -677,6 +685,15 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole,
                     </div>
                     <p className="text-[11px] text-slate-600 leading-relaxed font-semibold">
                       Intranet Docente. Registro de asistencia de alumnos, evaluaciones/notas, carga de sílabos y publicación de evidencias.
+                    </p>
+                  </div>
+                  <div className="bg-cyan-50 border border-cyan-200 rounded-xl p-4 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-cyan-900" />
+                      <h4 className="text-xs font-black uppercase text-cyan-900">Secretaría Académica</h4>
+                    </div>
+                    <p className="text-[11px] text-slate-600 leading-relaxed font-semibold">
+                      Recibe trámites de alumnos y docentes con pago validado, adjunta el PDF final y deja disponible el resultado en Mis trámites.
                     </p>
                   </div>
                 </div>
@@ -815,6 +832,7 @@ export default function SuperAdminDashboard({ onLogout, onSwitchRole,
                     <option value="mpa">Gestor MPA (Planificación Académica)</option>
                     <option value="mge">Gestor MGE (Gestión de Estudiantes)</option>
                     <option value="maf">Gestor MAF (Finanzas y Caja)</option>
+                    <option value="secretaria">Secretaría Académica (Emisión de trámites)</option>
                     <option value="docente">Docente</option>
                   </select>
                 </div>

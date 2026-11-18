@@ -23,6 +23,8 @@ export interface ServiceRequest {
   bankName?: string;
   deliveryStatus?: 'Pendiente' | 'Emitido';
   resultFileName?: string;
+  deliveredByDni?: string;
+  deliveredAt?: string;
   createdAt: string;
   updatedAt?: string;
   voucherRegisteredAt?: string;
@@ -43,6 +45,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export function fetchServiceRequests(studentDni?: string, teacherDni?: string): Promise<ServiceRequest[]> {
   const query = studentDni ? `?studentDni=${encodeURIComponent(studentDni)}` : teacherDni ? `?teacherDni=${encodeURIComponent(teacherDni)}` : '';
   return request<ServiceRequest[]>(`/service-requests${query}`);
+}
+
+export function fetchSecretaryQueue(): Promise<ServiceRequest[]> {
+  return request<ServiceRequest[]>('/service-requests/secretaria/queue', {
+    headers: { Authorization: `Bearer ${localStorage.getItem('sfa_staff_token') || ''}` },
+  });
 }
 
 export function createServiceRequest(input: {
@@ -76,7 +84,11 @@ export function updateServiceRequestPayment(id: string, payment: {
 
 export async function deliverServiceRequestResult(id: string, file: File): Promise<ServiceRequest> {
   const form = new FormData(); form.append('file', file);
-  const response = await fetch(`${API_BASE_URL}/service-requests/${encodeURIComponent(id)}/result`, { method: 'POST', body: form });
+  const response = await fetch(`${API_BASE_URL}/service-requests/${encodeURIComponent(id)}/result`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${localStorage.getItem('sfa_staff_token') || ''}` },
+    body: form,
+  });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     throw new Error(body.message || `Error del servidor (${response.status}).`);

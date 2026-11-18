@@ -85,7 +85,7 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     const staff = await loginStaff(uTrim, pTrim);
     if (staff) {
       localStorage.setItem("sfa_staff_token", staff.token);
-      ["administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf", "superadmin"].forEach(role => localStorage.removeItem(`sfa_session_${role}`));
+      ["administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf", "secretaria", "superadmin"].forEach(role => localStorage.removeItem(`sfa_session_${role}`));
       localStorage.setItem(`sfa_session_${staff.user.role}`, staff.user.dni || staff.user.email);
       setIsSubmitting(false);
       onLoginSuccess(staff.user.role as Role, staff.user.dni || staff.user.email);
@@ -284,7 +284,7 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     }
 
     // Isolate sessions: Clear other roles' sessions
-    ["administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf", "superadmin"].forEach((r) => {
+    ["administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf", "secretaria", "superadmin"].forEach((r) => {
       localStorage.removeItem(`sfa_session_${r}`);
     });
 

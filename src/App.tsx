@@ -13,6 +13,7 @@ import SuperAdminRouter from "./components/routers/SuperAdminRouter";
 import MpaRouter from "./components/routers/MpaRouter";
 import MgeRouter from "./components/routers/MgeRouter";
 import MafRouter from "./components/routers/MafRouter";
+import SecretariaRouter from "./components/routers/SecretariaRouter";
 import PostulanteRouter from "./components/routers/PostulanteRouter";
 import AlumnoRouter from "./components/routers/AlumnoRouter";
 import DocenteRouter from "./components/routers/DocenteRouter";
@@ -72,7 +73,7 @@ export default function App() {
   }, [currentUser.role, reloadApplicants, reloadAdmissionPeriods]);
 
   const handleEnterIntranet = () => {
-    const roles = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
+    const roles = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf", "secretaria"];
     for (const r of roles) {
       const s = localStorage.getItem(`sfa_session_${r}`);
       if (s) {
@@ -332,8 +333,12 @@ export default function App() {
         />
       )}
 
+      {currentUser.role === "secretaria" && (
+        <SecretariaRouter onLogout={handleLogout} onGoToPortal={handleGoPortal} />
+      )}
+
       {/* 8. Fallback 404 NOT FOUND Screen */}
-      {!["portal", "login", "postulante", "alumno", "docente", "superadmin", "administrador", "mpa", "mge", "maf"].includes(currentUser.role) && (
+      {!["portal", "login", "postulante", "alumno", "docente", "superadmin", "administrador", "mpa", "mge", "maf", "secretaria"].includes(currentUser.role) && (
         <NotFoundPage onGoToPortal={() => setCurrentUser({ role: "portal", identifier: "" })} />
       )}
 

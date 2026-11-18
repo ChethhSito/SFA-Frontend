@@ -40,7 +40,7 @@ export default function PortalHome({
 
   // Check if user has an active intranet session stored in localStorage
   const { activeSessionRole, activeSessionName } = (() => {
-    const roles = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
+    const roles = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf", "secretaria"];
     for (const r of roles) {
       const s = localStorage.getItem(`sfa_session_${r}`);
       if (s) {
@@ -77,7 +77,8 @@ export default function PortalHome({
           activeSessionRole === "docente" ? "Docente" :
             activeSessionRole === "mpa" ? "Planificación (MPA)" :
               activeSessionRole === "mge" ? "Gestión Estudiantes (MGE)" :
-                activeSessionRole === "maf" ? "Finanzas (MAF)" : null;
+                activeSessionRole === "maf" ? "Finanzas (MAF)" :
+                  activeSessionRole === "secretaria" ? "Secretaría Académica" : null;
 
 
   // Navigation State
