@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Users, BookOpen, Clock, FileText, CheckCircle, CheckCircle2,
-  Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronRight, BarChart3, Settings, AlertCircle, RefreshCw, FileSpreadsheet, Megaphone,
+  Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronRight, ChevronLeft, BarChart3, Settings, AlertCircle, RefreshCw, FileSpreadsheet, Megaphone,
   MapPin, ShieldCheck, Menu, X, FileCheck, Clock3, School
 } from "lucide-react";
 import { Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, StudentPersonalData, Teacher, Enrollment, MpaPeriod, MpaAcademicGroup, MpaProgramTask, MpaCourse, MpaClassroom, MpaShift } from "../../types";
@@ -157,6 +157,10 @@ export default function DocenteDashboard({
   // Mobile navigation views toggling
   const [showMobileSidebarCurso, setShowMobileSidebarCurso] = useState(false);
   const [showMobileNav, setShowMobileNav] = useState(false);
+
+  // Desktop sidebars collapsible states (toggle in the center/middle border)
+  const [isMainSidebarCollapsed, setIsMainSidebarCollapsed] = useState(false);
+  const [isCourseSidebarCollapsed, setIsCourseSidebarCollapsed] = useState(false);
 
   // Resolve courses and teachers safely with storage cache fallback
   const allCourses = courses.length > 0 ? courses : (() => {
@@ -494,50 +498,74 @@ export default function DocenteDashboard({
       {notice ? <Toast notice={notice} onClose={closeNotice} /> : null}
 
       {/* 1. SIDEBAR PRINCIPAL */}
-      <div className="hidden md:block">
-        <SidebarPrincipal
-          teacherDni={teacherDni}
-          teacher={currentTeacher}
-          courses={teacherCourses}
-          selectedCourseId={selectedCourseId}
-          onSelectCourse={(courseId) => {
-            setSelectedCourseId(courseId);
-            if (courseId) {
-              setActiveSection("general");
-              setActiveTab("curso");
-            } else {
-              setActiveTab("dashboard");
-            }
-          }}
-          activeTab={activeTab === "curso" ? "cursos" : activeTab}
-          setActiveTab={(tab) => {
-            setActiveTab(tab);
-            setSelectedCourseId(null);
-          }}
-          onLogout={onLogout}
-          onGoToPortal={onGoToPortal}
-        />
+      <div className={`hidden md:block shrink-0 relative transition-all duration-300 ease-in-out ${isMainSidebarCollapsed ? "w-0" : "w-64"}`}>
+        <div className={`w-64 h-full transition-opacity duration-200 overflow-hidden ${isMainSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+          <SidebarPrincipal
+            teacherDni={teacherDni}
+            teacher={currentTeacher}
+            courses={teacherCourses}
+            selectedCourseId={selectedCourseId}
+            onSelectCourse={(courseId) => {
+              setSelectedCourseId(courseId);
+              if (courseId) {
+                setActiveSection("general");
+                setActiveTab("curso");
+              } else {
+                setActiveTab("dashboard");
+              }
+            }}
+            activeTab={activeTab === "curso" ? "cursos" : activeTab}
+            setActiveTab={(tab) => {
+              setActiveTab(tab);
+              setSelectedCourseId(null);
+            }}
+            onLogout={onLogout}
+            onGoToPortal={onGoToPortal}
+          />
+        </div>
+
+        {/* Desplegable / botón flotante en el centro vertical de los sidebars para ocultarlo o expandirlo */}
+        <button
+          type="button"
+          onClick={() => setIsMainSidebarCollapsed(!isMainSidebarCollapsed)}
+          title={isMainSidebarCollapsed ? "Expandir menú principal" : "Ocultar menú principal"}
+          className="absolute -right-3.5 top-1/2 -translate-y-1/2 z-40 bg-white hover:bg-amber-50 text-slate-700 hover:text-[#800521] border border-slate-300 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer hover:scale-110 active:scale-95"
+        >
+          {isMainSidebarCollapsed ? <ChevronRight className="w-4 h-4 text-[#800521]" /> : <ChevronLeft className="w-4 h-4 text-[#800521]" />}
+        </button>
       </div>
 
       {/* 2. SIDEBAR SECUNDARIO CURRICULAR DINÁMICO */}
       {selectedCourseId && activeTab === "curso" && (
-        <div className="hidden md:block shrink-0">
-          <SidebarCurso
-            courseId={selectedCourseId}
-            courseName={selectedCourse?.name || ""}
-            courseCode={selectedCourse?.code || ""}
-            activeSection={activeSection}
-            selectedWeek={selectedWeek}
-            selectedWeekOption={selectedWeekOption}
-            onSelectGeneral={() => setActiveSection("general")}
-            onSelectHorarios={() => setActiveSection("horarios")}
-            onSelectCierre={() => setActiveSection("cierre")}
-            onSelectWeekOption={(weekNum, option) => {
-              setActiveSection("week");
-              setSelectedWeek(weekNum);
-              setSelectedWeekOption(option);
-            }}
-          />
+        <div className={`hidden md:block shrink-0 relative transition-all duration-300 ease-in-out ${isCourseSidebarCollapsed ? "w-0" : "w-64"}`}>
+          <div className={`w-64 h-full transition-opacity duration-200 overflow-hidden ${isCourseSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+            <SidebarCurso
+              courseId={selectedCourseId}
+              courseName={selectedCourse?.name || ""}
+              courseCode={selectedCourse?.code || ""}
+              activeSection={activeSection}
+              selectedWeek={selectedWeek}
+              selectedWeekOption={selectedWeekOption}
+              onSelectGeneral={() => setActiveSection("general")}
+              onSelectHorarios={() => setActiveSection("horarios")}
+              onSelectCierre={() => setActiveSection("cierre")}
+              onSelectWeekOption={(weekNum, option) => {
+                setActiveSection("week");
+                setSelectedWeek(weekNum);
+                setSelectedWeekOption(option);
+              }}
+            />
+          </div>
+
+          {/* Desplegable / botón flotante en el centro vertical del menú de curso */}
+          <button
+            type="button"
+            onClick={() => setIsCourseSidebarCollapsed(!isCourseSidebarCollapsed)}
+            title={isCourseSidebarCollapsed ? "Expandir semanas del curso" : "Ocultar semanas del curso"}
+            className="absolute -right-3.5 top-1/2 -translate-y-1/2 z-40 bg-white hover:bg-amber-50 text-slate-700 hover:text-[#800521] border border-slate-300 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer hover:scale-110 active:scale-95"
+          >
+            {isCourseSidebarCollapsed ? <ChevronRight className="w-4 h-4 text-[#800521]" /> : <ChevronLeft className="w-4 h-4 text-[#800521]" />}
+          </button>
         </div>
       )}
 
