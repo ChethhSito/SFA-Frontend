@@ -187,7 +187,7 @@ export default function AdminDashboard({
                   .replace(/Acadmico/gi, "Académico");
                 return (
                   <option key={p.id} value={p.id}>
-                    {cleanName} {p.status === "APERTURADO" ? "(ACTIVO)" : ""}
+                    {cleanName}
                   </option>
                 );
               })}
