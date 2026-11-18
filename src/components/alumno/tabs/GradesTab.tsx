@@ -65,7 +65,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <div className="text-left bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
               <span className="text-[9px] text-amber-400 font-extrabold block uppercase mb-0.5 tracking-wider">Período Académico</span>
-              <span className="text-xs font-black text-white font-mono">2026 - I</span>
+              <span className="text-xs font-black text-white font-mono">2027-I</span>
             </div>
             <button
               onClick={() => setShowBoletaModal(true)}

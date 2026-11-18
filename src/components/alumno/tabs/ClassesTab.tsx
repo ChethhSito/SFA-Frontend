@@ -3,7 +3,7 @@ import { studentAttendanceRecords } from "../../../utils/attendance";
 import React, { useState } from "react";
 import { 
   Zap, Cpu, Sliders, Award, ChevronRight, ChevronDown, BookOpen, Clock, CheckCircle2, 
-  Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark, MapPin
+  Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark, MapPin, GraduationCap
 } from "lucide-react";
 import { CourseMaterial, CourseAssignment, CourseEvaluation, AcademicProgram, StudentPersonalData } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
@@ -179,7 +179,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   {/* Professor / Mentor */}
                   <div className="flex items-center gap-2 pt-0.5 text-slate-600">
                     <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 shrink-0 font-bold text-[10px]">
-                      👨‍🏫
+                      <GraduationCap className="w-3.5 h-3.5 text-slate-700" />
                     </div>
                     <span className="text-xs font-bold text-slate-700 truncate">
                       {courseItem.teacherName || "Docente Asignado por Carrera"}
@@ -492,12 +492,12 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                     { k: "Nombre del curso:", v: activeCourse.name },
                     { k: "Carrera Profesional:", v: currentProgram?.name || "ELECTRICIDAD INDUSTRIAL" },
                     { k: "Grupo Académico:", v: activeCourse.group || "Grupo A" },
-                    { k: "Malla / Diseño Curricular:", v: activeCourse.curriculum || "Diseño Curricular 2026" },
+                    { k: "Malla / Diseño Curricular:", v: activeCourse.curriculum || "Diseño Curricular Modular (Vigente)" },
                     { k: "Créditos Académicos:", v: `${activeCourse.credits} Créditos Oficiales` },
                     { k: "Aula o Laboratorio:", v: activeCourse.classroom },
                     { k: "Capacidad del grupo:", v: `${activeCourse.studentCount || 0} cupos` },
                     { k: "Horario Lectivo Oficial:", v: activeCourse.schedule },
-                    { k: "Rango de Semestre:", v: "2026-04-06 / 2026-07-24 (Regular)" },
+                    { k: "Rango de Semestre:", v: activeCourse.dates || "2027-03-22 / 2027-07-30 (Regular)" },
                     { k: "Docente asignado:", v: activeCourse.teacherName || "Por asignar" }
                   ].map((row, rIdx) => (
                     <div key={rIdx} className="flex justify-between py-2.5">

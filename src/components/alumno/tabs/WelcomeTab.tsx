@@ -1,5 +1,5 @@
 import React from "react";
-import { Flame, Clock, FileText, CreditCard, BookOpen, CheckCircle2, Calendar } from "lucide-react";
+import { Flame, Clock, FileText, CreditCard, BookOpen, CheckCircle2, Calendar, MapPin } from "lucide-react";
 import { StudentPersonalData, Enrollment, AcademicProgram } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
 
@@ -114,8 +114,9 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
                   {nextCourse?.name || (nextTask ? 'Unidad Didáctica' : 'Programación oficial en curso por MPA')}
                 </div>
                 {nextClassroom?.name && (
-                  <span className="text-[10px] text-amber-900/80 font-medium block mt-0.5 truncate">
-                    📍 {nextClassroom.name}
+                  <span className="text-[10px] text-amber-900/80 font-medium flex items-center gap-1 mt-0.5 truncate">
+                    <MapPin className="w-3 h-3 text-amber-700 shrink-0" />
+                    {nextClassroom.name}
                   </span>
                 )}
               </div>
@@ -128,8 +129,9 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Estado en Tesorería</span>
-              <span className="text-[9.5px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-extrabold px-2.5 py-0.5 rounded-full">
-                ✓ Matrícula Pagada
+              <span className="text-[9.5px] bg-emerald-50 text-emerald-700 border border-emerald-200 font-extrabold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                Matrícula Cancelada
               </span>
             </div>
             <div className="flex items-baseline gap-2 mt-2">

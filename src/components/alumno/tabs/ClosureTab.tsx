@@ -391,7 +391,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                 <div className={`h-5 w-5 rounded-full flex items-center justify-center font-black text-[10px] shrink-0 ${
                   isPromoted ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
                 }`}>
-                  {isPromoted ? "✓" : "!"}
+                  {isPromoted ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : "!"}
                 </div>
                 <div>
                   <span className="text-xs font-bold text-slate-800 block">Prácticas Pre-Profesionales (EFSRT)</span>
@@ -464,12 +464,12 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-slate-100 rounded-full border flex items-center justify-center font-bold text-slate-700 text-sm">
-                CM
+              <div className="h-10 w-10 bg-[#800521]/10 rounded-full border border-[#800521]/20 flex items-center justify-center font-bold text-[#800521] text-xs">
+                CA
               </div>
               <div>
-                <span className="text-xs font-bold text-slate-850 block">Ing. Carlos Mendoza</span>
-                <span className="text-[10px] text-slate-400 block font-medium">Coordinador & Mentor de Alumnos</span>
+                <span className="text-xs font-bold text-slate-850 block">Coordinación de Carrera</span>
+                <span className="text-[10px] text-slate-400 block font-medium">Tutoría y Asesoría Académica • {currentProgram?.name || "IESTP SFA"}</span>
               </div>
             </div>
 

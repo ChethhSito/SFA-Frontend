@@ -72,7 +72,7 @@ export default function AlumnoDashboard({
   // Outstanding billing simulation state (el alumno matriculado tiene su matrícula pagada y sin deuda)
   const isEnrolledAndPaid = enrollment.academicStatus === "MATRICULADO" || (enrollment.paymentStatus as string) === "Validado" || (enrollment.paymentStatus as string) === "Pagado" || (enrollment.paymentStatus as string) === "PAGADO";
   const [isPaidInvoice, setIsPaidInvoice] = useState(isEnrolledAndPaid);
-  const [paymentOp, setPaymentOp] = useState(enrollment.paymentOperation || (isEnrolledAndPaid ? `OP-MATR-2026-${personalData.dni ? personalData.dni.slice(-4) : "0001"}` : ""));
+  const [paymentOp, setPaymentOp] = useState(enrollment.paymentOperation || (isEnrolledAndPaid ? `OP-MATR-2027-${personalData.dni ? personalData.dni.slice(-4) : "0001"}` : ""));
   const [paySuccessMsg, setPaySuccessMsg] = useState("");
 
   useEffect(() => {
@@ -93,8 +93,8 @@ export default function AlumnoDashboard({
   const [selectedAcademicOption, setSelectedAcademicOption] = useState<string>("plan_curricular");
   const [selectedSemesterFilter, setSelectedSemesterFilter] = useState<string>("01");
   const [selectedPlan, setSelectedPlan] = useState<string>("52");
-  const [selectedQueryPeriod, setSelectedQueryPeriod] = useState<string>("2026-I");
-  const [selectedAttendanceSemester, setSelectedAttendanceSemester] = useState<string>("2026-I");
+  const [selectedQueryPeriod, setSelectedQueryPeriod] = useState<string>("2027-I");
+  const [selectedAttendanceSemester, setSelectedAttendanceSemester] = useState<string>("2027-I");
   const [selectedCourseDetail, setSelectedCourseDetail] = useState<string>("");
 
   // Aula Virtual substates
@@ -448,8 +448,8 @@ export default function AlumnoDashboard({
         career: enrollment.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad",
         group: mpaPlanningData.groups.find((group: any) => group.id === primaryTask?.groupId)?.name || studentGroup?.name || "Grupo A",
         cycle: "Ciclo I",
-        startDate: "2026-08-18",
-        endDate: "2026-12-15",
+        startDate: mpaPlanningData.periods?.find((p: any) => p.id === studentGroup?.periodId)?.startDate || "2027-03-22",
+        endDate: mpaPlanningData.periods?.find((p: any) => p.id === studentGroup?.periodId)?.endDate || "2027-07-30",
         studentCount: studentGroup?.capacity || 30,
         description: `Unidad didáctica curricular matriculada. Plan de estudios de la carrera técnica de ${enrollment.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad"}.`,
         formula: "NF = (EP1 * 0.20) + (TR1 * 0.15) + (EC1 * 0.15) + (PF1 * 0.50)"
@@ -473,13 +473,13 @@ export default function AlumnoDashboard({
         career: enrollment.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad",
         group: studentGroup?.name || "Grupo A",
         cycle: "Ciclo I",
-        startDate: "2026-08-18",
-        endDate: "2026-12-15",
+        startDate: mpaPlanningData.periods?.find((p: any) => p.id === studentGroup?.periodId)?.startDate || "2027-03-22",
+        endDate: mpaPlanningData.periods?.find((p: any) => p.id === studentGroup?.periodId)?.endDate || "2027-07-30",
         studentCount: studentGroup?.capacity || 30,
         description: `Unidad didáctica del Ciclo I correspondiente al plan de estudios oficial de ${enrollment.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad"}.`,
         formula: "NF = (EP1 * 0.20) + (TR1 * 0.15) + (EC1 * 0.15) + (PF1 * 0.50)"
       }));
-  }, [catalogCourses, enrollment.programId, enrollment.shift, studentGroup]);
+  }, [catalogCourses, enrollment.programId, enrollment.shift, studentGroup, mpaPlanningData.periods]);
 
   const studentCourses = enrollment.registeredCourses ? dynamicMpaCourses : dynamicMpaCourses.length > 0
     ? dynamicMpaCourses 
@@ -516,7 +516,7 @@ export default function AlumnoDashboard({
       schedule: c.schedule,
       teacherName: c.teacherName,
       group: c.group || studentGroup?.name || "Grupo A",
-      curriculum: c.curriculum || "Diseño Curricular 2026",
+      curriculum: c.curriculum || "Diseño Curricular Modular (Vigente)",
       studentCount: c.studentCount || 30,
       iconType,
       description,

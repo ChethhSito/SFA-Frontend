@@ -186,7 +186,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <div className="text-left bg-black/35 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
               <span className="text-[9px] text-amber-300 font-extrabold block uppercase mb-0.5 tracking-wider">Período Lectivo</span>
-              <span className="text-xs font-black text-white font-mono">{period || "2026 - I"}</span>
+              <span className="text-xs font-black text-white font-mono">{period || "2027-I"}</span>
             </div>
             <button
               type="button"
@@ -284,7 +284,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                       : "border border-slate-200 text-slate-700 hover:bg-slate-100"
                   }`}
                 >
-                  {isSelected ? "Seleccionado ✓" : "Solicitar trámite"}
+                  {isSelected ? "Seleccionado" : "Solicitar trámite"}
                 </button>
               </div>
             </div>

@@ -131,7 +131,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     <div className="w-32 h-40 bg-white rounded-lg border-2 border-slate-300 shadow-md p-2 flex flex-col items-center justify-between relative overflow-hidden">
                       <div className="w-full flex justify-between items-center text-[7px] font-black uppercase text-slate-400 border-b pb-1">
                         <span>IESTP SFA</span>
-                        <span>2026-I</span>
+                        <span>2027-I</span>
                       </div>
                       <div className="w-20 h-24 rounded bg-gradient-to-b from-slate-100 to-slate-200 border border-slate-300 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
                         <div className="w-12 h-12 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center font-extrabold text-base shadow-xs border-2 border-white">
@@ -157,7 +157,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     <div className="w-full max-w-xs bg-slate-50 rounded-lg border border-slate-300 shadow-xs p-4 space-y-2.5 relative border-t-4 border-t-[#800521]">
                       <div className="flex justify-between items-center border-b border-slate-200 pb-1.5 text-[8px] font-bold text-slate-400 uppercase">
                         <span>SECRETARÍA ACADÉMICA</span>
-                        <span>2026-I</span>
+                        <span>2027-I</span>
                       </div>
                       <div className="text-center py-2 space-y-1">
                         <ShieldCheck className="w-8 h-8 text-emerald-600 mx-auto" />
@@ -277,7 +277,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             </p>
 
             <span className="text-[9px] mt-2 bg-emerald-50 text-emerald-700 border border-emerald-200 font-extrabold px-3 py-0.5 rounded-full inline-block uppercase">
-              Matrícula Activa 2026-I
+              Matrícula Activa 2027-I
             </span>
 
             <div className="mt-6 pt-6 border-t border-slate-50 text-[11px] font-semibold text-slate-600 text-left space-y-2.5">
@@ -287,7 +287,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Código Oficial:</span>
-                <span className="text-slate-800 font-mono font-bold">SFA-2026-{personalData.dni.slice(-4)}</span>
+                <span className="text-slate-800 font-mono font-bold">SFA-2027-{personalData.dni.slice(-4)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Celular:</span>
@@ -533,7 +533,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         <td className="py-3 font-mono text-[11px] text-[#800521]">
                           {enrollment.paymentOperation || (enrollment.paymentType === "voucher" ? "VOUCHER ADJUNTO" : "SIN OPERACIÓN")}
                         </td>
-                        <td className="py-3">Matrícula Semestral 2026-I (Ciclo I)</td>
+                        <td className="py-3">Matrícula Semestral 2027-I (Ciclo I)</td>
                         <td className="py-3 font-bold">S/. 250.00</td>
                         <td className="py-3 text-slate-400">
                           {enrollment.registeredAt?.slice(0, 10) || new Date().toISOString().slice(0, 10)}
@@ -581,7 +581,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                   </div>
                   <div className="p-4 bg-slate-50 rounded-lg text-center border border-slate-100">
                     <span className="text-[10px] text-slate-400 font-bold uppercase block">Plan Académico</span>
-                    <span className="text-xs font-black text-slate-700 block mt-1">Plan Modular 2026-I</span>
+                    <span className="text-xs font-black text-slate-700 block mt-1">Plan Modular 2027-I</span>
                     <span className="text-[9px] text-slate-400 block mt-0.5">{currentProgram?.name || "Electricidad Industrial"}</span>
                   </div>
                 </div>
@@ -589,7 +589,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <div className="flex items-center gap-2 mb-3">
                     <BookOpen className="w-4 h-4 text-[#800521]" />
-                    <span className="text-xs font-black text-slate-800 uppercase tracking-tight">Asignaturas Matriculadas en Ciclo I (2026-I)</span>
+                    <span className="text-xs font-black text-slate-800 uppercase tracking-tight">Asignaturas Matriculadas en Ciclo I (2027-I)</span>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs font-semibold text-slate-600 border-collapse">
