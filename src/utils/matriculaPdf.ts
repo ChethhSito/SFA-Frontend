@@ -781,7 +781,7 @@ export async function generateBoletaNotasPdf(cycle: string, studentName: string,
   pdf.text(`DNI: ${dni}   •   PROGRAMA: ${programName.toUpperCase()}   •   SEMESTRE: 2027-I`, margin + 4, y + 9.5);
   pdf.setTextColor(5, 150, 105);
   pdf.setFont("helvetica", "bold");
-  pdf.text("CONDICIÓN: ALUMNO REGULAR EN CURSO", margin + 4, y + 13.5);
+  pdf.text("CONDICIÓN: ALUMNO REGULAR", margin + 4, y + 13.5);
 
   y += 21;
 
@@ -794,7 +794,7 @@ export async function generateBoletaNotasPdf(cycle: string, studentName: string,
       c.name,
       c.credits.toFixed(1),
       c.grade !== undefined && c.grade > 0 ? c.grade.toString().padStart(2, "0") : "--",
-      c.grade !== undefined && c.grade >= 13 ? "APROBADO" : "MATRICULADO (EN CURSO)",
+      c.grade !== undefined && c.grade >= 13 ? "APROBADO" : "MATRICULADO",
     ]),
     styles: { font: "helvetica", fontSize: 8, cellPadding: 2.2, valign: "middle" },
     headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: "bold", fontSize: 8 },

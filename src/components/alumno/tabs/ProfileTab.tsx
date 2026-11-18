@@ -575,17 +575,17 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                   <div className="p-4 bg-slate-50 rounded-lg text-center border border-slate-100">
                     <span className="text-[10px] text-slate-400 font-bold uppercase block">PPA Promedio</span>
                     <span className="text-xl font-black text-slate-800 block mt-1">--</span>
-                    <span className="text-[9px] text-slate-400 block mt-0.5">En Curso</span>
+                    <span className="text-[9px] text-emerald-600 font-bold block mt-0.5">Matriculado</span>
                   </div>
                   <div className="p-4 bg-slate-50 rounded-lg text-center border border-slate-100">
                     <span className="text-[10px] text-slate-400 font-bold uppercase block">Ciclos Completos</span>
                     <span className="text-xl font-black text-[#800521] block mt-1">0 / 6</span>
-                    <span className="text-[9px] text-emerald-600 font-bold block mt-0.5">Ciclo I Activo</span>
+                    <span className="text-[9px] text-emerald-600 font-bold block mt-0.5">Ciclo I Matriculado</span>
                   </div>
                   <div className="p-4 bg-slate-50 rounded-lg text-center border border-slate-100">
                     <span className="text-[10px] text-slate-400 font-bold uppercase block">Créditos Inscritos</span>
-                    <span className="text-xl font-black text-slate-800 block mt-1">24 CTR</span>
-                    <span className="text-[9px] text-slate-400 block mt-0.5">Semestre 2026-I</span>
+                    <span className="text-xl font-black text-slate-800 block mt-1">16.0</span>
+                    <span className="text-[9px] text-slate-400 block mt-0.5">Periodo 2027-I</span>
                   </div>
                   <div className="p-4 bg-slate-50 rounded-lg text-center border border-slate-100">
                     <span className="text-[10px] text-slate-400 font-bold uppercase block">Plan Académico</span>

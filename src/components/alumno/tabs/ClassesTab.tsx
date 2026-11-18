@@ -566,9 +566,9 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               <CardContent className="p-5 space-y-4">
                 {(() => {
                   const numAverage = averageGrade !== "NR" ? parseFloat(averageGrade) : null;
-                  const courseStatus = numAverage === null ? "En Curso" : numAverage >= 12.5 ? "Aprobado" : "Desaprobado";
-                  const statusBg = courseStatus === "Aprobado" ? "bg-emerald-50 text-emerald-950 border-emerald-100" : courseStatus === "En Curso" ? "bg-blue-50 text-blue-950 border-blue-100" : "bg-red-50 text-red-950 border-red-100";
-                  const statusLabelColor = courseStatus === "Aprobado" ? "text-emerald-800" : courseStatus === "En Curso" ? "text-blue-800" : "text-red-800";
+                  const courseStatus = numAverage === null ? "Matriculado" : numAverage >= 12.5 ? "Aprobado" : "Desaprobado";
+                  const statusBg = courseStatus === "Aprobado" ? "bg-purple-50 text-purple-900 border-purple-200" : courseStatus === "Matriculado" ? "bg-emerald-50 text-emerald-900 border-emerald-200" : "bg-red-50 text-red-950 border-red-100";
+                  const statusLabelColor = courseStatus === "Aprobado" ? "text-purple-700" : courseStatus === "Matriculado" ? "text-emerald-700" : "text-red-800";
 
                   return (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

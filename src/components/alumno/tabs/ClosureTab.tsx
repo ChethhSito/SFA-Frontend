@@ -80,11 +80,11 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         { code: "CO-404", name: "Legislación Laboral General", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
       ],
       "V": [
-        { code: "CO-501", name: "Contabilidad Gubernamental", type: "Obligatorio", credits: 4, status: "Activo", teo: 2, pr: 4 },
-        { code: "CO-502", name: "Formulación de Estados Financieros", type: "Obligatorio", credits: 4, status: "Activo", teo: 2, pr: 4 },
-        { code: "CO-503", name: "Auditoría Financiera Integral", type: "Obligatorio", credits: 3, status: "Activo", teo: 1, pr: 4 },
-        { code: "CO-504", name: "Software Aplicado SISCONT / CONCAR", type: "Obligatorio", credits: 3, status: "Activo", teo: 1, pr: 4 },
-        { code: "CO-505", name: "Ética en los Negocios y Finanzas", type: "Obligatorio", credits: 2, status: "Activo", teo: 1, pr: 2 }
+        { code: "CO-501", name: "Contabilidad Gubernamental", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "CO-502", name: "Formulación de Estados Financieros", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "CO-503", name: "Auditoría Financiera Integral", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
+        { code: "CO-504", name: "Software Aplicado SISCONT / CONCAR", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
+        { code: "CO-505", name: "Ética en los Negocios y Finanzas", type: "Obligatorio", credits: 2, status: "Matriculado", teo: 1, pr: 2 }
       ],
       "VI": [
         { code: "CO-601", name: "Formulación de Proyectos de Inversión", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
@@ -121,11 +121,11 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         { code: "EE-404", name: "Relaciones en Entorno de Trabajo", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
       ],
       "V": [
-        { code: "EE-501", name: "Teoría de Circuitos II", type: "Obligatorio", credits: 4, status: "Activo", teo: 2, pr: 4 },
-        { code: "EE-502", name: "Lab. Maquinarias de Potencia", type: "Obligatorio", credits: 4, status: "Activo", teo: 2, pr: 4 },
-        { code: "EE-503", name: "Sistemas de Control Automático II", type: "Obligatorio", credits: 3, status: "Activo", teo: 1, pr: 4 },
-        { code: "EE-504", name: "Instalaciones Industriales Inteligentes", type: "Obligatorio", credits: 3, status: "Activo", teo: 1, pr: 4 },
-        { code: "EE-505", name: "Ética y Deontología Profesional", type: "Obligatorio", credits: 2, status: "Activo", teo: 1, pr: 2 }
+        { code: "EE-501", name: "Teoría de Circuitos II", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "EE-502", name: "Lab. Maquinarias de Potencia", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "EE-503", name: "Sistemas de Control Automático II", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
+        { code: "EE-504", name: "Instalaciones Industriales Inteligentes", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
+        { code: "EE-505", name: "Ética y Deontología Profesional", type: "Obligatorio", credits: 2, status: "Matriculado", teo: 1, pr: 2 }
       ],
       "VI": [
         { code: "EE-601", name: "Controladores PLC y SCADA Industrial", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
@@ -157,7 +157,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         name: c.name,
         type: "Obligatorio",
         credits: c.credits || 4,
-        status: isPromoted ? "Aprobado" : (targetCycleNum === 1 ? "Matriculado (En Curso)" : "Pendiente de Matrícula"),
+        status: isPromoted ? "Aprobado" : (targetCycleNum === 1 ? "Matriculado" : "Pendiente"),
         teo: 2,
         pr: 4
       }))
@@ -176,7 +176,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
     }
     return {
       ...c,
-      status: targetCycleNum === 1 ? "Matriculado (En Curso)" : "Pendiente de Matrícula",
+      status: targetCycleNum === 1 ? "Matriculado" : "Pendiente",
       simGrade: undefined
     };
   });
@@ -254,7 +254,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             {isPromoted ? "17.40" : "0.00"}
           </span>
           <span className="text-[10px] text-emerald-600 font-bold block mt-1 font-semibold">
-            {isPromoted ? "Tercio Superior Oficial" : "Semestre 2026-I en curso"}
+            {isPromoted ? "Tercio Superior Oficial" : "Semestre 2027-I"}
           </span>
         </div>
 
@@ -264,7 +264,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             {isPromoted ? "EGRESADO CONCLUIDO" : "MATRICULADO"}
           </span>
           <span className="text-[9px] text-emerald-600 font-bold block mt-1 font-semibold">
-            {isPromoted ? "Apto para Certificados Oficiales" : "Periodo 2026-I Activo"}
+            {isPromoted ? "Apto para Certificados Oficiales" : "Periodo 2027-I Vigente"}
           </span>
         </div>
       </div>
@@ -335,13 +335,33 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                         <td className="p-4 text-slate-500 font-bold text-[10.5px]">{crs.type}</td>
                         <td className="p-4 text-center text-slate-900 font-mono font-black">{crs.credits}.0</td>
                         <td className="p-4 text-center">
-                          <span className={`px-2.5 py-0.5 rounded text-[9.5px] uppercase font-bold inline-block border select-none ${
-                            isApproved 
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
-                              : "bg-amber-50 text-amber-700 border-amber-100"
-                          }`}>
-                            {crs.status}{crs.simGrade ? ` (Nota: ${crs.simGrade})` : ""}
-                          </span>
+                          {(() => {
+                            const statusUpper = (crs.status || "").toUpperCase();
+                            const isMatriculado = statusUpper.includes("MATRICULADO");
+                            const isApprovedCourse = statusUpper.includes("APROBADO") || isApproved;
+
+                            if (isMatriculado) {
+                              return (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 select-none shadow-3xs">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                  MATRICULADO
+                                </span>
+                              );
+                            }
+                            if (isApprovedCourse) {
+                              return (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 select-none shadow-3xs">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
+                                  APROBADO{crs.simGrade ? ` (${crs.simGrade})` : ""}
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[9.5px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200 select-none">
+                                {crs.status}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="p-4 text-center font-mono text-slate-405 font-bold">{crs.teo} hrs</td>
                         <td className="p-4 text-center font-mono text-slate-405 font-bold">{crs.pr} hrs</td>
@@ -362,7 +382,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                 <div>
                   <span className="text-xs font-bold text-slate-800 block">Créditos Curriculares</span>
                   <span className="text-[10.5px] text-slate-600 mt-0.5 block font-bold">
-                    {isPromoted ? "120 / 120 Créditos aprobados. Requisito al día." : `${cycleCreditsSum || 16}.0 / 120 Créditos. Ciclo I matriculado y en curso.`}
+                    {isPromoted ? "120 / 120 Créditos aprobados. Requisito al día." : `${cycleCreditsSum || 16}.0 / 120 Créditos. Ciclo I matriculado formalmente.`}
                   </span>
                 </div>
               </div>
@@ -420,7 +440,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
               }`}>
                 {isPromoted 
                   ? (weightedGpa >= 16 ? "Sobresaliente" : "Aceptable")
-                  : "Semestre en curso (Pendiente de Calificaciones)"
+                  : "Pendiente de Calificaciones Oficiales"
                 }
               </span>
             </div>

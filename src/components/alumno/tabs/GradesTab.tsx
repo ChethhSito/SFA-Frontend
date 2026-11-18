@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Zap, Cpu, Sliders, Award, Printer, Info, ChevronRight, FileText } from "lucide-react";
+import { Zap, Cpu, Sliders, Award, Printer, Info, ChevronRight, FileText, CheckCircle2 } from "lucide-react";
 import PageTransition from "../../ui/PageTransition";
 import { BoletaNotasModal } from "../modals/BoletaNotasModal";
 
@@ -102,7 +102,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
 
         <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-purple-600 flex items-center justify-between text-left">
           <div>
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Materias en Curso</span>
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Materias Matriculadas</span>
             <p className="text-2xl font-black text-purple-600 mt-1 font-mono">{enrichedCourses.length}</p>
           </div>
           <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
@@ -110,13 +110,13 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-amber-500 flex items-center justify-between text-left">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-emerald-600 flex items-center justify-between text-left">
           <div>
             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Condición Académica</span>
-            <p className="text-xl font-black text-amber-600 mt-1 font-mono">{hasGrades && Number(calculatedAverage) >= 12.5 ? "REGULAR" : "EN CURSO"}</p>
+            <p className="text-xl font-black text-emerald-600 mt-1 font-mono">{hasGrades && Number(calculatedAverage) >= 12.5 ? "REGULAR" : "MATRICULADO"}</p>
           </div>
-          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
-            <Info className="w-5 h-5" />
+          <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+            <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
       </div>
