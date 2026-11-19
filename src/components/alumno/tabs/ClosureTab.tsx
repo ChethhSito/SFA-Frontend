@@ -151,17 +151,20 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
     return isProgMatch && isCycleMatch;
   });
 
-  const rawCoursesList = realDbCourses.length > 0 
-    ? realDbCourses.map((c) => ({
-        code: c.code,
-        name: c.name,
-        type: "Obligatorio",
-        credits: c.credits || 4,
-        status: isPromoted ? "Aprobado" : (targetCycleNum === 1 ? "Matriculado" : "Pendiente"),
-        teo: 2,
-        pr: 4
-      }))
-    : (CORE_PLAN_COURSES[activePlanKey]?.[activeSemesterKey] || CORE_PLAN_COURSES["20"]["I"]);
+  // Merge official plan courses with real database courses so full curriculum structure is always displayed
+  const planCourses = CORE_PLAN_COURSES[activePlanKey]?.[activeSemesterKey] || CORE_PLAN_COURSES["20"]["I"] || [];
+  const rawCoursesList = planCourses.map((planC) => {
+    const dbCourse = realDbCourses.find((c) => c.code === planC.code);
+    return {
+      code: planC.code,
+      name: dbCourse?.name || planC.name,
+      type: planC.type,
+      credits: dbCourse?.credits || planC.credits,
+      status: isPromoted ? "Aprobado" : (targetCycleNum === 1 ? "Matriculado" : "Pendiente"),
+      teo: planC.teo || 2,
+      pr: planC.pr || 4
+    };
+  });
   
   // Real academic progress status: If promoted to VI, all cycles show Aprobado
   const activeCoursesList = rawCoursesList.map((c, index) => {

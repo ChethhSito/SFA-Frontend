@@ -63,7 +63,13 @@ export default function AlumnoDashboard({
   onGoToPortal
 }: AlumnoDashboardProps) {
   const { programs: ACADEMIC_PROGRAMS, courses: catalogCourses } = useAcademicCatalog();
-  const [activeTab, setActiveTab] = useState<"welcome" | "profile" | "classes" | "schedule" | "attendance" | "closure" | "notas" | "secretaria" | "guias" | "calendar" | "enrollment">("welcome");
+  const [activeTab, setActiveTab] = useState<"welcome" | "profile" | "classes" | "schedule" | "attendance" | "closure" | "notas" | "secretaria" | "guias" | "calendar" | "enrollment">(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("sfa_alumno_active_tab");
+      if (saved) return saved as any;
+    }
+    return "welcome";
+  });
   
   // Profile edit form fields
   const [profileForm, setProfileForm] = useState<StudentPersonalData>({ ...personalData });
@@ -95,14 +101,44 @@ export default function AlumnoDashboard({
   const [selectedPlan, setSelectedPlan] = useState<string>("52");
   const [selectedQueryPeriod, setSelectedQueryPeriod] = useState<string>("2027-I");
   const [selectedAttendanceSemester, setSelectedAttendanceSemester] = useState<string>("2027-I");
-  const [selectedCourseDetail, setSelectedCourseDetail] = useState<string>("");
+  const [selectedCourseDetail, setSelectedCourseDetail] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("sfa_alumno_course_detail") || "";
+    }
+    return "";
+  });
 
   // Aula Virtual substates
-  const [activeCourseSection, setActiveCourseSection] = useState<"general" | "horarios" | "week" | "cierre">("general");
-  const [selectedClassWeek, setSelectedClassWeek] = useState<number>(1);
-  const [selectedClassWeekOption, setSelectedClassWeekOption] = useState<"asistencia" | "materiales" | "tareas" | "evaluaciones" | "observaciones" | "evidencias">("materiales");
+  const [activeCourseSection, setActiveCourseSection] = useState<"general" | "horarios" | "week" | "cierre">(() => {
+    if (typeof window !== "undefined") {
+      return (sessionStorage.getItem("sfa_alumno_course_section") as any) || "general";
+    }
+    return "general";
+  });
+  const [selectedClassWeek, setSelectedClassWeek] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return Number(sessionStorage.getItem("sfa_alumno_class_week")) || 1;
+    }
+    return 1;
+  });
+  const [selectedClassWeekOption, setSelectedClassWeekOption] = useState<"asistencia" | "materiales" | "tareas" | "evaluaciones" | "observaciones" | "evidencias">(() => {
+    if (typeof window !== "undefined") {
+      return (sessionStorage.getItem("sfa_alumno_week_option") as any) || "materiales";
+    }
+    return "materiales";
+  });
   const [simulationHWFiles, setSimulationHWFiles] = useState<Record<string, string>>({});
   const [expandedStudentWeeks, setExpandedStudentWeeks] = useState<Record<number, boolean>>({ 1: true });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("sfa_alumno_active_tab", activeTab);
+      if (selectedCourseDetail) sessionStorage.setItem("sfa_alumno_course_detail", selectedCourseDetail);
+      sessionStorage.setItem("sfa_alumno_course_section", activeCourseSection);
+      sessionStorage.setItem("sfa_alumno_class_week", String(selectedClassWeek));
+      sessionStorage.setItem("sfa_alumno_week_option", selectedClassWeekOption);
+    } catch {}
+  }, [activeTab, selectedCourseDetail, activeCourseSection, selectedClassWeek, selectedClassWeekOption]);
 
   // Academic advisory mailbox simulation
   const [advisorConsultText, setAdvisorConsultText] = useState("");

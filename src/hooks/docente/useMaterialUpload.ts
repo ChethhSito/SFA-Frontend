@@ -25,6 +25,18 @@ export function useMaterialUpload() {
 
   const [evaluations] = useState<any[]>([]);
 
+  const refreshAssignments = async () => {
+    try {
+      const apiAsgs = await fetchCourseAssignments();
+      if (Array.isArray(apiAsgs)) {
+        setAssignments(apiAsgs);
+        localStorage.setItem("sfa_assignments", JSON.stringify(apiAsgs));
+      }
+    } catch (err) {
+      console.warn("Error refreshing assignments:", err);
+    }
+  };
+
   useEffect(() => {
     fetchCourseMaterials()
       .then((apiMats) => {
@@ -45,6 +57,40 @@ export function useMaterialUpload() {
       })
       .catch((err) => { console.warn("Error fetching assignments API:", err); setAssignmentsError("No se pudieron cargar las evaluaciones y calificaciones. Recargue para reintentar."); })
       .finally(() => setAssignmentsLoading(false));
+
+    // Real-time synchronization across tabs and on window focus (no manual F5 needed)
+    let channel: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        channel = new BroadcastChannel("sfa_realtime_sync");
+        channel.onmessage = (e) => {
+          if (e.data?.type === "ASSIGNMENTS_UPDATED" || e.data?.type === "GRADE_UPDATED") {
+            refreshAssignments();
+          }
+        };
+      }
+    } catch {}
+
+    const handleFocus = () => {
+      refreshAssignments();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", handleFocus);
+      if (typeof document !== "undefined") {
+        document.addEventListener("visibilitychange", handleFocus);
+      }
+    }
+
+    return () => {
+      if (channel) channel.close();
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", handleFocus);
+        if (typeof document !== "undefined") {
+          document.removeEventListener("visibilitychange", handleFocus);
+        }
+      }
+    };
   }, []);
 
   const handleUpdateMaterials = async (updatedList: any[]): Promise<boolean> => {
@@ -100,6 +146,13 @@ export function useMaterialUpload() {
         confirmed = confirmed.filter((current) => current.id !== previous.id);
         keep(confirmed);
       }
+      try {
+        if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+          const ch = new BroadcastChannel("sfa_realtime_sync");
+          ch.postMessage({ type: "ASSIGNMENTS_UPDATED" });
+          ch.close();
+        }
+      } catch {}
       return true;
     } catch (err) {
       console.error("No se pudieron guardar todas las evaluaciones", err);

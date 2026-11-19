@@ -121,8 +121,18 @@ export default function DocenteDashboard({
   onGoToPortal
 }: DocenteDashboardProps) {
   // Main Selection States
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("dashboard"); // "dashboard" | "cursos" | "control_asistencia" | "avisos_reportes" | "evaluaciones_cursos" | "configuracion" | "curso"
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("sfa_docente_course_id") || null;
+    }
+    return null;
+  });
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("sfa_docente_active_tab") || "dashboard";
+    }
+    return "dashboard";
+  });
   const [dashboardCoursePage, setDashboardCoursePage] = useState(1);
   const [directoryCoursePage, setDirectoryCoursePage] = useState(1);
   const [scheduleData, setScheduleData] = useState<TeacherScheduleData | null>(null);
@@ -152,9 +162,38 @@ export default function DocenteDashboard({
   useEffect(() => { void reloadTeacherSchedule(); }, [reloadTeacherSchedule]);
 
   // Weekly Syllabus States (active when selectedCourseId !== null)
-  const [activeSection, setActiveSection] = useState<CourseSection>("general");
-  const [selectedWeek, setSelectedWeek] = useState<number>(1);
-  const [selectedWeekOption, setSelectedWeekOption] = useState<WeekOption>("materiales");
+  const [activeSection, setActiveSection] = useState<CourseSection>(() => {
+    if (typeof window !== "undefined") {
+      return (sessionStorage.getItem("sfa_docente_active_section") as any) || "general";
+    }
+    return "general";
+  });
+  const [selectedWeek, setSelectedWeek] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      return Number(sessionStorage.getItem("sfa_docente_selected_week")) || 1;
+    }
+    return 1;
+  });
+  const [selectedWeekOption, setSelectedWeekOption] = useState<WeekOption>(() => {
+    if (typeof window !== "undefined") {
+      return (sessionStorage.getItem("sfa_docente_week_option") as any) || "materiales";
+    }
+    return "materiales";
+  });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("sfa_docente_active_tab", activeTab);
+      if (selectedCourseId) {
+        sessionStorage.setItem("sfa_docente_course_id", selectedCourseId);
+      } else {
+        sessionStorage.removeItem("sfa_docente_course_id");
+      }
+      sessionStorage.setItem("sfa_docente_active_section", activeSection);
+      sessionStorage.setItem("sfa_docente_selected_week", String(selectedWeek));
+      sessionStorage.setItem("sfa_docente_week_option", selectedWeekOption);
+    } catch {}
+  }, [activeTab, selectedCourseId, activeSection, selectedWeek, selectedWeekOption]);
 
   // Mobile navigation views toggling
   const [showMobileSidebarCurso, setShowMobileSidebarCurso] = useState(false);
