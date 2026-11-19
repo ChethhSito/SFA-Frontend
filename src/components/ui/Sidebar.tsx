@@ -237,7 +237,10 @@ export default function Sidebar({
       )}
 
       {/* Scrollable Navigation Sections */}
-      <div className={`flex-1 overflow-y-auto space-y-4 text-left ${collapsed ? "px-2 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : "px-3 py-2 custom-scrollbar"}`}>
+      <div 
+        style={collapsed ? { scrollbarWidth: "none", msOverflowStyle: "none" } : undefined}
+        className={`flex-1 overflow-y-auto space-y-4 text-left ${collapsed ? "px-2 py-2 no-scrollbar" : "px-3 py-2 custom-scrollbar"}`}
+      >
         {resolvedSections.map((section, idx) => (
           <div key={idx} className="space-y-1">
             {!collapsed && section.title && (
@@ -441,17 +444,17 @@ export default function Sidebar({
 
       {/* 3. Sticky and Collapsible Sidebar on Desktop Screens */}
       <aside className={`hidden md:flex flex-col h-full bg-white border-r border-slate-200 shadow-xs shrink-0 select-none relative z-30 transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-64"} ${className}`}>
-        {/* Toggle arrow button on the right edge (Center Vertical - Institutional Floating) */}
+        {/* Toggle arrow button on the right edge (Upper-Center Vertical - Institutional Floating) */}
         <button
           type="button"
           onClick={handleToggleCollapse}
           title={isCollapsed ? "Expandir menú lateral" : "Colapsar menú lateral"}
-          className="absolute -right-[17px] top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border-2 border-slate-300 hover:border-[#800521] w-[34px] h-[34px] rounded-full flex items-center justify-center shadow-md hover:shadow-xl transition-all cursor-pointer hover:scale-110 active:scale-95 group"
+          className="absolute -right-[14px] top-[42%] -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border border-slate-300 hover:border-[#800521] w-[28px] h-[28px] rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all cursor-pointer hover:scale-110 active:scale-95 group"
         >
           {isCollapsed ? (
-            <ChevronRight className="w-4.5 h-4.5 transition-transform group-hover:translate-x-0.5" />
+            <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
           ) : (
-            <ChevronLeft className="w-4.5 h-4.5 transition-transform group-hover:-translate-x-0.5" />
+            <ChevronLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
           )}
         </button>
 

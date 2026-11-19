@@ -21,34 +21,45 @@ body {
 
 /* Custom styles for high-fidelity widgets */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 3.5px;
+  height: 3.5px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(128, 5, 33, 0.25);
+  background-color: rgba(128, 5, 33, 0.18);
   border-radius: 9999px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(128, 5, 33, 0.5);
+  background-color: rgba(128, 5, 33, 0.45);
 }
 
 /* Global Institutional Scrollbar - Ultra-thin, sleek and elegant */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(128, 5, 33, 0.25);
+  background: rgba(128, 5, 33, 0.2);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(128, 5, 33, 0.55);
+  background: rgba(128, 5, 33, 0.5);
+}
+
+/* Utility to completely hide scrollbar on collapsed sidebars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 /* Firefox scrollbar compatibility */

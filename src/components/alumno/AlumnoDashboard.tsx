@@ -847,52 +847,55 @@ export default function AlumnoDashboard({
 
       {/* 2. SIDEBAR SECUNDARIO CURRICULAR DINÁMICO (SEMANAS) */}
       {showCourseSidebar && (
-        <div className={`hidden md:block shrink-0 relative z-20 transition-all duration-300 ease-in-out ${isCourseSidebarCollapsed ? "w-12 bg-[#FFFBFB] border-r border-rose-200/90" : "w-64"}`}>
-          <div className={`w-64 h-full transition-opacity duration-200 overflow-hidden ${isCourseSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
-            <SidebarCursoAlumno
-              courseCode={activeSelectedComponent ? activeSelectedComponent.code : (activeCourseObj?.code || selectedCourseDetail)}
-              courseName={activeSelectedComponent ? activeSelectedComponent.name : (activeCourseObj?.name || selectedCourseDetail)}
-              componentBadge={activeSelectedComponent ? {
-                label: activeSelectedComponent.badge,
-                className: activeSelectedComponent.id === "teo"
-                  ? "text-[#800521] bg-[#800521]/10 border-[#800521]/20"
-                  : activeSelectedComponent.id === "tal"
-                  ? "text-amber-800 bg-amber-50 border-amber-200"
-                  : "text-emerald-700 bg-emerald-50 border-emerald-200"
-              } : null}
-              hasMultipleComponents={activeCourseSubComponents.length > 1}
-              onChangeComponent={() => {
-                setActiveCourseComponentId(null);
-                setActiveCourseSection("general");
-              }}
-              activeSection={activeCourseSection}
-              selectedWeek={selectedClassWeek}
-              selectedWeekOption={selectedClassWeekOption}
-              onSelectGeneral={() => setActiveCourseSection("general")}
-              onSelectHorarios={() => setActiveCourseSection("horarios")}
-              onSelectCierre={() => setActiveCourseSection("cierre")}
-              onSelectWeekOption={(weekNum, option) => {
-                setActiveCourseSection("week");
-                setSelectedClassWeek(weekNum);
-                setSelectedClassWeekOption(option);
-              }}
-              onBackToCourses={() => {
-                setSelectedCourseDetail("");
-                setActiveCourseSection("general");
-              }}
-            />
+        <div className="hidden md:flex shrink-0 relative z-20 h-full">
+          {/* Animated sliding panel */}
+          <div
+            className={`transition-all duration-300 ease-in-out h-full overflow-hidden ${
+              isCourseSidebarCollapsed ? "w-0 min-w-0" : "w-64 min-w-[16rem]"
+            }`}
+          >
+            <div className="w-64 h-full">
+              <SidebarCursoAlumno
+                courseCode={activeSelectedComponent ? activeSelectedComponent.code : (activeCourseObj?.code || selectedCourseDetail)}
+                courseName={activeSelectedComponent ? activeSelectedComponent.name : (activeCourseObj?.name || selectedCourseDetail)}
+                componentBadge={activeSelectedComponent ? {
+                  label: activeSelectedComponent.badge,
+                  className: activeSelectedComponent.id === "teo"
+                    ? "text-[#800521] bg-[#800521]/10 border-[#800521]/20"
+                    : activeSelectedComponent.id === "tal"
+                    ? "text-amber-800 bg-amber-50 border-amber-200"
+                    : "text-emerald-700 bg-emerald-50 border-emerald-200"
+                } : null}
+                hasMultipleComponents={activeCourseSubComponents.length > 1}
+                onChangeComponent={() => {
+                  setActiveCourseComponentId(null);
+                  setActiveCourseSection("general");
+                }}
+                activeSection={activeCourseSection}
+                selectedWeek={selectedClassWeek}
+                selectedWeekOption={selectedClassWeekOption}
+                onSelectGeneral={() => setActiveCourseSection("general")}
+                onSelectHorarios={() => setActiveCourseSection("horarios")}
+                onSelectCierre={() => setActiveCourseSection("cierre")}
+                onSelectWeekOption={(weekNum, option) => {
+                  setActiveCourseSection("week");
+                  setSelectedClassWeek(weekNum);
+                  setSelectedClassWeekOption(option);
+                }}
+                onBackToCourses={() => {
+                  setSelectedCourseDetail("");
+                  setActiveCourseSection("general");
+                }}
+              />
+            </div>
           </div>
 
-          {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (Blanco limpio con anillo rosáceo institucional) */}
+          {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (Lower-Center Vertical - Institutional Floating) */}
           <button
             type="button"
             onClick={() => setIsCourseSidebarCollapsed(!isCourseSidebarCollapsed)}
-            title={isCourseSidebarCollapsed ? "Expandir semanas del curso" : "Ocultar semanas del curso"}
-            className={`absolute top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border border-rose-300 hover:border-[#800521] w-[26px] h-[26px] rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
-              isCourseSidebarCollapsed 
-                ? "right-2" 
-                : "-right-[13px]"
-            }`}
+            title={isCourseSidebarCollapsed ? "Expandir semanas del curso" : "Colapsar semanas del curso"}
+            className="absolute -right-[14px] top-[58%] -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border border-rose-300 hover:border-[#800521] w-[28px] h-[28px] rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all cursor-pointer hover:scale-110 active:scale-95 group"
           >
             {isCourseSidebarCollapsed ? (
               <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
