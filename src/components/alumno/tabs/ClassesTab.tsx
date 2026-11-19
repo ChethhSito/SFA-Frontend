@@ -476,7 +476,9 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     setExpandedStudentWeeks(prev => ({ ...prev, [wNum]: !prev[wNum] }));
   };
 
-  const courseResourceIds = activeCourse.attendanceCourseIds || [activeCourse.id];
+  const courseResourceIds = selectedComponent?.dbCourseId
+    ? [selectedComponent.dbCourseId]
+    : (activeCourse.attendanceCourseIds || [activeCourse.id]);
   const courseGrades = assignments.filter((assignment) => courseResourceIds.includes(assignment.courseId))
     .flatMap((assignment) => assignment.submissions || [])
     .filter((submission) => submission.studentDni === studentDni && submission.grade !== undefined)
