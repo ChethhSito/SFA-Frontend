@@ -348,10 +348,12 @@ export default function DocenteDashboard({
     if (attachment && (!attachment.size || attachment.size > 10 * 1024 * 1024)) {
       notify("El adjunto debe tener como máximo 10 MB.", false); return false;
     }
+    const cleanTitle = title.replace(/^\[Semana\s*\d+\]\s*/i, "").trim();
+    const formattedTitle = `[Semana ${selectedWeek}] ${cleanTitle}`;
     const newAsg: CourseAssignment = {
       id: `asg-${Date.now()}`,
       courseId: selectedCourseId,
-      title: `[Semana ${selectedWeek}] ${title}`,
+      title: formattedTitle,
       description: desc,
       dueDate: dueDate,
       submissions: []
@@ -359,6 +361,7 @@ export default function DocenteDashboard({
     if (attachment) {
       try {
         newAsg.attachment = attachment.name;
+        newAsg.attachmentName = attachment.name;
         newAsg.contentBase64 = await fileToBase64(attachment);
         newAsg.mimeType = attachment.type || "application/octet-stream";
       } catch { notify("No se pudo leer el archivo adjunto.", false); return false; }
@@ -367,6 +370,53 @@ export default function DocenteDashboard({
 
     const saved = await onUpdateAssignments([...assignments, newAsg]);
     notify(saved ? "Tarea guardada en el servidor." : "No se pudo guardar la tarea.", saved);
+    return saved;
+  };
+
+  // Actions: Edit assignment
+  const handleEditAssignment = async (id: string, updated: Partial<CourseAssignment>, newAttachment?: File) => {
+    if (!selectedCourseId) return false;
+    let attachmentData: Partial<CourseAssignment> = {};
+    if (newAttachment) {
+      if (newAttachment.size > 10 * 1024 * 1024) {
+        notify("El archivo adjunto debe tener como máximo 10 MB.", false);
+        return false;
+      }
+      try {
+        const base64 = await fileToBase64(newAttachment);
+        attachmentData = {
+          attachment: newAttachment.name,
+          attachmentName: newAttachment.name,
+          contentBase64: base64,
+          mimeType: newAttachment.type || "application/octet-stream"
+        };
+      } catch {
+        notify("No se pudo leer el archivo adjunto.", false);
+        return false;
+      }
+    }
+
+    const updatedList = assignments.map((asg) => {
+      if (asg.id === id) {
+        let title = updated.title !== undefined ? updated.title : asg.title;
+        if (updated.title !== undefined) {
+          const clean = updated.title.replace(/^\[Semana\s*\d+\]\s*/i, "").trim();
+          title = `[Semana ${selectedWeek}] ${clean}`;
+        }
+        return {
+          ...asg,
+          ...updated,
+          ...attachmentData,
+          title,
+          attachment: attachmentData.attachment || updated.attachment || asg.attachment || asg.attachmentName,
+          attachmentName: attachmentData.attachmentName || updated.attachmentName || asg.attachmentName || asg.attachment,
+        };
+      }
+      return asg;
+    });
+
+    const saved = await onUpdateAssignments(updatedList);
+    notify(saved ? "Tarea actualizada correctamente." : "No se pudo actualizar la tarea.", saved);
     return saved;
   };
 
@@ -1331,6 +1381,7 @@ export default function DocenteDashboard({
                         week={selectedWeek}
                         assignments={getFilteredAssignments()}
                         onPublishAssignment={handlePublishAssignment}
+                        onEditAssignment={handleEditAssignment}
                         onDeleteAssignment={handleDeleteAssignment}
                       />
                     )}

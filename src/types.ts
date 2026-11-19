@@ -174,11 +174,12 @@ export interface CourseMaterial {
 
 export interface CourseAssignment {
   kind?: "assignment" | "assessment";
-    attachment?: string;
-    rubric?: string;
-    contentBase64?: string;
-    mimeType?: string;
-    storedFileName?: string;
+  attachment?: string;
+  attachmentName?: string;
+  rubric?: string;
+  contentBase64?: string;
+  mimeType?: string;
+  storedFileName?: string;
   id: string;
   courseId: string;
   title: string;
