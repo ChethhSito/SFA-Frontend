@@ -570,28 +570,30 @@ export default function AlumnoDashboard({
 
     const courseAssignments = assignments.filter((a) => matchIds.has(a.courseId));
 
-    // Construct evaluations mapped to the official course formula variables
-    const formulaEvaluations = courseFormula.variables.map((variable, idx) => {
-      // 1. Look for explicit [Planilla] assignment
+    // 1. Curricular components from the official course formula (PC1, PC2, EX_FINAL)
+    // Matches ONLY official assessments or planilla entries for this component, NOT generic weekly tasks
+    const formulaEvaluations = courseFormula.variables.map((variable) => {
+      // Check explicit [Planilla] assignment
       const planillaAssignment = courseAssignments.find((a) => a.title === `[Planilla] ${variable.id}`);
       const planillaSub = planillaAssignment?.submissions.find((s) => s.studentDni === studentDni);
 
-      // 2. Look for matching regular assignment (e.g. title includes variable.id or week 1 maps to first variable)
-      const matchingAssignment = courseAssignments.find((a) =>
+      // Check official assessment explicitly matching variable id (e.g. "[Semana 4] PC1: Práctica Calificada" or kind === "assessment")
+      const assessmentAssignment = courseAssignments.find((a) =>
         !a.title.startsWith("[Planilla] ") && (
-          a.title.toUpperCase().includes(variable.id) ||
-          (idx === 0 && a.title.toLowerCase().includes("semana 1"))
+          a.curricularComponent === variable.id ||
+          (a.kind === "assessment" && a.title.toUpperCase().includes(variable.id)) ||
+          a.title.toUpperCase().includes(`[${variable.id}]`)
         )
       );
-      const regularSub = matchingAssignment?.submissions.find((s) => s.studentDni === studentDni);
+      const assessmentSub = assessmentAssignment?.submissions.find((s) => s.studentDni === studentDni);
 
       let grade: number | "NR" = "NR";
       let subDesc = variable.label;
       if (planillaSub?.grade !== undefined) {
         grade = planillaSub.grade;
-      } else if (regularSub?.grade !== undefined) {
-        grade = regularSub.grade;
-        subDesc = `${matchingAssignment?.title}`;
+      } else if (assessmentSub?.grade !== undefined) {
+        grade = assessmentSub.grade;
+        subDesc = `${assessmentAssignment?.title}`;
       }
 
       return {
@@ -601,27 +603,44 @@ export default function AlumnoDashboard({
         prefix: variable.id,
         weight: `${(variable.weight * 100).toFixed(0)}%`,
         weightDecimal: variable.weight,
-        grade
+        grade,
+        isCurricular: true
       };
     });
 
-    // Also include any other published task/assignment if not mapped directly
-    const extraAssignments = courseAssignments
-      .filter((a) => !a.title.startsWith("[Planilla] ") && !formulaEvaluations.some(e => e.sub === a.title))
+    // 2. Weekly formative homework / tasks (NPA - Nota de Participación y Actividades Continuas)
+    // Weekly reports, workshop tasks across weeks that accumulate and average into the NPA
+    const weeklyTasks = courseAssignments
+      .filter((a) => 
+        !a.title.startsWith("[Planilla] ") && 
+        a.kind !== "assessment" && 
+        !formulaEvaluations.some(e => e.sub === a.title)
+      )
       .map((assignment, index) => {
         const submission = assignment.submissions.find((item) => item.studentDni === studentDni);
+        const grade = submission?.grade;
         return {
-          id: assignment.id || `extra-${index}`,
+          id: assignment.id || `task-${index}`,
           name: assignment.title,
-          sub: assignment.description || "Evidencia práctica de aula virtual",
-          prefix: `TA${index + 1}`,
-          weight: "Formativo",
-          weightDecimal: 0,
-          grade: submission?.grade === undefined ? "NR" : submission.grade
+          sub: assignment.description || "Evidencia y reporte técnico de sesión semanal",
+          prefix: `SEM ${index + 1}`,
+          category: "Actividad Semanal / NPA",
+          dueDate: assignment.dueDate,
+          feedback: submission?.feedback || "",
+          grade: grade === undefined ? "NR" : grade,
+          hasSubmitted: !!submission,
+          isGraded: typeof grade === "number",
+          isCurricular: false
         };
       });
 
-    const evaluationsList = [...formulaEvaluations, ...extraAssignments];
+    // NPA average: arithmetic mean of graded weekly tasks
+    const gradedTasks = weeklyTasks.filter((t) => typeof t.grade === "number");
+    const npaAverage = gradedTasks.length > 0
+      ? Math.round((gradedTasks.reduce((acc, t) => acc + (t.grade as number), 0) / gradedTasks.length) * 10) / 10
+      : null;
+
+    const evaluationsList = [...formulaEvaluations, ...weeklyTasks];
 
     const idSet = new Set<string>();
     [c.id, c.code, c.id?.replace(/^cur-/, '')].filter(Boolean).forEach((id: string) => idSet.add(id));
@@ -650,6 +669,9 @@ export default function AlumnoDashboard({
       iconType,
       description,
       formula,
+      formulaObj: courseFormula,
+      weeklyTasks,
+      npaAverage,
       attendanceCourseIds: finalAttendanceCourseIds,
       evaluations: evaluationsList
     };

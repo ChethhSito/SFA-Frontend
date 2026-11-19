@@ -174,6 +174,8 @@ export interface CourseMaterial {
 
 export interface CourseAssignment {
   kind?: "assignment" | "assessment";
+  modality?: "presencial" | "virtual";
+  curricularComponent?: string;
   attachment?: string;
   attachmentName?: string;
   rubric?: string;

@@ -1,8 +1,9 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { Award, Plus, Save, CheckCircle2, AlertCircle, FileSpreadsheet, ChevronDown } from "lucide-react";
+import { Award, Plus, Save, CheckCircle2, AlertCircle, FileSpreadsheet, ChevronDown, Check } from "lucide-react";
 import { CourseAssignment, StudentPersonalData } from "../../types";
 import Toast, { ToastNotice } from "../ui/Toast";
 import { ROSTER } from "./DocenteTypes";
+import { getCourseFormula } from "../../constants/courseFormulas";
 
 interface Props {
   students: StudentPersonalData[];
@@ -19,6 +20,8 @@ export default function EvaluacionesManager({
   assignments, 
   onUpdateAssignments 
 }: Props) {
+  const formula = useMemo(() => getCourseFormula(courseId), [courseId]);
+
   const evaluations = useMemo(() => assignments.filter((item) => 
     item.courseId === courseId && item.kind === "assessment" && item.title.startsWith(`[Semana ${week}]`)
   ), [assignments, courseId, week]);
@@ -26,6 +29,8 @@ export default function EvaluacionesManager({
   const [selectedId, setSelectedId] = useState("");
   const selected = evaluations.find((item) => item.id === selectedId) || evaluations[0];
   const [title, setTitle] = useState("");
+  const [selectedComponent, setSelectedComponent] = useState("");
+  const [selectedModality, setSelectedModality] = useState<"presencial" | "virtual">("presencial");
   const [drafts, setDrafts] = useState<Record<string, { grade: string; feedback: string }>>({});
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<ToastNotice | null>(null);
@@ -50,7 +55,8 @@ export default function EvaluacionesManager({
   const createEvaluation = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!title.trim() || saving) return;
-    const evaluationTitle = `[Semana ${week}] ${title.trim()}`;
+    const tag = selectedComponent ? `[${selectedComponent}] ` : "";
+    const evaluationTitle = `[Semana ${week}] ${tag}${title.trim()}`;
     if (evaluations.some((item) => item.title.toLowerCase() === evaluationTitle.toLowerCase())) {
       notify("Ya existe una evaluación con ese nombre en esta semana.", "warning");
       return;
@@ -62,15 +68,20 @@ export default function EvaluacionesManager({
         courseId,
         title: evaluationTitle,
         kind: "assessment",
-        description: "Evaluación modular registrada por el docente titular",
+        modality: selectedModality,
+        curricularComponent: selectedComponent || undefined,
+        description: selectedComponent 
+          ? `Hito Curricular Oficial (${selectedComponent}) • Modalidad ${selectedModality === "presencial" ? "Presencial de Taller" : "Virtual"}`
+          : `Evaluación formativa de sesión semanal (${selectedModality === "presencial" ? "Presencial" : "Virtual"})`,
         dueDate: new Date().toISOString().slice(0, 10),
         submissions: [],
       }]);
       if (saved) {
         setTitle("");
+        setSelectedComponent("");
         setSelectedId("");
       }
-      notify(saved ? "Evaluación habilitada en el servidor." : "No se pudo guardar la evaluación. Intente nuevamente.", saved ? "success" : "error");
+      notify(saved ? `Evaluación ${selectedModality} programada correctamente para la Semana ${week}.` : "No se pudo guardar la evaluación. Intente nuevamente.", saved ? "success" : "error");
     } finally {
       setSaving(false);
     }
@@ -109,9 +120,45 @@ export default function EvaluacionesManager({
         });
       }
     }
+
+    // Check if this evaluation is linked to an official formula component (PC1, PC2, etc.)
+    const linkedVar = selected.curricularComponent || 
+      formula.variables.find(v => selected.title.toUpperCase().includes(v.id))?.id;
+
+    let updatedAssignments = assignments.map((item) => item.id === selected.id ? { ...item, submissions } : item);
+
+    if (linkedVar) {
+      const planillaTitle = `[Planilla] ${linkedVar}`;
+      const existingPlanilla = updatedAssignments.find(a => a.courseId === courseId && a.title === planillaTitle);
+      const planillaSubmissions = existingPlanilla ? [...existingPlanilla.submissions] : [];
+
+      submissions.forEach(sub => {
+        const pIdx = planillaSubmissions.findIndex(ps => ps.studentDni === sub.studentDni);
+        if (pIdx >= 0) {
+          planillaSubmissions[pIdx] = { ...planillaSubmissions[pIdx], grade: sub.grade };
+        } else {
+          planillaSubmissions.push({ ...sub });
+        }
+      });
+
+      if (existingPlanilla) {
+        updatedAssignments = updatedAssignments.map(a => a.id === existingPlanilla.id ? { ...a, submissions: planillaSubmissions } : a);
+      } else {
+        updatedAssignments.push({
+          id: `assessment-planilla-${Date.now()}`,
+          courseId,
+          title: planillaTitle,
+          kind: "assessment",
+          description: "Componente curricular oficial de planilla",
+          dueDate: new Date().toISOString().slice(0, 10),
+          submissions: planillaSubmissions
+        });
+      }
+    }
+
     setSaving(true);
     try {
-      const saved = await onUpdateAssignments(assignments.map((item) => item.id === selected.id ? { ...item, submissions } : item));
+      const saved = await onUpdateAssignments(updatedAssignments);
       if (saved) {
         setDrafts((previous) => {
           const next = { ...previous };
@@ -119,7 +166,7 @@ export default function EvaluacionesManager({
           return next;
         });
       }
-      notify(saved ? "Calificaciones guardadas y auditadas en el servidor." : "No se pudieron guardar todas las notas.", saved ? "success" : "error");
+      notify(saved ? "Calificaciones guardadas y sincronizadas con la planilla curricular." : "No se pudieron guardar todas las notas.", saved ? "success" : "error");
     } finally {
       setSaving(false);
     }
@@ -152,55 +199,124 @@ export default function EvaluacionesManager({
 
       <fieldset disabled={saving} className="space-y-6 min-w-0">
         {/* Formulario Crear Evaluación & Selector */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           {/* Card Crear Evaluación */}
-          <form onSubmit={createEvaluation} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-3xs space-y-3">
-            <label htmlFor="new-evaluation-title" className="block text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              Nueva Evaluación para Semana {week}
-            </label>
-            <div className="flex gap-2">
+          <form onSubmit={createEvaluation} className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-5 shadow-3xs space-y-3.5">
+            <div className="flex items-center justify-between">
+              <label htmlFor="new-evaluation-title" className="block text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                Nueva Evaluación para Semana {week}
+              </label>
+              <span className="text-[9px] font-mono font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                Semana {week} de 16
+              </span>
+            </div>
+
+            <div className="space-y-2">
               <input
                 id="new-evaluation-title"
                 required
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
-                placeholder="Ej: Evaluación Práctica de Circuitos BT"
-                className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-[#800521] focus:bg-white transition-all placeholder:text-slate-400"
+                placeholder="Ej: Práctica Calificada 1 / Evaluación de Taller"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-[#800521] focus:bg-white transition-all placeholder:text-slate-400"
               />
-              <button
-                type="submit"
-                disabled={saving || !title.trim()}
-                className="bg-[#800521] hover:bg-[#66041a] text-white font-extrabold text-xs uppercase px-4 py-2.5 rounded-xl shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer shrink-0 flex items-center gap-1.5"
-              >
-                <Plus className="w-4 h-4 text-amber-300" />
-                Crear
-              </button>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                {/* Selector de Hito Curricular de Fórmula */}
+                <div>
+                  <label className="block text-[9px] font-black uppercase text-slate-400 mb-1">
+                    Vincular a Hito Curricular:
+                  </label>
+                  <select
+                    value={selectedComponent}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedComponent(val);
+                      if (val && !title) {
+                        const v = formula.variables.find(item => item.id === val);
+                        if (v) setTitle(v.label);
+                      }
+                    }}
+                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-[#800521] cursor-pointer"
+                  >
+                    <option value="">(Sin hito / Evaluación Formativa)</option>
+                    {formula.variables.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.id}: {v.label} ({(v.weight * 100).toFixed(0)}%)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Selector de Modalidad Presencial / Virtual */}
+                <div>
+                  <label className="block text-[9px] font-black uppercase text-slate-400 mb-1">
+                    Modalidad de Evaluación:
+                  </label>
+                  <select
+                    value={selectedModality}
+                    onChange={(e) => setSelectedModality(e.target.value as "presencial" | "virtual")}
+                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-[#800521] cursor-pointer"
+                  >
+                    <option value="presencial">Presencial (Calificación en Taller/Aula)</option>
+                    <option value="virtual">Virtual (Entrega de archivos)</option>
+                  </select>
+                </div>
+              </div>
             </div>
+
+            <button
+              type="submit"
+              disabled={saving || !title.trim()}
+              className="w-full bg-[#800521] hover:bg-[#66041a] text-white font-extrabold text-xs uppercase px-4 py-2.5 rounded-xl shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <Plus className="w-4 h-4 text-amber-300" />
+              Programar Evaluación en Semana {week}
+            </button>
           </form>
 
           {/* Card Selector de Evaluación */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-3xs space-y-3">
-            <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider">
-              Seleccionar Evaluación a Calificar
-            </label>
-            <div className="relative">
-              <select
-                value={selected?.id || ""}
-                onChange={(event) => setSelectedId(event.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 outline-none focus:border-[#800521] focus:bg-white transition-all cursor-pointer appearance-none pr-9"
-              >
-                {!evaluations.length ? (
-                  <option value="">No hay evaluaciones guardadas en esta semana</option>
-                ) : (
-                  evaluations.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.title} ({item.submissions.length} calificados)
-                    </option>
-                  ))
-                )}
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-5 shadow-3xs space-y-3 flex flex-col justify-between">
+            <div className="space-y-2">
+              <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider">
+                Evaluaciones Activas en Semana {week}
+              </label>
+              <div className="relative">
+                <select
+                  value={selected?.id || ""}
+                  onChange={(event) => setSelectedId(event.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-extrabold text-slate-800 outline-none focus:border-[#800521] focus:bg-white transition-all cursor-pointer appearance-none pr-9"
+                >
+                  {!evaluations.length ? (
+                    <option value="">No hay evaluaciones guardadas en esta semana</option>
+                  ) : (
+                    evaluations.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.title} ({item.submissions.length} calificados)
+                      </option>
+                    ))
+                  )}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
+
+            {selected && (
+              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 space-y-1.5 text-[11px]">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 font-bold uppercase text-[9.5px]">Modalidad:</span>
+                  <span className="font-extrabold text-slate-800 uppercase px-2 py-0.5 bg-white border rounded text-[10px]">
+                    {selected.modality === "virtual" ? "Virtual (Digital)" : "Presencial (Taller/Aula)"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 font-bold uppercase text-[9.5px]">Hito Curricular:</span>
+                  <span className="font-mono font-black text-[#800521] px-2 py-0.5 bg-rose-50 border border-rose-200 rounded text-[10px]">
+                    {selected.curricularComponent || "Evaluación Continua"}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

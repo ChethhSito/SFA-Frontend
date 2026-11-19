@@ -78,6 +78,22 @@ export const GradesTab: React.FC<GradesTabProps> = ({
 
   const activeStats = computeCourseStats(activeCourse);
 
+  // Curricular evaluations of the active course (formula variables: PC1, PC2, EX_FINAL)
+  const formulaEvaluations = activeCourse?.evaluations?.filter((e: any) => e.isCurricular !== false) || [];
+
+  // Weekly tasks of the active course (accumulated into NPA)
+  const weeklyTasks = activeCourse?.weeklyTasks || activeCourse?.evaluations?.filter((e: any) => e.isCurricular === false) || [];
+  const gradedWeeklyTasks = weeklyTasks.filter((t: any) => typeof t.grade === "number");
+  const courseNpa = gradedWeeklyTasks.length > 0
+    ? (gradedWeeklyTasks.reduce((sum: number, t: any) => sum + (t.grade as number), 0) / gradedWeeklyTasks.length).toFixed(1)
+    : null;
+
+  // Global cycle NPA across all courses
+  const allGradedWeeklyTasks = enrichedCourses.flatMap((c) => c.weeklyTasks || c.evaluations?.filter((e: any) => e.isCurricular === false) || []).filter((t: any) => typeof t.grade === "number");
+  const cycleNpaAverage = allGradedWeeklyTasks.length > 0
+    ? (allGradedWeeklyTasks.reduce((sum: number, t: any) => sum + (t.grade as number), 0) / allGradedWeeklyTasks.length).toFixed(1)
+    : null;
+
   // Overall cycle calculation: weighted average of courses that have evaluations
   const coursesWithEvaluations = enrichedCourses.map(c => ({
     course: c,
@@ -132,13 +148,15 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-blue-600 flex items-center justify-between text-left">
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Promedio Parcial</span>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Actividades y Tareas (NPA)</span>
               <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 font-mono">
-                {hasAnyEvaluations ? "En Progreso" : "Sin Registro"}
+                {cycleNpaAverage !== null ? "Al Día" : "Sin Registro"}
               </span>
             </div>
-            <p className="text-2xl font-black text-slate-900 mt-1 font-mono">{hasAnyEvaluations ? cycleProgressiveAverage : "0.0"}</p>
-            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">Avance ponderado por créditos</span>
+            <p className="text-2xl font-black text-slate-900 mt-1 font-mono">{cycleNpaAverage !== null ? cycleNpaAverage : "0.0"}</p>
+            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">
+              Promedio de tareas continuas ({allGradedWeeklyTasks.length} calificada{allGradedWeeklyTasks.length === 1 ? "" : "s"})
+            </span>
           </div>
           <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
             <Award className="w-5 h-5" />
@@ -170,8 +188,10 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-emerald-600 flex items-center justify-between text-left">
           <div>
             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Condición Académica</span>
-            <p className="text-xl font-black text-emerald-600 mt-1 font-mono">{hasAnyEvaluations && Number(cycleProgressiveAverage) >= 12.5 ? "REGULAR" : "MATRICULADO"}</p>
-            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">Conforme a reglamento</span>
+            <p className="text-xl font-black text-emerald-600 mt-1 font-mono">
+              {cycleNpaAverage !== null && Number(cycleNpaAverage) >= 12.5 ? "REGULAR" : "MATRICULADO"}
+            </p>
+            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">Semestre Académico 2027-I</span>
           </div>
           <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
             <CheckCircle2 className="w-5 h-5" />
@@ -202,102 +222,212 @@ export const GradesTab: React.FC<GradesTabProps> = ({
             </div>
 
             {activeCourse ? (
-              <div className="space-y-4">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs font-semibold text-slate-600 border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase text-left">
-                        <th className="py-3 px-1">Concepto Evaluación</th>
-                        <th className="py-3 text-center">Prefijo</th>
-                        <th className="py-3 text-center">Peso</th>
-                        <th className="py-3 text-right">Nota Escala 0-20</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {activeCourse.evaluations.map((evalItem: any, idx: number) => {
-                        const isNotRegistered = evalItem.grade === "NR" || evalItem.grade === undefined;
-                        return (
-                          <tr key={idx} className="hover:bg-slate-50/50 transition-all font-sans">
-                            <td className="py-4 px-1">
-                              <span className="text-slate-800 font-black block text-[12px]">{evalItem.name}</span>
-                              <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">{evalItem.sub}</span>
-                            </td>
-                            
-                            <td className="py-4 text-center">
-                              <span className="font-mono text-[11px] text-[#800521] font-black bg-rose-50 border border-rose-200 px-2 py-0.5 rounded uppercase">
-                                {evalItem.prefix}
-                              </span>
-                            </td>
-                            
-                            <td className="py-4 text-center font-mono text-slate-600 font-bold text-[11px]">
-                              {evalItem.weight}
-                            </td>
-                            
-                            <td className="py-4 text-right">
-                              <span className={`font-mono font-black text-[13px] min-w-12 h-8 inline-flex items-center justify-center px-2.5 rounded-lg border select-none ${
-                                isNotRegistered 
-                                  ? "bg-slate-100 text-slate-400 border-slate-200" 
-                                  : "bg-emerald-50 text-emerald-800 border-emerald-200 font-extrabold"
-                              }`}>
-                                {isNotRegistered ? "NR" : evalItem.grade}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+              <div className="space-y-6">
+                {/* 1. SECCIÓN: COMPONENTES CURRICULARES OFICIALES (FÓRMULA DEL CURSO) */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                        <Award className="w-4 h-4 text-[#800521]" />
+                        Componentes Curriculares Oficiales (Acta de Evaluación)
+                      </h4>
+                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                        Hitos evaluativos del syllabus oficial (PC1, PC2, Examen Final). El docente define en qué semana y bajo qué modalidad (presencial o virtual) se aplican.
+                      </p>
+                    </div>
+                    <span className="text-[9px] font-mono font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">
+                      Hitos: {formulaEvaluations.length} indicadores
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs font-semibold text-slate-600 border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase text-left">
+                          <th className="py-2.5 px-1">Indicador Curricular</th>
+                          <th className="py-2.5 text-center">Prefijo</th>
+                          <th className="py-2.5 text-center">Peso Oficial</th>
+                          <th className="py-2.5 text-center">Modalidad / Estado</th>
+                          <th className="py-2.5 text-right">Nota Acta (0–20)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {formulaEvaluations.map((evalItem: any, idx: number) => {
+                          const isNotRegistered = evalItem.grade === "NR" || evalItem.grade === undefined;
+                          return (
+                            <tr key={idx} className="hover:bg-slate-50/50 transition-all font-sans">
+                              <td className="py-3 px-1">
+                                <span className="text-slate-800 font-black block text-[12px]">{evalItem.name}</span>
+                                <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">{evalItem.sub}</span>
+                              </td>
+                              
+                              <td className="py-3 text-center">
+                                <span className="font-mono text-[11px] text-[#800521] font-black bg-rose-50 border border-rose-200 px-2 py-0.5 rounded uppercase">
+                                  {evalItem.prefix}
+                                </span>
+                              </td>
+                              
+                              <td className="py-3 text-center font-mono text-slate-600 font-bold text-[11px]">
+                                {evalItem.weight}
+                              </td>
+
+                              <td className="py-3 text-center">
+                                <span className="text-[9.5px] font-bold text-slate-500 uppercase px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
+                                  {isNotRegistered ? "Pendiente de Sesión" : "Registrado en Acta"}
+                                </span>
+                              </td>
+                              
+                              <td className="py-3 text-right">
+                                <span className={`font-mono font-black text-[13px] min-w-12 h-8 inline-flex items-center justify-center px-2.5 rounded-lg border select-none ${
+                                  isNotRegistered 
+                                    ? "bg-slate-100 text-slate-400 border-slate-200" 
+                                    : "bg-emerald-50 text-emerald-800 border-emerald-200 font-extrabold"
+                                }`}>
+                                  {isNotRegistered ? "NR" : evalItem.grade}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Official Course Formula & Progressive Breakdown */}
+                  <div className="bg-slate-50 border border-slate-200/90 p-4 rounded-xl space-y-3 text-left shadow-3xs">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block">
+                        Fórmula Curricular Oficial del Curso:
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-mono font-bold bg-white text-slate-700 border border-slate-200 px-2 py-0.5 rounded shadow-3xs">
+                          Avance Evaluado: {(activeStats.evaluatedWeight * 100).toFixed(0)}%
+                        </span>
+                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded font-mono ${
+                          activeStats.isFullyEvaluated 
+                            ? "bg-emerald-100 text-emerald-800" 
+                            : "bg-amber-100 text-amber-900 border border-amber-300"
+                        }`}>
+                          {activeStats.isFullyEvaluated ? "Evaluación Cerrada" : "En Desarrollo Lectivo"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs space-y-1.5">
+                      <code className="text-xs md:text-sm font-mono font-black text-[#800521] block select-all">
+                        {activeCourse.formula}
+                      </code>
+                      <p className="text-[10.5px] text-slate-500 font-semibold leading-relaxed">
+                        Desglose de cálculo: <span className="font-mono font-extrabold text-slate-800">{activeStats.breakdownText}</span>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-xs flex-wrap gap-2">
+                      <span className="text-slate-600 font-bold text-[11px]">
+                        Puntaje en Acta al momento:
+                        <strong className="font-mono text-emerald-700 ml-1.5 font-black text-sm">
+                          {activeStats.accumulatedPoints.toFixed(1)} / 20.0 pts
+                        </strong>
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-500">
+                        Rendimiento de actas: <strong className="font-mono text-slate-900">{activeStats.hasAnyGrade ? `${activeStats.progressiveAverage.toFixed(1)} / 20` : "Pendiente de primer hito (PC1)"}</strong>
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Official Course Formula & Progressive Breakdown */}
-                <div className="bg-slate-50 border border-slate-200/90 p-4 rounded-xl space-y-3 text-left mt-4 shadow-3xs">
+                {/* 2. SECCIÓN: ACTIVIDADES Y TAREAS CONTINUAS (NPA) */}
+                <div className="space-y-3 pt-3 border-t border-slate-200">
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block">
-                      Fórmula Curricular Oficial del Curso:
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-mono font-bold bg-white text-slate-700 border border-slate-200 px-2 py-0.5 rounded shadow-3xs">
-                        Avance Evaluado: {(activeStats.evaluatedWeight * 100).toFixed(0)}%
-                      </span>
-                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded font-mono ${
-                        activeStats.isFullyEvaluated 
-                          ? "bg-emerald-100 text-emerald-800" 
-                          : "bg-amber-100 text-amber-900 border border-amber-300"
-                      }`}>
-                        {activeStats.isFullyEvaluated ? "Evaluación Cerrada" : "En Desarrollo Lectivo"}
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                        <FileText className="w-4 h-4 text-blue-600" />
+                        Registro de Tareas Semanales y Actividades Continuas (NPA)
+                      </h4>
+                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                        El docente deja tareas e informes semana a semana. La Nota de Participación y Actividades (NPA) es el promedio de todas las tareas calificadas.
+                      </p>
+                    </div>
+
+                    <div className="bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase text-blue-700">Promedio NPA del Curso:</span>
+                      <span className="font-mono font-black text-blue-900 text-sm">
+                        {courseNpa !== null ? `${courseNpa} / 20` : "Sin tareas"}
                       </span>
                     </div>
                   </div>
 
-                  <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs space-y-1.5">
-                    <code className="text-xs md:text-sm font-mono font-black text-[#800521] block select-all">
-                      {activeCourse.formula}
-                    </code>
-                    <p className="text-[10.5px] text-slate-500 font-semibold leading-relaxed">
-                      Desglose de cálculo: <span className="font-mono font-extrabold text-slate-800">{activeStats.breakdownText}</span>
-                    </p>
-                  </div>
+                  {weeklyTasks.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs font-semibold text-slate-600 border-collapse">
+                        <thead>
+                          <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase text-left">
+                            <th className="py-2.5 px-1">Tarea Semanal</th>
+                            <th className="py-2.5 text-center">Semana</th>
+                            <th className="py-2.5 text-center">Estado de Entrega</th>
+                            <th className="py-2.5 text-right">Nota Obtenida</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {weeklyTasks.map((task: any, idx: number) => {
+                            const isGraded = typeof task.grade === "number";
+                            return (
+                              <tr key={idx} className="hover:bg-slate-50/50 transition-all font-sans">
+                                <td className="py-3 px-1">
+                                  <span className="text-slate-800 font-black block text-[12px]">{task.name}</span>
+                                  {task.feedback && (
+                                    <span className="text-[10px] text-emerald-700 font-semibold block mt-0.5 italic">
+                                      "{task.feedback}"
+                                    </span>
+                                  )}
+                                </td>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-xs flex-wrap gap-2">
-                    <span className="text-slate-600 font-bold text-[11px]">
-                      Puntaje Acumulado al momento:
-                      <strong className="font-mono text-emerald-700 ml-1.5 font-black text-sm">
-                        {activeStats.accumulatedPoints.toFixed(1)} / 20.0 pts
-                      </strong>
-                    </span>
-                    <span className="text-[11px] font-bold text-slate-500">
-                      Rendimiento parcial: <strong className="font-mono text-slate-900">{activeStats.hasAnyGrade ? `${activeStats.progressiveAverage.toFixed(1)} / 20` : "Pendiente"}</strong>
-                    </span>
-                  </div>
+                                <td className="py-3 text-center">
+                                  <span className="font-mono text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
+                                    {task.prefix}
+                                  </span>
+                                </td>
+
+                                <td className="py-3 text-center">
+                                  <span className={`text-[9.5px] font-bold uppercase px-2 py-0.5 rounded ${
+                                    task.hasSubmitted ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                                  }`}>
+                                    {task.hasSubmitted ? "Entregado a tiempo" : "Pendiente"}
+                                  </span>
+                                </td>
+
+                                <td className="py-3 text-right">
+                                  <span className={`font-mono font-black text-[13px] min-w-12 h-8 inline-flex items-center justify-center px-2.5 rounded-lg border select-none ${
+                                    isGraded
+                                      ? "bg-emerald-50 text-emerald-800 border-emerald-200 font-extrabold"
+                                      : "bg-slate-100 text-slate-400 border-slate-200"
+                                  }`}>
+                                    {isGraded ? task.grade : "NR"}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 text-center text-xs text-slate-400 italic">
+                      No se han asignado tareas continuas en esta unidad didáctica aún.
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-amber-50/50 border border-amber-100 p-3.5 rounded-lg text-[10.5px] font-bold text-slate-650 flex items-start gap-2 leading-relaxed">
                   <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                   <p>
-                    <strong>Nota Importante:</strong> Conforme al reglamento académico institucional de la sede rectoral, la nota aprobatoria mínima general por unidad didáctica tecnológica es de <strong>13 (trece)</strong>. Las notas no registrables se denotan temporalmente como <em>"NR"</em> y se regularizarán al cierre lectivo.
+                    <strong>Nota Importante:</strong> Conforme al reglamento académico institucional de la sede rectoral, la nota aprobatoria mínima general por unidad didáctica tecnológica es de <strong>13 (trece)</strong>. Las notas no registrables se denotan temporalmente como <em>"NR"</em> y se regularizarán conforme el docente aplique las evaluaciones presenciales o virtuales en el cronograma.
                   </p>
                 </div>
               </div>
+            ) : (
+              <div className="text-center p-6 text-slate-400 italic">No hay datos para esta unidad didáctica.</div>
+            )}
             ) : (
               <div className="text-center p-6 text-slate-400 italic">No hay datos para esta unidad didáctica.</div>
             )}
