@@ -215,17 +215,40 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
       return;
     }
 
+    const now = new Date();
+    const formattedTimestamp = now.toLocaleString("es-PE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+
     const assessmentTitle = `[Planilla] ${activeVariableId}`;
     const existing = assignments.find((assignment) => assignment.courseId === selectedCourseId && assignment.title === assessmentTitle);
     const submissions = existing?.submissions.map((submission) => ({ ...submission })) || [];
     const index = submissions.findIndex((submission) => submission.studentDni === activeStudentDni);
-    if (index >= 0) submissions[index] = { ...submissions[index], grade: score };
-    else submissions.push({ studentDni: activeStudentDni, studentName: activeStudentName,
-      fileName: "", submitDate: new Date().toISOString().slice(0, 10), grade: score });
+    if (index >= 0) {
+      submissions[index] = { 
+        ...submissions[index], 
+        grade: score,
+        submitDate: now.toISOString(),
+        feedback: `Calificación oficial registrada mediante firma digital PIN el ${formattedTimestamp}`
+      };
+    } else {
+      submissions.push({ 
+        studentDni: activeStudentDni, 
+        studentName: activeStudentName,
+        fileName: "", 
+        submitDate: now.toISOString(), 
+        grade: score,
+        feedback: `Calificación oficial registrada mediante firma digital PIN el ${formattedTimestamp}`
+      });
+    }
     const assessment: CourseAssignment = existing ? { ...existing, submissions } : {
       id: `assessment-${Date.now()}`, kind: "assessment", courseId: selectedCourseId,
       title: assessmentTitle, description: "Componente de la planilla de calificaciones",
-      dueDate: new Date().toISOString().slice(0, 10), submissions,
+      dueDate: now.toISOString().slice(0, 10), submissions,
     };
     setSaving(true);
     try {
@@ -248,6 +271,41 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
     if (!selectedCourse) return;
     triggerNotification("La exportación PDF está pendiente de implementación.");
   };
+
+  // Find linked assessment metadata (where and when it was evaluated)
+  const auditContext = useMemo(() => {
+    if (!selectedCourseId || !activeVariableId) return undefined;
+    
+    const linkedAssessment = assignments.find((a) =>
+      a.courseId === selectedCourseId &&
+      !a.title.startsWith("[Planilla] ") && (
+        a.curricularComponent === activeVariableId ||
+        a.title.toUpperCase().includes(`[${activeVariableId}]`) ||
+        a.title.toUpperCase().includes(activeVariableId)
+      )
+    );
+
+    let week: number | string | undefined;
+    if (linkedAssessment) {
+      const match = linkedAssessment.title.match(/\[Semana\s*(\d+)\]/i) || linkedAssessment.title.match(/Semana\s*(\d+)/i);
+      if (match) week = Number(match[1]);
+    }
+
+    const sub = linkedAssessment?.submissions.find((s) => s.studentDni === activeStudentDni);
+    const existingPlanilla = assignments.find((a) => a.courseId === selectedCourseId && a.title === `[Planilla] ${activeVariableId}`);
+    const planillaSub = existingPlanilla?.submissions.find((s) => s.studentDni === activeStudentDni);
+
+    const submissionDate = planillaSub?.submitDate || sub?.submitDate;
+    const evaluatedAt = submissionDate
+      ? new Date(submissionDate).toLocaleString("es-PE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+      : new Date().toLocaleString("es-PE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+    return {
+      week,
+      modality: linkedAssessment?.modality === "virtual" ? "Virtual (Aula Virtual)" : "Presencial (Taller / Aula)",
+      evaluatedAt
+    };
+  }, [assignments, selectedCourseId, activeVariableId, activeStudentDni]);
 
   return (
     <div id="evaluaciones-cursos-sheet-screen" className="space-y-6 text-left relative font-sans">
@@ -365,6 +423,7 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
         activeVariableId={activeVariableId}
         tempGrade={tempGrade}
         gradeErrorMessage={gradeErrorMessage}
+        auditContext={auditContext}
         onGradeChange={handleGradeInputValidation}
         onSaveGrade={handleSaveGradeSecure}
         onClose={() => setEditModalOpen(false)}

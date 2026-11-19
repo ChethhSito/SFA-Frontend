@@ -3,6 +3,12 @@ import { createPortal } from "react-dom";
 import { Unlock } from "lucide-react";
 import Button from "../../ui/Button";
 
+export interface EvaluationAuditContext {
+  week?: number | string;
+  modality?: string;
+  evaluatedAt?: string;
+}
+
 interface EditGradeModalProps {
   saving?: boolean;
   isOpen: boolean;
@@ -10,6 +16,7 @@ interface EditGradeModalProps {
   activeVariableId: string;
   tempGrade: string;
   gradeErrorMessage: string;
+  auditContext?: EvaluationAuditContext;
   onGradeChange: (value: string) => void;
   onSaveGrade: () => void;
   onClose: () => void;
@@ -22,6 +29,7 @@ export const EditGradeModal: React.FC<EditGradeModalProps> = ({
   activeVariableId,
   tempGrade,
   gradeErrorMessage,
+  auditContext,
   onGradeChange,
   onSaveGrade,
   onClose
@@ -48,6 +56,28 @@ export const EditGradeModal: React.FC<EditGradeModalProps> = ({
             Modificando nota en <span className="text-slate-800 uppercase font-black">{activeStudentName}</span> <br />
             para el indicador <span className="text-[#8B0026] font-mono font-extrabold">[{activeVariableId}]</span>
           </p>
+        </div>
+
+        {/* Auditoría: Dónde y en qué tiempo se evalúa */}
+        <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-3 text-[10px] space-y-1.5 shadow-3xs">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="font-bold uppercase tracking-wider text-[9px] text-slate-400">Sesión / Lugar:</span>
+            <span className="font-extrabold text-slate-800">
+              {auditContext?.week ? `Semana ${auditContext.week} • ${auditContext.modality || "Presencial"}` : "Planilla Oficial de Actas"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="font-bold uppercase tracking-wider text-[9px] text-slate-400">Fecha y Hora:</span>
+            <span className="font-mono font-bold text-slate-700">
+              {auditContext?.evaluatedAt || new Date().toLocaleString("es-PE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="font-bold uppercase tracking-wider text-[9px] text-slate-400">Firma Digital:</span>
+            <span className="font-bold text-[#800521] flex items-center gap-1 font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" /> PIN Docente Verificado
+            </span>
+          </div>
         </div>
 
         <div className="space-y-2">

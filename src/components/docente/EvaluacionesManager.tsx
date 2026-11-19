@@ -273,10 +273,9 @@ export default function EvaluacionesManager({
                           key={v.id} 
                           value={v.id}
                           disabled={!!alreadyAssigned}
-                          className={alreadyAssigned ? "text-slate-400 italic bg-slate-100" : ""}
+                          className={alreadyAssigned ? "text-rose-600 font-bold bg-rose-50" : ""}
                         >
-                          {v.label} ({(v.weight * 100).toFixed(0)}%)
-                          {alreadyAssigned ? ` — [Ya programada${alreadyAssigned.week ? ` en Sem. ${alreadyAssigned.week}` : ""}]` : ""}
+                          {v.label} ({(v.weight * 100).toFixed(0)}%){alreadyAssigned ? " — (No disponible)" : ""}
                         </option>
                       );
                     })}
