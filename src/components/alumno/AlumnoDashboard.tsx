@@ -847,7 +847,7 @@ export default function AlumnoDashboard({
 
       {/* 2. SIDEBAR SECUNDARIO CURRICULAR DINÁMICO (SEMANAS) */}
       {showCourseSidebar && (
-        <div className="hidden md:flex shrink-0 relative z-40 h-full">
+        <div className="hidden md:flex shrink-0 relative z-20 h-full">
           {/* Animated sliding panel */}
           <div
             className={`transition-all duration-300 ease-in-out h-full overflow-hidden ${
@@ -895,7 +895,9 @@ export default function AlumnoDashboard({
             type="button"
             onClick={() => setIsCourseSidebarCollapsed(!isCourseSidebarCollapsed)}
             title={isCourseSidebarCollapsed ? "Ver Semanas del Curso (1 a 16)" : "Ocultar Semanas del Curso"}
-            className="absolute -right-[15px] top-[58%] -translate-y-1/2 z-50 bg-[#800521] hover:bg-[#68031a] text-amber-300 hover:text-white border-2 border-white ring-2 ring-[#800521]/25 w-[30px] h-[30px] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all cursor-pointer hover:scale-110 active:scale-95 group"
+            className={`absolute top-[58%] -translate-y-1/2 z-40 bg-[#800521] hover:bg-[#68031a] text-amber-300 hover:text-white border-2 border-white ring-2 ring-[#800521]/25 w-[30px] h-[30px] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
+              isCourseSidebarCollapsed ? "left-2" : "-right-[15px]"
+            }`}
           >
             {isCourseSidebarCollapsed ? (
               <BookOpen className="w-3.5 h-3.5 text-amber-300 group-hover:scale-110 transition-transform" />
