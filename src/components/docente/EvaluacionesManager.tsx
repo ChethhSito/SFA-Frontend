@@ -1,9 +1,10 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { Award, Plus, Save, CheckCircle2, AlertCircle, FileSpreadsheet, ChevronDown, Check } from "lucide-react";
+import { Award, Plus, Save, CheckCircle2, AlertCircle, FileSpreadsheet, ChevronDown, Check, Lock } from "lucide-react";
 import { CourseAssignment, StudentPersonalData } from "../../types";
 import Toast, { ToastNotice } from "../ui/Toast";
 import { ROSTER } from "./DocenteTypes";
 import { getCourseFormula } from "../../constants/courseFormulas";
+import { SecurePinModal } from "./evaluaciones/SecurePinModal";
 
 interface Props {
   students: StudentPersonalData[];
@@ -36,6 +37,12 @@ export default function EvaluacionesManager({
   const [notice, setNotice] = useState<ToastNotice | null>(null);
   const closeNotice = useCallback(() => setNotice(null), []);
   const notify = (message: string, kind: ToastNotice['kind']) => setNotice({ id: Date.now(), message, kind });
+
+  // Secure PIN modal for grade saving
+  const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [enteredPin, setEnteredPin] = useState("");
+  const [pinErrorMessage, setPinErrorMessage] = useState("");
+  const keypadNumbers = useMemo(() => [1, 2, 3, 4, 5, 6, 7, 8, 9, 0], []);
 
   // Ensure active student roster is never empty if students exist in system
   const effectiveStudents = useMemo(() => {
@@ -113,14 +120,13 @@ export default function EvaluacionesManager({
     }
   };
 
-  const saveGrades = async () => {
+  const handleStartSave = () => {
     if (!selected || saving) return;
     const changed = effectiveStudents.filter((student) => drafts[`${selected.id}-${student.dni}`]);
     if (!changed.length) {
       notify("Ingrese al menos una calificación antes de guardar.", "warning");
       return;
     }
-    const submissions = selected.submissions.map((item) => ({ ...item }));
     for (const student of changed) {
       const draft = drafts[`${selected.id}-${student.dni}`];
       if (!draft.grade.trim()) {
@@ -132,17 +138,66 @@ export default function EvaluacionesManager({
         notify("Las calificaciones oficiales deben estar entre 0 y 20.", "warning");
         return;
       }
+    }
+    setEnteredPin("");
+    setPinErrorMessage("");
+    setPinModalOpen(true);
+  };
+
+  const handleKeypadPress = (digit: number) => {
+    if (enteredPin.length >= 4) return;
+    setPinErrorMessage("");
+    const nextPin = enteredPin + digit;
+    setEnteredPin(nextPin);
+
+    if (nextPin === "1234") {
+      setTimeout(() => {
+        setPinModalOpen(false);
+        executeSaveGrades("1234");
+      }, 250);
+    } else if (nextPin.length === 4) {
+      setTimeout(() => {
+        setPinErrorMessage("Clave de firma SFA incorrecta. Intente de nuevo.");
+        setEnteredPin("");
+      }, 350);
+    }
+  };
+
+  const handleKeypadClear = () => {
+    setEnteredPin("");
+    setPinErrorMessage("");
+  };
+
+  const executeSaveGrades = async (pin: string) => {
+    if (!selected || saving) return;
+    const changed = effectiveStudents.filter((student) => drafts[`${selected.id}-${student.dni}`]);
+    const submissions = selected.submissions.map((item) => ({ ...item }));
+    const nowIso = new Date().toISOString();
+
+    for (const student of changed) {
+      const draft = drafts[`${selected.id}-${student.dni}`];
+      const grade = Number(draft.grade);
       const existing = submissions.findIndex((item) => item.studentDni === student.dni);
       if (existing >= 0) {
-        submissions[existing] = { ...submissions[existing], grade, feedback: draft.feedback };
+        submissions[existing] = {
+          ...submissions[existing],
+          grade,
+          feedback: draft.feedback,
+          verifiedByPin: pin,
+          verifiedAt: nowIso,
+          modality: selected.modality || "presencial"
+        };
       } else {
         submissions.push({
           studentDni: student.dni,
           studentName: `${student.name} ${student.lastName}`,
           fileName: "",
-          submitDate: new Date().toISOString().slice(0, 10),
+          submitDate: nowIso.slice(0, 10),
           grade,
-          feedback: draft.feedback
+          feedback: draft.feedback,
+          verifiedByPin: pin,
+          verifiedAt: nowIso,
+          modality: selected.modality || "presencial"
         });
       }
     }
@@ -161,9 +216,19 @@ export default function EvaluacionesManager({
       submissions.forEach(sub => {
         const pIdx = planillaSubmissions.findIndex(ps => ps.studentDni === sub.studentDni);
         if (pIdx >= 0) {
-          planillaSubmissions[pIdx] = { ...planillaSubmissions[pIdx], grade: sub.grade };
+          planillaSubmissions[pIdx] = { 
+            ...planillaSubmissions[pIdx], 
+            grade: sub.grade,
+            feedback: sub.feedback,
+            verifiedByPin: pin,
+            verifiedAt: nowIso
+          };
         } else {
-          planillaSubmissions.push({ ...sub });
+          planillaSubmissions.push({ 
+            ...sub,
+            verifiedByPin: pin,
+            verifiedAt: nowIso
+          });
         }
       });
 
@@ -176,7 +241,7 @@ export default function EvaluacionesManager({
           title: planillaTitle,
           kind: "assessment",
           description: "Componente curricular oficial de planilla",
-          dueDate: new Date().toISOString().slice(0, 10),
+          dueDate: nowIso.slice(0, 10),
           submissions: planillaSubmissions
         });
       }
@@ -192,7 +257,7 @@ export default function EvaluacionesManager({
           return next;
         });
       }
-      notify(saved ? "Calificaciones guardadas y sincronizadas con la planilla curricular." : "No se pudieron guardar todas las notas.", saved ? "success" : "error");
+      notify(saved ? "Calificaciones y observaciones guardadas y firmadas con PIN de seguridad." : "No se pudieron guardar todas las notas.", saved ? "success" : "error");
     } finally {
       setSaving(false);
     }
@@ -469,7 +534,7 @@ export default function EvaluacionesManager({
               <button
                 type="button"
                 disabled={!effectiveStudents.length || saving}
-                onClick={saveGrades}
+                onClick={handleStartSave}
                 className="bg-[#800521] hover:bg-[#66041a] text-white font-extrabold text-xs uppercase px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95 disabled:bg-slate-200 disabled:text-slate-500 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
               >
                 <Save className="w-4 h-4 text-amber-300" />
@@ -491,6 +556,19 @@ export default function EvaluacionesManager({
           </div>
         )}
       </fieldset>
+
+      {/* Modal PIN de Seguridad Docente */}
+      <SecurePinModal
+        isOpen={pinModalOpen}
+        activeStudentName={selected?.title || "Evaluación Oficial"}
+        activeVariableId={selected?.curricularComponent || "FIRMA-DOCENTE"}
+        enteredPin={enteredPin}
+        errorMessage={pinErrorMessage}
+        keypadNumbers={keypadNumbers}
+        onPressDigit={handleKeypadPress}
+        onClearPin={handleKeypadClear}
+        onClose={() => setPinModalOpen(false)}
+      />
     </div>
   );
 }

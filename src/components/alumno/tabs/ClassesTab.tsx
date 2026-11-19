@@ -1593,12 +1593,24 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 })()}
 
                 {selectedClassWeekOption === "evaluaciones" && (() => {
-                  const weekAsgs = filteredDBAssignments;
-                  const currentAsg = weekAsgs[0];
-                  const sub = currentAsg?.submissions?.find((s: any) => s.studentDni === studentDni);
-                  const submissionFile = currentAsg ? (simulationHWFiles[currentAsg.id] || sub?.fileName) : undefined;
-                  
-                  if (!currentAsg) {
+                  const weekEvaluations = assignments.filter((a) => {
+                    if (a.kind !== "assessment") return false;
+                    if (a.title.startsWith("[Planilla] ")) return false;
+                    const weekMatches = a.title.includes(`[Semana ${selectedClassWeek}]`) || a.title.includes(`Semana ${selectedClassWeek}`);
+                    if (!weekMatches) return false;
+                    if (selectedComponent) {
+                      return a.courseId === selectedComponent.dbCourseId ||
+                             a.courseId === selectedComponent.code ||
+                             a.courseId === selectedComponent.id ||
+                             (activeCourse && (a.courseId === activeCourse.id || a.courseId === activeCourseDbId)) ||
+                             (selectedComponent.id === "teo" && (a.courseId.includes("teo") || a.title.toLowerCase().includes("teor"))) ||
+                             (selectedComponent.id === "tal" && (a.courseId.includes("tal") || a.title.toLowerCase().includes("taller"))) ||
+                             (selectedComponent.id === "lab" && (a.courseId.includes("lab") || a.title.toLowerCase().includes("lab")));
+                    }
+                    return !activeCourse ? true : (activeCourse.attendanceCourseIds?.includes(a.courseId) || a.courseId === activeCourse.id || a.courseId === activeCourseDbId);
+                  });
+
+                  if (weekEvaluations.length === 0) {
                     return (
                       <div className="text-center py-12 px-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 space-y-2 font-sans">
                         <Award className="w-8 h-8 text-slate-300 mx-auto" />
@@ -1610,58 +1622,162 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                     );
                   }
 
+                  const activeSchedule = selectedComponent?.schedule || activeCourse?.schedule || "Lunes 08:00 AM - 10:00 AM";
+                  const activeClassroom = selectedComponent?.classroom || activeCourse?.classroom || "Aula 101 - Pabellón A";
+                  const activeTeacher = selectedComponent?.teacher || activeCourse?.teacherName || "Manuel Ramos Salazar";
+
                   return (
-                    <div className="space-y-4 font-sans">
-                      <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl space-y-3">
-                        <span className="text-[9.5px] text-[#800521] font-black uppercase tracking-wider block font-display">
-                          Puntajes y Criterios Recibidos
-                        </span>
-                        
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                          <div className="bg-white p-3 rounded-lg border border-slate-150 space-y-1 text-left">
-                            <span className="text-slate-400 font-bold text-[10px] block">Criterio Semanal</span>
-                            <span className="text-slate-850 font-black block text-xs">Evaluación Técnica de Laboratorios</span>
-                            <div className="flex items-center gap-1 text-[10px] font-bold text-[#800521]">
-                              <span>Ponderación:</span>
-                              <span>10%</span>
-                            </div>
-                          </div>
+                    <div className="space-y-6 font-sans text-left">
+                      {weekEvaluations.map((ev) => {
+                        const sub = ev.submissions?.find((s: any) => s.studentDni === studentDni);
+                        const hasGrade = sub && sub.grade !== undefined;
+                        const isApproved = hasGrade && Number(sub.grade) >= 12.5;
 
-                          <div className="bg-white p-3 rounded-lg border border-slate-150 flex flex-col justify-between text-left">
-                            <span className="text-slate-400 font-bold text-[10px] block">Registro de Asistencia</span>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="h-2 w-2 rounded-full bg-emerald-500 block animate-pulse" />
-                              <span className="text-emerald-800 font-black text-xs uppercase">Presente</span>
-                            </div>
-                          </div>
-                        </div>
+                        // Clean title stripping [Semana X]
+                        const cleanTitle = ev.title.replace(/\[Semana\s*\d+\]\s*/i, "").trim();
+                        const isPresencial = ev.modality !== "virtual";
+                        const isOfficialMilestone = !!ev.curricularComponent || /PC1|PC2|EX|FINAL|PARCIAL/i.test(ev.title);
 
-                        <div className="bg-white rounded-lg p-3 border border-slate-100 text-xs text-slate-700 space-y-2 text-left">
-                          <span className="font-extrabold text-[10.5px] text-slate-850 block">Nota del Trabajo Evaluativo de la Semana</span>
-                          {submissionFile ? (
-                            <div className="flex justify-between items-center bg-slate-50/60 p-2 rounded border border-slate-100">
-                              <div>
-                                <span className="font-bold text-slate-800 block text-[11px]">{weekAsgs[0]?.title}</span>
-                                <span className="text-[9px] text-slate-450 block font-mono">Entregable: {submissionFile}</span>
+                        return (
+                          <div 
+                            key={ev.id}
+                            className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all space-y-0"
+                          >
+                            {/* Header de la Evaluación */}
+                            <div className="p-5 bg-gradient-to-r from-rose-50/70 via-white to-slate-50/50 border-b border-rose-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="space-y-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-[9.5px] font-black text-[#800521] bg-rose-100/80 border border-rose-200 px-2.5 py-0.5 rounded uppercase font-mono tracking-wider">
+                                    SEMANA {selectedClassWeek} • EVALUACIÓN
+                                  </span>
+                                  {isPresencial ? (
+                                    <span className="text-[9.5px] font-black text-rose-800 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded uppercase tracking-wide">
+                                      MODALIDAD: PRESENCIAL
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9.5px] font-black text-blue-800 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded uppercase tracking-wide">
+                                      MODALIDAD: VIRTUAL
+                                    </span>
+                                  )}
+                                  {isOfficialMilestone && (
+                                    <span className="text-[9.5px] font-black text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded uppercase tracking-wide">
+                                      HITO CURRICULAR (20%)
+                                    </span>
+                                  )}
+                                </div>
+                                <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">
+                                  {cleanTitle}
+                                </h3>
                               </div>
-                              {sub?.grade !== undefined ? (
-                                <span className="font-mono font-black text-xs text-emerald-800 bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
-                                  {sub.grade} / 20
-                                </span>
-                              ) : (
-                                <span className="font-bold text-[10px] text-slate-800 bg-amber-400 px-2.5 py-0.5 rounded uppercase">
-                                  En Revisión
-                                </span>
-                              )}
+
+                              <div>
+                                {hasGrade ? (
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>Calificado en Acta</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200">
+                                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                    <span>Pendiente de Calificación</span>
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          ) : (
-                            <div className="text-center p-3 text-slate-450 font-semibold italic text-[11px] flex items-center justify-center gap-1.5">
-                              <AlertCircle className="w-3.5 h-3.5 text-slate-400" />
-                              <span>Aún no registra entrega de trabajo para esta semana.</span>
+
+                            {/* Aviso de Programación del Examen (Horario, Aula, Presencial) */}
+                            <div className="p-5 space-y-4">
+                              <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                                    HORARIO Y SEDE DE APLICACIÓN:
+                                  </span>
+                                  <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-slate-800">
+                                    <span className="flex items-center gap-1.5 text-[#800521]">
+                                      <Calendar className="w-3.5 h-3.5" />
+                                      {activeSchedule}
+                                    </span>
+                                    <span>•</span>
+                                    <span className="flex items-center gap-1.5 text-slate-700">
+                                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                                      {activeClassroom}
+                                    </span>
+                                    <span>•</span>
+                                    <span className="text-slate-500 font-medium">
+                                      Docente: {activeTeacher}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {isPresencial && (
+                                  <div className="text-[11px] font-bold text-rose-900 bg-rose-50/80 border border-rose-200/70 px-3 py-2 rounded-lg max-w-md">
+                                    Examen Presencial en el aula y fecha programadas para esta semana lectiva. Debe asistir con puntualidad.
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Panel de Resultado del Estudiante */}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                                {/* Columna 1: Nota Oficial */}
+                                <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-2 text-left">
+                                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                                    CALIFICACIÓN OFICIAL (0 - 20):
+                                  </span>
+                                  {hasGrade ? (
+                                    <div className="flex items-baseline gap-2">
+                                      <span className={`text-3xl font-black font-mono ${isApproved ? "text-emerald-700" : "text-rose-700"}`}>
+                                        {Number(sub.grade).toFixed(1)}
+                                      </span>
+                                      <span className="text-xs font-bold text-slate-400 font-mono">/ 20</span>
+                                      <span className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase ml-auto ${
+                                        isApproved ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"
+                                      }`}>
+                                        {isApproved ? "Aprobado" : "Desaprobado"}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div className="py-2">
+                                      <span className="text-xs font-black text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg inline-block uppercase">
+                                        Sin nota registrada
+                                      </span>
+                                      <p className="text-[10.5px] text-slate-400 font-medium mt-1.5">
+                                        El docente registrará la nota con su firma PIN al culminar la evaluación.
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Columna 2 y 3: Observación / Retroalimentación del Docente */}
+                                <div className="md:col-span-2 bg-white border border-slate-200 rounded-xl p-4 space-y-2 text-left">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                                      OBSERVACIÓN Y RETROALIMENTACIÓN DOCENTE:
+                                    </span>
+                                    {sub?.verifiedAt && (
+                                      <span className="text-[9.5px] font-mono text-slate-400 font-bold">
+                                        Firmado el: {new Date(sub.verifiedAt).toLocaleDateString()}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {sub?.feedback ? (
+                                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                                      <p className="text-xs text-slate-800 font-medium italic leading-relaxed">
+                                        "{sub.feedback}"
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <div className="py-2.5">
+                                      <p className="text-[11px] text-slate-400 italic">
+                                        Aún no se ha registrado observación ni retroalimentación por parte del docente.
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })()}
