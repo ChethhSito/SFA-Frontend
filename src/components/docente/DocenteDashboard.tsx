@@ -426,6 +426,40 @@ export default function DocenteDashboard({
     notify(saved ? "Tarea eliminada." : "No se pudo eliminar la tarea.", saved);
   };
 
+  // Actions: Grade assignment submission
+  const handleGradeSubmission = async (assignmentId: string, studentDni: string, grade: number, feedback: string) => {
+    const updated = assignments.map((asg) => {
+      if (asg.id === assignmentId) {
+        const existingSubmissions = asg.submissions || [];
+        const subIndex = existingSubmissions.findIndex((s) => s.studentDni === studentDni);
+        let nextSubs = [...existingSubmissions];
+        if (subIndex >= 0) {
+          nextSubs[subIndex] = {
+            ...nextSubs[subIndex],
+            grade,
+            feedback
+          };
+        } else {
+          const student = studentsList[studentDni] || ROSTER.find((r) => r.dni === studentDni);
+          nextSubs.push({
+            studentDni,
+            studentName: student ? `${student.name} ${student.lastName}` : "Estudiante",
+            fileName: "Entrega_Digital.pdf",
+            submitDate: new Date().toISOString(),
+            grade,
+            feedback
+          });
+        }
+        return { ...asg, submissions: nextSubs };
+      }
+      return asg;
+    });
+
+    const saved = await onUpdateAssignments(updated);
+    notify(saved ? "Calificación guardada y sincronizada con el estudiante." : "No se pudo guardar la calificación.", saved);
+    return saved;
+  };
+
   // Actions: Add observation
   const handleAddObservation = async (text: string, type: "General" | "Incidencia" | "Acuerdo") => {
     if (!selectedCourseId) return false;
@@ -1380,9 +1414,11 @@ export default function DocenteDashboard({
                         courseId={selectedCourseId}
                         week={selectedWeek}
                         assignments={getFilteredAssignments()}
+                        students={enrollments.filter((enrollment) => enrollment.academicStatus === "MATRICULADO" && enrollment.programId === (selectedCourse?.careerId || selectedCourse?.career)).map((enrollment) => studentsList[enrollment.studentDni]).filter(Boolean)}
                         onPublishAssignment={handlePublishAssignment}
                         onEditAssignment={handleEditAssignment}
                         onDeleteAssignment={handleDeleteAssignment}
+                        onGradeSubmission={handleGradeSubmission}
                       />
                     )}
 

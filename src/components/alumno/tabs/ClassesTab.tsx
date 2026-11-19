@@ -1,16 +1,19 @@
 import { AttendanceRecord } from "../../../types";
 import { studentAttendanceRecords } from "../../../utils/attendance";
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { 
   Zap, Cpu, Sliders, Award, ChevronRight, ChevronLeft, ChevronDown, BookOpen, Clock, CheckCircle2, 
-  Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark, MapPin, GraduationCap
+  Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark, MapPin, GraduationCap,
+  Eye, Download, Trash2, Pencil, X, MessageSquare, Send, Check
 } from "lucide-react";
 import { CourseMaterial, CourseAssignment, CourseEvaluation, AcademicProgram, StudentPersonalData } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
 import Toast, { ToastNotice } from "../../ui/Toast";
 import { Card, CardHeader, CardTitle, CardContent } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
-import { courseFileUrl } from "../../../services/api";
+import ConfirmModal from "../../ui/ConfirmModal";
+import { courseFileUrl, fileToBase64 } from "../../../services/api";
 
 const COURSE_WEEKS = 16;
 
@@ -445,31 +448,188 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     return courseMatches;
   });
 
-  const handleSimulateHWUpload = (asgId: string, customFileName: string) => {
-    if (!customFileName.trim()) return;
-    
-    setSimulationHWFiles(prev => ({ ...prev, [asgId]: customFileName }));
-    
-    const updated = assignments.map(a => {
-      if (a.id === asgId) {
-        const existing = a.submissions || [];
-        const nextSubs = existing.filter(s => s.studentDni !== studentDni);
-        nextSubs.push({
-          studentDni: studentDni,
-          studentName: `${personalData.name} ${personalData.lastName}`,
-          fileName: customFileName,
-          submitDate: new Date().toISOString().split("T")[0]
-        });
-        return { ...a, submissions: nextSubs };
+  // Estados interactivos para la entrega de tareas del alumno
+  const [selectedTaskFiles, setSelectedTaskFiles] = useState<Record<string, File | null>>({});
+  const [taskComments, setTaskComments] = useState<Record<string, string>>({});
+  const [editingTaskSubmission, setEditingTaskSubmission] = useState<Record<string, boolean>>({});
+  const [taskSubmitting, setTaskSubmitting] = useState<Record<string, boolean>>({});
+
+  // Visor modal de PDF oficial para guías y entregas
+  const [pdfModal, setPdfModal] = useState<{ url: string; title: string; fileName: string } | null>(null);
+
+  // Modal de confirmación para eliminar entrega
+  const [submissionToDelete, setSubmissionToDelete] = useState<{ assignmentId: string; assignmentTitle: string } | null>(null);
+  const [isDeletingSubmission, setIsDeletingSubmission] = useState(false);
+
+  // Cálculo de puntualidad / antelación de entrega respecto a la fecha límite
+  const getSubmissionTiming = (submitDateStr?: string, dueDateStr?: string) => {
+    if (!submitDateStr || !dueDateStr) {
+      return { text: "Entregado a tiempo", isEarly: true, days: 0 };
+    }
+    try {
+      const due = new Date(dueDateStr + "T23:59:59");
+      const sub = new Date(submitDateStr);
+      if (isNaN(sub.getTime()) || isNaN(due.getTime())) {
+        return { text: "Entregado a tiempo", isEarly: true, days: 0 };
       }
-      return a;
-    });
-    onUpdateAssignments(updated);
-    setToastNotice({
-      id: Date.now(),
-      message: `Archivo "${customFileName}" subido exitosamente a la plataforma educativa como evidencia.`,
-      kind: "success",
-    });
+      const diffMs = due.getTime() - sub.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+      if (diffDays > 0) {
+        return {
+          text: `Entregado con ${diffDays} ${diffDays === 1 ? 'día' : 'días'}${diffHours > 0 ? ` y ${diffHours} h` : ''} de anticipación`,
+          isEarly: true,
+          days: diffDays
+        };
+      } else if (diffDays === 0 && diffHours >= 0) {
+        return {
+          text: `Entregado con ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'} de anticipación`,
+          isEarly: true,
+          days: 0
+        };
+      } else {
+        const lateDays = Math.abs(diffDays);
+        return {
+          text: `Entregado con ${lateDays} ${lateDays === 1 ? 'día' : 'días'} de retraso`,
+          isEarly: false,
+          days: lateDays
+        };
+      }
+    } catch {
+      return { text: "Entregado a tiempo", isEarly: true, days: 0 };
+    }
+  };
+
+  const formatSubmissionDateTime = (isoDateStr?: string) => {
+    if (!isoDateStr) return "Fecha no registrada";
+    try {
+      const d = new Date(isoDateStr);
+      if (isNaN(d.getTime())) return isoDateStr;
+      return d.toLocaleString("es-PE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      });
+    } catch {
+      return isoDateStr;
+    }
+  };
+
+  const handleStudentSubmitTask = async (asgId: string) => {
+    const file = selectedTaskFiles[asgId];
+    const comment = taskComments[asgId] || "";
+    const targetAsg = assignments.find(a => a.id === asgId);
+    const prevSub = targetAsg?.submissions?.find(s => s.studentDni === studentDni);
+
+    if (!file && !prevSub?.fileName) {
+      setToastNotice({
+        id: Date.now(),
+        message: "Por favor seleccione un archivo en formato PDF o documento para su entrega.",
+        kind: "warning",
+      });
+      return;
+    }
+
+    setTaskSubmitting(prev => ({ ...prev, [asgId]: true }));
+    try {
+      let fileBase64Content = prevSub?.fileBase64 || "";
+      let fileName = prevSub?.fileName || "";
+      let mimeType = prevSub?.mimeType || "application/pdf";
+
+      if (file) {
+        if (file.size > 15 * 1024 * 1024) {
+          setToastNotice({
+            id: Date.now(),
+            message: "El archivo no debe exceder los 15 MB.",
+            kind: "warning",
+          });
+          return;
+        }
+        fileName = file.name;
+        mimeType = file.type || "application/pdf";
+        try {
+          fileBase64Content = await fileToBase64(file);
+        } catch {
+          setToastNotice({
+            id: Date.now(),
+            message: "No se pudo leer el archivo seleccionado.",
+            kind: "error",
+          });
+          return;
+        }
+      }
+
+      const nowIso = new Date().toISOString();
+      const updated = assignments.map(a => {
+        if (a.id === asgId) {
+          const existing = a.submissions || [];
+          const nextSubs = existing.filter(s => s.studentDni !== studentDni);
+          nextSubs.push({
+            studentDni: studentDni,
+            studentName: `${personalData.name} ${personalData.lastName}`,
+            fileName,
+            submitDate: nowIso,
+            comment: comment.trim() || prevSub?.comment || undefined,
+            fileBase64: fileBase64Content,
+            mimeType,
+            grade: prevSub?.grade,
+            feedback: prevSub?.feedback
+          });
+          return { ...a, submissions: nextSubs };
+        }
+        return a;
+      });
+
+      onUpdateAssignments(updated);
+      setSimulationHWFiles(prev => ({ ...prev, [asgId]: fileName }));
+      setEditingTaskSubmission(prev => ({ ...prev, [asgId]: false }));
+      setSelectedTaskFiles(prev => ({ ...prev, [asgId]: null }));
+
+      setToastNotice({
+        id: Date.now(),
+        message: `Tarea entregada exitosamente: "${fileName}".`,
+        kind: "success",
+      });
+    } finally {
+      setTaskSubmitting(prev => ({ ...prev, [asgId]: false }));
+    }
+  };
+
+  const handleDeleteStudentSubmission = () => {
+    if (!submissionToDelete) return;
+    setIsDeletingSubmission(true);
+    try {
+      const asgId = submissionToDelete.assignmentId;
+      const updated = assignments.map(a => {
+        if (a.id === asgId) {
+          const existing = a.submissions || [];
+          const nextSubs = existing.filter(s => s.studentDni !== studentDni);
+          return { ...a, submissions: nextSubs };
+        }
+        return a;
+      });
+      onUpdateAssignments(updated);
+      setSimulationHWFiles(prev => {
+        const next = { ...prev };
+        delete next[asgId];
+        return next;
+      });
+      setSelectedTaskFiles(prev => ({ ...prev, [asgId]: null }));
+      setTaskComments(prev => ({ ...prev, [asgId]: "" }));
+      setEditingTaskSubmission(prev => ({ ...prev, [asgId]: false }));
+      setToastNotice({
+        id: Date.now(),
+        message: "Entrega eliminada correctamente. Puede enviar un nuevo archivo.",
+        kind: "info",
+      });
+    } finally {
+      setIsDeletingSubmission(false);
+      setSubmissionToDelete(null);
+    }
   };
 
   const toggleWeekExpandedLocal = (wNum: number) => {
@@ -1118,100 +1278,388 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                     );
                   }
                   return (
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                       {asgs.map((asg: any) => {
                         const prevSub = asg.submissions?.find((s: any) => s.studentDni === studentDni);
                         const hasSubmitted = !!simulationHWFiles[asg.id] || !!prevSub;
                         const currentFileName = simulationHWFiles[asg.id] || prevSub?.fileName || "";
-                        const submissionDate = prevSub?.submitDate || new Date().toISOString().split("T")[0];
+                        const submissionDate = prevSub?.submitDate || new Date().toISOString();
                         const isGraded = prevSub?.grade !== undefined;
-                        
+                        const isEditingThis = !!editingTaskSubmission[asg.id];
+                        const timing = getSubmissionTiming(prevSub?.submitDate, asg.dueDate);
+
+                        const guideFileName = asg.attachmentName || asg.attachment;
+                        const guideUrl = asg.contentBase64 
+                          ? `data:${asg.mimeType || 'application/pdf'};base64,${asg.contentBase64}` 
+                          : courseFileUrl('assignments', asg.id);
+
+                        const studentFileUrl = prevSub?.fileBase64 
+                          ? `data:${prevSub.mimeType || 'application/pdf'};base64,${prevSub.fileBase64}`
+                          : '#';
+
+                        const cleanDisplayTitle = asg.title.replace(/^\[Semana\s*\d+\]\s*/i, "").trim();
+
                         return (
-                          <div key={asg.id} className="border border-slate-200 rounded-xl p-4 space-y-4 bg-white shadow-xs">
-                            <div className="space-y-1">
-                              <span className="text-[9px] bg-red-100 text-[#8B0026] border border-red-200 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
-                                Tarea Programada
-                              </span>
-                              <h4 className="text-xs font-black text-slate-850 pt-1">{asg.title}</h4>
-                              <p className="text-[11px] text-slate-550 font-medium leading-relaxed font-sans">{asg.description}</p>
+                          <div key={asg.id} className="border border-slate-200 rounded-2xl p-5 space-y-4 bg-white shadow-3xs text-left">
+                            {/* Cabecera de la Tarea */}
+                            <div className="space-y-1.5">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-[10px] bg-[#800521]/10 text-[#800521] border border-[#800521]/20 px-2.5 py-0.5 rounded-full font-black uppercase font-mono tracking-wider">
+                                  Semana {selectedClassWeek} • Tarea Programada
+                                </span>
+                                <span className="text-[10.5px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200 flex items-center gap-1 font-mono">
+                                  <Calendar className="w-3.5 h-3.5 text-amber-700" />
+                                  Límite: <strong className="text-slate-800">{asg.dueDate}</strong>
+                                </span>
+                              </div>
+                              <h4 className="text-sm font-black text-slate-900 pt-0.5" title={asg.title}>
+                                {cleanDisplayTitle || asg.title}
+                              </h4>
+                              <p className="text-xs text-slate-600 font-medium leading-relaxed font-sans">
+                                {asg.description}
+                              </p>
                             </div>
 
-                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-[10px] font-bold text-slate-600 space-y-1.5 font-sans">
-                              <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" /> <span className="text-slate-400">Fecha Límite:</span> <span className="text-slate-800 font-extrabold">{asg.dueDate}</span></div>
-                              {asg.rubric && <div className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5 text-amber-500 shrink-0" /> <span className="text-slate-400">Rúbrica de Evaluación:</span> <span className="text-slate-800 font-black">{asg.rubric}</span></div>}
-                              {asg.attachment && <div className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" /> <span className="text-slate-400">Guía de Apoyo:</span> {asg.storedFileName ? <a href={courseFileUrl('assignments', asg.id)} className="text-blue-600 underline font-mono">{asg.attachment}</a> : <span className="text-slate-500 font-mono">{asg.attachment} (no disponible)</span>}</div>}
-                            </div>
+                            {/* Rúbrica y Criterios */}
+                            {asg.rubric && (
+                              <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 flex items-start gap-2.5 text-xs">
+                                <Award className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                <div className="space-y-0.5">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 block">
+                                    Criterios de Evaluación y Rúbrica
+                                  </span>
+                                  <p className="text-xs font-bold text-amber-950 font-sans leading-relaxed">
+                                    {asg.rubric}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
 
-                            <div className="pt-2 border-t border-slate-100 space-y-3">
-                              <span className="text-[9.5px] text-slate-450 font-black uppercase tracking-wider block">Estado del Envío:</span>
-                              
-                              {hasSubmitted ? (
-                                <div className="p-3 bg-emerald-50 border border-emerald-150 text-emerald-900 rounded-lg space-y-1.5 font-sans">
-                                  <div className="flex items-center gap-2 font-black text-xs">
-                                    <CheckCircle className="w-4 h-4 text-emerald-600" />
-                                    <span>¡TAREA ENVIADA EXITOSAMENTE!</span>
+                            {/* Guía de Apoyo Adjunta Oficial con diseño institucional */}
+                            {guideFileName && (
+                              <div className="bg-slate-50 hover:bg-slate-50/90 border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 transition-colors">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-10 h-10 rounded-xl bg-red-50 text-[#800521] border border-red-200 flex items-center justify-center shrink-0 shadow-3xs">
+                                    <FileText className="w-5 h-5" />
                                   </div>
-                                  <p className="text-[10px] text-emerald-800 font-bold">
-                                    Archivo de entrega: <span className="font-mono text-emerald-950 font-black underline">{currentFileName}</span>
-                                  </p>
-                                  <p className="text-[9px] text-emerald-650 font-semibold">
-                                    Fecha de envío registrado: {submissionDate}
-                                  </p>
+                                  <div className="min-w-0 text-left">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block font-mono">
+                                      Guía de Apoyo del Docente
+                                    </span>
+                                    <span className="text-xs font-bold text-slate-800 block truncate max-w-xs sm:max-w-md font-mono" title={guideFileName}>
+                                      {guideFileName}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPdfModal({
+                                        url: guideUrl,
+                                        title: "Guía de Apoyo Oficial de Taller",
+                                        fileName: guideFileName
+                                      });
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-[#800521] border border-slate-200 rounded-xl text-xs font-bold shadow-3xs transition-all cursor-pointer active:scale-95"
+                                    title="Ver guía en visor modal oficial"
+                                  >
+                                    <Eye className="w-3.5 h-3.5 text-[#800521]" />
+                                    <span>Ver Guía</span>
+                                  </button>
+
+                                  <a
+                                    href={guideUrl}
+                                    download={guideFileName}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#800521] hover:bg-[#66041a] text-white rounded-xl text-xs font-bold shadow-3xs transition-all cursor-pointer active:scale-95"
+                                    title="Descargar guía de apoyo"
+                                  >
+                                    <Download className="w-3.5 h-3.5 text-amber-300" />
+                                    <span>Descargar</span>
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* SECCIÓN DEL ESTADO DEL ENVÍO DEL ESTUDIANTE */}
+                            <div className="pt-3 border-t border-slate-150 space-y-3">
+                              <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">
+                                Estado de la Entrega:
+                              </span>
+
+                              {hasSubmitted && !isEditingThis ? (
+                                <div className="p-4 sm:p-5 bg-emerald-50/70 border border-emerald-200/90 rounded-2xl space-y-4 font-sans text-left">
+                                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200/60 pb-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="bg-emerald-600 text-white font-black text-[10px] uppercase tracking-wider px-3 py-1 rounded-full shadow-3xs flex items-center gap-1.5">
+                                        <CheckCircle className="w-3.5 h-3.5" />
+                                        Entregado para Calificar
+                                      </span>
+                                    </div>
+
+                                    {/* Indicador de Antelación / Puntualidad */}
+                                    <div className={`px-2.5 py-1 rounded-lg text-xs font-bold border flex items-center gap-1.5 font-mono ${
+                                      timing.isEarly 
+                                        ? "bg-emerald-100 text-emerald-900 border-emerald-300" 
+                                        : "bg-amber-100 text-amber-900 border-amber-300"
+                                    }`}>
+                                      <Clock className="w-3.5 h-3.5" />
+                                      <span>{timing.text}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Archivo entregado con acciones */}
+                                  <div className="bg-white rounded-xl border border-emerald-200 p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-3xs">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center justify-center shrink-0">
+                                        <FileText className="w-5 h-5" />
+                                      </div>
+                                      <div className="min-w-0 text-left">
+                                        <span className="text-xs font-black text-slate-900 block truncate font-mono" title={currentFileName}>
+                                          {currentFileName}
+                                        </span>
+                                        <span className="text-[10.5px] text-slate-400 font-semibold block">
+                                          Registrado el: {formatSubmissionDateTime(submissionDate)}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      {prevSub?.fileBase64 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setPdfModal({
+                                              url: studentFileUrl,
+                                              title: "Informe Entregado por el Alumno",
+                                              fileName: currentFileName
+                                            });
+                                          }}
+                                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                                          title="Ver mi informe en visor modal"
+                                        >
+                                          <Eye className="w-3.5 h-3.5 text-slate-600" />
+                                          <span>Ver Mi Archivo</span>
+                                        </button>
+                                      )}
+
+                                      {prevSub?.fileBase64 && (
+                                        <a
+                                          href={studentFileUrl}
+                                          download={currentFileName}
+                                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-3xs"
+                                          title="Descargar mi archivo"
+                                        >
+                                          <Download className="w-3.5 h-3.5" />
+                                          <span>Descargar</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Comentario del Alumno */}
+                                  {prevSub?.comment && (
+                                    <div className="bg-white/80 border border-emerald-200/70 rounded-xl p-3 space-y-1">
+                                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-emerald-800 tracking-wider">
+                                        <MessageSquare className="w-3.5 h-3.5" />
+                                        <span>Comentario de entrega del estudiante:</span>
+                                      </div>
+                                      <p className="text-xs text-slate-700 italic font-medium leading-relaxed pl-5">
+                                        "{prevSub.comment}"
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {/* Calificación y Retroalimentación si ya fue calificada */}
                                   {isGraded ? (
-                                    <div className="mt-2 bg-white border border-emerald-200 p-2.5 rounded-md space-y-1 text-slate-800">
-                                      <div className="text-[10px] font-black text-slate-450 uppercase font-mono">Nota del Docente:</div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-lg font-black font-mono text-[#800521]">{prevSub.grade} / 20</span>
-                                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 py-0.5 px-2 rounded">Calificado</span>
+                                    <div className="bg-white border-2 border-emerald-300 rounded-xl p-4 space-y-2 text-left shadow-xs">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">
+                                          Calificación Oficial del Docente
+                                        </span>
+                                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                          Registrado en Acta
+                                        </span>
+                                      </div>
+                                      <div className="flex items-baseline gap-2">
+                                        <span className="text-2xl font-black font-mono text-[#800521]">
+                                          {prevSub.grade}
+                                        </span>
+                                        <span className="text-xs font-bold text-slate-400 font-mono">/ 20 Puntos</span>
                                       </div>
                                       {prevSub.feedback && (
-                                        <p className="text-[10.5px] text-slate-600 italic font-medium leading-normal mt-1">
-                                          "{prevSub.feedback}"
-                                        </p>
+                                        <div className="pt-2 border-t border-slate-100 space-y-1">
+                                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                                            Retroalimentación Pedagógica:
+                                          </span>
+                                          <p className="text-xs text-slate-700 font-medium leading-relaxed italic bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                            "{prevSub.feedback}"
+                                          </p>
+                                        </div>
                                       )}
                                     </div>
                                   ) : (
-                                    <span className="inline-block mt-1 bg-yellow-400 text-slate-900 py-0.5 px-2 rounded-sm text-[9px] font-black uppercase">
-                                      Esperando Calificación del Docente
-                                    </span>
+                                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                                      <div className="flex items-center gap-2">
+                                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                                        <span className="text-xs font-bold text-amber-800">
+                                          Esperando revisión y calificación del docente
+                                        </span>
+                                      </div>
+
+                                      {/* Botones para Editar y Eliminar Entrega */}
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingTaskSubmission(prev => ({ ...prev, [asg.id]: true }));
+                                            if (prevSub?.comment) {
+                                              setTaskComments(prev => ({ ...prev, [asg.id]: prevSub.comment }));
+                                            }
+                                          }}
+                                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold shadow-3xs transition-all cursor-pointer"
+                                          title="Modificar entrega de archivo o comentario"
+                                        >
+                                          <Pencil className="w-3.5 h-3.5 text-slate-500" />
+                                          <span>Editar Entrega</span>
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setSubmissionToDelete({
+                                              assignmentId: asg.id,
+                                              assignmentTitle: asg.title
+                                            });
+                                          }}
+                                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold shadow-3xs transition-all cursor-pointer"
+                                          title="Eliminar entrega para volver a subirla"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                          <span>Eliminar</span>
+                                        </button>
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
                               ) : (
-                                <div className="p-3.5 bg-slate-50 border border-slate-200 border-dashed rounded-lg text-xs font-sans space-y-3">
-                                  <p className="text-slate-500 font-bold text-[11px] text-center">
-                                    Arrastre su archivo corregido aquí, o ingrese el nombre del entregable para sincronizar:
-                                  </p>
-                                  <div className="flex gap-2">
+                                /* FORMULARIO DE ENVÍO DE TAREA */
+                                <div className="p-4 sm:p-5 bg-slate-50/70 border-2 border-dashed border-slate-200 rounded-2xl space-y-4 font-sans text-left">
+                                  <div className="space-y-1">
+                                    <h5 className="text-xs font-black text-slate-800 uppercase tracking-tight">
+                                      {isEditingThis ? "Editar Entrega de Tarea" : "Cargar Entrega de Tarea"}
+                                    </h5>
+                                    <p className="text-[11px] text-slate-500 font-medium">
+                                      Adjunte su informe técnico en PDF, hojas de cálculo o esquemas solicitados en la rúbrica.
+                                    </p>
+                                  </div>
+
+                                  {/* Selector de Archivo */}
+                                  <div>
+                                    {!selectedTaskFiles[asg.id] ? (
+                                      <label
+                                        htmlFor={`hw-file-input-${asg.id}`}
+                                        className="w-full border-2 border-dashed border-slate-300 hover:border-[#800521] bg-white hover:bg-rose-50/20 rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group block"
+                                      >
+                                        <div className="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-red-50 text-slate-500 group-hover:text-[#800521] flex items-center justify-center transition-colors">
+                                          <Upload className="w-5 h-5" />
+                                        </div>
+                                        <div className="space-y-0.5">
+                                          <span className="text-xs font-bold text-slate-700 group-hover:text-[#800521] block">
+                                            Haga clic para seleccionar o arrastre su archivo aquí
+                                          </span>
+                                          <span className="text-[10px] text-slate-400 font-semibold block">
+                                            Formatos soportados: PDF, Word, Excel, esquemas CAD (Máx. 15 MB)
+                                          </span>
+                                        </div>
+                                      </label>
+                                    ) : (
+                                      <div className="w-full bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3 shadow-3xs">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                          <div className="w-9 h-9 rounded-lg bg-red-50 text-[#800521] border border-red-200 flex items-center justify-center shrink-0">
+                                            <FileText className="w-5 h-5" />
+                                          </div>
+                                          <div className="min-w-0 text-left">
+                                            <span className="text-xs font-black text-slate-900 block truncate font-mono">
+                                              {selectedTaskFiles[asg.id]?.name}
+                                            </span>
+                                            <span className="text-[10px] text-slate-400 font-semibold block">
+                                              {((selectedTaskFiles[asg.id]?.size || 0) / 1024).toFixed(1)} KB • Archivo listo para enviar
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedTaskFiles(prev => ({ ...prev, [asg.id]: null }))}
+                                          className="p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                          title="Cambiar archivo"
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    )}
+
                                     <input
-                                      type="text"
-                                      id={`hw-filename-input-${asg.id}`}
-                                      placeholder="Ej: informe_semana3_castillo.pdf"
-                                      className="bg-white border rounded h-10 px-2.5 py-1.5 font-mono text-slate-800 flex-1 text-xs focus:ring-1 focus:ring-[#800521] focus:outline-none"
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          const input = document.getElementById(`hw-filename-input-${asg.id}`) as HTMLInputElement;
-                                          if (input && input.value.trim()) {
-                                            handleSimulateHWUpload(asg.id, input.value);
-                                          }
+                                      type="file"
+                                      id={`hw-file-input-${asg.id}`}
+                                      accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0] || null;
+                                        if (file) {
+                                          setSelectedTaskFiles(prev => ({ ...prev, [asg.id]: file }));
                                         }
                                       }}
+                                      className="hidden"
                                     />
-                                    <button
-                                      onClick={() => {
-                                        const input = document.getElementById(`hw-filename-input-${asg.id}`) as HTMLInputElement;
-                                        if (input && input.value.trim()) {
-                                          handleSimulateHWUpload(asg.id, input.value);
-                                        } else {
-                                          setToastNotice({
-                                            id: Date.now(),
-                                            message: "Por favor digite un nombre de archivo válido.",
-                                            kind: "warning",
-                                          });
-                                        }
+                                  </div>
+
+                                  {/* Comentario opcional para el docente */}
+                                  <div>
+                                    <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">
+                                      Comentarios o notas de entrega para el docente (opcional):
+                                    </label>
+                                    <textarea
+                                      rows={2}
+                                      value={taskComments[asg.id] || ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setTaskComments(prev => ({ ...prev, [asg.id]: val }));
                                       }}
-                                      className="bg-[#800521] hover:bg-[#9F062A] text-white h-10 px-4 rounded text-[10.5px] font-black uppercase cursor-pointer select-none"
+                                      placeholder="Ej: Profesor, adjunto el informe con los esquemas de Proteus y los cálculos revisados según la guía."
+                                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-[#800521] transition-all resize-none placeholder:text-slate-400"
+                                    />
+                                  </div>
+
+                                  {/* Botones de acción */}
+                                  <div className="flex items-center justify-end gap-2.5 pt-1">
+                                    {isEditingThis && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditingTaskSubmission(prev => ({ ...prev, [asg.id]: false }))}
+                                        className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                      >
+                                        Cancelar
+                                      </button>
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      disabled={taskSubmitting[asg.id] || (!selectedTaskFiles[asg.id] && !prevSub?.fileName)}
+                                      onClick={() => handleStudentSubmitTask(asg.id)}
+                                      className="bg-[#800521] hover:bg-[#66041a] text-white font-black text-xs uppercase px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                                     >
-                                      Entregar
+                                      <Upload className="w-4 h-4 text-amber-300" />
+                                      <span>
+                                        {taskSubmitting[asg.id] 
+                                          ? "Enviando..." 
+                                          : isEditingThis 
+                                            ? "Guardar Cambios de Entrega" 
+                                            : "Entregar Tarea Evaluativa"}
+                                      </span>
                                     </button>
                                   </div>
                                 </div>
@@ -1357,6 +1805,98 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
       {toastNotice && (
         <Toast notice={toastNotice} onClose={() => setToastNotice(null)} />
+      )}
+
+      {/* Modal de Confirmación para Eliminar Entrega del Estudiante */}
+      <ConfirmModal
+        isOpen={!!submissionToDelete}
+        variant="danger"
+        title="Eliminar Entrega de Tarea"
+        message={
+          <div className="space-y-3 text-left">
+            <p className="text-xs text-slate-600 leading-relaxed">
+              ¿Está seguro de que desea retirar su entrega realizada para:
+            </p>
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3">
+              <span className="text-xs font-black text-slate-900 block truncate">
+                {submissionToDelete?.assignmentTitle}
+              </span>
+            </div>
+            <p className="text-[11px] text-amber-700 font-semibold bg-amber-50 border border-amber-200/60 rounded-lg p-2.5">
+              Al retirar su entrega, el docente no podrá visualizar el archivo anterior y deberá subir una nueva entrega antes de la fecha límite.
+            </p>
+          </div>
+        }
+        confirmText="Sí, Eliminar Entrega"
+        cancelText="Cancelar"
+        isLoading={isDeletingSubmission}
+        onClose={() => setSubmissionToDelete(null)}
+        onConfirm={handleDeleteStudentSubmission}
+      />
+
+      {/* Visor Modal de PDF Oficial (Guías y Entregables) */}
+      {pdfModal && typeof document !== "undefined" && createPortal(
+        <div 
+          className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPdfModal(null);
+          }}
+        >
+          <div 
+            className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col h-[85vh] overflow-hidden my-auto animate-in zoom-in-95 duration-200 text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header del Visor */}
+            <div className="bg-[#800521] text-white px-5 py-3.5 flex items-center justify-between shrink-0 shadow-xs border-b border-[#800521]/20">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-1.5 rounded-lg bg-white/10 text-amber-300">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-white">
+                    {pdfModal.title}
+                  </h3>
+                  <p className="text-[10.5px] text-rose-200 font-mono truncate max-w-md">
+                    {pdfModal.fileName}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button 
+                  onClick={() => setPdfModal(null)}
+                  className="text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                  title="Cerrar visor"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Cuerpo del Visor con iframe embebido */}
+            <div className="flex-1 p-2 bg-slate-100 flex flex-col overflow-hidden">
+              <iframe
+                src={pdfModal.url}
+                title={pdfModal.fileName}
+                className="w-full flex-1 rounded-xl border border-slate-300 bg-white"
+              />
+            </div>
+
+            {/* Footer */}
+            <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-between shrink-0">
+              <span className="text-[11px] font-mono text-slate-500 font-bold truncate max-w-sm">
+                {pdfModal.fileName}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPdfModal(null)}
+                className="bg-[#800521] hover:bg-[#66041a] text-white text-xs font-black uppercase tracking-wider px-5 py-2 rounded-xl transition-all shadow-xs cursor-pointer active:scale-95"
+              >
+                Cerrar Visor
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </PageTransition>
   );

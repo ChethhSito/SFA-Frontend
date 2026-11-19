@@ -190,6 +190,9 @@ export interface CourseAssignment {
     studentName: string;
     fileName: string;
     submitDate: string;
+    comment?: string;
+    fileBase64?: string;
+    mimeType?: string;
     grade?: number; // scale 0-20
     feedback?: string;
   }[];
