@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, AlertCircle, HelpCircle, Info, Trash2, X } from "lucide-react";
 
 export interface ConfirmModalProps {
@@ -71,12 +72,12 @@ export default function ConfirmModal({
   const current = variantConfig[variant] || variantConfig.primary;
   const Icon = current.icon;
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-modal-title"
-      className="fixed inset-0 z-[10050] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-150"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isLoading) onClose();
       }}
@@ -110,7 +111,7 @@ export default function ConfirmModal({
               onClick={onClose}
               disabled={isLoading}
               aria-label="Cerrar modal"
-              className="text-slate-400 hover:text-slate-600 rounded-lg p-1 transition-colors disabled:opacity-50"
+              className="text-slate-400 hover:text-slate-600 rounded-lg p-1 transition-colors disabled:opacity-50 cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
@@ -142,4 +143,10 @@ export default function ConfirmModal({
       </div>
     </div>
   );
+
+  if (typeof document !== "undefined") {
+    return createPortal(modalContent, document.body);
+  }
+
+  return modalContent;
 }
