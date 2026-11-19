@@ -520,17 +520,12 @@ export default function DocenteDashboard({
   const getGlobalStats = () => {
     let pendingReviews = 0;
     const activeCourseIds = teacherCourses.map((c) => c.id);
-    const activeAssignments = assignments.filter((a) => activeCourseIds.includes(a.courseId));
+    const activeAssignments = assignments.filter((a) => activeCourseIds.includes(a.courseId) && a.kind !== "assessment");
 
     activeAssignments.forEach((asg) => {
-      ROSTER.forEach((std) => {
-        const weekMatch = asg.title.match(/\[Semana (\d+)\]/);
-        const weekNum = weekMatch ? parseInt(weekMatch[1], 10) : 1;
-        const key = `${asg.courseId}-${weekNum}-${std.dni}`;
-        if (!gradesRegistry[key]) {
-          pendingReviews++;
-        }
-      });
+      // Contabilizar las entregas reales enviadas por los alumnos que esperan calificación
+      const pendingSubmissions = (asg.submissions || []).filter((sub) => sub.grade === undefined);
+      pendingReviews += pendingSubmissions.length;
     });
 
     let attPresente = 0;
@@ -871,7 +866,7 @@ export default function DocenteDashboard({
                 <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-3xs flex items-center justify-between text-left hover:shadow-md transition-all">
                   <div className="space-y-1">
                     <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Revisiones Pendientes</span>
-                    <span className="text-2xl font-black text-amber-700 block font-display tracking-tight">{globalStats.pendingGrades} Tareas</span>
+                    <span className="text-2xl font-black text-amber-700 block font-display tracking-tight">{globalStats.pendingGrades} {globalStats.pendingGrades === 1 ? "Entrega" : "Entregas"}</span>
                     <span className="text-[10px] text-slate-500 font-bold block">Evidencias por calificar</span>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center shrink-0">
