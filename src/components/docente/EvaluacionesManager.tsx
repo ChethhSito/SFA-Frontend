@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { Award, Plus, Save, CheckCircle2, AlertCircle, FileSpreadsheet, ChevronDown, Check, Lock } from "lucide-react";
+import { Award, Plus, Save, CheckCircle2, AlertCircle, FileSpreadsheet, ChevronDown, Check, Lock, Trash2 } from "lucide-react";
 import { CourseAssignment, StudentPersonalData } from "../../types";
 import Toast, { ToastNotice } from "../ui/Toast";
+import ConfirmModal from "../ui/ConfirmModal";
 import { ROSTER } from "./DocenteTypes";
 import { getCourseFormula } from "../../constants/courseFormulas";
 import { SecurePinModal } from "./evaluaciones/SecurePinModal";
@@ -75,21 +76,92 @@ export default function EvaluacionesManager({
     return map;
   }, [assignments, courseId, formula.variables]);
 
+  const [confirmDeleteModalOpen, setConfirmDeleteModalOpen] = useState(false);
+
+  const executeDeleteEvaluation = async () => {
+    if (!selected || saving) return;
+    setSaving(true);
+    try {
+      const evaluationIdToDelete = selected.id;
+      const linkedComp = selected.curricularComponent;
+      
+      // Filter out this assessment
+      let updatedAssignments = assignments.filter((a) => a.id !== evaluationIdToDelete);
+
+      // If it had a curricular component, check if any other evaluation uses it; if not, remove the [Planilla] entry as well
+      if (linkedComp) {
+        const otherUsesComponent = updatedAssignments.some(
+          (a) => a.courseId === courseId && a.id !== evaluationIdToDelete && (a.curricularComponent === linkedComp || a.title.toUpperCase().includes(`[${linkedComp}]`))
+        );
+        if (!otherUsesComponent) {
+          updatedAssignments = updatedAssignments.filter(
+            (a) => !(a.courseId === courseId && a.title === `[Planilla] ${linkedComp}`)
+          );
+        }
+      }
+
+      const saved = await onUpdateAssignments(updatedAssignments);
+      if (saved) {
+        setSelectedId("");
+        notify(`Evaluación eliminada correctamente de la Semana ${week}.`, "success");
+      } else {
+        notify("No se pudo eliminar la evaluación. Intente nuevamente.", "error");
+      }
+    } finally {
+      setSaving(false);
+      setConfirmDeleteModalOpen(false);
+    }
+  };
+
   const createEvaluation = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!title.trim() || saving) return;
 
-    // Prevent duplicate official milestones (e.g. two PC1 in same course)
-    if (selectedComponent && selectedComponent !== "NPA") {
-      const existing = assignedComponentsMap[selectedComponent];
+    let finalComponent = selectedComponent;
+    const upperTitle = title.toUpperCase();
+
+    // Auto-detect official milestone if not explicitly chosen in dropdown
+    if (!finalComponent) {
+      if (upperTitle.includes("PC1") || upperTitle.includes("PRÁCTICA CALIFICADA 1") || upperTitle.includes("PRACTICA CALIFICADA 1")) {
+        finalComponent = "PC1";
+      } else if (upperTitle.includes("PC2") || upperTitle.includes("PRÁCTICA CALIFICADA 2") || upperTitle.includes("PRACTICA CALIFICADA 2")) {
+        finalComponent = "PC2";
+      } else if (upperTitle.includes("EX_FINAL") || upperTitle.includes("EXAMEN FINAL") || upperTitle.includes("FINAL")) {
+        finalComponent = "EX_FINAL";
+      }
+    }
+
+    // Prevent duplicate official milestones (e.g. two PC1 or two PC2 in same course)
+    if (finalComponent && finalComponent !== "NPA") {
+      const existing = assignedComponentsMap[finalComponent];
       if (existing) {
-        notify(`El hito "${selectedComponent}" ya está programado${existing.week ? ` en la Semana ${existing.week}` : ""}. Un curso oficial solo puede tener un único hito de este tipo.`, "warning");
+        notify(`El hito oficial "${finalComponent}" ya se encuentra programado${existing.week ? ` en la Semana ${existing.week}` : ""}. Un curso oficial solo puede tener un único hito de este tipo.`, "warning");
         return;
       }
     }
 
-    const tag = selectedComponent ? `[${selectedComponent}] ` : "";
-    const evaluationTitle = `[Semana ${week}] ${tag}${title.trim()}`;
+    // Also prevent duplicate if title contains official milestone keywords
+    for (const v of formula.variables) {
+      if (v.id === "NPA") continue;
+      const isMentionedInTitle = 
+        upperTitle.includes(`[${v.id}]`) ||
+        upperTitle.includes(v.id) ||
+        (v.id === "PC1" && (upperTitle.includes("PRÁCTICA CALIFICADA 1") || upperTitle.includes("PRACTICA CALIFICADA 1"))) ||
+        (v.id === "PC2" && (upperTitle.includes("PRÁCTICA CALIFICADA 2") || upperTitle.includes("PRACTICA CALIFICADA 2"))) ||
+        (v.id === "EX_FINAL" && (upperTitle.includes("EXAMEN FINAL") || upperTitle.includes("FINAL")));
+
+      if (isMentionedInTitle) {
+        const existing = assignedComponentsMap[v.id];
+        if (existing) {
+          notify(`El hito oficial "${v.label}" ya está programado${existing.week ? ` en la Semana ${existing.week}` : ""}. No es posible registrar dos veces el mismo hito en el curso.`, "warning");
+          return;
+        }
+      }
+    }
+
+    const tag = finalComponent ? `[${finalComponent}] ` : "";
+    const cleanTitle = title.trim().replace(/^\[(PC1|PC2|EX_FINAL|NPA)\]\s*/i, "");
+    const evaluationTitle = `[Semana ${week}] ${tag}${cleanTitle}`;
     if (evaluations.some((item) => item.title.toLowerCase() === evaluationTitle.toLowerCase())) {
       notify("Ya existe una evaluación con ese nombre en esta semana.", "warning");
       return;
@@ -102,9 +174,9 @@ export default function EvaluacionesManager({
         title: evaluationTitle,
         kind: "assessment",
         modality: selectedModality,
-        curricularComponent: selectedComponent || undefined,
-        description: selectedComponent 
-          ? `Hito Curricular Oficial (${selectedComponent}) • Modalidad ${selectedModality === "presencial" ? "Presencial de Taller" : "Virtual"}`
+        curricularComponent: finalComponent || undefined,
+        description: finalComponent 
+          ? `Hito Curricular Oficial (${finalComponent}) • Modalidad ${selectedModality === "presencial" ? "Presencial de Taller" : "Virtual"}`
           : `Evaluación formativa de sesión semanal (${selectedModality === "presencial" ? "Presencial" : "Virtual"})`,
         dueDate: new Date().toISOString().slice(0, 10),
         submissions: [],
@@ -402,18 +474,32 @@ export default function EvaluacionesManager({
             </div>
 
             {selected && (
-              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 space-y-1.5 text-[11px]">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400 font-bold uppercase text-[9.5px]">Modalidad:</span>
-                  <span className="font-extrabold text-slate-800 uppercase px-2 py-0.5 bg-white border rounded text-[10px]">
-                    {selected.modality === "virtual" ? "Virtual (Digital)" : "Presencial (Taller/Aula)"}
-                  </span>
+              <div className="space-y-2">
+                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 space-y-1.5 text-[11px]">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 font-bold uppercase text-[9.5px]">Modalidad:</span>
+                    <span className="font-extrabold text-slate-800 uppercase px-2 py-0.5 bg-white border rounded text-[10px]">
+                      {selected.modality === "virtual" ? "Virtual (Digital)" : "Presencial (Taller/Aula)"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 font-bold uppercase text-[9.5px]">Hito Curricular:</span>
+                    <span className="font-mono font-black text-[#800521] px-2 py-0.5 bg-rose-50 border border-rose-200 rounded text-[10px]">
+                      {selected.curricularComponent || "Evaluación Continua"}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-400 font-bold uppercase text-[9.5px]">Hito Curricular:</span>
-                  <span className="font-mono font-black text-[#800521] px-2 py-0.5 bg-rose-50 border border-rose-200 rounded text-[10px]">
-                    {selected.curricularComponent || "Evaluación Continua"}
-                  </span>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteModalOpen(true)}
+                    className="text-rose-700 hover:text-white hover:bg-rose-600 bg-rose-50 border border-rose-200 hover:border-rose-600 px-3 py-1.5 rounded-xl text-[10.5px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs active:scale-95"
+                    title="Eliminar esta evaluación"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Eliminar Evaluación</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -423,7 +509,7 @@ export default function EvaluacionesManager({
         {/* Tabla de Calificaciones de Alumnos */}
         {selected ? (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-3xs overflow-hidden space-y-4 p-5">
-            <div className="border-b border-slate-150 pb-3 flex items-center justify-between">
+            <div className="border-b border-slate-150 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h3 className="text-sm font-black uppercase text-slate-900 tracking-tight">
                   {selected.title}
@@ -432,9 +518,20 @@ export default function EvaluacionesManager({
                   Ingrese las notas individuales del registro pedagógico.
                 </p>
               </div>
-              <span className="text-xs font-bold text-slate-500">
-                Ponderación Vigente: <strong className="text-slate-800">Escala Vigesimal (0 a 20)</strong>
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-slate-500 hidden md:inline">
+                  Ponderación: <strong className="text-slate-800">Escala Vigesimal (0 a 20)</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteModalOpen(true)}
+                  className="text-rose-600 hover:text-white hover:bg-rose-600 border border-rose-200 hover:border-rose-600 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                  title="Eliminar evaluación"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>Eliminar</span>
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -568,6 +665,28 @@ export default function EvaluacionesManager({
         onPressDigit={handleKeypadPress}
         onClearPin={handleKeypadClear}
         onClose={() => setPinModalOpen(false)}
+      />
+
+      {/* Modal de Confirmación para Eliminar Evaluación */}
+      <ConfirmModal
+        isOpen={confirmDeleteModalOpen}
+        variant="danger"
+        title="Eliminar Evaluación"
+        message={
+          <div className="space-y-2">
+            <p className="text-slate-700 font-medium text-xs leading-relaxed">
+              ¿Está seguro de que desea eliminar la evaluación <strong className="text-slate-900">{selected?.title}</strong>?
+            </p>
+            <p className="text-[11px] text-rose-600 font-bold bg-rose-50 border border-rose-200/80 p-2.5 rounded-xl">
+              Esta acción removerá esta evaluación de la Semana {week} de forma definitiva. Si existían calificaciones registradas, quedarán desvinculadas.
+            </p>
+          </div>
+        }
+        confirmText="Eliminar Evaluación"
+        cancelText="Cancelar"
+        isLoading={saving}
+        onConfirm={executeDeleteEvaluation}
+        onClose={() => setConfirmDeleteModalOpen(false)}
       />
     </div>
   );
