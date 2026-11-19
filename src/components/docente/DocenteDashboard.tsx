@@ -744,12 +744,12 @@ export default function DocenteDashboard({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-3xs flex items-center justify-between text-left hover:shadow-md transition-all">
                   <div className="space-y-1">
-                    <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Carga Lectiva a Cargo</span>
+                    <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Asignaturas a Cargo</span>
                     <span className="text-2xl font-black text-slate-900 block font-display tracking-tight">
-                      {globalStats.totalComponents} Componente{globalStats.totalComponents === 1 ? "" : "s"}
+                      {globalStats.totalCourses} Asignatura{globalStats.totalCourses === 1 ? "" : "s"}
                     </span>
                     <span className="text-[10px] text-slate-500 font-bold block">
-                      {globalStats.totalCourses} Asignatura Modular (2027-I)
+                      Periodo Académico 2027-I
                     </span>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-red-50 text-[#800521] border border-red-100 flex items-center justify-center shrink-0">
@@ -804,10 +804,10 @@ export default function DocenteDashboard({
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-5 border-b border-slate-150">
                       <div>
                         <h3 className="text-base font-black text-slate-900 tracking-tight uppercase">
-                          Asignaturas Tecnológicas Asignadas
+                          Mis Cursos Asignados
                         </h3>
                         <p className="text-xs text-slate-500 font-medium">
-                          Seleccione la materia para abrir el aula virtual, syllabus y seguimiento de 16 semanas.
+                          Selecciona el curso para ingresar al aula virtual, materiales y registro de notas.
                         </p>
                       </div>
                       <span className="text-xs bg-slate-100 text-slate-700 font-bold px-3 py-1 rounded-full w-max">
@@ -876,7 +876,7 @@ export default function DocenteDashboard({
                                   }}
                                   className="w-full sm:w-auto bg-[#800521] hover:bg-[#66041a] text-white py-2.5 px-6 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
                                 >
-                                  <span>Gestionar Estructura Académica</span>
+                                  <span>Ingresar al Curso</span>
                                   <ChevronRight className="w-4 h-4 text-amber-300" />
                                 </button>
                               </div>
@@ -1103,7 +1103,7 @@ export default function DocenteDashboard({
                           }}
                           className="w-full bg-[#800521] hover:bg-[#66041a] text-white py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group-hover:scale-[1.01]"
                         >
-                          <span>Gestionar Estructura Académica</span>
+                          <span>Ingresar al Curso</span>
                           <ChevronRight className="w-4 h-4 text-amber-300 group-hover:translate-x-0.5 transition-transform" />
                         </button>
                       </div>

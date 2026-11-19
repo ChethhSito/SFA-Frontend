@@ -80,13 +80,13 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           code: "EIND-101-TEO",
           name: "Fundamentos de Electricidad y Circuitos CC (Teoría)",
           shortLabel: "Teoría",
-          badge: "Teoría Presencial",
+          badge: "Teoría",
           schedule: "Lunes 08:00 AM - 10:00 AM",
           classroom: "Aula 101 - Pabellón A",
           teacher: activeCourse.teacherName || "Manuel Ramos Salazar",
           credits: 2,
-          hours: "2 Horas Pedagógicas",
-          description: "Fundamentos conceptuales, leyes eléctricas de Kirchhoff, análisis de mallas y cálculo de circuitos de corriente continua.",
+          hours: "2 Horas",
+          description: "Clases teóricas de fundamentos y circuitos.",
           dbCourseId: "6afc831d1bbefb1d4e11dd0e"
         },
         {
@@ -94,13 +94,13 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           code: "EIND-101-TAL",
           name: "Fundamentos de Electricidad y Circuitos CC (Taller)",
           shortLabel: "Taller",
-          badge: "Taller Práctico",
+          badge: "Taller",
           schedule: "Lunes 11:00 AM - 01:00 PM",
           classroom: "Taller de Máquinas Eléctricas y Tableros",
           teacher: activeCourse.teacherName || "Manuel Ramos Salazar",
           credits: 2,
-          hours: "2 Horas Pedagógicas",
-          description: "Montaje físico de tableros eléctricos industriales, cableado estructurado, uso de EPP y conexionado de circuitos de fuerza.",
+          hours: "2 Horas",
+          description: "Prácticas en tableros y máquinas eléctricas.",
           dbCourseId: "6afe1412016eccb3be7af0eb"
         },
         {
@@ -108,13 +108,13 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           code: "EIND-101-LAB",
           name: "Fundamentos de Electricidad y Circuitos CC (Laboratorio)",
           shortLabel: "Laboratorio",
-          badge: "Laboratorio y Mediciones",
+          badge: "Laboratorio",
           schedule: "Viernes 08:00 AM - 10:00 AM",
           classroom: "Laboratorio de Cómputo y Simulación",
           teacher: activeCourse.teacherName || "Manuel Ramos Salazar",
           credits: 1,
-          hours: "2 Horas Pedagógicas",
-          description: "Simulación de circuitos eléctricos en software CAD/CAE, osciloscopios digitales y emisión de reportes técnicos de laboratorio.",
+          hours: "2 Horas",
+          description: "Simulación de circuitos y mediciones de laboratorio.",
           dbCourseId: "6afe141f016eccb3be7af0ec"
         }
       ];
@@ -325,7 +325,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               {activeCourse.name}
             </h2>
             <p className="text-xs text-slate-200 font-medium leading-relaxed max-w-2xl">
-              Esta asignatura modular se estructura en <strong>{subComponents.length} componentes pedagógicos independientes</strong>. Seleccione el entorno lectivo al que desea acceder para revisar materiales, consultar asistencias y entregar tareas:
+              Selecciona a qué clase deseas ingresar para revisar materiales, asistencias y tareas:
             </p>
           </div>
         </div>
