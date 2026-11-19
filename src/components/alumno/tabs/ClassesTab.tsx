@@ -2,7 +2,7 @@ import { AttendanceRecord } from "../../../types";
 import { studentAttendanceRecords } from "../../../utils/attendance";
 import React, { useState, useMemo, useEffect } from "react";
 import { 
-  Zap, Cpu, Sliders, Award, ChevronRight, ChevronDown, BookOpen, Clock, CheckCircle2, 
+  Zap, Cpu, Sliders, Award, ChevronRight, ChevronLeft, ChevronDown, BookOpen, Clock, CheckCircle2, 
   Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark, MapPin, GraduationCap
 } from "lucide-react";
 import { CourseMaterial, CourseAssignment, CourseEvaluation, AcademicProgram, StudentPersonalData } from "../../../types";
