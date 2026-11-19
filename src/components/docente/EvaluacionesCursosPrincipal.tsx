@@ -67,12 +67,35 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
   }, [enrollments, studentsList, selectedCourse]);
   const sheetData = useMemo(() => {
     const sheet: Record<string, string> = {};
-    // Fallback from regular graded course assignments (e.g. week 1 assignment maps to first variable PC1)
-    const regularCourseAssignments = assignments.filter((a) => a.courseId === selectedCourseId && !a.title.startsWith("[Planilla] "));
+    const regularCourseAssignments = assignments.filter((a) => a.courseId === selectedCourseId && !a.title.startsWith("[Planilla] ") && a.kind !== "assessment");
+    
+    // Auto compute NPA for each student from graded weekly tasks
+    const studentGradesMap: Record<string, number[]> = {};
     regularCourseAssignments.forEach((assignment) => {
-      const matchingVar = formula.variables.find((v) => assignment.title.toUpperCase().includes(v.id)) ||
-        (assignment.title.toLowerCase().includes("semana 1") ? formula.variables[0] : null);
-      if (matchingVar) {
+      assignment.submissions.forEach((submission) => {
+        if (typeof submission.grade === "number") {
+          if (!studentGradesMap[submission.studentDni]) studentGradesMap[submission.studentDni] = [];
+          studentGradesMap[submission.studentDni].push(submission.grade);
+        }
+      });
+    });
+
+    Object.entries(studentGradesMap).forEach(([dni, grades]) => {
+      if (grades.length > 0) {
+        const avg = Math.round((grades.reduce((a, b) => a + b, 0) / grades.length) * 10) / 10;
+        sheet[`${dni}-NPA`] = String(avg);
+      }
+    });
+
+    // Check assessments linked to curricular variables (e.g. PC1, PC2, EX_FINAL)
+    const assessmentAssignments = assignments.filter((a) => a.courseId === selectedCourseId && (a.kind === "assessment" || a.curricularComponent));
+    assessmentAssignments.forEach((assignment) => {
+      const matchingVar = formula.variables.find((v) => 
+        (assignment.curricularComponent && assignment.curricularComponent === v.id) ||
+        assignment.title.toUpperCase().includes(v.id) ||
+        assignment.title.toUpperCase().includes(`[${v.id}]`)
+      );
+      if (matchingVar && matchingVar.id !== "NPA") {
         assignment.submissions.forEach((submission) => {
           if (submission.grade !== undefined && !sheet[`${submission.studentDni}-${matchingVar.id}`]) {
             sheet[`${submission.studentDni}-${matchingVar.id}`] = String(submission.grade);
@@ -81,7 +104,7 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
       }
     });
 
-    // Explicit [Planilla] entries take priority
+    // Explicit [Planilla] entries take absolute highest priority
     assignments.filter((assignment) => assignment.courseId === selectedCourseId && assignment.title.startsWith("[Planilla] "))
       .forEach((assignment) => {
         const variable = assignment.title.slice("[Planilla] ".length).trim();

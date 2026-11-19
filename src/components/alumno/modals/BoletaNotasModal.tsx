@@ -9,8 +9,8 @@ interface BoletaNotasModalProps {
   studentName: string;
   careerName: string;
   cycleNumber: number;
-  courses: Array<{ name: string; grade: number; approved: boolean }>;
-  average: number;
+  courses: Array<{ name: string; grade: number | string; approved?: boolean | null; status?: string }>;
+  average: number | string;
 }
 
 export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
@@ -75,7 +75,7 @@ PROMEDIO PONDERADO DEL CICLO: ${average}
 
 CURSOS EVALUADOS:
 ----------------------------------------
-${courses.map((c, i) => `${i + 1}. ${c.name} | NOTA: ${c.grade} | ${c.approved ? 'APROBADO' : 'DESAPROBADO'}`).join("\n")}
+${courses.map((c, i) => `${i + 1}. ${c.name} | NOTA: ${c.grade} | ${c.status || (c.approved ? 'APROBADO' : 'DESAPROBADO')}`).join("\n")}
 ----------------------------------------
 Documento oficial emitido por la Secretaría Académica.
 Periodo Lectivo 2027-I • Lima, Perú.
@@ -170,12 +170,20 @@ Periodo Lectivo 2027-I • Lima, Perú.
                       <tr key={i} className="hover:bg-slate-50">
                         <td className="p-2.5 text-slate-400 font-mono">{i + 1}</td>
                         <td className="p-2.5 font-bold text-slate-800">{c.name}</td>
-                        <td className={`p-2.5 text-center font-mono font-bold ${c.grade >= 13 ? "text-slate-900" : "text-rose-600"}`}>
+                        <td className={`p-2.5 text-center font-mono font-bold ${
+                          typeof c.grade === "number" ? (c.grade >= 13 ? "text-slate-900" : "text-rose-600") : "text-slate-400"
+                        }`}>
                           {c.grade}
                         </td>
                         <td className="p-2.5 text-center">
-                          <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-extrabold ${c.approved ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
-                            {c.approved ? "Aprobado" : "Desaprobado"}
+                          <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-extrabold ${
+                            c.status === "En Curso" || c.grade === "NR"
+                              ? "bg-slate-100 text-slate-600 border border-slate-200"
+                              : c.approved
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-rose-100 text-rose-800"
+                          }`}>
+                            {c.status || (c.approved ? "Aprobado" : "Desaprobado")}
                           </span>
                         </td>
                       </tr>

@@ -570,51 +570,13 @@ export default function AlumnoDashboard({
 
     const courseAssignments = assignments.filter((a) => matchIds.has(a.courseId));
 
-    // 1. Curricular components from the official course formula (PC1, PC2, EX_FINAL)
-    // Matches ONLY official assessments or planilla entries for this component, NOT generic weekly tasks
-    const formulaEvaluations = courseFormula.variables.map((variable) => {
-      // Check explicit [Planilla] assignment
-      const planillaAssignment = courseAssignments.find((a) => a.title === `[Planilla] ${variable.id}`);
-      const planillaSub = planillaAssignment?.submissions.find((s) => s.studentDni === studentDni);
-
-      // Check official assessment explicitly matching variable id (e.g. "[Semana 4] PC1: Práctica Calificada" or kind === "assessment")
-      const assessmentAssignment = courseAssignments.find((a) =>
-        !a.title.startsWith("[Planilla] ") && (
-          a.curricularComponent === variable.id ||
-          (a.kind === "assessment" && a.title.toUpperCase().includes(variable.id)) ||
-          a.title.toUpperCase().includes(`[${variable.id}]`)
-        )
-      );
-      const assessmentSub = assessmentAssignment?.submissions.find((s) => s.studentDni === studentDni);
-
-      let grade: number | "NR" = "NR";
-      let subDesc = variable.label;
-      if (planillaSub?.grade !== undefined) {
-        grade = planillaSub.grade;
-      } else if (assessmentSub?.grade !== undefined) {
-        grade = assessmentSub.grade;
-        subDesc = `${assessmentAssignment?.title}`;
-      }
-
-      return {
-        id: variable.id,
-        name: variable.label,
-        sub: subDesc,
-        prefix: variable.id,
-        weight: `${(variable.weight * 100).toFixed(0)}%`,
-        weightDecimal: variable.weight,
-        grade,
-        isCurricular: true
-      };
-    });
-
-    // 2. Weekly formative homework / tasks (NPA - Nota de Participación y Actividades Continuas)
-    // Weekly reports, workshop tasks across weeks that accumulate and average into the NPA
+    // 1. Weekly formative homework / tasks (NPA - Nota de Participación y Actividades Continuas)
+    // Weekly reports and workshop tasks across weeks that accumulate and average into the NPA
     const weeklyTasks = courseAssignments
       .filter((a) => 
         !a.title.startsWith("[Planilla] ") && 
         a.kind !== "assessment" && 
-        !formulaEvaluations.some(e => e.sub === a.title)
+        !a.curricularComponent
       )
       .map((assignment, index) => {
         const submission = assignment.submissions.find((item) => item.studentDni === studentDni);
@@ -639,6 +601,51 @@ export default function AlumnoDashboard({
     const npaAverage = gradedTasks.length > 0
       ? Math.round((gradedTasks.reduce((acc, t) => acc + (t.grade as number), 0) / gradedTasks.length) * 10) / 10
       : null;
+
+    // 2. Curricular components from the official course formula (NPA, PC1, PC2, EX_FINAL)
+    // Matches explicit planilla entries, NPA continuous average, or official scheduled assessments
+    const formulaEvaluations = courseFormula.variables.map((variable) => {
+      // Check explicit [Planilla] assignment
+      const planillaAssignment = courseAssignments.find((a) => a.title === `[Planilla] ${variable.id}`);
+      const planillaSub = planillaAssignment?.submissions.find((s) => s.studentDni === studentDni);
+
+      // Check official assessment explicitly matching variable id (e.g. "[Semana 4] PC1: Práctica Calificada" or kind === "assessment")
+      const assessmentAssignment = courseAssignments.find((a) =>
+        !a.title.startsWith("[Planilla] ") && (
+          a.curricularComponent === variable.id ||
+          (a.kind === "assessment" && a.title.toUpperCase().includes(variable.id)) ||
+          a.title.toUpperCase().includes(`[${variable.id}]`)
+        )
+      );
+      const assessmentSub = assessmentAssignment?.submissions.find((s) => s.studentDni === studentDni);
+
+      let grade: number | "NR" = "NR";
+      let subDesc = variable.label;
+      if (planillaSub?.grade !== undefined) {
+        grade = planillaSub.grade;
+      } else if (variable.id === "NPA") {
+        if (npaAverage !== null) {
+          grade = npaAverage;
+          subDesc = `Promedio continuo de tareas de aula virtual (${gradedTasks.length} calificada${gradedTasks.length > 1 ? "s" : ""})`;
+        } else {
+          subDesc = "Promedio acumulado de tareas de aula virtual";
+        }
+      } else if (assessmentSub?.grade !== undefined) {
+        grade = assessmentSub.grade;
+        subDesc = `${assessmentAssignment?.title}`;
+      }
+
+      return {
+        id: variable.id,
+        name: variable.label,
+        sub: subDesc,
+        prefix: variable.id,
+        weight: `${(variable.weight * 100).toFixed(0)}%`,
+        weightDecimal: variable.weight,
+        grade,
+        isCurricular: true
+      };
+    });
 
     const evaluationsList = [...formulaEvaluations, ...weeklyTasks];
 

@@ -501,8 +501,11 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           const stats = computeCourseStats(c);
           return {
             name: c.name,
-            grade: stats.hasAnyGrade ? stats.progressiveAverage : 0,
-            approved: stats.hasAnyGrade && stats.progressiveAverage >= 12.5
+            grade: stats.hasAnyGrade ? stats.progressiveAverage : "NR",
+            approved: stats.hasAnyGrade ? stats.progressiveAverage >= 12.5 : null,
+            status: stats.hasAnyGrade 
+              ? (stats.progressiveAverage >= 12.5 ? "Aprobado" : "Desaprobado")
+              : "En Curso"
           };
         })}
         average={hasAnyEvaluations ? Number(cycleProgressiveAverage) : 0}
