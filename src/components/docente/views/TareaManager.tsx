@@ -117,15 +117,65 @@ export function TareaManager({
               <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">
                 Guía de Práctica Adjunta (Opcional)
               </label>
-              <div 
-                onClick={() => attachmentInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-slate-200 hover:border-[#800521]/50 bg-slate-50/70 hover:bg-slate-50 rounded-xl p-3.5 text-center cursor-pointer transition-all flex items-center justify-center gap-2.5 group"
-              >
-                <Upload className="w-4 h-4 text-slate-400 group-hover:text-[#800521] transition-colors" />
-                <span className="text-xs font-bold text-slate-600 truncate">
-                  {attachment ? attachment.name : "Adjuntar PDF o rúbrica de taller"}
-                </span>
-              </div>
+
+              {!attachment ? (
+                <div 
+                  onClick={() => attachmentInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-slate-200 hover:border-[#800521]/50 bg-slate-50/70 hover:bg-slate-50 rounded-xl p-3.5 text-center cursor-pointer transition-all flex items-center justify-center gap-2.5 group"
+                >
+                  <Upload className="w-4 h-4 text-slate-400 group-hover:text-[#800521] transition-colors" />
+                  <span className="text-xs font-bold text-slate-600 truncate">
+                    Adjuntar PDF o rúbrica de taller
+                  </span>
+                </div>
+              ) : (
+                <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-red-50 text-[#800521] border border-red-200 flex items-center justify-center shrink-0">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 text-left">
+                        <span className="text-xs font-bold text-slate-800 block truncate" title={attachment.name}>
+                          {attachment.name}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-semibold block">
+                          {(attachment.size / 1024).toFixed(1)} KB • Archivo cargado
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200/60">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = URL.createObjectURL(attachment);
+                        window.open(url, "_blank");
+                      }}
+                      className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 hover:border-slate-400 text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-3xs cursor-pointer"
+                      title="Ver contenido del PDF en nueva pestaña"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Ver PDF</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAttachment(null);
+                        if (attachmentInputRef.current) attachmentInputRef.current.value = "";
+                      }}
+                      className="bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 hover:border-rose-300 text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-3xs cursor-pointer"
+                      title="Quitar archivo adjunto"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Eliminar</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <input
                 type="file"
                 ref={attachmentInputRef}

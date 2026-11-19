@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Upload, Trash2, FileText, BookOpen, AlertCircle, CheckCircle2, Download } from "lucide-react";
+import { Upload, Trash2, FileText, BookOpen, AlertCircle, CheckCircle2, Download, Eye } from "lucide-react";
 import { CourseMaterial } from "../../../types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import Button from "../../ui/Button";
@@ -95,25 +95,64 @@ export function MaterialManager({ courseId, week, materials, onPublishMaterial, 
                 Archivo Lectivo (Máximo 10 MB)
               </label>
               
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-slate-200 hover:border-[#800521]/50 bg-slate-50/70 hover:bg-slate-50 rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-1.5 group"
-              >
-                <div className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-500 group-hover:text-[#800521] group-hover:border-[#800521] flex items-center justify-center transition-colors">
-                  <Upload className="w-4 h-4" />
-                </div>
-                {file ? (
-                  <div className="space-y-0.5 max-w-full">
-                    <span className="font-mono text-xs font-black text-slate-800 block truncate">{file.name}</span>
-                    <span className="text-[10px] text-emerald-600 font-bold block">{(file.size / 1024 / 1024).toFixed(2)} MB adjunto</span>
+              {!file ? (
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-slate-200 hover:border-[#800521]/50 bg-slate-50/70 hover:bg-slate-50 rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center space-y-1.5 group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-500 group-hover:text-[#800521] group-hover:border-[#800521] flex items-center justify-center transition-colors">
+                    <Upload className="w-4 h-4" />
                   </div>
-                ) : (
                   <div className="space-y-0.5">
                     <span className="text-xs font-extrabold text-slate-700 block">Haga clic para seleccionar archivo</span>
                     <span className="text-[9.5px] text-slate-400 font-medium block">PDF, DOCX, PPTX, XLSX, MP4</span>
                   </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-red-50 text-[#800521] border border-red-200 flex items-center justify-center shrink-0">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 text-left">
+                      <span className="text-xs font-bold text-slate-800 block truncate" title={file.name}>
+                        {file.name}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-semibold block">
+                        {(file.size / 1024).toFixed(1)} KB • Archivo cargado
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200/60">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = URL.createObjectURL(file);
+                        window.open(url, "_blank");
+                      }}
+                      className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 hover:border-slate-400 text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-3xs cursor-pointer"
+                      title="Ver contenido del archivo en nueva pestaña"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Ver Archivo</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFile(null);
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                      }}
+                      className="bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 hover:border-rose-300 text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all shadow-3xs cursor-pointer"
+                      title="Quitar archivo adjunto"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Eliminar</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <input
                 type="file"
