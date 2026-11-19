@@ -74,6 +74,19 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   const [activeCourseComponentId, setActiveCourseComponentId] = useState<string | null>(null);
   const [isStructureSidebarCollapsed, setIsStructureSidebarCollapsed] = useState(false);
 
+  // Estados interactivos para la entrega de tareas del alumno
+  const [selectedTaskFiles, setSelectedTaskFiles] = useState<Record<string, File | null>>({});
+  const [taskComments, setTaskComments] = useState<Record<string, string>>({});
+  const [editingTaskSubmission, setEditingTaskSubmission] = useState<Record<string, boolean>>({});
+  const [taskSubmitting, setTaskSubmitting] = useState<Record<string, boolean>>({});
+
+  // Visor modal de PDF oficial para guías y entregas
+  const [pdfModal, setPdfModal] = useState<{ url: string; title: string; fileName: string } | null>(null);
+
+  // Modal de confirmación para eliminar entrega
+  const [submissionToDelete, setSubmissionToDelete] = useState<{ assignmentId: string; assignmentTitle: string } | null>(null);
+  const [isDeletingSubmission, setIsDeletingSubmission] = useState(false);
+
   const subComponents = useMemo(() => {
     if (!activeCourse) return [];
     if (activeCourse.code === "EIND-101" || activeCourse.code?.startsWith("EIND-101")) {
@@ -447,19 +460,6 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     const courseMatches = activeCourse.attendanceCourseIds?.includes(a.courseId) || a.courseId === activeCourse.id || a.courseId === activeCourseDbId;
     return courseMatches;
   });
-
-  // Estados interactivos para la entrega de tareas del alumno
-  const [selectedTaskFiles, setSelectedTaskFiles] = useState<Record<string, File | null>>({});
-  const [taskComments, setTaskComments] = useState<Record<string, string>>({});
-  const [editingTaskSubmission, setEditingTaskSubmission] = useState<Record<string, boolean>>({});
-  const [taskSubmitting, setTaskSubmitting] = useState<Record<string, boolean>>({});
-
-  // Visor modal de PDF oficial para guías y entregas
-  const [pdfModal, setPdfModal] = useState<{ url: string; title: string; fileName: string } | null>(null);
-
-  // Modal de confirmación para eliminar entrega
-  const [submissionToDelete, setSubmissionToDelete] = useState<{ assignmentId: string; assignmentTitle: string } | null>(null);
-  const [isDeletingSubmission, setIsDeletingSubmission] = useState(false);
 
   // Cálculo de puntualidad / antelación de entrega respecto a la fecha límite
   const getSubmissionTiming = (submitDateStr?: string, dueDateStr?: string) => {
