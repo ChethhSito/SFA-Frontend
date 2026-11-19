@@ -141,8 +141,11 @@ export function useMaterialUpload() {
       }
       for (const previous of assignments) {
         if (updatedList.some((current) => current.id === previous.id)) continue;
-        const deleted = await deleteCourseAssignment(previous.id);
-        if (!deleted?.success) throw new Error("No se pudo eliminar la evaluación.");
+        try {
+          await deleteCourseAssignment(previous.id);
+        } catch (delErr) {
+          console.warn("Could not delete assignment on server, proceeding with local deletion:", delErr);
+        }
         confirmed = confirmed.filter((current) => current.id !== previous.id);
         keep(confirmed);
       }

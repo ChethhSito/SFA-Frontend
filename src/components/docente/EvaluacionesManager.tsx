@@ -518,20 +518,9 @@ export default function EvaluacionesManager({
                   Ingrese las notas individuales del registro pedagógico.
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-slate-500 hidden md:inline">
-                  Ponderación: <strong className="text-slate-800">Escala Vigesimal (0 a 20)</strong>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setConfirmDeleteModalOpen(true)}
-                  className="text-rose-600 hover:text-white hover:bg-rose-600 border border-rose-200 hover:border-rose-600 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-                  title="Eliminar evaluación"
-                >
-                  <Trash2 className="w-3 h-3" />
-                  <span>Eliminar</span>
-                </button>
-              </div>
+              <span className="text-xs font-bold text-slate-500">
+                Ponderación Vigente: <strong className="text-slate-800">Escala Vigesimal (0 a 20)</strong>
+              </span>
             </div>
 
             <div className="overflow-x-auto">
