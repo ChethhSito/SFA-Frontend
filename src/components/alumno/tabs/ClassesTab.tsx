@@ -642,19 +642,19 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           </aside>
         </div>
 
-        {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (26px a media altura) */}
+        {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (Diferenciado: más arriba 38%, borgoña+dorado y riel delgado 32px) */}
         <button
           type="button"
           onClick={() => setIsStructureSidebarCollapsed(!isStructureSidebarCollapsed)}
           title={isStructureSidebarCollapsed ? "Expandir semanas del curso" : "Ocultar semanas del curso"}
-          className={`hidden md:flex absolute top-1/2 -translate-y-1/2 z-40 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border border-slate-300 hover:border-[#800521] w-[26px] h-[26px] rounded-full items-center justify-center shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
-            isStructureSidebarCollapsed ? "left-0.5" : "-right-[13px]"
+          className={`hidden md:flex absolute top-[38%] -translate-y-1/2 z-40 bg-[#800521] hover:bg-[#600318] text-amber-300 hover:text-white border-2 border-amber-400/80 hover:border-amber-300 w-[24px] h-[24px] rounded-full items-center justify-center shadow-md hover:shadow-lg transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
+            isStructureSidebarCollapsed ? "left-1/2 -translate-x-1/2" : "-right-[12px]"
           }`}
         >
           {isStructureSidebarCollapsed ? (
-            <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            <ChevronRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
           ) : (
-            <ChevronLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
+            <ChevronLeft className="w-3 h-3 transition-transform group-hover:-translate-x-0.5" />
           )}
         </button>
       </div>
