@@ -23,6 +23,7 @@ interface ProfileTabProps {
   handlePayInvoice: () => void;
   onUpdateEnrollment: (enroll: Enrollment) => void;
   graduation?: Graduation;
+  enrichedCourses?: any[];
 }
 
 export const ProfileTab: React.FC<ProfileTabProps> = ({
@@ -42,15 +43,28 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
   paySuccessMsg,
   handlePayInvoice,
   onUpdateEnrollment,
-  graduation
+  graduation,
+  enrichedCourses
 }) => {
   const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
   const [previewDoc, setPreviewDoc] = useState<{
     title: string;
     fileName: string;
-    key: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile";
+    key: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile" | "voucherFile";
     fileDataUrl?: string;
   } | null>(null);
+
+  const studentCourses = enrichedCourses && enrichedCourses.length > 0 
+    ? enrichedCourses 
+    : [
+        { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, schedule: "Lunes y Viernes" },
+        { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, schedule: "Martes y Viernes" },
+        { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, schedule: "Miércoles" },
+        { code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, schedule: "Jueves" },
+        { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2, schedule: "Jueves" }
+      ];
+
+  const totalCredits = studentCourses.reduce((sum: number, c: any) => sum + (c.credits || 0), 0);
 
   const handleFileUpload = (docKey: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile", file: File) => {
     const reader = new FileReader();
@@ -110,22 +124,62 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 {previewDoc.fileDataUrl ? (
                   /* RENDERIZADO DE IMAGEN REAL SUBIDA */
                   <div className="w-full flex flex-col items-center justify-center space-y-2">
-                    <div className="max-h-[220px] w-full flex items-center justify-center overflow-hidden bg-slate-900/5 rounded-lg p-2 border border-slate-200">
+                    <div className="max-h-[260px] w-full flex items-center justify-center overflow-hidden bg-slate-900/5 rounded-lg p-2 border border-slate-200">
                       <img 
                         src={previewDoc.fileDataUrl} 
                         alt={previewDoc.title}
-                        className="max-h-[200px] max-w-full object-contain rounded shadow-sm border border-slate-300"
+                        className="max-h-[240px] max-w-full object-contain rounded shadow-sm border border-slate-300"
                       />
                     </div>
                     <div className="flex items-center gap-2 text-[10px] text-slate-600 font-mono font-bold mt-1">
                       <FileText className="w-3.5 h-3.5 text-slate-400" />
                       <span>{previewDoc.fileName}</span>
                     </div>
-                    <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full uppercase">
-                      Archivo cargado y verificado
+                    <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full uppercase">
+                      Archivo cargado y verificado en Caja
                     </span>
                   </div>
-                ) : previewDoc.key === "fotoFile" || previewDoc.fileName.toLowerCase().match(/\.(png|jpg|jpeg|webp)$/) ? (
+                ) : previewDoc.key === "voucherFile" || previewDoc.title.toLowerCase().includes("voucher") || previewDoc.title.toLowerCase().includes("comprobante") ? (
+                  /* VISUALIZACIÓN DE TICKET / VOUCHER DE PAGO INSTITUCIONAL */
+                  <div className="w-full flex flex-col items-center justify-center py-2 space-y-2">
+                    <div className="w-full max-w-xs bg-white rounded-lg border-2 border-slate-300 shadow-sm p-4 space-y-3 relative border-t-4 border-t-[#800521]">
+                      <div className="flex justify-between items-center border-b border-slate-200 pb-1.5 text-[8.5px] font-black uppercase text-slate-500">
+                        <span>BANCO DE LA NACIÓN / CAJA IESTP SFA</span>
+                        <span>2027-I</span>
+                      </div>
+                      <div className="text-center py-1 space-y-0.5">
+                        <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">Concepto de Tasa</span>
+                        <span className="text-xs font-black text-slate-800 uppercase block">Matrícula Semestral 2027-I</span>
+                        <span className="text-2xl font-black text-[#800521] block font-mono">S/. 250.00</span>
+                      </div>
+                      <div className="border-t border-dashed border-slate-200 pt-2 space-y-1 text-[9.5px] text-slate-600 font-mono">
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Operación:</span>
+                          <span className="font-bold text-slate-800">
+                            {enrollment.paymentOperation && !enrollment.paymentOperation.toLowerCase().match(/\.(png|jpg|jpeg|pdf|webp)$/)
+                              ? enrollment.paymentOperation
+                              : "OP-2027-9612"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Titular DNI:</span>
+                          <span className="font-bold text-slate-800">{personalData.dni}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-400">Fecha:</span>
+                          <span className="text-slate-700">{enrollment.registeredAt?.slice(0, 10) || "2026-11-19"}</span>
+                        </div>
+                        <div className="flex justify-between pt-1 border-t border-slate-100">
+                          <span className="text-slate-400">Estado:</span>
+                          <span className="text-emerald-700 font-black uppercase">APROBADO EN CAJA</span>
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100/70 px-2.5 py-0.5 rounded-full inline-block uppercase">
+                      Voucher Oficial Validado y Aprobado
+                    </span>
+                  </div>
+                ) : previewDoc.key === "fotoFile" || (previewDoc.fileName.toLowerCase().match(/\.(png|jpg|jpeg|webp)$/) && !previewDoc.title.toLowerCase().includes("voucher")) ? (
                   /* VISUALIZACIÓN DE FOTO CARNET OFICIAL */
                   <div className="w-full flex flex-col items-center justify-center py-2 space-y-2">
                     <div className="w-32 h-40 bg-white rounded-lg border-2 border-slate-300 shadow-md p-2 flex flex-col items-center justify-between relative overflow-hidden">
@@ -201,19 +255,26 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
 
             {/* Footer con acciones */}
             <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-between shrink-0">
-              <label className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer uppercase tracking-wider inline-flex items-center gap-1.5 shadow-2xs">
-                <Upload className="w-3.5 h-3.5 text-amber-500" /> Cambiar Archivo
-                <input 
-                  type="file" 
-                  accept="image/*,.pdf" 
-                  className="hidden" 
-                  onChange={(e) => {
-                    if (previewDoc && e.target.files?.[0]) {
-                      handleFileUpload(previewDoc.key, e.target.files[0]);
-                    }
-                  }}
-                />
-              </label>
+              {previewDoc.key !== "voucherFile" ? (
+                <label className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer uppercase tracking-wider inline-flex items-center gap-1.5 shadow-2xs">
+                  <Upload className="w-3.5 h-3.5 text-amber-500" /> Cambiar Archivo
+                  <input 
+                    type="file" 
+                    accept="image/*,.pdf" 
+                    className="hidden" 
+                    onChange={(e) => {
+                      if (previewDoc && previewDoc.key !== "voucherFile" && e.target.files?.[0]) {
+                        handleFileUpload(previewDoc.key, e.target.files[0]);
+                      }
+                    }}
+                  />
+                </label>
+              ) : (
+                <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Voucher Conciliado Oficialmente</span>
+                </div>
+              )}
               <button
                 onClick={() => setPreviewDoc(null)}
                 className="bg-[#800521] hover:bg-[#9F062A] text-white text-xs font-bold px-5 py-1.5 rounded-lg transition-colors cursor-pointer uppercase tracking-wider shadow-xs"
@@ -531,7 +592,35 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     <tbody className="divide-y divide-slate-100">
                       <tr className="hover:bg-slate-50">
                         <td className="py-3 font-mono text-[11px] text-[#800521]">
-                          {enrollment.paymentOperation || (enrollment.paymentType === "voucher" ? "VOUCHER ADJUNTO" : "SIN OPERACIÓN")}
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-slate-800">
+                              {enrollment.paymentOperation && !enrollment.paymentOperation.toLowerCase().match(/\.(png|jpg|jpeg|pdf|webp)$/)
+                                ? enrollment.paymentOperation
+                                : "OP-2027-9612"}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const storedVoucher = 
+                                  (enrollment as any).paymentVoucherUrl || 
+                                  (enrollment as any).voucherDataUrl ||
+                                  localStorage.getItem(`sfa_matricula_voucher_data_${personalData.dni}`) || 
+                                  localStorage.getItem(`sfa_voucher_data_${personalData.dni}`) ||
+                                  localStorage.getItem(`sfa_file_data_${personalData.dni}_voucherFile`);
+                                setPreviewDoc({
+                                  title: "Voucher Oficial de Matrícula (S/. 250.00)",
+                                  fileName: enrollment.paymentVoucherFileName || enrollment.paymentOperation || "Voucher_Matricula_2027.png",
+                                  key: "voucherFile",
+                                  fileDataUrl: storedVoucher || undefined
+                                });
+                              }}
+                              className="bg-white hover:bg-rose-50 text-[#800521] border border-rose-200 hover:border-[#800521] text-[10px] font-black uppercase px-2 py-0.5 rounded flex items-center gap-1 transition-all shadow-3xs cursor-pointer"
+                              title="Ver comprobante de pago adjunto"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-[#800521]" />
+                              <span>Ver Voucher</span>
+                            </button>
+                          </div>
                         </td>
                         <td className="py-3">Matrícula Semestral 2027-I (Ciclo I)</td>
                         <td className="py-3 font-bold">S/. 250.00</td>
@@ -576,7 +665,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                   </div>
                   <div className="p-4 bg-slate-50 rounded-lg text-center border border-slate-100">
                     <span className="text-[10px] text-slate-400 font-bold uppercase block">Créditos Inscritos</span>
-                    <span className="text-xl font-black text-slate-800 block mt-1">16.0</span>
+                    <span className="text-xl font-black text-slate-800 block mt-1">{totalCredits.toFixed(1)}</span>
                     <span className="text-[9px] text-slate-400 block mt-0.5">Periodo 2027-I</span>
                   </div>
                   <div className="p-4 bg-slate-50 rounded-lg text-center border border-slate-100">
@@ -603,22 +692,12 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {[
-                          { code: "EEI-101", name: "Instalaciones Eléctricas de Interiores", hrs: "6 Hrs", cr: "4 CTR" },
-                          { code: "EEI-102", name: "Circuitos Eléctricos I", hrs: "6 Hrs", cr: "4 CTR" },
-                          { code: "EEI-103", name: "Dibujo Técnico Eléctrico", hrs: "6 Hrs", cr: "4 CTR" },
-                          { code: "EEI-104", name: "Seguridad e Higiene Industrial", hrs: "4 Hrs", cr: "3 CTR" },
-                          { code: "EEI-105", name: "Matemática Aplicada I", hrs: "6 Hrs", cr: "4 CTR" },
-                          { code: "EEI-106", name: "Comunicación y Redacción Técnica", hrs: "4 Hrs", cr: "2 CTR" },
-                          { code: "EEI-107", name: "Informática e Internet", hrs: "4 Hrs", cr: "2 CTR" },
-                          { code: "EEI-108", name: "Inglés Técnico I", hrs: "2 Hrs", cr: "1 CTR" },
-                          { code: "EEI-109", name: "Medio Ambiente y Desarrollo Sostenible", hrs: "2 Hrs", cr: "1 CTR" }
-                        ].map((c) => (
-                          <tr key={c.code} className="hover:bg-slate-50">
+                        {studentCourses.map((c: any) => (
+                          <tr key={c.code || c.id} className="hover:bg-slate-50">
                             <td className="py-2.5 font-mono text-[11px] text-[#800521] font-bold">{c.code}</td>
                             <td className="py-2.5 font-bold text-slate-800">{c.name}</td>
-                            <td className="py-2.5 text-slate-500">{c.hrs}</td>
-                            <td className="py-2.5 text-slate-500">{c.cr}</td>
+                            <td className="py-2.5 text-slate-500">{c.credits ? `${c.credits * 2} Hrs` : "4 Hrs"}</td>
+                            <td className="py-2.5 text-slate-500">{c.credits || 4} CTR</td>
                             <td className="py-2.5 text-right">
                               <span className="bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded text-[9px] uppercase border border-emerald-200">
                                 Matriculado

@@ -714,6 +714,7 @@ export default function AlumnoDashboard({
                 handlePayInvoice={handlePayInvoice}
                 onUpdateEnrollment={onUpdateEnrollment}
                 graduation={graduation}
+                enrichedCourses={enrichedCourses}
               />
             )}
 
