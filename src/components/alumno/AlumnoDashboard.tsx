@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { 
-  User, FileText, Calendar, BookOpen, Clock, Award, HelpCircle, Building, ClipboardList, ArrowLeft
+  User, FileText, Calendar, BookOpen, Clock, Award, HelpCircle, Building, ClipboardList, ArrowLeft,
+  ChevronLeft, ChevronRight
 } from "lucide-react";
 import { Enrollment, StudentPersonalData, Course, CourseMaterial, CourseAssignment, CycleStatus, AttendanceRecord, Graduation, CourseEvaluation } from "../../types";
 import { useAcademicCatalog } from "../../context/AcademicCatalogContext";
 import { motion, AnimatePresence } from "motion/react";
 import Sidebar from "../ui/Sidebar";
+import SidebarCursoAlumno from "./SidebarCursoAlumno";
 import Toast, { ToastNotice } from "../ui/Toast";
 
 import { WelcomeTab } from "./tabs/WelcomeTab";
@@ -109,6 +111,16 @@ export default function AlumnoDashboard({
     return "";
   });
 
+  // Desktop sidebars collapsible states (toggle in the center/middle border)
+  const [isMainSidebarCollapsed, setIsMainSidebarCollapsed] = useState(false);
+  const [isCourseSidebarCollapsed, setIsCourseSidebarCollapsed] = useState(false);
+  const [activeCourseComponentId, setActiveCourseComponentId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("sfa_alumno_course_comp_id") || "teo";
+    }
+    return "teo";
+  });
+
   // Aula Virtual substates
   const [activeCourseSection, setActiveCourseSection] = useState<"general" | "horarios" | "week" | "cierre">(() => {
     if (typeof window !== "undefined") {
@@ -135,11 +147,12 @@ export default function AlumnoDashboard({
     try {
       sessionStorage.setItem("sfa_alumno_active_tab", activeTab);
       if (selectedCourseDetail) sessionStorage.setItem("sfa_alumno_course_detail", selectedCourseDetail);
+      if (activeCourseComponentId) sessionStorage.setItem("sfa_alumno_course_comp_id", activeCourseComponentId);
       sessionStorage.setItem("sfa_alumno_course_section", activeCourseSection);
       sessionStorage.setItem("sfa_alumno_class_week", String(selectedClassWeek));
       sessionStorage.setItem("sfa_alumno_week_option", selectedClassWeekOption);
     } catch {}
-  }, [activeTab, selectedCourseDetail, activeCourseSection, selectedClassWeek, selectedClassWeekOption]);
+  }, [activeTab, selectedCourseDetail, activeCourseComponentId, activeCourseSection, selectedClassWeek, selectedClassWeekOption]);
 
   // Academic advisory mailbox simulation
   const [advisorConsultText, setAdvisorConsultText] = useState("");
@@ -684,170 +697,224 @@ export default function AlumnoDashboard({
     };
   });
 
-  const isInVirtualClassroom = activeTab === "classes" && !!selectedCourseDetail;
   const activeCourseObj = useMemo(() => {
-    if (!isInVirtualClassroom) return null;
+    if (!selectedCourseDetail) return null;
     return enrichedCourses.find(c => c.name === selectedCourseDetail || c.code === selectedCourseDetail) || null;
-  }, [isInVirtualClassroom, enrichedCourses, selectedCourseDetail]);
+  }, [enrichedCourses, selectedCourseDetail]);
+
+  const activeCourseSubComponents = useMemo(() => {
+    if (!activeCourseObj) return [];
+    if (activeCourseObj.code === "EIND-101" || activeCourseObj.code?.startsWith("EIND-101")) {
+      return [
+        {
+          id: "teo",
+          code: "EIND-101-TEO",
+          name: "Fundamentos de Electricidad y Circuitos CC (Teoría)",
+          shortLabel: "Teoría",
+          badge: "Teoría"
+        },
+        {
+          id: "tal",
+          code: "EIND-101-TAL",
+          name: "Fundamentos de Electricidad y Circuitos CC (Taller)",
+          shortLabel: "Taller",
+          badge: "Taller"
+        },
+        {
+          id: "lab",
+          code: "EIND-101-LAB",
+          name: "Fundamentos de Electricidad y Circuitos CC (Laboratorio)",
+          shortLabel: "Laboratorio",
+          badge: "Laboratorio"
+        }
+      ];
+    }
+    return [];
+  }, [activeCourseObj]);
+
+  const activeSelectedComponent = activeCourseSubComponents.find(c => c.id === activeCourseComponentId) || (activeCourseSubComponents.length > 0 && activeCourseComponentId ? activeCourseSubComponents[0] : null);
+
+  const showCourseSidebar = activeTab === "classes" && !!selectedCourseDetail && (activeCourseSubComponents.length <= 1 || !!activeCourseComponentId);
 
   return (
-    <div id="alumno-portal" className={`h-screen w-full overflow-hidden bg-[#F8F9FA] text-[#2D3748] flex ${isInVirtualClassroom ? "flex-col" : "flex-col md:flex-row"} font-sans antialiased`}>
-      {/* 1. MODO ENFOQUE: BARRA SUPERIOR EXCLUSIVA DEL AULA VIRTUAL */}
-      {isInVirtualClassroom && (
-        <header className="bg-white border-b border-slate-200/90 px-4 md:px-6 py-2.5 flex items-center justify-between shrink-0 shadow-2xs z-30 w-full animate-in fade-in duration-200">
-          <div className="flex items-center gap-3 md:gap-4 min-w-0">
-            <button
-              onClick={() => {
-                setSelectedCourseDetail(null);
+    <div id="alumno-portal" className="flex h-screen bg-[#F8F9FA] overflow-hidden font-sans text-slate-800">
+      {/* 1. SIDEBAR PRINCIPAL (INTRANET) */}
+      <Sidebar
+        institution={{
+          name: "IESTP SFA",
+          subtitle: "Intranet Académica"
+        }}
+        user={{
+          name: `${personalData.name} ${personalData.lastName}`,
+          role: currentProgram?.name || "Estudiante",
+          status: enrollment.academicStatus,
+        }}
+        sections={[
+          {
+            title: "MENÚ PRINCIPAL",
+            items: [
+              {
+                label: "Institucional",
+                icon: <Building className="w-4 h-4" />,
+                route: "welcome",
+                active: activeTab === "welcome"
+              },
+              {
+                label: "Información Personal",
+                icon: <User className="w-4 h-4" />,
+                route: "profile",
+                active: activeTab === "profile"
+              }
+            ]
+          },
+          {
+            title: "ACADÉMICO",
+            items: [
+              {
+                label: "Consulta Académica",
+                icon: <ClipboardList className="w-4 h-4" />,
+                route: "closure",
+                active: activeTab === "closure"
+              },
+              {
+                label: "Matrícula de Cursos",
+                icon: <BookOpen className="w-4 h-4" />,
+                route: "enrollment",
+                active: activeTab === "enrollment"
+              },
+              {
+                label: "Mis Cursos",
+                icon: <BookOpen className="w-4 h-4" />,
+                route: "classes",
+                active: activeTab === "classes"
+              },
+              {
+                label: "Mi Horario",
+                icon: <Calendar className="w-4 h-4" />,
+                route: "schedule",
+                active: activeTab === "schedule"
+              },
+              {
+                label: "Mis Calificaciones",
+                icon: <Award className="w-4 h-4" />,
+                route: "notas",
+                active: activeTab === "notas"
+              },
+              {
+                label: "Control de Asistencia",
+                icon: <Clock className="w-4 h-4" />,
+                route: "attendance",
+                active: activeTab === "attendance"
+              },
+              {
+                label: "Calendario Académico",
+                icon: <Calendar className="w-4 h-4" />,
+                route: "calendar",
+                active: activeTab === "calendar"
+              }
+            ]
+          },
+          {
+            title: "SERVICIOS",
+            items: [
+              {
+                label: "Trámites de Secretaría",
+                icon: <FileText className="w-4 h-4" />,
+                route: "secretaria",
+                active: activeTab === "secretaria"
+              },
+              {
+                label: "Guías y Reglamentos",
+                icon: <HelpCircle className="w-4 h-4" />,
+                route: "guias",
+                active: activeTab === "guias"
+              }
+            ]
+          }
+        ]}
+        isCollapsed={isMainSidebarCollapsed}
+        onToggleCollapse={setIsMainSidebarCollapsed}
+        onItemClick={(route) => {
+          if (route === "classes") {
+            setSelectedCourseDetail("");
+            setActiveCourseSection("general");
+          }
+          setActiveTab(route as typeof activeTab);
+        }}
+        onLogout={onLogout}
+        onGoToPortal={onGoToPortal}
+      />
+
+      {/* 2. SIDEBAR SECUNDARIO CURRICULAR DINÁMICO (SEMANAS) */}
+      {showCourseSidebar && (
+        <div className={`hidden md:block shrink-0 relative z-20 transition-all duration-300 ease-in-out ${isCourseSidebarCollapsed ? "w-12 bg-[#FFFBFB] border-r border-rose-200/90" : "w-64"}`}>
+          <div className={`w-64 h-full transition-opacity duration-200 overflow-hidden ${isCourseSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+            <SidebarCursoAlumno
+              courseCode={activeSelectedComponent ? activeSelectedComponent.code : (activeCourseObj?.code || selectedCourseDetail)}
+              courseName={activeSelectedComponent ? activeSelectedComponent.name : (activeCourseObj?.name || selectedCourseDetail)}
+              componentBadge={activeSelectedComponent ? {
+                label: activeSelectedComponent.badge,
+                className: activeSelectedComponent.id === "teo"
+                  ? "text-[#800521] bg-[#800521]/10 border-[#800521]/20"
+                  : activeSelectedComponent.id === "tal"
+                  ? "text-amber-800 bg-amber-50 border-amber-200"
+                  : "text-emerald-700 bg-emerald-50 border-emerald-200"
+              } : null}
+              hasMultipleComponents={activeCourseSubComponents.length > 1}
+              onChangeComponent={() => {
+                setActiveCourseComponentId(null);
                 setActiveCourseSection("general");
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-[#800521] text-xs font-black uppercase transition-all cursor-pointer shadow-3xs shrink-0 select-none"
-              title="Volver a la Intranet Académica"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 text-[#800521]" />
-              <span className="hidden sm:inline">Volver a la Intranet</span>
-              <span className="sm:hidden">Volver</span>
-            </button>
-
-            <div className="h-5 w-px bg-slate-200 hidden sm:block shrink-0" />
-
-            <div className="min-w-0 text-left">
-              <h1 className="text-xs md:text-sm font-black text-slate-900 uppercase tracking-tight truncate flex items-center gap-2">
-                <span className="text-[#800521] font-mono font-black text-[11px] bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded shrink-0">
-                  {activeCourseObj?.code || "AULA VIRTUAL"}
-                </span>
-                <span className="truncate">{activeCourseObj?.name || selectedCourseDetail}</span>
-              </h1>
-              <span className="text-[9.5px] text-slate-400 font-bold uppercase truncate block mt-0.5">
-                Aula Virtual • Semestre 2027-I • {activeCourseObj?.classroom || "Pabellón A"}
-              </span>
-            </div>
+              activeSection={activeCourseSection}
+              selectedWeek={selectedClassWeek}
+              selectedWeekOption={selectedClassWeekOption}
+              onSelectGeneral={() => setActiveCourseSection("general")}
+              onSelectHorarios={() => setActiveCourseSection("horarios")}
+              onSelectCierre={() => setActiveCourseSection("cierre")}
+              onSelectWeekOption={(weekNum, option) => {
+                setActiveCourseSection("week");
+                setSelectedClassWeek(weekNum);
+                setSelectedClassWeekOption(option);
+              }}
+              onBackToCourses={() => {
+                setSelectedCourseDetail("");
+                setActiveCourseSection("general");
+              }}
+            />
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="text-right hidden md:block">
-              <span className="text-xs font-black text-slate-800 block leading-tight">{personalData.name} {personalData.lastName}</span>
-              <span className="text-[9px] text-slate-400 font-bold uppercase block">{currentProgram?.name || "Estudiante"}</span>
-            </div>
-            <div className="h-8 w-8 bg-amber-400 text-slate-900 border border-amber-300 rounded-full flex items-center justify-center font-black text-xs shrink-0 select-none">
-              {personalData.name ? personalData.name[0] : "E"}
-            </div>
-          </div>
-        </header>
-      )}
-
-      {/* 2. INTRANET SIDEBAR (Visible cuando no está dentro del aula virtual) */}
-      {!isInVirtualClassroom && (
-        <Sidebar
-          institution={{
-            name: "IESTP SFA",
-            subtitle: "Intranet Académica"
-          }}
-          user={{
-            name: `${personalData.name} ${personalData.lastName}`,
-            role: currentProgram?.name || "Estudiante",
-            status: enrollment.academicStatus,
-          }}
-          sections={[
-            {
-              title: "MENÚ PRINCIPAL",
-              items: [
-                {
-                  label: "Institucional",
-                  icon: <Building className="w-4 h-4" />,
-                  route: "welcome",
-                  active: activeTab === "welcome"
-                },
-                {
-                  label: "Información Personal",
-                  icon: <User className="w-4 h-4" />,
-                  route: "profile",
-                  active: activeTab === "profile"
-                }
-              ]
-            },
-            {
-              title: "ACADÉMICO",
-              items: [
-                {
-                  label: "Consulta Académica",
-                  icon: <ClipboardList className="w-4 h-4" />,
-                  route: "closure",
-                  active: activeTab === "closure"
-                },
-                {
-                  label: "Matrícula de Cursos",
-                  icon: <BookOpen className="w-4 h-4" />,
-                  route: "enrollment",
-                  active: activeTab === "enrollment"
-                },
-                {
-                  label: "Mis Cursos",
-                  icon: <BookOpen className="w-4 h-4" />,
-                  route: "classes",
-                  active: activeTab === "classes"
-                },
-                {
-                  label: "Mi Horario",
-                  icon: <Calendar className="w-4 h-4" />,
-                  route: "schedule",
-                  active: activeTab === "schedule"
-                },
-                {
-                  label: "Mis Calificaciones",
-                  icon: <Award className="w-4 h-4" />,
-                  route: "notas",
-                  active: activeTab === "notas"
-                },
-                {
-                  label: "Control de Asistencia",
-                  icon: <Clock className="w-4 h-4" />,
-                  route: "attendance",
-                  active: activeTab === "attendance"
-                },
-                {
-                  label: "Calendario Académico",
-                  icon: <Calendar className="w-4 h-4" />,
-                  route: "calendar",
-                  active: activeTab === "calendar"
-                }
-              ]
-            },
-            {
-              title: "SERVICIOS",
-              items: [
-                {
-                  label: "Trámites de Secretaría",
-                  icon: <FileText className="w-4 h-4" />,
-                  route: "secretaria",
-                  active: activeTab === "secretaria"
-                },
-                {
-                  label: "Guías y Reglamentos",
-                  icon: <HelpCircle className="w-4 h-4" />,
-                  route: "guias",
-                  active: activeTab === "guias"
-                }
-              ]
-            }
-          ]}
-          onItemClick={(route) => setActiveTab(route as typeof activeTab)}
-          onLogout={onLogout}
-          onGoToPortal={onGoToPortal}
-        />
-      )}
-
-      {/* MAIN VIEWPORT SCROLL AREA */}
-      <main className={`flex-1 overflow-y-auto h-full ${isInVirtualClassroom ? "p-3 md:p-6" : "p-4 md:p-8"} custom-scrollbar bg-[#F8F9FA] w-full`}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab + (isInVirtualClassroom ? `-${selectedCourseDetail}` : "")}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            transition={{ duration: 0.25 }}
-            className={`space-y-6 ${isInVirtualClassroom ? "w-full" : "max-w-7xl mx-auto"}`}
+          {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (Blanco limpio con anillo rosáceo institucional) */}
+          <button
+            type="button"
+            onClick={() => setIsCourseSidebarCollapsed(!isCourseSidebarCollapsed)}
+            title={isCourseSidebarCollapsed ? "Expandir semanas del curso" : "Ocultar semanas del curso"}
+            className={`absolute top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border border-rose-300 hover:border-[#800521] w-[26px] h-[26px] rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
+              isCourseSidebarCollapsed 
+                ? "right-2" 
+                : "-right-[13px]"
+            }`}
           >
+            {isCourseSidebarCollapsed ? (
+              <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            ) : (
+              <ChevronLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* 3. PRIMARY CONTENT AREA WORKSPACE */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        <main className="flex-1 overflow-y-auto h-full p-4 md:p-8 custom-scrollbar bg-[#F8F9FA] w-full">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab + (selectedCourseDetail ? `-${selectedCourseDetail}-${activeCourseComponentId || "comp"}` : "")}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25 }}
+              className="space-y-6 max-w-7xl mx-auto"
+            >
             {activeTab === "welcome" && (
               <WelcomeTab
                 personalData={personalData}
@@ -894,6 +961,8 @@ export default function AlumnoDashboard({
                 currentProgram={currentProgram}
                 selectedCourseDetail={selectedCourseDetail}
                 setSelectedCourseDetail={setSelectedCourseDetail}
+                activeCourseComponentId={activeCourseComponentId}
+                setActiveCourseComponentId={setActiveCourseComponentId}
                 activeCourseSection={activeCourseSection}
                 setActiveCourseSection={setActiveCourseSection}
                 selectedClassWeek={selectedClassWeek}
@@ -994,6 +1063,7 @@ export default function AlumnoDashboard({
           </motion.div>
         </AnimatePresence>
       </main>
+      </div>
 
       {toastNotice && (
         <Toast notice={toastNotice} onClose={() => setToastNotice(null)} />

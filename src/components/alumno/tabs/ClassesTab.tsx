@@ -41,6 +41,8 @@ interface ClassesTabProps {
   studentDni: string;
   personalData: StudentPersonalData;
   onUpdateAssignments: (asgs: CourseAssignment[]) => void;
+  activeCourseComponentId?: string | null;
+  setActiveCourseComponentId?: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 export const ClassesTab: React.FC<ClassesTabProps> = ({
@@ -66,13 +68,21 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   evaluations,
   studentDni,
   personalData,
-  onUpdateAssignments
+  onUpdateAssignments,
+  activeCourseComponentId: propActiveCourseComponentId,
+  setActiveCourseComponentId: propSetActiveCourseComponentId
 }) => {
   const classesCoursesData = enrichedCourses;
   const activeCourse = classesCoursesData.find(c => c.name === selectedCourseDetail);
   const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
-  const [activeCourseComponentId, setActiveCourseComponentId] = useState<string | null>(null);
-  const [isStructureSidebarCollapsed, setIsStructureSidebarCollapsed] = useState(false);
+  const [internalActiveCourseComponentId, setInternalActiveCourseComponentId] = useState<string | null>(() => {
+    if (activeCourse?.code === "EIND-101" || activeCourse?.code?.startsWith("EIND-101")) {
+      return "teo";
+    }
+    return null;
+  });
+  const activeCourseComponentId = propActiveCourseComponentId !== undefined ? propActiveCourseComponentId : internalActiveCourseComponentId;
+  const setActiveCourseComponentId = propSetActiveCourseComponentId || setInternalActiveCourseComponentId;
 
   // Estados interactivos para la entrega de tareas del alumno
   const [selectedTaskFiles, setSelectedTaskFiles] = useState<Record<string, File | null>>({});
@@ -141,8 +151,12 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   }, [activeCourse]);
 
   useEffect(() => {
-    setActiveCourseComponentId(null);
-  }, [selectedCourseDetail]);
+    if (activeCourse?.code === "EIND-101" || activeCourse?.code?.startsWith("EIND-101")) {
+      setActiveCourseComponentId("teo");
+    } else {
+      setActiveCourseComponentId(null);
+    }
+  }, [selectedCourseDetail, activeCourse?.code]);
 
   useEffect(() => {
     if (!pdfModal?.url) {
@@ -688,184 +702,9 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   const courseGradesCount = assignments.filter((assignment) => courseResourceIds.includes(assignment.courseId) && assignment.submissions?.some((submission) => submission.studentDni === studentDni && submission.grade !== undefined)).length;
 
   return (
-    <PageTransition id="classes-workspace" className="flex flex-col md:flex-row gap-6 items-start text-left relative">
-      {/* 2. SUB-SIDEBAR DE ESTRUCTURA ACADÉMICA (SEMANAS) CON BOTÓN FLOTANTE */}
-      <div className={`shrink-0 relative z-20 transition-all duration-300 ease-in-out ${isStructureSidebarCollapsed ? "w-0 md:w-10" : "w-full md:w-64"}`}>
-        <div className={`w-full md:w-64 transition-opacity duration-200 overflow-hidden ${isStructureSidebarCollapsed ? "opacity-0 pointer-events-none md:w-0" : "opacity-100"}`}>
-          <aside className="w-full md:w-64 bg-[#FFFBFB] border border-rose-200/90 rounded-2xl flex flex-col overflow-hidden select-none text-left shadow-xs">
-            <div className="h-1 w-full bg-gradient-to-r from-[#800521] via-amber-500 to-[#800521]" />
-            <div className="p-4 border-b border-rose-100 bg-gradient-to-b from-rose-50/70 to-[#FFFBFB]">
-              <div className="flex items-center justify-between gap-1">
-                <span className="text-[9px] font-black text-[#8B0026] bg-red-50 border border-red-150 px-2 py-0.5 rounded-sm select-none block w-max uppercase tracking-widest font-mono">
-                  {selectedComponent ? selectedComponent.code : `Asignatura: ${activeCourse.code}`}
-                </span>
-                {selectedComponent && (
-                  <span className="text-[8.5px] font-black text-[#800521] bg-[#800521]/10 border border-[#800521]/20 px-1.5 py-0.5 rounded uppercase font-mono">
-                    {selectedComponent.shortLabel}
-                  </span>
-                )}
-              </div>
-              <h3 className="text-xs font-black text-slate-900 tracking-tight block mt-1.5 leading-snug break-words uppercase" title={selectedComponent ? selectedComponent.name : activeCourse.name}>
-                {selectedComponent ? selectedComponent.name : activeCourse.name}
-              </h3>
-              <p className="text-[9px] text-[#CFA020] font-bold tracking-wider uppercase block mt-1">
-                {selectedComponent ? selectedComponent.badge : "Estructura Académica"}
-              </p>
-
-              {subComponents.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveCourseComponentId(null);
-                    setActiveCourseSection("general");
-                  }}
-                  className="mt-3 w-full bg-white hover:bg-slate-100 text-[#800521] border border-slate-200 hover:border-[#800521]/30 rounded-lg text-[9.5px] font-black py-2 px-2 flex items-center justify-center gap-1.5 uppercase transition-all shadow-2xs cursor-pointer"
-                >
-                  <span>← Cambiar Componente</span>
-                </button>
-              )}
-            </div>
-
-            <div className="p-2 space-y-1 divide-y divide-slate-100/50 max-h-[500px] overflow-y-auto custom-scrollbar">
-              <div className="pb-1.5">
-                <button
-                  onClick={() => setActiveCourseSection("general")}
-                  className={`w-full py-2 px-2.5 rounded-lg transition-all text-[11px] font-black uppercase text-left flex items-center gap-2 cursor-pointer ${
-                    activeCourseSection === "general"
-                      ? "bg-[#8B0026] text-white shadow-sm font-black"
-                      : "text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  <BookOpen className="w-3.5 h-3.5 shrink-0" />
-                  <span className="tracking-wide">General (Resumen)</span>
-                </button>
-              </div>
-
-              <div className="py-1.5">
-                <button
-                  onClick={() => setActiveCourseSection("horarios")}
-                  className={`w-full py-2 px-2.5 rounded-lg transition-all text-[11px] font-black uppercase text-left flex items-center gap-2 cursor-pointer ${
-                    activeCourseSection === "horarios"
-                      ? "bg-[#8B0026] text-white shadow-sm font-black"
-                      : "text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  <Clock className="w-3.5 h-3.5 shrink-0" />
-                  <span className="tracking-wide">Horarios Lectivos</span>
-                </button>
-              </div>
-
-              <div className="py-2 space-y-1">
-                <span className="text-[9.5px] text-slate-400 font-bold uppercase tracking-wider block px-2.5 pb-1">Desarrollo por Semanas</span>
-                
-                {Array.from({ length: COURSE_WEEKS }, (_, idx) => idx + 1).map((wNum) => {
-                  const isExpanded = !!expandedStudentWeeks[wNum];
-                  const isActiveWeek = activeCourseSection === "week" && selectedClassWeek === wNum;
-                  return (
-                    <div key={wNum} className="border-b border-slate-100 last:border-none">
-                      <button
-                        onClick={() => toggleWeekExpandedLocal(wNum)}
-                        className={`w-full py-2 px-2.5 flex items-center justify-between transition-colors text-left text-[10.5px] font-extrabold ${
-                          isActiveWeek
-                            ? "bg-[#8B0026]/5 text-[#8B0026]"
-                            : "text-slate-700 hover:bg-slate-50"
-                        }`}
-                      >
-                        <span className="tracking-wide">SEMANA {wNum}</span>
-                        <span>
-                          {isExpanded ? (
-                            <ChevronDown className="w-3 h-3 text-slate-500" />
-                          ) : (
-                            <ChevronRight className="w-3 h-3 text-slate-400" />
-                          )}
-                        </span>
-                      </button>
-
-                      {isExpanded && (
-                        <div className="py-1 pl-3.5 space-y-0.5">
-                          {[
-                            { id: "asistencia", label: "Asistencia", icon: <Users className="w-3 h-3" /> },
-                            { id: "materiales", label: "Materiales", icon: <Upload className="w-3 h-3" /> },
-                            { id: "tareas", label: "Tareas", icon: <Plus className="w-3 h-3" /> },
-                            { id: "evaluaciones", label: "Evaluaciones", icon: <Award className="w-3 h-3" /> },
-                            { id: "observaciones", label: "Observaciones", icon: <AlertCircle className="w-3 h-3" /> },
-                            { id: "evidencias", label: "Evidencias", icon: <FileText className="w-3 h-3" /> }
-                          ].map((opt) => {
-                            const isSubActive = isActiveWeek && selectedClassWeekOption === opt.id;
-                            return (
-                              <button
-                                key={opt.id}
-                                onClick={() => {
-                                  setActiveCourseSection("week");
-                                  setSelectedClassWeek(wNum);
-                                  setSelectedClassWeekOption(opt.id as any);
-                                }}
-                                className={`w-full text-left py-1.5 px-2 rounded-md transition-all flex items-center gap-2 cursor-pointer text-[10px] font-bold ${
-                                  isSubActive
-                                    ? "bg-[#8B0026]/10 text-[#8B0026] border-l-2 border-[#8B0026] font-black"
-                                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                                }`}
-                              >
-                                <span className={isSubActive ? "text-[#8B0026]" : "text-slate-400"}>{opt.icon}</span>
-                                <span>{opt.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="py-1.5">
-                <button
-                  onClick={() => setActiveCourseSection("cierre")}
-                  className={`w-full py-2 px-2.5 rounded-lg transition-all text-[11px] font-black uppercase text-left flex items-center gap-2 cursor-pointer ${
-                    activeCourseSection === "cierre"
-                      ? "bg-[#8B0026] text-white shadow-sm font-black"
-                      : "text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                  <span className="tracking-wide">Cierre del Curso</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="p-3 bg-slate-50 border-t border-slate-100">
-              <button
-                onClick={() => {
-                  setSelectedCourseDetail("");
-                  setActiveCourseSection("general");
-                }}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-[#800521] border border-slate-200/60 rounded-lg text-[10px] font-black py-2.5 flex items-center justify-center gap-1.5 select-none uppercase transition-all cursor-pointer"
-              >
-                ← Volver a la Intranet
-              </button>
-            </div>
-          </aside>
-        </div>
-
-        {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (Blanco limpio con borde rosáceo) */}
-        <button
-          type="button"
-          onClick={() => setIsStructureSidebarCollapsed(!isStructureSidebarCollapsed)}
-          title={isStructureSidebarCollapsed ? "Expandir semanas del curso" : "Ocultar semanas del curso"}
-          className={`hidden md:flex absolute top-1/2 -translate-y-1/2 z-40 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border border-rose-300 hover:border-[#800521] w-[26px] h-[26px] rounded-full items-center justify-center shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
-            isStructureSidebarCollapsed ? "left-1" : "-right-[13px]"
-          }`}
-        >
-          {isStructureSidebarCollapsed ? (
-            <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-          ) : (
-            <ChevronLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
-          )}
-        </button>
-      </div>
-
-      {/* RIGHT PANEL: Dynamic View Workspace */}
-      <div className="flex-1 w-full space-y-6">
+    <PageTransition id="classes-workspace" className="w-full space-y-6 text-left relative">
+      {/* Dynamic View Workspace */}
+      <div className="w-full space-y-6">
         {activeCourseSection === "general" && (
           <div className="space-y-6">
             <div className="relative bg-[#800521] text-white rounded-xl shadow-md p-6 overflow-hidden text-left border-b-4 border-amber-500">
