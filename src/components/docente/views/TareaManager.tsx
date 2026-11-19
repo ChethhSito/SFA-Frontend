@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from "react";
+import React, { useRef, useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { 
   Plus, 
@@ -8,7 +8,7 @@ import {
   Upload, 
   ClipboardList, 
   CheckCircle2, 
-  CheckCircle,
+  CheckCircle, 
   Eye, 
   X, 
   ExternalLink,
@@ -19,7 +19,8 @@ import {
   Clock,
   MessageSquare,
   Download,
-  Award
+  Award,
+  RefreshCw
 } from "lucide-react";
 import { CourseAssignment, StudentPersonalData } from "../../../types";
 import { ROSTER } from "../DocenteTypes";
@@ -37,6 +38,7 @@ interface Props {
   onDeleteAssignment: (id: string) => void | Promise<void>;
   onGradeSubmission?: (assignmentId: string, studentDni: string, grade: number, feedback: string) => Promise<boolean | undefined>;
   onOpenGradingTab?: (assignment: CourseAssignment) => void;
+  onRefreshAssignments?: () => Promise<void>;
 }
 
 export function TareaManager({ 
@@ -48,7 +50,8 @@ export function TareaManager({
   onEditAssignment,
   onDeleteAssignment,
   onGradeSubmission,
-  onOpenGradingTab
+  onOpenGradingTab,
+  onRefreshAssignments
 }: Props) {
   // New assignment form state
   const [title, setTitle] = useState("");
@@ -61,6 +64,8 @@ export function TareaManager({
 
   // PDF Preview Modal state
   const [previewPdfUrl, setPreviewPdfUrl] = useState<{ url: string; name: string } | null>(null);
+  const [resolvedPreviewBlobUrl, setResolvedPreviewBlobUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // Deletion Confirmation Modal state
   const [assignmentToDelete, setAssignmentToDelete] = useState<CourseAssignment | null>(null);
@@ -80,6 +85,61 @@ export function TareaManager({
   const [reviewingAssignment, setReviewingAssignment] = useState<CourseAssignment | null>(null);
   const [gradeDrafts, setGradeDrafts] = useState<Record<string, { grade: string; feedback: string }>>({});
   const [savingGrades, setSavingGrades] = useState<Record<string, boolean>>({});
+  const [isSyncingAssignments, setIsSyncingAssignments] = useState(false);
+
+  const currentReviewingAssignment = useMemo(() => {
+    if (!reviewingAssignment) return null;
+    return assignments.find(a => a.id === reviewingAssignment.id) || reviewingAssignment;
+  }, [reviewingAssignment, assignments]);
+
+  useEffect(() => {
+    if (!previewPdfUrl?.url) {
+      setResolvedPreviewBlobUrl(null);
+      setPreviewLoading(false);
+      return;
+    }
+    if (previewPdfUrl.url.startsWith("blob:") || previewPdfUrl.url.startsWith("data:")) {
+      setResolvedPreviewBlobUrl(previewPdfUrl.url);
+      setPreviewLoading(false);
+      return;
+    }
+    let active = true;
+    setPreviewLoading(true);
+    fetch(previewPdfUrl.url)
+      .then(res => {
+        if (!res.ok) throw new Error("Error cargando PDF");
+        return res.blob();
+      })
+      .then(blob => {
+        if (!active) return;
+        const pdfBlob = new Blob([blob], { type: "application/pdf" });
+        const objectUrl = URL.createObjectURL(pdfBlob);
+        setResolvedPreviewBlobUrl(objectUrl);
+      })
+      .catch(err => {
+        console.warn("No se pudo convertir a Blob URL:", err);
+        if (active) setResolvedPreviewBlobUrl(previewPdfUrl.url);
+      })
+      .finally(() => {
+        if (active) setPreviewLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [previewPdfUrl]);
+
+  useEffect(() => {
+    if (!currentReviewingAssignment) return;
+    const drafts: Record<string, { grade: string; feedback: string }> = {};
+    (currentReviewingAssignment.submissions || []).forEach(sub => {
+      drafts[sub.studentDni] = {
+        grade: sub.grade !== undefined ? String(sub.grade) : "",
+        feedback: sub.feedback || ""
+      };
+    });
+    setGradeDrafts(prev => ({ ...drafts, ...prev }));
+  }, [currentReviewingAssignment]);
 
   // Ensure active student roster is never empty
   const effectiveStudents = useMemo(() => {
@@ -216,11 +276,23 @@ export function TareaManager({
     }
   };
 
-  const handleOpenReview = (asg: CourseAssignment) => {
-    setReviewingAssignment(asg);
+  const handleOpenReview = async (asg: CourseAssignment) => {
+    setIsSyncingAssignments(true);
+    try {
+      if (onRefreshAssignments) {
+        await onRefreshAssignments();
+      }
+    } catch (err) {
+      console.warn("No se pudo refrescar tareas al abrir revisión:", err);
+    } finally {
+      setIsSyncingAssignments(false);
+    }
+
+    const freshAsg = assignments.find(a => a.id === asg.id) || asg;
+    setReviewingAssignment(freshAsg);
     // Initialize grade drafts with existing grades and feedbacks
     const drafts: Record<string, { grade: string; feedback: string }> = {};
-    (asg.submissions || []).forEach(sub => {
+    (freshAsg.submissions || []).forEach(sub => {
       drafts[sub.studentDni] = {
         grade: sub.grade !== undefined ? String(sub.grade) : "",
         feedback: sub.feedback || ""
@@ -839,7 +911,7 @@ export function TareaManager({
       )}
 
       {/* Modal Institucional de REVISIÓN DE ENTREGAS Y CALIFICACIÓN */}
-      {reviewingAssignment && typeof document !== "undefined" && createPortal(
+      {currentReviewingAssignment && typeof document !== "undefined" && createPortal(
         <div 
           className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
           onClick={(e) => {
@@ -863,18 +935,40 @@ export function TareaManager({
                     Revisión de Entregas y Calificación Digital
                   </h3>
                   <p className="text-[11px] text-rose-200 font-medium truncate">
-                    Semana {week} • {reviewingAssignment.title}
+                    Semana {week} • {currentReviewingAssignment.title}
                   </p>
                 </div>
               </div>
 
-              <button 
-                onClick={() => setReviewingAssignment(null)}
-                className="text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer shrink-0"
-                title="Cerrar revisión"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {onRefreshAssignments && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setIsSyncingAssignments(true);
+                      try {
+                        await onRefreshAssignments();
+                      } finally {
+                        setIsSyncingAssignments(false);
+                      }
+                    }}
+                    disabled={isSyncingAssignments}
+                    className="bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    title="Sincronizar entregas registradas desde la base de datos"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-amber-300 ${isSyncingAssignments ? "animate-spin" : ""}`} />
+                    <span className="hidden sm:inline">{isSyncingAssignments ? "Sincronizando..." : "Sincronizar"}</span>
+                  </button>
+                )}
+
+                <button 
+                  onClick={() => setReviewingAssignment(null)}
+                  className="text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                  title="Cerrar revisión"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Barra de Estadísticas de la Tarea */}
@@ -882,7 +976,7 @@ export function TareaManager({
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5 font-mono text-slate-700">
                   <Calendar className="w-3.5 h-3.5 text-amber-600" />
-                  Fecha Límite: <strong className="text-slate-900">{reviewingAssignment.dueDate}</strong>
+                  Fecha Límite: <strong className="text-slate-900">{currentReviewingAssignment.dueDate}</strong>
                 </span>
                 <span className="text-slate-300">|</span>
                 <span className="flex items-center gap-1.5">
@@ -893,10 +987,10 @@ export function TareaManager({
 
               <div className="flex items-center gap-2">
                 <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full text-[11px] font-black font-mono">
-                  {reviewingAssignment.submissions?.length || 0} entregas recibidas
+                  {currentReviewingAssignment.submissions?.length || 0} entregas recibidas
                 </span>
                 <span className="bg-amber-100 text-amber-800 border border-amber-300 px-2.5 py-0.5 rounded-full text-[11px] font-black font-mono">
-                  {reviewingAssignment.submissions?.filter(s => s.grade !== undefined).length || 0} calificados
+                  {currentReviewingAssignment.submissions?.filter(s => s.grade !== undefined).length || 0} calificados
                 </span>
               </div>
             </div>
@@ -910,12 +1004,12 @@ export function TareaManager({
                 </div>
               ) : (
                 effectiveStudents.map((student) => {
-                  const sub = reviewingAssignment.submissions?.find(s => s.studentDni === student.dni);
+                  const sub = currentReviewingAssignment.submissions?.find(s => s.studentDni === student.dni);
                   const hasSubmitted = !!sub;
                   const draft = gradeDrafts[student.dni] || { grade: "", feedback: "" };
                   const isGraded = sub?.grade !== undefined;
                   const isSaving = !!savingGrades[student.dni];
-                  const timing = getSubmissionTiming(sub?.submitDate, reviewingAssignment.dueDate);
+                  const timing = getSubmissionTiming(sub?.submitDate, currentReviewingAssignment.dueDate);
                   const studentPdfUrl = sub?.fileBase64 
                     ? `data:${sub.mimeType || 'application/pdf'};base64,${sub.fileBase64}` 
                     : '#';
@@ -1166,7 +1260,7 @@ export function TareaManager({
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
-                  onClick={() => window.open(previewPdfUrl.url, "_blank")}
+                  onClick={() => window.open(resolvedPreviewBlobUrl || previewPdfUrl.url, "_blank")}
                   className="bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                   title="Abrir en pestaña nueva"
                 >
@@ -1184,9 +1278,15 @@ export function TareaManager({
             </div>
 
             {/* Cuerpo del Visor con iframe embebido */}
-            <div className="flex-1 p-2 bg-slate-100 flex flex-col overflow-hidden">
+            <div className="flex-1 p-2 bg-slate-100 flex flex-col overflow-hidden relative">
+              {previewLoading && (
+                <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-2xs flex flex-col items-center justify-center space-y-3">
+                  <div className="w-8 h-8 border-3 border-[#800521] border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs font-bold text-slate-700">Cargando documento institucional...</span>
+                </div>
+              )}
               <iframe
-                src={previewPdfUrl.url}
+                src={resolvedPreviewBlobUrl || previewPdfUrl.url}
                 title={previewPdfUrl.name}
                 className="w-full flex-1 rounded-xl border border-slate-300 bg-white"
               />

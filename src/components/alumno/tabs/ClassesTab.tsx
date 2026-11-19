@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { 
   Zap, Cpu, Sliders, Award, ChevronRight, ChevronLeft, ChevronDown, BookOpen, Clock, CheckCircle2, 
   Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark, MapPin, GraduationCap,
-  Eye, Download, Trash2, Pencil, X, MessageSquare, Send, Check
+  Eye, Download, Trash2, Pencil, X, MessageSquare, Send, Check, ExternalLink
 } from "lucide-react";
 import { CourseMaterial, CourseAssignment, CourseEvaluation, AcademicProgram, StudentPersonalData } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
@@ -82,6 +82,8 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
   // Visor modal de PDF oficial para guías y entregas
   const [pdfModal, setPdfModal] = useState<{ url: string; title: string; fileName: string } | null>(null);
+  const [resolvedPdfBlobUrl, setResolvedPdfBlobUrl] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   // Modal de confirmación para eliminar entrega
   const [submissionToDelete, setSubmissionToDelete] = useState<{ assignmentId: string; assignmentTitle: string } | null>(null);
@@ -141,6 +143,43 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   useEffect(() => {
     setActiveCourseComponentId(null);
   }, [selectedCourseDetail]);
+
+  useEffect(() => {
+    if (!pdfModal?.url) {
+      setResolvedPdfBlobUrl(null);
+      setPdfLoading(false);
+      return;
+    }
+    if (pdfModal.url.startsWith("blob:") || pdfModal.url.startsWith("data:")) {
+      setResolvedPdfBlobUrl(pdfModal.url);
+      setPdfLoading(false);
+      return;
+    }
+    let active = true;
+    setPdfLoading(true);
+    fetch(pdfModal.url)
+      .then(res => {
+        if (!res.ok) throw new Error("Error cargando archivo");
+        return res.blob();
+      })
+      .then(blob => {
+        if (!active) return;
+        const pdfBlob = new Blob([blob], { type: "application/pdf" });
+        const objectUrl = URL.createObjectURL(pdfBlob);
+        setResolvedPdfBlobUrl(objectUrl);
+      })
+      .catch(err => {
+        console.warn("No se pudo convertir a Blob URL:", err);
+        if (active) setResolvedPdfBlobUrl(pdfModal.url);
+      })
+      .finally(() => {
+        if (active) setPdfLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [pdfModal]);
 
   const selectedComponent = subComponents.find((c) => c.id === activeCourseComponentId) || null;
 
@@ -1216,50 +1255,96 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 {selectedClassWeekOption === "materiales" && (() => {
                   const mats = filteredDBMaterials;
                   return (
-                    <div className="space-y-3">
-                      <div className="bg-amber-50 text-amber-900 border border-amber-100 p-3 rounded-lg text-[11px] font-bold flex items-center gap-2">
-                        <BookOpen className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <div className="space-y-4">
+                      <div className="bg-amber-50 text-amber-900 border border-amber-200/80 p-3.5 rounded-xl text-xs font-bold flex items-center gap-2.5 shadow-3xs">
+                        <BookOpen className="w-4 h-4 text-amber-700 shrink-0" />
                         <span>Recursos académicos oficiales para la sesión académica de la <strong>Semana {selectedClassWeek}</strong>.</span>
                       </div>
-                      {mats.length === 0 && <p className="rounded-lg border p-4 text-sm text-slate-500">El docente aún no ha publicado materiales para esta semana.</p>}
-                      {mats.map((m: any) => {
-                        const fileExtension = m.fileName.split('.').pop()?.toUpperCase() || "PDF";
-                        return (
-                          <div key={m.id} className="p-3.5 bg-slate-50 hover:bg-slate-100 border border-slate-150 rounded-xl flex items-center justify-between gap-4 transition-all">
-                            <div className="flex items-center gap-3">
-                              <span className="p-2 bg-red-50 text-[#800521] border border-red-100 rounded-md font-mono font-black text-[10px]">
-                                {fileExtension}
-                              </span>
-                              <div>
-                                <span className="text-xs font-black text-slate-800 block">{m.title}</span>
-                                <span className="text-[10px] text-slate-400 font-bold block mt-0.5">Archivo: <span className="font-mono text-blue-600 underline">{m.fileName}</span></span>
-                              </div>
-                            </div>
-                            {m.storedFileName ? (
-                              <a
-                                href={courseFileUrl('materials', m.id)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="bg-[#800521]/10 hover:bg-[#800521] text-[#800521] hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all inline-flex items-center"
-                              >
-                                Descargar
-                              </a>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => setToastNotice({
-                                  id: Date.now(),
-                                  message: `El archivo ${m.fileName} no está alojado en el servidor institucional.`,
-                                  kind: "info",
-                                })}
-                                className="bg-slate-100 hover:bg-slate-200 text-slate-500 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all"
-                              >
-                                No disponible
-                              </button>
-                            )}
+
+                      {mats.length === 0 ? (
+                        <div className="p-10 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 flex flex-col items-center justify-center space-y-2">
+                          <div className="w-12 h-12 rounded-2xl bg-[#800521]/10 text-[#800521] border border-[#800521]/20 flex items-center justify-center mb-1 shadow-3xs">
+                            <BookOpen className="w-6 h-6" />
                           </div>
-                        );
-                      })}
+                          <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">
+                            Sin Materiales Publicados en Semana {selectedClassWeek}
+                          </h4>
+                          <p className="text-xs text-slate-400 font-medium max-w-sm">
+                            El docente a cargo aún no ha publicado diapositivas, separatas o guías teóricas para esta semana.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {mats.map((m: any) => {
+                            const fileExt = (m.fileName || "").split('.').pop()?.toUpperCase() || "PDF";
+                            const fileUrl = courseFileUrl('materials', m.id);
+                            const isPdf = fileExt === "PDF";
+                            return (
+                              <div key={m.id} className="p-4 bg-white hover:bg-slate-50/80 border border-slate-200 rounded-2xl flex flex-wrap items-center justify-between gap-4 transition-all shadow-3xs">
+                                <div className="flex items-center gap-3.5 min-w-0">
+                                  <div className="w-10 h-10 rounded-xl bg-red-50 text-[#800521] border border-red-200 flex items-center justify-center font-black font-mono text-[11px] shrink-0 shadow-3xs">
+                                    {fileExt}
+                                  </div>
+                                  <div className="min-w-0 text-left">
+                                    <span className="text-xs font-black text-slate-900 block truncate" title={m.title}>
+                                      {m.title}
+                                    </span>
+                                    <span className="text-[11px] text-slate-400 font-mono font-semibold block mt-0.5 truncate max-w-md">
+                                      {m.fileName}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {isPdf && m.storedFileName && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setPdfModal({
+                                          url: fileUrl,
+                                          title: "Material Didáctico Oficial",
+                                          fileName: m.fileName
+                                        });
+                                      }}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-[#800521] border border-slate-200 rounded-xl text-xs font-bold shadow-3xs transition-all cursor-pointer active:scale-95"
+                                      title="Ver material en visor modal"
+                                    >
+                                      <Eye className="w-3.5 h-3.5 text-[#800521]" />
+                                      <span>Ver Documento</span>
+                                    </button>
+                                  )}
+
+                                  {m.storedFileName ? (
+                                    <a
+                                      href={fileUrl}
+                                      download={m.fileName}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#800521] hover:bg-[#66041a] text-white rounded-xl text-xs font-bold shadow-3xs transition-all cursor-pointer active:scale-95"
+                                      title="Descargar material"
+                                    >
+                                      <Download className="w-3.5 h-3.5 text-amber-300" />
+                                      <span>Descargar</span>
+                                    </a>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => setToastNotice({
+                                        id: Date.now(),
+                                        message: `El archivo ${m.fileName} no está disponible actualmente en el servidor.`,
+                                        kind: "info",
+                                      })}
+                                      className="bg-slate-100 text-slate-400 px-3 py-1.5 rounded-xl text-xs font-bold uppercase transition-all cursor-not-allowed"
+                                    >
+                                      No disponible
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
@@ -1502,14 +1587,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                                       )}
                                     </div>
                                   ) : (
-                                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                                      <div className="flex items-center gap-2">
-                                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-                                        <span className="text-xs font-bold text-amber-800">
-                                          Esperando revisión y calificación del docente
-                                        </span>
-                                      </div>
-
+                                    <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
                                       {/* Botones para Editar y Eliminar Entrega */}
                                       <div className="flex items-center gap-2">
                                         <button
@@ -1862,6 +1940,15 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => window.open(resolvedPdfBlobUrl || pdfModal.url, "_blank")}
+                  className="bg-white/10 hover:bg-white/20 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Abrir en pestaña nueva"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-amber-300" />
+                  <span className="hidden sm:inline">Pestaña Externa</span>
+                </button>
                 <button 
                   onClick={() => setPdfModal(null)}
                   className="text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
@@ -1872,10 +1959,16 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               </div>
             </div>
 
-            {/* Cuerpo del Visor con iframe embebido */}
-            <div className="flex-1 p-2 bg-slate-100 flex flex-col overflow-hidden">
+            {/* Cuerpo del Visor con iframe embebido y fallback reactivo */}
+            <div className="flex-1 p-2 bg-slate-100 flex flex-col overflow-hidden relative">
+              {pdfLoading && (
+                <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-2xs flex flex-col items-center justify-center space-y-3">
+                  <div className="w-8 h-8 border-3 border-[#800521] border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs font-bold text-slate-700">Cargando documento institucional...</span>
+                </div>
+              )}
               <iframe
-                src={pdfModal.url}
+                src={resolvedPdfBlobUrl || pdfModal.url}
                 title={pdfModal.fileName}
                 className="w-full flex-1 rounded-xl border border-slate-300 bg-white"
               />

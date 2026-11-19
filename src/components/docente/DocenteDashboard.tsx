@@ -36,7 +36,7 @@ import TeacherProceduresTab from "./TeacherProceduresTab";
 import TeacherScheduleTab, { TeacherScheduleData } from "./TeacherScheduleTab";
 import TeacherProfileTab from "./TeacherProfileTab";
 import { fetchMpaCollection } from "../../services/mpaApi";
-import { fileToBase64, fetchCourseObservations, createCourseObservation, deleteCourseObservation } from "../../services/api";
+import { fileToBase64, fetchCourseObservations, createCourseObservation, deleteCourseObservation, fetchCourseAssignments } from "../../services/api";
 
 interface DocenteDashboardProps {
   teacherDni: string;
@@ -458,6 +458,18 @@ export default function DocenteDashboard({
     const saved = await onUpdateAssignments(updated);
     notify(saved ? "Calificación guardada y sincronizada con el estudiante." : "No se pudo guardar la calificación.", saved);
     return saved;
+  };
+
+  // Actions: Refresh assignments from server
+  const handleRefreshAssignments = async () => {
+    try {
+      const list = await fetchCourseAssignments();
+      if (list && Array.isArray(list)) {
+        await onUpdateAssignments(list);
+      }
+    } catch (e) {
+      console.warn("Could not refresh assignments:", e);
+    }
   };
 
   // Actions: Add observation
@@ -1419,6 +1431,7 @@ export default function DocenteDashboard({
                         onEditAssignment={handleEditAssignment}
                         onDeleteAssignment={handleDeleteAssignment}
                         onGradeSubmission={handleGradeSubmission}
+                        onRefreshAssignments={handleRefreshAssignments}
                       />
                     )}
 
