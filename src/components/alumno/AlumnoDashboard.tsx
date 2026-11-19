@@ -847,7 +847,7 @@ export default function AlumnoDashboard({
 
       {/* 2. SIDEBAR SECUNDARIO CURRICULAR DINÁMICO (SEMANAS) */}
       {showCourseSidebar && (
-        <div className="hidden md:flex shrink-0 relative z-20 h-full">
+        <div className="hidden md:flex shrink-0 relative z-40 h-full">
           {/* Animated sliding panel */}
           <div
             className={`transition-all duration-300 ease-in-out h-full overflow-hidden ${
@@ -890,17 +890,17 @@ export default function AlumnoDashboard({
             </div>
           </div>
 
-          {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (Lower-Center Vertical - Institutional Floating) */}
+          {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (Distintivo Granate Institucional con Libro Dorado) */}
           <button
             type="button"
             onClick={() => setIsCourseSidebarCollapsed(!isCourseSidebarCollapsed)}
-            title={isCourseSidebarCollapsed ? "Expandir semanas del curso" : "Colapsar semanas del curso"}
-            className="absolute -right-[14px] top-[58%] -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border border-rose-300 hover:border-[#800521] w-[28px] h-[28px] rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all cursor-pointer hover:scale-110 active:scale-95 group"
+            title={isCourseSidebarCollapsed ? "Ver Semanas del Curso (1 a 16)" : "Ocultar Semanas del Curso"}
+            className="absolute -right-[15px] top-[58%] -translate-y-1/2 z-50 bg-[#800521] hover:bg-[#68031a] text-amber-300 hover:text-white border-2 border-white ring-2 ring-[#800521]/25 w-[30px] h-[30px] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all cursor-pointer hover:scale-110 active:scale-95 group"
           >
             {isCourseSidebarCollapsed ? (
-              <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+              <BookOpen className="w-3.5 h-3.5 text-amber-300 group-hover:scale-110 transition-transform" />
             ) : (
-              <ChevronLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
+              <ChevronLeft className="w-4 h-4 text-white group-hover:-translate-x-0.5 transition-transform" />
             )}
           </button>
         </div>

@@ -448,8 +448,8 @@ export default function Sidebar({
         <button
           type="button"
           onClick={handleToggleCollapse}
-          title={isCollapsed ? "Expandir menú lateral" : "Colapsar menú lateral"}
-          className="absolute -right-[14px] top-[42%] -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border border-slate-300 hover:border-[#800521] w-[28px] h-[28px] rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all cursor-pointer hover:scale-110 active:scale-95 group"
+          title={isCollapsed ? "Expandir Menú Intranet" : "Colapsar Menú Intranet"}
+          className="absolute -right-[14px] top-[36%] -translate-y-1/2 z-50 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#800521] border border-slate-300 hover:border-[#800521] w-[28px] h-[28px] rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all cursor-pointer hover:scale-110 active:scale-95 group"
         >
           {isCollapsed ? (
             <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
