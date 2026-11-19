@@ -489,7 +489,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   return (
     <PageTransition id="classes-workspace" className="flex flex-col md:flex-row gap-6 items-start text-left relative">
       {/* 2. SUB-SIDEBAR DE ESTRUCTURA ACADÉMICA (SEMANAS) CON BOTÓN FLOTANTE */}
-      <div className={`shrink-0 relative z-20 transition-all duration-300 ease-in-out ${isStructureSidebarCollapsed ? "w-0" : "w-full md:w-64"}`}>
+      <div className={`shrink-0 relative z-20 transition-all duration-300 ease-in-out ${isStructureSidebarCollapsed ? "w-0 md:w-8" : "w-full md:w-64"}`}>
         <div className={`w-full md:w-64 transition-opacity duration-200 overflow-hidden ${isStructureSidebarCollapsed ? "opacity-0 pointer-events-none md:w-0" : "opacity-100"}`}>
           <aside className="w-full md:w-64 bg-white border border-slate-200 rounded-2xl flex flex-col overflow-hidden select-none text-left shadow-xs">
             <div className="p-4 border-b border-slate-200 bg-slate-50/50">
@@ -648,7 +648,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           onClick={() => setIsStructureSidebarCollapsed(!isStructureSidebarCollapsed)}
           title={isStructureSidebarCollapsed ? "Expandir semanas del curso" : "Ocultar semanas del curso"}
           className={`hidden md:flex absolute top-1/2 -translate-y-1/2 z-40 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border border-slate-300 hover:border-[#800521] w-[26px] h-[26px] rounded-full items-center justify-center shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
-            isStructureSidebarCollapsed ? "left-2" : "-right-[13px]"
+            isStructureSidebarCollapsed ? "left-0.5" : "-right-[13px]"
           }`}
         >
           {isStructureSidebarCollapsed ? (

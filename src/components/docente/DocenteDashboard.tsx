@@ -551,7 +551,7 @@ export default function DocenteDashboard({
 
       {/* 2. SIDEBAR SECUNDARIO CURRICULAR DINÁMICO */}
       {selectedCourseId && activeTab === "curso" && (
-        <div className={`hidden md:block shrink-0 relative z-20 transition-all duration-300 ease-in-out ${isCourseSidebarCollapsed ? "w-0" : "w-64"}`}>
+        <div className={`hidden md:block shrink-0 relative z-20 transition-all duration-300 ease-in-out ${isCourseSidebarCollapsed ? "w-14 bg-white border-r border-slate-200" : "w-64"}`}>
           <div className={`w-64 h-full transition-opacity duration-200 overflow-hidden ${isCourseSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
             <SidebarCurso
               courseId={selectedCourseId}
@@ -578,7 +578,7 @@ export default function DocenteDashboard({
             title={isCourseSidebarCollapsed ? "Expandir semanas del curso" : "Ocultar semanas del curso"}
             className={`absolute top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border border-slate-300 hover:border-[#800521] w-[26px] h-[26px] rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
               isCourseSidebarCollapsed 
-                ? (isMainSidebarCollapsed ? "left-12" : "left-2.5") 
+                ? "right-2" 
                 : "-right-[13px]"
             }`}
           >

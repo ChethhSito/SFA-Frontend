@@ -46,13 +46,13 @@ export function SemanaAccordion({
   ] as const;
 
   return (
-    <div className="border-b border-slate-200/50">
+    <div className="border-b border-slate-100">
       <button
         onClick={onToggleExpanded}
         className={`w-full py-2.5 px-3 flex items-center justify-between transition-colors text-left text-[11px] font-extrabold ${
           isActiveWeek
             ? "bg-[#8B0026]/5 text-[#8B0026]"
-            : "text-slate-750 hover:bg-slate-100 hover:text-slate-900"
+            : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
         }`}
       >
         <span className="tracking-wide">SEMANA {weekNumber}</span>
@@ -76,7 +76,7 @@ export function SemanaAccordion({
                 className={`w-full text-left py-1.5 px-2.5 rounded-lg transition-all duration-150 flex items-center gap-2 cursor-pointer text-[10.5px] font-bold ${
                   isOptActive
                     ? "bg-[#8D0C26]/10 text-[#8B0026] border-l-2 border-[#8B0026] font-black"
-                    : "text-slate-550 hover:bg-slate-50 hover:text-slate-950"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
                 }`}
               >
                 <span className={`${isOptActive ? "text-[#8B0026]" : "text-slate-400"}`}>{opt.icon}</span>
@@ -116,13 +116,29 @@ export default function SidebarCurso({
     setExpandedWeeks((prev) => ({ ...prev, [week]: !prev[week] }));
   };
 
+  const upperCode = (courseCode || "").toUpperCase();
+  const componentBadge = upperCode.includes("TEO")
+    ? { label: "Teoría", className: "text-[#800521] bg-[#800521]/10 border-[#800521]/20" }
+    : upperCode.includes("TAL")
+    ? { label: "Taller", className: "text-amber-800 bg-amber-50 border-amber-200" }
+    : upperCode.includes("LAB")
+    ? { label: "Laboratorio", className: "text-emerald-700 bg-emerald-50 border-emerald-200" }
+    : null;
+
   return (
-    <aside className="w-64 h-full bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 select-none text-left">
+    <aside className="w-64 h-full bg-white border-r border-slate-200 flex flex-col shrink-0 select-none text-left">
       {/* Current Course Code Header */}
-      <div className="p-5 border-b border-slate-200 shrink-0">
-        <span className="text-[9px] font-black text-[#8B0026] bg-red-50 border border-red-200 px-2 py-0.5 rounded-sm select-none block w-max uppercase tracking-widest font-mono">
-          Asignatura: {courseCode}
-        </span>
+      <div className="p-4 border-b border-slate-200 bg-slate-50/60 shrink-0">
+        <div className="flex items-center justify-between gap-1">
+          <span className="text-[9px] font-black text-[#8B0026] bg-red-50 border border-red-200 px-2 py-0.5 rounded-sm select-none block w-max uppercase tracking-widest font-mono">
+            {courseCode}
+          </span>
+          {componentBadge && (
+            <span className={`text-[8.5px] font-black border px-1.5 py-0.5 rounded uppercase font-mono ${componentBadge.className}`}>
+              {componentBadge.label}
+            </span>
+          )}
+        </div>
         <h3 className="text-xs font-black text-slate-900 tracking-tight block mt-1.5 leading-snug break-words uppercase" title={courseName}>
           {courseName}
         </h3>
