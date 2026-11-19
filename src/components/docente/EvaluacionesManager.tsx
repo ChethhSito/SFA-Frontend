@@ -52,9 +52,35 @@ export default function EvaluacionesManager({
     return [];
   }, [students]);
 
+  // Track curricular milestones already scheduled in any week of this course
+  const assignedComponentsMap = useMemo(() => {
+    const map: Record<string, { week?: number; title: string }> = {};
+    assignments
+      .filter((a) => a.courseId === courseId && !a.title.startsWith("[Planilla] "))
+      .forEach((a) => {
+        const comp = a.curricularComponent || formula.variables.find((v) => v.id !== "NPA" && (a.title.toUpperCase().includes(`[${v.id}]`) || a.title.toUpperCase().includes(v.id)))?.id;
+        if (comp && comp !== "NPA") {
+          const weekMatch = a.title.match(/\[Semana\s*(\d+)\]/i) || a.title.match(/Semana\s*(\d+)/i);
+          const w = weekMatch ? Number(weekMatch[1]) : undefined;
+          map[comp] = { week: w, title: a.title };
+        }
+      });
+    return map;
+  }, [assignments, courseId, formula.variables]);
+
   const createEvaluation = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!title.trim() || saving) return;
+
+    // Prevent duplicate official milestones (e.g. two PC1 in same course)
+    if (selectedComponent && selectedComponent !== "NPA") {
+      const existing = assignedComponentsMap[selectedComponent];
+      if (existing) {
+        notify(`El hito "${selectedComponent}" ya está programado${existing.week ? ` en la Semana ${existing.week}` : ""}. Un curso oficial solo puede tener un único hito de este tipo.`, "warning");
+        return;
+      }
+    }
+
     const tag = selectedComponent ? `[${selectedComponent}] ` : "";
     const evaluationTitle = `[Semana ${week}] ${tag}${title.trim()}`;
     if (evaluations.some((item) => item.title.toLowerCase() === evaluationTitle.toLowerCase())) {
@@ -240,11 +266,20 @@ export default function EvaluacionesManager({
                     className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-[#800521] cursor-pointer"
                   >
                     <option value="">(Sin hito / Evaluación Formativa)</option>
-                    {formula.variables.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.label} ({(v.weight * 100).toFixed(0)}%)
-                      </option>
-                    ))}
+                    {formula.variables.map((v) => {
+                      const alreadyAssigned = v.id !== "NPA" && assignedComponentsMap[v.id];
+                      return (
+                        <option 
+                          key={v.id} 
+                          value={v.id}
+                          disabled={!!alreadyAssigned}
+                          className={alreadyAssigned ? "text-slate-400 italic bg-slate-100" : ""}
+                        >
+                          {v.label} ({(v.weight * 100).toFixed(0)}%)
+                          {alreadyAssigned ? ` — [Ya programada${alreadyAssigned.week ? ` en Sem. ${alreadyAssigned.week}` : ""}]` : ""}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
