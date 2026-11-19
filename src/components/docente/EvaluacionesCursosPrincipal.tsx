@@ -3,7 +3,8 @@ import { FileSpreadsheet, BookOpen, Users, Award, ShieldCheck, CheckCircle2 } fr
 import { Course, CourseAssignment, StudentPersonalData, Enrollment } from "../../types";
 import Toast, { ToastNotice } from "../ui/Toast";
 
-import { CourseFormulaCard, CourseFormula } from "./evaluaciones/CourseFormulaCard";
+import { CourseFormulaCard } from "./evaluaciones/CourseFormulaCard";
+import { COURSE_FORMULAS, CourseFormula, getCourseFormula } from "../../constants/courseFormulas";
 import { SecurePinModal } from "./evaluaciones/SecurePinModal";
 import { EditGradeModal } from "./evaluaciones/EditGradeModal";
 import { GradeSheetTable } from "./evaluaciones/GradeSheetTable";
@@ -15,63 +16,6 @@ interface EvaluacionesCursosPrincipalProps {
   enrollments: Enrollment[];
   onUpdateAssignments: (assignments: CourseAssignment[]) => Promise<boolean>;
 }
-
-const COURSE_FORMULAS: { [code: string]: CourseFormula } = {
-  "EIND-101": {
-    courseCode: "EIND-101",
-    expression: "0.30*PC1 + 0.30*PC2 + 0.40*EX_FINAL",
-    variables: [
-      { id: "PC1", label: "Práctica 1 (PC1)", weight: 0.30 },
-      { id: "PC2", label: "Práctica 2 (PC2)", weight: 0.30 },
-      { id: "EX_FINAL", label: "Examen Final (EX_FINAL)", weight: 0.40 },
-    ],
-  },
-  "EIND-102": {
-    courseCode: "EIND-102",
-    expression: "0.25*LAB1 + 0.25*LAB2 + 0.50*PROY_FINAL",
-    variables: [
-      { id: "LAB1", label: "Laboratorio Tableros (LAB1)", weight: 0.25 },
-      { id: "LAB2", label: "Laboratorio Redes BT (LAB2)", weight: 0.25 },
-      { id: "PROY_FINAL", label: "Proyecto Edificaciones", weight: 0.50 },
-    ],
-  },
-  "EIND-103": {
-    courseCode: "EIND-103",
-    expression: "0.30*EV1 + 0.30*EV2 + 0.40*EX_FINAL",
-    variables: [
-      { id: "EV1", label: "Seguridad Industrial (EV1)", weight: 0.30 },
-      { id: "EV2", label: "Normativa BT (EV2)", weight: 0.30 },
-      { id: "EX_FINAL", label: "Evaluación Modular", weight: 0.40 },
-    ],
-  },
-  "EIND-104": {
-    courseCode: "EIND-104",
-    expression: "0.30*PC1 + 0.30*PC2 + 0.40*EX_FINAL",
-    variables: [
-      { id: "PC1", label: "Práctica Calificada 1", weight: 0.30 },
-      { id: "PC2", label: "Práctica Calificada 2", weight: 0.30 },
-      { id: "EX_FINAL", label: "Examen de Unidad", weight: 0.40 },
-    ],
-  },
-  "EIND-105": {
-    courseCode: "EIND-105",
-    expression: "0.30*TAREA + 0.30*PART + 0.40*EX_FINAL",
-    variables: [
-      { id: "TAREA", label: "Talleres Digitales (TAREA)", weight: 0.30 },
-      { id: "PART", label: "Participación Técnica", weight: 0.30 },
-      { id: "EX_FINAL", label: "Evaluación Integral", weight: 0.40 },
-    ],
-  },
-  "default": {
-    courseCode: "default",
-    expression: "0.30*PC1 + 0.30*PC2 + 0.40*EX_FINAL",
-    variables: [
-      { id: "PC1", label: "Práctica 1 (PC1)", weight: 0.30 },
-      { id: "PC2", label: "Práctica 2 (PC2)", weight: 0.30 },
-      { id: "EX_FINAL", label: "Examen Final (EX_FINAL)", weight: 0.40 },
-    ],
-  }
-};
 
 export default function EvaluacionesCursosPrincipal({ courses, assignments, studentsList, enrollments, onUpdateAssignments }: EvaluacionesCursosPrincipalProps) {
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
@@ -105,7 +49,7 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
   }, [courses]);
 
   const selectedCourse = courses.find((c) => c.id === selectedCourseId) || null;
-  const formula = selectedCourse ? (COURSE_FORMULAS[selectedCourse.code] || COURSE_FORMULAS["default"]) : COURSE_FORMULAS["default"];
+  const formula = selectedCourse ? getCourseFormula(selectedCourse.code) : COURSE_FORMULAS["default"];
 
   const roster = useMemo(() => {
     const targetProg = (selectedCourse?.careerId || selectedCourse?.career || "").toLowerCase().trim();
@@ -123,15 +67,30 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
   }, [enrollments, studentsList, selectedCourse]);
   const sheetData = useMemo(() => {
     const sheet: Record<string, string> = {};
+    // Fallback from regular graded course assignments (e.g. week 1 assignment maps to first variable PC1)
+    const regularCourseAssignments = assignments.filter((a) => a.courseId === selectedCourseId && !a.title.startsWith("[Planilla] "));
+    regularCourseAssignments.forEach((assignment) => {
+      const matchingVar = formula.variables.find((v) => assignment.title.toUpperCase().includes(v.id)) ||
+        (assignment.title.toLowerCase().includes("semana 1") ? formula.variables[0] : null);
+      if (matchingVar) {
+        assignment.submissions.forEach((submission) => {
+          if (submission.grade !== undefined && !sheet[`${submission.studentDni}-${matchingVar.id}`]) {
+            sheet[`${submission.studentDni}-${matchingVar.id}`] = String(submission.grade);
+          }
+        });
+      }
+    });
+
+    // Explicit [Planilla] entries take priority
     assignments.filter((assignment) => assignment.courseId === selectedCourseId && assignment.title.startsWith("[Planilla] "))
       .forEach((assignment) => {
-        const variable = assignment.title.slice("[Planilla] ".length);
+        const variable = assignment.title.slice("[Planilla] ".length).trim();
         assignment.submissions.forEach((submission) => {
           if (submission.grade !== undefined) sheet[`${submission.studentDni}-${variable}`] = String(submission.grade);
         });
       });
     return sheet;
-  }, [assignments, selectedCourseId]);
+  }, [assignments, selectedCourseId, formula.variables]);
 
   // Helper formula average solver
   const computeStudentAverage = (studentDni: string) => {

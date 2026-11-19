@@ -38,11 +38,60 @@ export const GradesTab: React.FC<GradesTabProps> = ({
   };
 
   const totalCredits = enrichedCourses.reduce((acc, c) => acc + (Number(c.credits) || 0), 0) || 24;
-  const grades = enrichedCourses.flatMap((course) => course.evaluations || []).filter((evaluation) => typeof evaluation.grade === "number");
-  const hasGrades = grades.length > 0;
-  const calculatedAverage = hasGrades
-    ? (grades.reduce((sum, evaluation) => sum + evaluation.grade, 0) / grades.length).toFixed(1)
+
+  // Helper to compute course progressive stats from formula variables
+  const computeCourseStats = (course: any) => {
+    const evals = course?.evaluations || [];
+    const weightedEvals = evals.filter((e: any) => typeof e.weightDecimal === "number" && e.weightDecimal > 0);
+    
+    let accumulatedPoints = 0;
+    let evaluatedWeight = 0;
+
+    weightedEvals.forEach((e: any) => {
+      if (typeof e.grade === "number") {
+        accumulatedPoints += e.grade * e.weightDecimal;
+        evaluatedWeight += e.weightDecimal;
+      }
+    });
+
+    const isFullyEvaluated = evaluatedWeight >= 0.99;
+    const progressiveAverage = evaluatedWeight > 0 
+      ? (accumulatedPoints / evaluatedWeight) 
+      : 0;
+
+    const breakdownText = weightedEvals.length > 0
+      ? weightedEvals.map((e: any) => {
+          const g = typeof e.grade === "number" ? e.grade : "NR";
+          return `${e.weightDecimal.toFixed(2)}×(${g})`;
+        }).join(" + ")
+      : "Sin componentes ponderados";
+
+    return {
+      accumulatedPoints: Math.round(accumulatedPoints * 10) / 10,
+      evaluatedWeight: Math.round(evaluatedWeight * 100) / 100,
+      progressiveAverage: Math.round(progressiveAverage * 10) / 10,
+      isFullyEvaluated,
+      hasAnyGrade: evaluatedWeight > 0,
+      breakdownText
+    };
+  };
+
+  const activeStats = computeCourseStats(activeCourse);
+
+  // Overall cycle calculation: weighted average of courses that have evaluations
+  const coursesWithEvaluations = enrichedCourses.map(c => ({
+    course: c,
+    stats: computeCourseStats(c)
+  })).filter(item => item.stats.hasAnyGrade);
+
+  const cycleProgressiveAverage = coursesWithEvaluations.length > 0
+    ? (
+        coursesWithEvaluations.reduce((sum, item) => sum + (item.stats.progressiveAverage * (Number(item.course.credits) || 4)), 0) /
+        coursesWithEvaluations.reduce((sum, item) => sum + (Number(item.course.credits) || 4), 0)
+      ).toFixed(1)
     : "Sin notas";
+
+  const hasAnyEvaluations = coursesWithEvaluations.length > 0;
 
   return (
     <PageTransition id="notas" className="space-y-6">
@@ -82,8 +131,14 @@ export const GradesTab: React.FC<GradesTabProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-blue-600 flex items-center justify-between text-left">
           <div>
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Promedio de Notas</span>
-            <p className="text-2xl font-black text-slate-900 mt-1 font-mono">{hasGrades ? calculatedAverage : "0.0"}</p>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Promedio Parcial</span>
+              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 font-mono">
+                {hasAnyEvaluations ? "En Progreso" : "Sin Registro"}
+              </span>
+            </div>
+            <p className="text-2xl font-black text-slate-900 mt-1 font-mono">{hasAnyEvaluations ? cycleProgressiveAverage : "0.0"}</p>
+            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">Avance ponderado por créditos</span>
           </div>
           <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
             <Award className="w-5 h-5" />
@@ -94,6 +149,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           <div>
             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Créditos Llevados</span>
             <p className="text-2xl font-black text-emerald-600 mt-1 font-mono">{totalCredits.toFixed(1)}</p>
+            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">Total matriculado Ciclo I</span>
           </div>
           <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
             <FileText className="w-5 h-5" />
@@ -104,6 +160,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           <div>
             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Materias Matriculadas</span>
             <p className="text-2xl font-black text-purple-600 mt-1 font-mono">{enrichedCourses.length}</p>
+            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">5 Unidades Didácticas</span>
           </div>
           <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
             <Sliders className="w-5 h-5" />
@@ -113,7 +170,8 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-emerald-600 flex items-center justify-between text-left">
           <div>
             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Condición Académica</span>
-            <p className="text-xl font-black text-emerald-600 mt-1 font-mono">{hasGrades && Number(calculatedAverage) >= 12.5 ? "REGULAR" : "MATRICULADO"}</p>
+            <p className="text-xl font-black text-emerald-600 mt-1 font-mono">{hasAnyEvaluations && Number(cycleProgressiveAverage) >= 12.5 ? "REGULAR" : "MATRICULADO"}</p>
+            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">Conforme a reglamento</span>
           </div>
           <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
             <CheckCircle2 className="w-5 h-5" />
@@ -157,7 +215,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {activeCourse.evaluations.map((evalItem: any, idx: number) => {
-                        const isNotRegistered = evalItem.grade === "NR";
+                        const isNotRegistered = evalItem.grade === "NR" || evalItem.grade === undefined;
                         return (
                           <tr key={idx} className="hover:bg-slate-50/50 transition-all font-sans">
                             <td className="py-4 px-1">
@@ -166,7 +224,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                             </td>
                             
                             <td className="py-4 text-center">
-                              <span className="font-mono text-[11px] text-slate-500 font-bold bg-slate-55 border px-2 py-0.5 rounded uppercase">
+                              <span className="font-mono text-[11px] text-[#800521] font-black bg-rose-50 border border-rose-200 px-2 py-0.5 rounded uppercase">
                                 {evalItem.prefix}
                               </span>
                             </td>
@@ -176,12 +234,12 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                             </td>
                             
                             <td className="py-4 text-right">
-                              <span className={`font-mono font-black text-[14px] w-12 h-9 inline-flex items-center justify-center rounded-lg border select-none ${
+                              <span className={`font-mono font-black text-[13px] min-w-12 h-8 inline-flex items-center justify-center px-2.5 rounded-lg border select-none ${
                                 isNotRegistered 
-                                  ? "bg-gray-150/40 text-gray-500 border-gray-200" 
-                                  : "bg-emerald-50 text-emerald-750 border-emerald-100 font-extrabold"
+                                  ? "bg-slate-100 text-slate-400 border-slate-200" 
+                                  : "bg-emerald-50 text-emerald-800 border-emerald-200 font-extrabold"
                               }`}>
-                                {evalItem.grade}
+                                {isNotRegistered ? "NR" : evalItem.grade}
                               </span>
                             </td>
                           </tr>
@@ -191,11 +249,46 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                   </table>
                 </div>
 
-                <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl space-y-1.5 text-left mt-4">
-                  <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest block">Fórmula de Calificación Final:</span>
-                  <code className="text-[11.5px] font-mono font-black text-[#800521] block">
-                    {activeCourse.formula}
-                  </code>
+                {/* Official Course Formula & Progressive Breakdown */}
+                <div className="bg-slate-50 border border-slate-200/90 p-4 rounded-xl space-y-3 text-left mt-4 shadow-3xs">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest block">
+                      Fórmula Curricular Oficial del Curso:
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-mono font-bold bg-white text-slate-700 border border-slate-200 px-2 py-0.5 rounded shadow-3xs">
+                        Avance Evaluado: {(activeStats.evaluatedWeight * 100).toFixed(0)}%
+                      </span>
+                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded font-mono ${
+                        activeStats.isFullyEvaluated 
+                          ? "bg-emerald-100 text-emerald-800" 
+                          : "bg-amber-100 text-amber-900 border border-amber-300"
+                      }`}>
+                        {activeStats.isFullyEvaluated ? "Evaluación Cerrada" : "En Desarrollo Lectivo"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs space-y-1.5">
+                    <code className="text-xs md:text-sm font-mono font-black text-[#800521] block select-all">
+                      {activeCourse.formula}
+                    </code>
+                    <p className="text-[10.5px] text-slate-500 font-semibold leading-relaxed">
+                      Desglose de cálculo: <span className="font-mono font-extrabold text-slate-800">{activeStats.breakdownText}</span>
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200 text-xs flex-wrap gap-2">
+                    <span className="text-slate-600 font-bold text-[11px]">
+                      Puntaje Acumulado al momento:
+                      <strong className="font-mono text-emerald-700 ml-1.5 font-black text-sm">
+                        {activeStats.accumulatedPoints.toFixed(1)} / 20.0 pts
+                      </strong>
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-500">
+                      Rendimiento parcial: <strong className="font-mono text-slate-900">{activeStats.hasAnyGrade ? `${activeStats.progressiveAverage.toFixed(1)} / 20` : "Pendiente"}</strong>
+                    </span>
+                  </div>
                 </div>
 
                 <div className="bg-amber-50/50 border border-amber-100 p-3.5 rounded-lg text-[10.5px] font-bold text-slate-650 flex items-start gap-2 leading-relaxed">
@@ -219,6 +312,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
             <div className="space-y-2.5">
               {enrichedCourses.map((courseItem) => {
                 const isSelected = activeCourse?.id === courseItem.id;
+                const courseItemStats = computeCourseStats(courseItem);
                 return (
                   <button
                     key={courseItem.id}
@@ -243,9 +337,16 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                         }`}>
                           {courseItem.name}
                         </span>
-                        <span className="text-[9.5px] text-slate-400 font-extrabold tracking-wide uppercase block mt-1">
-                          Código: {courseItem.code}
-                        </span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[9.5px] text-slate-400 font-extrabold tracking-wide uppercase">
+                            Código: {courseItem.code}
+                          </span>
+                          {courseItemStats.hasAnyGrade && (
+                            <span className="text-[8.5px] font-mono font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded">
+                              {courseItemStats.progressiveAverage.toFixed(1)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <ChevronRight className={`w-4 h-4 transition-transform ${
@@ -262,16 +363,19 @@ export const GradesTab: React.FC<GradesTabProps> = ({
       <BoletaNotasModal
         isOpen={showBoletaModal}
         onClose={() => setShowBoletaModal(false)}
-        studentDni={studentInfo?.dni || "00000000"}
-        studentName={studentInfo?.name || "Estudiante"}
-        careerName={studentInfo?.career || "Carrera Técnica"}
+        studentDni={studentInfo?.dni || "74859612"}
+        studentName={studentInfo?.name || "Mateo Sebastián Quispe Rojas"}
+        careerName={studentInfo?.career || "Electricidad Industrial"}
         cycleNumber={1}
-        courses={enrichedCourses.map(c => ({
-          name: c.name,
-          grade: typeof c.evaluations?.[0]?.grade === "number" ? c.evaluations[0].grade : 0,
-          approved: false
-        }))}
-        average={hasGrades ? Number(calculatedAverage) : 0}
+        courses={enrichedCourses.map((c) => {
+          const stats = computeCourseStats(c);
+          return {
+            name: c.name,
+            grade: stats.hasAnyGrade ? stats.progressiveAverage : 0,
+            approved: stats.hasAnyGrade && stats.progressiveAverage >= 12.5
+          };
+        })}
+        average={hasAnyEvaluations ? Number(cycleProgressiveAverage) : 0}
       />
     </PageTransition>
   );

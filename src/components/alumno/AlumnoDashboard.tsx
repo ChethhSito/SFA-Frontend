@@ -20,6 +20,7 @@ import { ProceduresTab } from "./tabs/ProceduresTab";
 import GuidesLibrary from "../shared/GuidesLibrary";
 import AcademicCalendarBoard from "../shared/AcademicCalendarBoard";
 import { fetchMpaCollections } from "../../services/mpaApi";
+import { getCourseFormula } from "../../constants/courseFormulas";
 
 interface AlumnoDashboardProps {
   studentDni: string;
@@ -505,7 +506,7 @@ export default function AlumnoDashboard({
         endDate: mpaPlanningData.periods?.find((p: any) => p.id === studentGroup?.periodId)?.endDate || "2027-07-30",
         studentCount: studentGroup?.capacity || 30,
         description: `Unidad didáctica curricular matriculada. Plan de estudios de la carrera técnica de ${enrollment.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad"}.`,
-        formula: "NF = (EP1 * 0.20) + (TR1 * 0.15) + (EC1 * 0.15) + (PF1 * 0.50)",
+        formula: `NF = ${getCourseFormula(courseCode).expression}`,
         attendanceCourseIds: dynamicAttendanceIds
       };
     });
@@ -531,7 +532,7 @@ export default function AlumnoDashboard({
         endDate: mpaPlanningData.periods?.find((p: any) => p.id === studentGroup?.periodId)?.endDate || "2027-07-30",
         studentCount: studentGroup?.capacity || 30,
         description: `Unidad didáctica del Ciclo I correspondiente al plan de estudios oficial de ${enrollment.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad"}.`,
-        formula: "NF = (EP1 * 0.20) + (TR1 * 0.15) + (EC1 * 0.15) + (PF1 * 0.50)"
+        formula: `NF = ${getCourseFormula(c.code).expression}`
       }));
   }, [catalogCourses, enrollment.programId, enrollment.shift, studentGroup, mpaPlanningData.periods]);
 
@@ -551,27 +552,76 @@ export default function AlumnoDashboard({
 
     let description = c.description || `Unidad didáctica del plan curricular para la carrera de ${currentProgram?.name || "Electricidad Industrial"}. Enfocada en desarrollar competencias profesionales esenciales del sector tecnológico nacional.`;
 
-    const formula = "Calificaciones registradas por evaluación";
+    const courseFormula = getCourseFormula(c.code);
+    const formula = `NF = ${courseFormula.expression}`;
     const relatedDbCourses = courses.filter((course) =>
       course.code === c.code ||
       course.code?.startsWith(`${c.code}-`) ||
       course.id === c.id ||
       (course as any)._id === c.id
     );
-    const relatedCourse = relatedDbCourses[0];
-    const evaluationsList = assignments.filter((assignment) => {
-      const matchIds = new Set<string>([c.id, c.code]);
-      relatedDbCourses.forEach((rc: any) => {
-        if (rc.id) matchIds.add(rc.id);
-        if (rc._id) matchIds.add(rc._id);
-        if (rc.code) matchIds.add(rc.code);
-      });
-      return matchIds.has(assignment.courseId);
-    }).map((assignment, index) => {
-      const submission = assignment.submissions.find((item) => item.studentDni === studentDni);
-      return { name: assignment.title, sub: assignment.description, prefix: `EV${index + 1}`,
-        weight: "Sin ponderación", grade: submission?.grade === undefined ? "NR" : submission.grade };
+
+    const matchIds = new Set<string>([c.id, c.code]);
+    relatedDbCourses.forEach((rc: any) => {
+      if (rc.id) matchIds.add(rc.id);
+      if (rc._id) matchIds.add(rc._id);
+      if (rc.code) matchIds.add(rc.code);
     });
+
+    const courseAssignments = assignments.filter((a) => matchIds.has(a.courseId));
+
+    // Construct evaluations mapped to the official course formula variables
+    const formulaEvaluations = courseFormula.variables.map((variable, idx) => {
+      // 1. Look for explicit [Planilla] assignment
+      const planillaAssignment = courseAssignments.find((a) => a.title === `[Planilla] ${variable.id}`);
+      const planillaSub = planillaAssignment?.submissions.find((s) => s.studentDni === studentDni);
+
+      // 2. Look for matching regular assignment (e.g. title includes variable.id or week 1 maps to first variable)
+      const matchingAssignment = courseAssignments.find((a) =>
+        !a.title.startsWith("[Planilla] ") && (
+          a.title.toUpperCase().includes(variable.id) ||
+          (idx === 0 && a.title.toLowerCase().includes("semana 1"))
+        )
+      );
+      const regularSub = matchingAssignment?.submissions.find((s) => s.studentDni === studentDni);
+
+      let grade: number | "NR" = "NR";
+      let subDesc = variable.label;
+      if (planillaSub?.grade !== undefined) {
+        grade = planillaSub.grade;
+      } else if (regularSub?.grade !== undefined) {
+        grade = regularSub.grade;
+        subDesc = `${matchingAssignment?.title}`;
+      }
+
+      return {
+        id: variable.id,
+        name: variable.label,
+        sub: subDesc,
+        prefix: variable.id,
+        weight: `${(variable.weight * 100).toFixed(0)}%`,
+        weightDecimal: variable.weight,
+        grade
+      };
+    });
+
+    // Also include any other published task/assignment if not mapped directly
+    const extraAssignments = courseAssignments
+      .filter((a) => !a.title.startsWith("[Planilla] ") && !formulaEvaluations.some(e => e.sub === a.title))
+      .map((assignment, index) => {
+        const submission = assignment.submissions.find((item) => item.studentDni === studentDni);
+        return {
+          id: assignment.id || `extra-${index}`,
+          name: assignment.title,
+          sub: assignment.description || "Evidencia práctica de aula virtual",
+          prefix: `TA${index + 1}`,
+          weight: "Formativo",
+          weightDecimal: 0,
+          grade: submission?.grade === undefined ? "NR" : submission.grade
+        };
+      });
+
+    const evaluationsList = [...formulaEvaluations, ...extraAssignments];
 
     const idSet = new Set<string>();
     [c.id, c.code, c.id?.replace(/^cur-/, '')].filter(Boolean).forEach((id: string) => idSet.add(id));

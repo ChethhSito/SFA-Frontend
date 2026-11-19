@@ -1,11 +1,8 @@
 import React from "react";
 import { Course } from "../../../types";
+import { CourseFormula } from "../../../constants/courseFormulas";
 
-export interface CourseFormula {
-  courseCode: string;
-  expression: string;
-  variables: { id: string; label: string; weight: number }[];
-}
+export type { CourseFormula };
 
 interface CourseFormulaCardProps {
   selectedCourse: Course;

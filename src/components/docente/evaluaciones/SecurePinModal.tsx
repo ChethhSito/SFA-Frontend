@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { Lock } from "lucide-react";
 
 interface SecurePinModalProps {
@@ -26,9 +27,17 @@ export const SecurePinModal: React.FC<SecurePinModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-slate-150 max-w-sm w-full p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+  const content = (
+    <div 
+      className="fixed inset-0 z-[99999] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-150"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div 
+        className="bg-white rounded-2xl border border-slate-150 max-w-sm w-full p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150 relative text-left"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="text-center space-y-1">
           <div className="mx-auto w-10 h-10 rounded-full bg-[#8B0026]/10 flex items-center justify-center mb-3">
             <Lock className="w-5 h-5 text-[#8B0026]" />
@@ -90,4 +99,6 @@ export const SecurePinModal: React.FC<SecurePinModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== "undefined" ? createPortal(content, document.body) : null;
 };
