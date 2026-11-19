@@ -251,7 +251,7 @@ export default function EvaluacionesManager({
                 {/* Selector de Hito Curricular de Fórmula */}
                 <div>
                   <label className="block text-[9px] font-black uppercase text-slate-400 mb-1">
-                    Vincular a Hito Curricular:
+                    Hito Oficial:
                   </label>
                   <select
                     value={selectedComponent}
@@ -265,7 +265,7 @@ export default function EvaluacionesManager({
                     }}
                     className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-[#800521] cursor-pointer"
                   >
-                    <option value="">(Sin hito / Evaluación Formativa)</option>
+                    <option value="">Sin hito oficial</option>
                     {formula.variables.map((v) => {
                       const alreadyAssigned = v.id !== "NPA" && assignedComponentsMap[v.id];
                       return (
@@ -286,15 +286,15 @@ export default function EvaluacionesManager({
                 {/* Selector de Modalidad Presencial / Virtual */}
                 <div>
                   <label className="block text-[9px] font-black uppercase text-slate-400 mb-1">
-                    Modalidad de Evaluación:
+                    Modalidad:
                   </label>
                   <select
                     value={selectedModality}
                     onChange={(e) => setSelectedModality(e.target.value as "presencial" | "virtual")}
                     className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none focus:border-[#800521] cursor-pointer"
                   >
-                    <option value="presencial">Presencial (Calificación en Taller/Aula)</option>
-                    <option value="virtual">Virtual (Entrega de archivos)</option>
+                    <option value="presencial">Presencial</option>
+                    <option value="virtual">Virtual</option>
                   </select>
                 </div>
               </div>
@@ -306,7 +306,7 @@ export default function EvaluacionesManager({
               className="w-full bg-[#800521] hover:bg-[#66041a] text-white font-extrabold text-xs uppercase px-4 py-2.5 rounded-xl shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
             >
               <Plus className="w-4 h-4 text-amber-300" />
-              Programar Evaluación en Semana {week}
+              Programar Evaluación
             </button>
           </form>
 

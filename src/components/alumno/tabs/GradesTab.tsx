@@ -148,14 +148,14 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-blue-600 flex items-center justify-between text-left">
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Actividades y Tareas (NPA)</span>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Nota de Participación</span>
               <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 font-mono">
                 {cycleNpaAverage !== null ? "Al Día" : "Sin Registro"}
               </span>
             </div>
             <p className="text-2xl font-black text-slate-900 mt-1 font-mono">{cycleNpaAverage !== null ? cycleNpaAverage : "0.0"}</p>
             <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">
-              Promedio de tareas continuas ({allGradedWeeklyTasks.length} calificada{allGradedWeeklyTasks.length === 1 ? "" : "s"})
+              {allGradedWeeklyTasks.length} tarea{allGradedWeeklyTasks.length === 1 ? "" : "s"} calificada{allGradedWeeklyTasks.length === 1 ? "" : "s"}
             </span>
           </div>
           <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
@@ -204,39 +204,41 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         {/* LEFT AREA: Evaluations detail card */}
         <div className="xl:col-span-8 space-y-6 text-left">
           <div className="bg-white rounded-xl border border-slate-100 shadow-xs p-6 space-y-4">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight font-display flex items-center gap-2 flex-wrap">
-                  {renderCourseIcon(activeCourse?.iconType || "BarChart3", "w-4 h-4 text-[#800521]")}
-                  Detalle Evaluativo de {activeCourse?.name}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm md:text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                  {renderCourseIcon(activeCourse?.iconType || "BarChart3", "w-4 h-4 text-[#800521] shrink-0")}
+                  <span className="truncate">{activeCourse?.name}</span>
                 </h3>
-                <span className="text-[10px] text-slate-400 font-bold tracking-wide uppercase mt-0.5 block">Unidad Didáctica: {activeCourse?.code} • Aula: {activeCourse?.classroom}</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase mt-0.5 block">
+                  {activeCourse?.code} • {activeCourse?.classroom}
+                </span>
               </div>
               
               <button 
                 onClick={() => setShowBoletaModal(true)}
-                className="bg-[#9F062A] hover:bg-[#800521] text-white font-black text-[10px] py-1.5 px-3 rounded-lg flex items-center gap-1.5 uppercase transition-all shadow-xs cursor-pointer select-none"
+                className="bg-[#9F062A] hover:bg-[#800521] text-white font-black text-[10.5px] py-1.5 px-3 rounded-lg flex items-center gap-1.5 uppercase transition-all shadow-xs cursor-pointer select-none shrink-0 self-start sm:self-center"
               >
-                <Printer className="w-3.5 h-3.5" /> Generar Boleta PDF
+                <Printer className="w-3.5 h-3.5" /> Descargar Boleta
               </button>
             </div>
 
             {activeCourse ? (
               <div className="space-y-6">
-                {/* 1. SECCIÓN: COMPONENTES CURRICULARES OFICIALES (FÓRMULA DEL CURSO) */}
+                {/* 1. SECCIÓN: EVALUACIONES OFICIALES */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                     <div>
                       <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                         <Award className="w-4 h-4 text-[#800521]" />
-                        Componentes Curriculares Oficiales (Acta de Evaluación)
+                        Evaluaciones Oficiales
                       </h4>
                       <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                        Hitos evaluativos del syllabus oficial (PC1, PC2, Examen Final). El docente define en qué semana y bajo qué modalidad (presencial o virtual) se aplican.
+                        Calificaciones registradas para el acta final.
                       </p>
                     </div>
                     <span className="text-[9px] font-mono font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">
-                      Hitos: {formulaEvaluations.length} indicadores
+                      {formulaEvaluations.length} evaluaciones
                     </span>
                   </div>
 
@@ -244,11 +246,11 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                     <table className="w-full text-xs font-semibold text-slate-600 border-collapse">
                       <thead>
                         <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase text-left">
-                          <th className="py-2.5 px-1">Indicador Curricular</th>
-                          <th className="py-2.5 text-center">Prefijo</th>
-                          <th className="py-2.5 text-center">Peso Oficial</th>
-                          <th className="py-2.5 text-center">Modalidad / Estado</th>
-                          <th className="py-2.5 text-right">Nota Acta (0–20)</th>
+                          <th className="py-2.5 px-1">Evaluación</th>
+                          <th className="py-2.5 text-center">Código</th>
+                          <th className="py-2.5 text-center">Peso</th>
+                          <th className="py-2.5 text-center">Estado</th>
+                          <th className="py-2.5 text-right">Nota</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -273,7 +275,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
 
                               <td className="py-3 text-center">
                                 <span className="text-[9.5px] font-bold text-slate-500 uppercase px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
-                                  {isNotRegistered ? "Pendiente de Sesión" : "Registrado en Acta"}
+                                  {isNotRegistered ? "Pendiente" : "Registrado"}
                                 </span>
                               </td>
                               
@@ -342,15 +344,15 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                     <div>
                       <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                         <FileText className="w-4 h-4 text-blue-600" />
-                        Registro de Tareas Semanales y Actividades Continuas (NPA)
+                        Tareas y Actividades Continuas
                       </h4>
                       <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                        El docente deja tareas e informes semana a semana. La Nota de Participación y Actividades (NPA) es el promedio de todas las tareas calificadas.
+                        Tareas e informes semanales que acumulan en la nota de participación.
                       </p>
                     </div>
 
                     <div className="bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl flex items-center gap-2">
-                      <span className="text-[10px] font-black uppercase text-blue-700">Promedio NPA del Curso:</span>
+                      <span className="text-[10px] font-black uppercase text-blue-700">Promedio:</span>
                       <span className="font-mono font-black text-blue-900 text-sm">
                         {courseNpa !== null ? `${courseNpa} / 20` : "Sin tareas"}
                       </span>
@@ -362,10 +364,10 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                       <table className="w-full text-xs font-semibold text-slate-600 border-collapse">
                         <thead>
                           <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase text-left">
-                            <th className="py-2.5 px-1">Tarea Semanal</th>
+                            <th className="py-2.5 px-1">Tarea</th>
                             <th className="py-2.5 text-center">Semana</th>
-                            <th className="py-2.5 text-center">Estado de Entrega</th>
-                            <th className="py-2.5 text-right">Nota Obtenida</th>
+                            <th className="py-2.5 text-center">Estado</th>
+                            <th className="py-2.5 text-right">Nota</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -392,7 +394,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                                   <span className={`text-[9.5px] font-bold uppercase px-2 py-0.5 rounded ${
                                     task.hasSubmitted ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
                                   }`}>
-                                    {task.hasSubmitted ? "Entregado a tiempo" : "Pendiente"}
+                                    {task.hasSubmitted ? "Entregado" : "Pendiente"}
                                   </span>
                                 </td>
 
@@ -413,7 +415,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                     </div>
                   ) : (
                     <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 text-center text-xs text-slate-400 italic">
-                      No se han asignado tareas continuas en esta unidad didáctica aún.
+                      No se han asignado tareas aún.
                     </div>
                   )}
                 </div>
@@ -421,7 +423,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                 <div className="bg-amber-50/50 border border-amber-100 p-3.5 rounded-lg text-[10.5px] font-bold text-slate-650 flex items-start gap-2 leading-relaxed">
                   <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                   <p>
-                    <strong>Nota Importante:</strong> Conforme al reglamento académico institucional de la sede rectoral, la nota aprobatoria mínima general por unidad didáctica tecnológica es de <strong>13 (trece)</strong>. Las notas no registrables se denotan temporalmente como <em>"NR"</em> y se regularizarán conforme el docente aplique las evaluaciones presenciales o virtuales en el cronograma.
+                    <strong>Nota Importante:</strong> La nota aprobatoria mínima institucional es de <strong>13 (trece)</strong>. Las notas pendientes se registran como <em>"NR"</em> y se regularizan conforme el docente evalúe en las sesiones.
                   </p>
                 </div>
               </div>
@@ -434,7 +436,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         {/* RIGHT AREA: Course navigator bar sidebar */}
         <div className="xl:col-span-4 space-y-6">
           <div className="bg-white rounded-xl border border-slate-100 shadow-xs p-5 space-y-4 text-left">
-            <h3 className="text-[11.5px] font-black uppercase text-slate-500 tracking-wider">Unidades Didácticas Llevadas</h3>
+            <h3 className="text-[11.5px] font-black uppercase text-slate-500 tracking-wider">Cursos del Ciclo</h3>
             
             <div className="space-y-2.5">
               {enrichedCourses.map((courseItem) => {
