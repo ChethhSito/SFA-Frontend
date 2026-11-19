@@ -242,7 +242,7 @@ export default function EvaluacionesManager({
                     <option value="">(Sin hito / Evaluación Formativa)</option>
                     {formula.variables.map((v) => (
                       <option key={v.id} value={v.id}>
-                        {v.id}: {v.label} ({(v.weight * 100).toFixed(0)}%)
+                        {v.label} ({(v.weight * 100).toFixed(0)}%)
                       </option>
                     ))}
                   </select>
