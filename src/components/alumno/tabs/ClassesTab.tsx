@@ -211,40 +211,33 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     }
   };
 
+  const WEEK_CURRICULAR_TOPICS: Record<number, { topic: string; desc: string }> = {
+    1: { topic: "Semana 1: Introducción y Fundamentos", desc: "Presentación del syllabus, lineamientos y diagnóstico inicial." },
+    2: { topic: "Semana 2: Leyes y Magnitudes Eléctricas", desc: "Cálculo de magnitudes, leyes de Kirchhoff y análisis guiado." },
+    3: { topic: "Semana 3: Laboratorio y Análisis de Circuitos", desc: "Prácticas de taller, mediciones técnicas y resolución de casos." },
+    4: { topic: "Semana 4: Control Formativo de Unidad 1", desc: "Revisión de informes técnicos y verificación de avances." },
+    5: { topic: "Semana 5: Circuitos en Corriente Continua", desc: "Análisis de redes y configuración en protoboard." },
+    6: { topic: "Semana 6: Taller de Mediciones e Instrumental", desc: "Uso de multímetro, fuentes reguladas y osciloscopio." },
+    7: { topic: "Semana 7: Potencia y Energía Eléctrica", desc: "Cálculo de consumo, rendimiento y disipación de calor." },
+    8: { topic: "Semana 8: Examen Parcial de Semestre", desc: "Evaluación de medio ciclo y consolidación técnica." },
+    9: { topic: "Semana 9: Máquinas Eléctricas y Bobinados", desc: "Principios electromagnéticos e inducción aplicada." },
+    10: { topic: "Semana 10: Taller de Conexiones Industriales", desc: "Armado de tableros y esquemas de cableado." },
+    11: { topic: "Semana 11: Seguridad y Protección de Circuitos", desc: "Interruptores termomagnéticos y puesta a tierra." },
+    12: { topic: "Semana 12: Control Formativo de Unidad 3", desc: "Pruebas de continuidad, aislamiento y seguridad." },
+    13: { topic: "Semana 13: Automatismos y Contactores", desc: "Esquemas de mando y arranque de motores." },
+    14: { topic: "Semana 14: Diagnóstico y Detección de Fallas", desc: "Localización de averías y mantenimiento preventivo." },
+    15: { topic: "Semana 15: Integración de Proyectos Técnicos", desc: "Pruebas finales de funcionamiento y montaje." },
+    16: { topic: "Semana 16: Evaluación Final y Sustentación", desc: "Cierre del periodo lectivo y sustentación de proyectos." }
+  };
+
   const getLocalWeekTheme = (courseCode: string, week: number) => {
-    const courseTitle = activeCourse?.name || courseCode;
+    if (WEEK_CURRICULAR_TOPICS[week]) {
+      return WEEK_CURRICULAR_TOPICS[week];
+    }
     const unitNumber = Math.ceil(week / 4);
-
-    if (week === 1) {
-      return {
-        topic: `Semana 1: Introducción, Fundamentos y Lineamientos de ${courseTitle}`,
-        desc: `Presentación del syllabus, evaluación diagnóstica inicial y fundamentos conceptuales de ${courseTitle}.`
-      };
-    }
-    if (week === 8) {
-      return {
-        topic: `Semana 8: Evaluación Parcial y Consolidación de ${courseTitle}`,
-        desc: `Examen de medio ciclo, verificación de avances prácticos y retroalimentación técnica de ${courseTitle}.`
-      };
-    }
-    if (week === 16) {
-      return {
-        topic: `Semana 16: Evaluación Final y Sustentación Integral de ${courseTitle}`,
-        desc: `Consolidación final de competencias, sustentación de proyectos y cierre de actas de ${courseTitle}.`
-      };
-    }
-
-    const subWeek = ((week - 1) % 4) + 1;
-    const subThemes = [
-      `Fundamentos teóricos y conceptualización técnica`,
-      `Taller práctico y desarrollo guiado de casos`,
-      `Laboratorio aplicado y resolución de problemas`,
-      `Revisión formativa y control de avance de unidad`
-    ];
-
     return {
-      topic: `Semana ${week}: Unidad ${unitNumber} - ${subThemes[subWeek - 1]} de ${courseTitle}`,
-      desc: `Sesión lectiva correspondiente a la Semana ${week} de ${courseTitle}: aplicación práctica, análisis de casos y desarrollo de competencias.`
+      topic: `Semana ${week}: Unidad ${unitNumber} - Desarrollo Curricular`,
+      desc: "Sesión de aprendizaje práctico y desarrollo de competencias técnicas."
     };
   };
 
