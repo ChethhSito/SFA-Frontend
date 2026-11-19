@@ -237,7 +237,7 @@ export default function Sidebar({
       )}
 
       {/* Scrollable Navigation Sections */}
-      <div className={`flex-1 overflow-y-auto space-y-4 custom-scrollbar text-left ${collapsed ? "px-2 py-2" : "px-3 py-2"}`}>
+      <div className={`flex-1 overflow-y-auto space-y-4 text-left ${collapsed ? "px-2 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" : "px-3 py-2 custom-scrollbar"}`}>
         {resolvedSections.map((section, idx) => (
           <div key={idx} className="space-y-1">
             {!collapsed && section.title && (

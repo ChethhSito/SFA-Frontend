@@ -835,10 +835,13 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
             <div className="p-3 bg-slate-50 border-t border-slate-100">
               <button
-                onClick={() => setSelectedCourseDetail("")}
+                onClick={() => {
+                  setSelectedCourseDetail("");
+                  setActiveCourseSection("general");
+                }}
                 className="w-full bg-slate-100 hover:bg-slate-200 text-[#800521] border border-slate-200/60 rounded-lg text-[10px] font-black py-2.5 flex items-center justify-center gap-1.5 select-none uppercase transition-all cursor-pointer"
               >
-                ← Volver a Cursos
+                ← Volver a la Intranet
               </button>
             </div>
           </aside>
