@@ -409,9 +409,9 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   }
 
   const getMappedCourseId = (code: string) => {
-    if (code === "EE-101") return "cur-elec-1"; 
-    if (code === "EE-403") return "cur-elec-2"; 
-    if (code === "EE-502") return "cur-elec-3"; 
+    if (code === "EE-101" || code === "EIND-101") return "cur-elec-1"; 
+    if (code === "EE-403" || code === "EIND-102") return "cur-elec-2"; 
+    if (code === "EE-502" || code === "EIND-103") return "cur-elec-3"; 
     return code;
   };
 

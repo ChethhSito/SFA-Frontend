@@ -103,36 +103,36 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", type: "General", credits: 2, status: "Matriculado", teo: 1, pr: 2 }
       ],
       "II": [
-        { code: "EE-201", name: "Electricidad Básica y Mediciones", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-202", name: "Matemática Aplicada II", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 2, pr: 2 },
-        { code: "EE-203", name: "Tecnología de Materiales", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "EE-204", name: "Informática y Software Técnico", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
+        { code: "EIND-201", name: "Electricidad Básica y Mediciones", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EIND-202", name: "Matemática Aplicada II", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 2, pr: 2 },
+        { code: "EIND-203", name: "Tecnología de Materiales", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
+        { code: "EIND-204", name: "Informática y Software Técnico", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
       ],
       "III": [
-        { code: "EE-301", name: "Circuitos de Corriente Alterna", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-302", name: "Electrónica Analógica Aplicada", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-303", name: "Instalaciones de Interiores", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "EE-304", name: "Inglés Técnico Académico", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
+        { code: "EIND-301", name: "Circuitos de Corriente Alterna", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EIND-302", name: "Electrónica Analógica Aplicada", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EIND-303", name: "Instalaciones de Interiores", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
+        { code: "EIND-304", name: "Inglés Técnico Académico", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
       ],
       "IV": [
-        { code: "EE-401", name: "Máquinas de Corriente Continua", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-402", name: "Sistemas Neumáticos e Hidráulicos", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-403", name: "Instalaciones Eléctricas III", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "EE-404", name: "Relaciones en Entorno de Trabajo", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
+        { code: "EIND-401", name: "Máquinas de Corriente Continua", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EIND-402", name: "Sistemas Neumáticos e Hidráulicos", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EIND-403", name: "Instalaciones Eléctricas III", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
+        { code: "EIND-404", name: "Relaciones en Entorno de Trabajo", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
       ],
       "V": [
-        { code: "EE-501", name: "Teoría de Circuitos II", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
-        { code: "EE-502", name: "Lab. Maquinarias de Potencia", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
-        { code: "EE-503", name: "Sistemas de Control Automático II", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
-        { code: "EE-504", name: "Instalaciones Industriales Inteligentes", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
-        { code: "EE-505", name: "Ética y Deontología Profesional", type: "Obligatorio", credits: 2, status: "Matriculado", teo: 1, pr: 2 }
+        { code: "EIND-501", name: "Teoría de Circuitos II", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "EIND-502", name: "Lab. Maquinarias de Potencia", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "EIND-503", name: "Sistemas de Control Automático II", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
+        { code: "EIND-504", name: "Instalaciones Industriales Inteligentes", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
+        { code: "EIND-505", name: "Ética y Deontología Profesional", type: "Obligatorio", credits: 2, status: "Matriculado", teo: 1, pr: 2 }
       ],
       "VI": [
-        { code: "EE-601", name: "Controladores PLC y SCADA Industrial", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-602", name: "Mantenimiento Eléctrico de Potencia", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-603", name: "Redes Industriales y Automatización", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "EE-604", name: "Proyecto de Innovación y Titulación EFSRT", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "EE-605", name: "Gestión Empresarial y Empleabilidad", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
+        { code: "EIND-601", name: "Controladores PLC y SCADA Industrial", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EIND-602", name: "Mantenimiento Eléctrico de Potencia", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EIND-603", name: "Redes Industriales y Automatización", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
+        { code: "EIND-604", name: "Proyecto de Innovación y Titulación EFSRT", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
+        { code: "EIND-605", name: "Gestión Empresarial y Empleabilidad", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
       ]
     }
   };
