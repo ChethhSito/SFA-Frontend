@@ -551,7 +551,7 @@ export default function DocenteDashboard({
 
       {/* 2. SIDEBAR SECUNDARIO CURRICULAR DINÁMICO */}
       {selectedCourseId && activeTab === "curso" && (
-        <div className={`hidden md:block shrink-0 relative z-20 transition-all duration-300 ease-in-out ${isCourseSidebarCollapsed ? "w-8 bg-white border-r border-slate-200" : "w-64"}`}>
+        <div className={`hidden md:block shrink-0 relative z-20 transition-all duration-300 ease-in-out ${isCourseSidebarCollapsed ? "w-12 bg-[#FFFBFB] border-r border-rose-200/90" : "w-64"}`}>
           <div className={`w-64 h-full transition-opacity duration-200 overflow-hidden ${isCourseSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
             <SidebarCurso
               courseId={selectedCourseId}
@@ -571,21 +571,21 @@ export default function DocenteDashboard({
             />
           </div>
 
-          {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (Diferenciado: más arriba 38%, borgoña+dorado y riel delgado 32px) */}
+          {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (Blanco limpio con anillo rosáceo institucional) */}
           <button
             type="button"
             onClick={() => setIsCourseSidebarCollapsed(!isCourseSidebarCollapsed)}
             title={isCourseSidebarCollapsed ? "Expandir semanas del curso" : "Ocultar semanas del curso"}
-            className={`absolute top-[38%] -translate-y-1/2 z-50 bg-[#800521] hover:bg-[#600318] text-amber-300 hover:text-white border-2 border-amber-400/80 hover:border-amber-300 w-[24px] h-[24px] rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
+            className={`absolute top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border border-rose-300 hover:border-[#800521] w-[26px] h-[26px] rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
               isCourseSidebarCollapsed 
-                ? "left-1/2 -translate-x-1/2" 
-                : "-right-[12px]"
+                ? "right-2" 
+                : "-right-[13px]"
             }`}
           >
             {isCourseSidebarCollapsed ? (
-              <ChevronRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+              <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             ) : (
-              <ChevronLeft className="w-3 h-3 transition-transform group-hover:-translate-x-0.5" />
+              <ChevronLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
             )}
           </button>
         </div>
