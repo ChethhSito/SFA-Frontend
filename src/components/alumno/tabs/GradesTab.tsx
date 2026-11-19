@@ -428,9 +428,6 @@ export const GradesTab: React.FC<GradesTabProps> = ({
             ) : (
               <div className="text-center p-6 text-slate-400 italic">No hay datos para esta unidad didáctica.</div>
             )}
-            ) : (
-              <div className="text-center p-6 text-slate-400 italic">No hay datos para esta unidad didáctica.</div>
-            )}
           </div>
         </div>
 
