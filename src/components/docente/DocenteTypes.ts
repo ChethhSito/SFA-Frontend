@@ -128,32 +128,61 @@ export const ROSTER: StudentRosterItem[] = new Proxy([] as StudentRosterItem[], 
  * Dynamic weekly syllabus theme generator for any official course in the catalog.
  * Follows MINEDU/SFA standard curricular progression across 16 academic weeks.
  */
-const WEEK_CURRICULAR_TOPICS: Record<number, { topic: string; desc: string }> = {
-  1: { topic: "Semana 1: Introducción y Fundamentos", desc: "Presentación del syllabus, lineamientos y diagnóstico inicial." },
-  2: { topic: "Semana 2: Leyes y Magnitudes Eléctricas", desc: "Cálculo de magnitudes, leyes de Kirchhoff y análisis guiado." },
-  3: { topic: "Semana 3: Laboratorio y Análisis de Circuitos", desc: "Prácticas de taller, mediciones técnicas y resolución de casos." },
-  4: { topic: "Semana 4: Control Formativo de Unidad 1", desc: "Revisión de informes técnicos y verificación de avances." },
-  5: { topic: "Semana 5: Circuitos en Corriente Continua", desc: "Análisis de redes y configuración en protoboard." },
-  6: { topic: "Semana 6: Taller de Mediciones e Instrumental", desc: "Uso de multímetro, fuentes reguladas y osciloscopio." },
-  7: { topic: "Semana 7: Potencia y Energía Eléctrica", desc: "Cálculo de consumo, rendimiento y disipación de calor." },
-  8: { topic: "Semana 8: Examen Parcial de Semestre", desc: "Evaluación de medio ciclo y consolidación técnica." },
-  9: { topic: "Semana 9: Máquinas Eléctricas y Bobinados", desc: "Principios electromagnéticos e inducción aplicada." },
-  10: { topic: "Semana 10: Taller de Conexiones Industriales", desc: "Armado de tableros y esquemas de cableado." },
-  11: { topic: "Semana 11: Seguridad y Protección de Circuitos", desc: "Interruptores termomagnéticos y puesta a tierra." },
-  12: { topic: "Semana 12: Control Formativo de Unidad 3", desc: "Pruebas de continuidad, aislamiento y seguridad." },
-  13: { topic: "Semana 13: Automatismos y Contactores", desc: "Esquemas de mando y arranque de motores." },
-  14: { topic: "Semana 14: Diagnóstico y Detección de Fallas", desc: "Localización de averías y mantenimiento preventivo." },
-  15: { topic: "Semana 15: Integración de Proyectos Técnicos", desc: "Pruebas finales de funcionamiento y montaje." },
-  16: { topic: "Semana 16: Evaluación Final y Sustentación", desc: "Cierre del periodo lectivo y sustentación de proyectos." }
-};
-
 export const getWeekTheme = (courseCode: string, week: number, courseName?: string) => {
-  if (WEEK_CURRICULAR_TOPICS[week]) {
-    return WEEK_CURRICULAR_TOPICS[week];
+  const rawName = courseName || "Fundamentos de Electricidad y Circuitos CC";
+  const cleanCourseName = rawName
+    .replace(/\s*\(.*?\)\s*/g, "")
+    .replace(/y\s+circuitos\s+cc/i, "")
+    .trim();
+
+  if (week === 1) {
+    return {
+      topic: `Semana 1: Introducción a ${cleanCourseName}`,
+      desc: "Presentación del syllabus, lineamientos y diagnóstico inicial."
+    };
   }
+  if (week === 2) {
+    return {
+      topic: `Semana 2: Taller de ${cleanCourseName}`,
+      desc: "Leyes de Kirchhoff y análisis guiado de circuitos."
+    };
+  }
+  if (week === 3) {
+    return {
+      topic: `Semana 3: Laboratorio de ${cleanCourseName}`,
+      desc: "Prácticas de laboratorio, mediciones y resolución de problemas."
+    };
+  }
+  if (week === 4) {
+    return {
+      topic: `Semana 4: Control Formativo de ${cleanCourseName}`,
+      desc: "Revisión técnica de informes y verificación de avances de Unidad 1."
+    };
+  }
+  if (week === 8) {
+    return {
+      topic: `Semana 8: Examen Parcial de ${cleanCourseName}`,
+      desc: "Evaluación oficial de medio ciclo y consolidación técnica."
+    };
+  }
+  if (week === 16) {
+    return {
+      topic: `Semana 16: Evaluación Final de ${cleanCourseName}`,
+      desc: "Cierre del periodo lectivo y sustentación de proyectos finales."
+    };
+  }
+
+  const subWeek = ((week - 1) % 4) + 1;
+  const subThemes = [
+    `Teoría de ${cleanCourseName}`,
+    `Taller de ${cleanCourseName}`,
+    `Laboratorio de ${cleanCourseName}`,
+    `Control y Avance de ${cleanCourseName}`
+  ];
   const unitNumber = Math.ceil(week / 4);
+
   return {
-    topic: `Semana ${week}: Unidad ${unitNumber} - Desarrollo Curricular`,
-    desc: `Sesión de aprendizaje práctico y desarrollo de competencias técnicas.`
+    topic: `Semana ${week}: ${subThemes[subWeek - 1]}`,
+    desc: `Sesión de aprendizaje práctico y desarrollo de competencias técnicas (Unidad ${unitNumber}).`
   };
 };
