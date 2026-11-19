@@ -450,9 +450,13 @@ export default function DocenteDashboard({
 
     const realAttendanceRate = attTotal > 0 ? (attPresente / attTotal) * 100 : 0;
 
+    const uniqueBaseCourses = new Set(teacherCourses.map((c) => c.code.replace(/-(TEO|TAL|LAB)$/, "")));
+    const uniqueStudents = ROSTER.length;
+
     return {
-      totalCourses: teacherCourses.length,
-      totalStudents: ROSTER.length * teacherCourses.length,
+      totalCourses: uniqueBaseCourses.size,
+      totalComponents: teacherCourses.length,
+      totalStudents: uniqueStudents,
       pendingGrades: pendingReviews,
       attendanceRate: realAttendanceRate
     };
@@ -740,9 +744,13 @@ export default function DocenteDashboard({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-3xs flex items-center justify-between text-left hover:shadow-md transition-all">
                   <div className="space-y-1">
-                    <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Asignaturas a Cargo</span>
-                    <span className="text-2xl font-black text-slate-900 block font-display tracking-tight">{globalStats.totalCourses} Materia{globalStats.totalCourses === 1 ? "" : "s"}</span>
-                    <span className="text-[10px] text-slate-500 font-bold block">Periodo Académico 2027-I</span>
+                    <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Carga Lectiva a Cargo</span>
+                    <span className="text-2xl font-black text-slate-900 block font-display tracking-tight">
+                      {globalStats.totalComponents} Componente{globalStats.totalComponents === 1 ? "" : "s"}
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-bold block">
+                      {globalStats.totalCourses} Asignatura Modular (2027-I)
+                    </span>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-red-50 text-[#800521] border border-red-100 flex items-center justify-center shrink-0">
                     <BookOpen className="w-6 h-6" />
@@ -752,8 +760,12 @@ export default function DocenteDashboard({
                 <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-3xs flex items-center justify-between text-left hover:shadow-md transition-all">
                   <div className="space-y-1">
                     <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Alumnos a Cargo</span>
-                    <span className="text-2xl font-black text-slate-900 block font-display tracking-tight">{globalStats.totalStudents} Alumno{globalStats.totalStudents === 1 ? "" : "s"}</span>
-                    <span className="text-[10px] text-emerald-600 font-bold block">Matrículas Regulares</span>
+                    <span className="text-2xl font-black text-slate-900 block font-display tracking-tight">
+                      {globalStats.totalStudents} Alumno{globalStats.totalStudents === 1 ? "" : "s"}
+                    </span>
+                    <span className="text-[10px] text-emerald-600 font-bold block">
+                      Grupo EI-I-A • Matriculado
+                    </span>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 border border-blue-100 flex items-center justify-center shrink-0">
                     <Users className="w-6 h-6" />
