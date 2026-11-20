@@ -214,19 +214,28 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         {/* LEFT AREA: Evaluations detail card */}
         <div className="xl:col-span-8 space-y-6 text-left">
           <div className="bg-white rounded-xl border border-slate-100 shadow-xs p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm md:text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-                  {renderCourseIcon(activeCourse?.iconType || "BarChart3", "w-4 h-4 text-[#800521] shrink-0")}
-                  <span className="truncate">{activeCourse?.name}</span>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div className="min-w-0 flex-1 space-y-1">
+                <h3 className="text-base md:text-lg font-black text-slate-900 tracking-tight flex items-center gap-2 leading-tight">
+                  {renderCourseIcon(activeCourse?.iconType || "BarChart3", "w-5 h-5 text-[#800521] shrink-0")}
+                  <span>{activeCourse?.name}</span>
                 </h3>
-                <span className="text-[10px] text-slate-400 font-bold uppercase mt-0.5 block">
+                <span className="text-[11px] text-slate-500 font-bold uppercase block">
                   {activeCourse?.code} • {activeCourse?.classroom}
                 </span>
+                <div className="pt-1.5">
+                  <button 
+                    type="button"
+                    onClick={() => setShowBoletaModal(true)}
+                    className="bg-[#9F062A] hover:bg-[#800521] text-white font-black text-[10.5px] py-1.5 px-3.5 rounded-xl flex items-center gap-1.5 uppercase transition-all shadow-xs cursor-pointer select-none active:scale-95"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-amber-300" /> Descargar Boleta
+                  </button>
+                </div>
               </div>
 
               {activeStats.hasAnyGrade && (
-                <div className="flex items-center gap-3 bg-gradient-to-r from-emerald-50 to-emerald-100/70 border-2 border-emerald-500/40 rounded-2xl px-4 py-2 shrink-0 shadow-xs">
+                <div className="flex items-center gap-3 bg-gradient-to-r from-emerald-50 to-emerald-100/70 border-2 border-emerald-500/40 rounded-2xl px-4 py-3 shrink-0 shadow-xs self-start md:self-center">
                   <div className="text-right">
                     <span className="text-[8.5px] font-black uppercase tracking-wider text-emerald-800 block">
                       Promedio del Curso
@@ -238,7 +247,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                       <span className="text-[10px] font-black text-emerald-600">/ 20</span>
                     </div>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-2xs font-mono ${
+                  <span className={`px-2.5 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider shadow-2xs font-mono ${
                     activeStats.progressiveAverage >= 12.5
                       ? "bg-emerald-600 text-white"
                       : "bg-rose-600 text-white"
@@ -247,13 +256,6 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                   </span>
                 </div>
               )}
-              
-              <button 
-                onClick={() => setShowBoletaModal(true)}
-                className="bg-[#9F062A] hover:bg-[#800521] text-white font-black text-[10.5px] py-2 px-3.5 rounded-xl flex items-center gap-1.5 uppercase transition-all shadow-xs cursor-pointer select-none shrink-0 self-start sm:self-center active:scale-95"
-              >
-                <Printer className="w-3.5 h-3.5 text-amber-300" /> Descargar Boleta
-              </button>
             </div>
 
             {activeCourse ? (
@@ -357,23 +359,50 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-xs flex-wrap gap-3">
-                      <div>
-                        <span className="text-slate-500 font-black text-[10px] uppercase tracking-wider block">
-                          Puntaje en Acta al momento:
-                        </span>
-                        <span className="font-mono text-emerald-700 font-black text-base md:text-lg">
-                          {activeStats.accumulatedPoints.toFixed(1)} / 20.0 pts
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-slate-500 font-black text-[10px] uppercase tracking-wider block">
-                          Promedio Ponderado Final:
-                        </span>
-                        <span className="font-mono text-[#800521] font-black text-lg md:text-xl">
-                          {activeStats.hasAnyGrade ? `${activeStats.progressiveAverage.toFixed(1)} / 20` : "Pendiente de primer hito (PC1)"}
-                        </span>
-                      </div>
+                    <div className="pt-2 border-t border-slate-200 text-xs">
+                      {activeStats.isFullyEvaluated ? (
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div>
+                            <span className="text-slate-500 font-black text-[10px] uppercase tracking-wider block">
+                              Promedio Ponderado Final del Curso:
+                            </span>
+                            <span className="text-[10px] font-semibold text-slate-400">
+                              Evaluación curricular ministerial consolidada y cerrada en acta
+                            </span>
+                          </div>
+                          <div className="text-right flex items-center gap-2.5">
+                            <span className="font-mono text-[#800521] font-black text-xl leading-none">
+                              {activeStats.progressiveAverage.toFixed(1)} / 20
+                            </span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase font-mono ${
+                              activeStats.progressiveAverage >= 12.5
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                : "bg-rose-100 text-rose-800 border border-rose-300"
+                            }`}>
+                              {activeStats.progressiveAverage >= 12.5 ? "Aprobado" : "Desaprobado"}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div>
+                            <span className="text-slate-500 font-black text-[10px] uppercase tracking-wider block">
+                              Puntaje al Momento:
+                            </span>
+                            <span className="font-mono text-emerald-700 font-black text-base">
+                              {activeStats.accumulatedPoints.toFixed(1)} / 20.0 pts
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-slate-500 font-black text-[10px] uppercase tracking-wider block">
+                              Rendimiento Parcial:
+                            </span>
+                            <span className="font-mono text-slate-900 font-black text-base">
+                              {activeStats.hasAnyGrade ? `${activeStats.progressiveAverage.toFixed(1)} / 20` : "Pendiente de primer hito (PC1)"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -539,7 +568,9 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         courses={enrichedCourses.map((c) => {
           const stats = computeCourseStats(c);
           return {
+            code: c.code,
             name: c.name,
+            credits: Number(c.credits) || 4,
             grade: stats.hasAnyGrade ? stats.progressiveAverage : "NR",
             approved: stats.hasAnyGrade ? stats.progressiveAverage >= 12.5 : null,
             status: stats.hasAnyGrade 

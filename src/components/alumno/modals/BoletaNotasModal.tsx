@@ -1,6 +1,16 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { Award, XCircle, Printer, Download, GraduationCap, CheckCircle2 } from "lucide-react";
+import { generateBoletaNotasPdf } from "../../../utils/matriculaPdf";
+
+export interface BoletaCourseItem {
+  code?: string;
+  name: string;
+  credits?: number;
+  grade: number | string;
+  approved?: boolean | null;
+  status?: string;
+}
 
 interface BoletaNotasModalProps {
   isOpen: boolean;
@@ -9,7 +19,7 @@ interface BoletaNotasModalProps {
   studentName: string;
   careerName: string;
   cycleNumber: number;
-  courses: Array<{ name: string; grade: number | string; approved?: boolean | null; status?: string }>;
+  courses: BoletaCourseItem[];
   average: number | string;
 }
 
@@ -60,32 +70,26 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
     }
   };
 
-  const handleDownload = () => {
-    const textContent = `
-========================================
-MINISTERIO DE EDUCACIÓN DEL PERÚ
-IESTP "SAN FRANCISCO DE ASÍS"
-BOLETA INFORMATIVA DE NOTAS - CICLO ${cycleNumber}
-========================================
+  const handleDownload = async () => {
+    try {
+      const formattedCourses = courses.map((c, i) => ({
+        code: c.code || `EIND-10${i + 1}`,
+        name: c.name,
+        credits: typeof c.credits === "number" ? c.credits : 4,
+        grade: typeof c.grade === "number" ? c.grade : (Number(c.grade) > 0 ? Number(c.grade) : undefined)
+      }));
 
-ESTUDIANTE: ${studentName}
-DNI: ${studentDni}
-CARRERA: ${careerName}
-PROMEDIO PONDERADO DEL CICLO: ${average}
-
-CURSOS EVALUADOS:
-----------------------------------------
-${courses.map((c, i) => `${i + 1}. ${c.name} | NOTA: ${c.grade} | ${c.status || (c.approved ? 'APROBADO' : 'DESAPROBADO')}`).join("\n")}
-----------------------------------------
-Documento oficial emitido por la Secretaría Académica.
-Periodo Lectivo 2027-I • Lima, Perú.
-========================================
-    `;
-    const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `Boleta_Notas_Ciclo_${cycleNumber}_${studentDni}.txt`;
-    link.click();
+      await generateBoletaNotasPdf(
+        cycleNumber.toString(),
+        studentName,
+        studentDni,
+        careerName,
+        formattedCourses
+      );
+    } catch (err) {
+      console.error("Error al generar PDF de la boleta de notas:", err);
+      handlePrint();
+    }
   };
 
   const content = (
