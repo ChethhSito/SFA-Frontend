@@ -889,7 +889,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
         {activeCourseSection === "cierre" && (
           <div className="space-y-6">
             <PageHeader
-              title="Consolidado y Situación Final del Curso"
+              title="Estado de Curso"
               subtitle="Consolidado definitivo de calificaciones semestrales, promedio ponderado y condición académica del alumno."
               icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
             />

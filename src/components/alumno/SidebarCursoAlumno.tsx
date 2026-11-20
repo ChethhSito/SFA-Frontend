@@ -218,7 +218,7 @@ export default function SidebarCursoAlumno({
           </div>
         </div>
 
-        {/* CONSOLIDATED STATUS BUTTON */}
+        {/* COURSE STATUS BUTTON */}
         <div className="p-3 bg-slate-100/60 shrink-0">
           <button
             onClick={onSelectCierre}
@@ -229,7 +229,7 @@ export default function SidebarCursoAlumno({
             }`}
           >
             <CheckCircle2 className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>Situación Final del Curso</span>
+            <span>Estado de Curso</span>
           </button>
         </div>
 
