@@ -67,7 +67,15 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
   }, [enrollments, studentsList, selectedCourse]);
   const sheetData = useMemo(() => {
     const sheet: Record<string, string> = {};
-    const regularCourseAssignments = assignments.filter((a) => a.courseId === selectedCourseId && !a.title.startsWith("[Planilla] ") && a.kind !== "assessment");
+    const isAssessmentTitle = (title: string) => /\[PC\d+\]|PC\d+|EX_FINAL|EXAMEN|FINAL|PARCIAL|TABLEROS|MONTAJE|SIMULACION|MEDICIONES/i.test(title);
+
+    const regularCourseAssignments = assignments.filter((a) =>
+      a.courseId === selectedCourseId &&
+      !a.title.startsWith("[Planilla] ") &&
+      a.kind !== "assessment" &&
+      !a.curricularComponent &&
+      !isAssessmentTitle(a.title)
+    );
     
     // Auto compute NPA for each student from graded weekly tasks
     const studentGradesMap: Record<string, number[]> = {};
@@ -88,12 +96,16 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
     });
 
     // Check assessments linked to curricular variables (e.g. PC1, PC2, EX_FINAL)
-    const assessmentAssignments = assignments.filter((a) => a.courseId === selectedCourseId && (a.kind === "assessment" || a.curricularComponent));
+    const assessmentAssignments = assignments.filter((a) =>
+      a.courseId === selectedCourseId &&
+      (a.kind === "assessment" || a.curricularComponent || isAssessmentTitle(a.title))
+    );
     assessmentAssignments.forEach((assignment) => {
       const matchingVar = formula.variables.find((v) => 
         (assignment.curricularComponent && assignment.curricularComponent === v.id) ||
         assignment.title.toUpperCase().includes(v.id) ||
-        assignment.title.toUpperCase().includes(`[${v.id}]`)
+        assignment.title.toUpperCase().includes(`[${v.id}]`) ||
+        (v.id === "EX_FINAL" && /EX_FINAL|EXAMEN FINAL/i.test(assignment.title))
       );
       if (matchingVar && matchingVar.id !== "NPA") {
         assignment.submissions.forEach((submission) => {
@@ -224,8 +236,14 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
       minute: "2-digit"
     });
 
-    const assessmentTitle = `[Planilla] ${activeVariableId}`;
-    const existing = assignments.find((assignment) => assignment.courseId === selectedCourseId && assignment.title === assessmentTitle);
+    const existing = assignments.find((assignment) =>
+      assignment.courseId === selectedCourseId && (
+        assignment.title === `[Planilla] ${activeVariableId}` ||
+        assignment.curricularComponent === activeVariableId ||
+        assignment.title.toUpperCase().includes(`[${activeVariableId}]`) ||
+        (activeVariableId === "EX_FINAL" && /EX_FINAL|EXAMEN FINAL/i.test(assignment.title))
+      )
+    );
     const submissions = existing?.submissions.map((submission) => ({ ...submission })) || [];
     const index = submissions.findIndex((submission) => submission.studentDni === activeStudentDni);
     if (index >= 0) {
@@ -245,10 +263,21 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
         feedback: `Calificación oficial registrada mediante firma digital PIN el ${formattedTimestamp}`
       });
     }
+    const assessmentTitle = existing?.title || (
+      activeVariableId === "EX_FINAL"
+        ? "[Semana 15] [EX_FINAL] Examen Final Integral"
+        : `[Planilla] ${activeVariableId}`
+    );
     const assessment: CourseAssignment = existing ? { ...existing, submissions } : {
-      id: `assessment-${Date.now()}`, kind: "assessment", courseId: selectedCourseId,
-      title: assessmentTitle, description: "Componente de la planilla de calificaciones",
-      dueDate: now.toISOString().slice(0, 10), submissions,
+      id: `assessment-${Date.now()}`,
+      kind: "assessment",
+      courseId: selectedCourseId,
+      curricularComponent: activeVariableId,
+      weekNumber: activeVariableId === "EX_FINAL" ? 15 : undefined,
+      title: assessmentTitle,
+      description: `Componente oficial de la planilla de calificaciones: ${activeVariableId}`,
+      dueDate: now.toISOString().slice(0, 10),
+      submissions,
     };
     setSaving(true);
     try {

@@ -11,11 +11,40 @@ export interface CourseFormula {
 }
 
 export const COURSE_FORMULAS: Record<string, CourseFormula> = {
+  "EIND-101-TEO": {
+    courseCode: "EIND-101-TEO",
+    expression: "0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+    variables: [
+      { id: "NPA", label: "Nota de Participación / Informes", weight: 0.20 },
+      { id: "PC1", label: "Práctica Calificada 1", weight: 0.20 },
+      { id: "PC2", label: "Práctica Calificada 2", weight: 0.20 },
+      { id: "EX_FINAL", label: "Examen Final Integral del Curso", weight: 0.40 },
+    ],
+  },
+  "EIND-101-TAL": {
+    courseCode: "EIND-101-TAL",
+    expression: "0.30*TABLEROS + 0.30*MONTAJE + 0.40*PRACT_FINAL",
+    variables: [
+      { id: "TABLEROS", label: "Tableros de Distribución", weight: 0.30 },
+      { id: "MONTAJE", label: "Montaje y Conexionado", weight: 0.30 },
+      { id: "PRACT_FINAL", label: "Práctica Integral de Taller", weight: 0.40 },
+    ],
+  },
+  "EIND-101-LAB": {
+    courseCode: "EIND-101-LAB",
+    expression: "0.50*SIMULACION + 0.50*MEDICIONES",
+    variables: [
+      { id: "SIMULACION", label: "Simulación de Circuitos CC", weight: 0.50 },
+      { id: "MEDICIONES", label: "Mediciones e Instrumentación", weight: 0.50 },
+    ],
+  },
   "EIND-101": {
     courseCode: "EIND-101",
-    expression: "0.60*PEC + 0.40*EX_FINAL",
+    expression: "0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
     variables: [
-      { id: "PEC", label: "Evaluación Continua (Teoría 40% + Taller 40% + Lab 20%)", weight: 0.60 },
+      { id: "NPA", label: "Nota de Participación / Informes", weight: 0.20 },
+      { id: "PC1", label: "Práctica Calificada 1", weight: 0.20 },
+      { id: "PC2", label: "Práctica Calificada 2", weight: 0.20 },
       { id: "EX_FINAL", label: "Examen Final Integral del Curso", weight: 0.40 },
     ],
   },
