@@ -344,8 +344,6 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
           </div>
           <div className="h-4 w-full shrink-0" />
         </div>
-          </div>
-        </div>
 
         {/* Modal Toolbar */}
         <div className="p-3.5 bg-slate-50 border-t border-slate-200 flex justify-end gap-2.5 shrink-0">
