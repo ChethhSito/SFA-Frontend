@@ -3,6 +3,7 @@ import { Printer, Download, Award, CheckCircle2, Mail, FileText, ClipboardList }
 import { StudentPersonalData, Enrollment, AcademicProgram, CycleStatus, Course } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
 import Toast, { ToastNotice } from "../../ui/Toast";
+import { generateMatriculaPdf, generateCurriculumPlanPdf, generateBoletaNotasPdf } from "../../../utils/matriculaPdf";
 
 interface ClosureTabProps {
   personalData: StudentPersonalData;
@@ -79,11 +80,11 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         { code: "CO-404", name: "Legislación Laboral General", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
       ],
       "V": [
-        { code: "CO-501", name: "Contabilidad Gubernamental", type: "Obligatorio", credits: 4, status: "Activo", teo: 2, pr: 4 },
-        { code: "CO-502", name: "Formulación de Estados Financieros", type: "Obligatorio", credits: 4, status: "Activo", teo: 2, pr: 4 },
-        { code: "CO-503", name: "Auditoría Financiera Integral", type: "Obligatorio", credits: 3, status: "Activo", teo: 1, pr: 4 },
-        { code: "CO-504", name: "Software Aplicado SISCONT / CONCAR", type: "Obligatorio", credits: 3, status: "Activo", teo: 1, pr: 4 },
-        { code: "CO-505", name: "Ética en los Negocios y Finanzas", type: "Obligatorio", credits: 2, status: "Activo", teo: 1, pr: 2 }
+        { code: "CO-501", name: "Contabilidad Gubernamental", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "CO-502", name: "Formulación de Estados Financieros", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "CO-503", name: "Auditoría Financiera Integral", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
+        { code: "CO-504", name: "Software Aplicado SISCONT / CONCAR", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
+        { code: "CO-505", name: "Ética en los Negocios y Finanzas", type: "Obligatorio", credits: 2, status: "Matriculado", teo: 1, pr: 2 }
       ],
       "VI": [
         { code: "CO-601", name: "Formulación de Proyectos de Inversión", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
@@ -95,42 +96,43 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
     },
     "20": {
       "I": [
-        { code: "EE-101", name: "Introducción a la Electricidad", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-102", name: "Matemática Aplicada I", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 2, pr: 2 },
-        { code: "EE-103", name: "Dibujo Técnico Industrial", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "EE-104", name: "Seguridad y Salud Ocupacional", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
+        { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
+        { code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", type: "General", credits: 3, status: "Matriculado", teo: 2, pr: 2 },
+        { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", type: "General", credits: 2, status: "Matriculado", teo: 1, pr: 2 }
       ],
       "II": [
-        { code: "EE-201", name: "Electricidad Básica y Mediciones", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-202", name: "Matemática Aplicada II", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 2, pr: 2 },
-        { code: "EE-203", name: "Tecnología de Materiales", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "EE-204", name: "Informática y Software Técnico", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
+        { code: "EIND-201", name: "Electricidad Básica y Mediciones", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EIND-202", name: "Matemática Aplicada II", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 2, pr: 2 },
+        { code: "EIND-203", name: "Tecnología de Materiales", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
+        { code: "EIND-204", name: "Informática y Software Técnico", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
       ],
       "III": [
-        { code: "EE-301", name: "Circuitos de Corriente Alterna", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-302", name: "Electrónica Analógica Aplicada", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-303", name: "Instalaciones de Interiores", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "EE-304", name: "Inglés Técnico Académico", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
+        { code: "EIND-301", name: "Circuitos de Corriente Alterna", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EIND-302", name: "Electrónica Analógica Aplicada", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EIND-303", name: "Instalaciones de Interiores", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
+        { code: "EIND-304", name: "Inglés Técnico Académico", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
       ],
       "IV": [
-        { code: "EE-401", name: "Máquinas de Corriente Continua", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-402", name: "Sistemas Neumáticos e Hidráulicos", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-403", name: "Instalaciones Eléctricas III", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "EE-404", name: "Relaciones en Entorno de Trabajo", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
+        { code: "EIND-401", name: "Máquinas de Corriente Continua", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EIND-402", name: "Sistemas Neumáticos e Hidráulicos", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EIND-403", name: "Instalaciones Eléctricas III", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
+        { code: "EIND-404", name: "Relaciones en Entorno de Trabajo", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
       ],
       "V": [
-        { code: "EE-501", name: "Teoría de Circuitos II", type: "Obligatorio", credits: 4, status: "Activo", teo: 2, pr: 4 },
-        { code: "EE-502", name: "Lab. Maquinarias de Potencia", type: "Obligatorio", credits: 4, status: "Activo", teo: 2, pr: 4 },
-        { code: "EE-503", name: "Sistemas de Control Automático II", type: "Obligatorio", credits: 3, status: "Activo", teo: 1, pr: 4 },
-        { code: "EE-504", name: "Instalaciones Industriales Inteligentes", type: "Obligatorio", credits: 3, status: "Activo", teo: 1, pr: 4 },
-        { code: "EE-505", name: "Ética y Deontología Profesional", type: "Obligatorio", credits: 2, status: "Activo", teo: 1, pr: 2 }
+        { code: "EIND-501", name: "Teoría de Circuitos II", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "EIND-502", name: "Lab. Maquinarias de Potencia", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "EIND-503", name: "Sistemas de Control Automático II", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
+        { code: "EIND-504", name: "Instalaciones Industriales Inteligentes", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
+        { code: "EIND-505", name: "Ética y Deontología Profesional", type: "Obligatorio", credits: 2, status: "Matriculado", teo: 1, pr: 2 }
       ],
       "VI": [
-        { code: "EE-601", name: "Controladores PLC y SCADA Industrial", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-602", name: "Mantenimiento Eléctrico de Potencia", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EE-603", name: "Redes Industriales y Automatización", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "EE-604", name: "Proyecto de Innovación y Titulación EFSRT", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "EE-605", name: "Gestión Empresarial y Empleabilidad", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
+        { code: "EIND-601", name: "Controladores PLC y SCADA Industrial", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EIND-602", name: "Mantenimiento Eléctrico de Potencia", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
+        { code: "EIND-603", name: "Redes Industriales y Automatización", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
+        { code: "EIND-604", name: "Proyecto de Innovación y Titulación EFSRT", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
+        { code: "EIND-605", name: "Gestión Empresarial y Empleabilidad", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
       ]
     }
   };
@@ -155,7 +157,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         name: c.name,
         type: "Obligatorio",
         credits: c.credits || 4,
-        status: isPromoted ? "Aprobado" : (targetCycleNum === 1 ? "Matriculado (En Curso)" : "Pendiente de Matrícula"),
+        status: isPromoted ? "Aprobado" : (targetCycleNum === 1 ? "Matriculado" : "Pendiente"),
         teo: 2,
         pr: 4
       }))
@@ -174,7 +176,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
     }
     return {
       ...c,
-      status: targetCycleNum === 1 ? "Matriculado (En Curso)" : "Pendiente de Matrícula",
+      status: targetCycleNum === 1 ? "Matriculado" : "Pendiente",
       simGrade: undefined
     };
   });
@@ -207,12 +209,13 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
               </span>
             </div>
             <button
-              onClick={() => {
-                setToastNotice({
-                  title: "Ficha Curricular Generada",
-                  message: "Se ha descargado la copia oficial del plan de estudios con las firmas digitales de secretaría.",
-                  type: "success"
-                });
+              type="button"
+              onClick={async () => {
+                await generateCurriculumPlanPdf(
+                  currentProgram?.name || "Electricidad Industrial",
+                  `${personalData.name} ${personalData.lastName}`,
+                  personalData.dni
+                );
               }}
               className="bg-white hover:bg-amber-50 text-slate-900 font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-2 select-none cursor-pointer transition-all shadow-md border border-white/30"
             >
@@ -251,7 +254,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             {isPromoted ? "17.40" : "0.00"}
           </span>
           <span className="text-[10px] text-emerald-600 font-bold block mt-1 font-semibold">
-            {isPromoted ? "Tercio Superior Oficial" : "Semestre 2026-I en curso"}
+            {isPromoted ? "Tercio Superior Oficial" : "Semestre 2027-I"}
           </span>
         </div>
 
@@ -261,7 +264,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             {isPromoted ? "EGRESADO CONCLUIDO" : "MATRICULADO"}
           </span>
           <span className="text-[9px] text-emerald-600 font-bold block mt-1 font-semibold">
-            {isPromoted ? "Apto para Certificados Oficiales" : "Periodo 2026-I Activo"}
+            {isPromoted ? "Apto para Certificados Oficiales" : "Periodo 2027-I Vigente"}
           </span>
         </div>
       </div>
@@ -288,17 +291,17 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
           <div className="bg-white rounded-xl border border-slate-100 shadow-xs overflow-hidden text-left">
             {(() => {
               const cyclePeriodDisplayMap: Record<string, string> = {
-                "VI": "Periodo 2026 - II",
-                "V": "Periodo 2026 - I",
-                "IV": "Periodo 2025 - II",
-                "III": "Periodo 2025 - I",
-                "II": "Periodo 2024 - II",
-                "I": "Periodo 2024 - I",
+                "VI": "Periodo 2029 - II",
+                "V": "Periodo 2029 - I",
+                "IV": "Periodo 2028 - II",
+                "III": "Periodo 2028 - I",
+                "II": "Periodo 2027 - II",
+                "I": "Periodo 2027 - I",
               };
               return (
                 <div className="bg-slate-50 border-b border-slate-150 px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <span id="label-cycle-selected" className="text-xs font-black text-slate-700 uppercase tracking-wide leading-none">
-                    Ciclo {selectedQueryCycle} - Unidades Registradas ({cyclePeriodDisplayMap[selectedQueryCycle] || "Periodo 2026 - I"})
+                    Ciclo {selectedQueryCycle} - Unidades Registradas ({cyclePeriodDisplayMap[selectedQueryCycle] || "Periodo 2027 - I"})
                   </span>
                   <span className="text-[10px] font-bold text-slate-500 bg-white border px-2.5 py-1 rounded-lg shadow-sm">
                     Créditos de Ciclo: {cycleCreditsSum?.toFixed(1)}
@@ -332,13 +335,33 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                         <td className="p-4 text-slate-500 font-bold text-[10.5px]">{crs.type}</td>
                         <td className="p-4 text-center text-slate-900 font-mono font-black">{crs.credits}.0</td>
                         <td className="p-4 text-center">
-                          <span className={`px-2.5 py-0.5 rounded text-[9.5px] uppercase font-bold inline-block border select-none ${
-                            isApproved 
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
-                              : "bg-amber-50 text-amber-700 border-amber-100"
-                          }`}>
-                            {crs.status}{crs.simGrade ? ` (Nota: ${crs.simGrade})` : ""}
-                          </span>
+                          {(() => {
+                            const statusUpper = (crs.status || "").toUpperCase();
+                            const isMatriculado = statusUpper.includes("MATRICULADO");
+                            const isApprovedCourse = statusUpper.includes("APROBADO") || isApproved;
+
+                            if (isMatriculado) {
+                              return (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 select-none shadow-3xs">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                  MATRICULADO
+                                </span>
+                              );
+                            }
+                            if (isApprovedCourse) {
+                              return (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 select-none shadow-3xs">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
+                                  APROBADO{crs.simGrade ? ` (${crs.simGrade})` : ""}
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[9.5px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 border border-slate-200 select-none">
+                                {crs.status}
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="p-4 text-center font-mono text-slate-405 font-bold">{crs.teo} hrs</td>
                         <td className="p-4 text-center font-mono text-slate-405 font-bold">{crs.pr} hrs</td>
@@ -354,35 +377,27 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block mb-4">Requisitos Oficiales para Certificación y Egreso</span>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-3 border rounded-lg bg-slate-50/50 border-slate-100 flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+              <div className={`p-3.5 border rounded-xl flex items-center gap-3 ${isPromoted ? "bg-slate-50/50 border-slate-200" : "bg-emerald-50/40 border-emerald-200"}`}>
+                <CheckCircle2 className={`w-5 h-5 shrink-0 ${isPromoted ? "text-emerald-600" : "text-emerald-600"}`} />
                 <div>
                   <span className="text-xs font-bold text-slate-800 block">Créditos Curriculares</span>
-                  <span className="text-[10px] text-slate-500 mt-0.5 block font-bold">120 / 120 Créditos aprobados. Requisito al día.</span>
+                  <span className="text-[10.5px] text-slate-600 mt-0.5 block font-bold">
+                    {isPromoted ? "120 / 120 Créditos aprobados. Requisito al día." : `${cycleCreditsSum || 16}.0 / 120 Créditos. Ciclo I matriculado formalmente.`}
+                  </span>
                 </div>
               </div>
 
-              <div className="p-3 border rounded-lg bg-slate-50/50 border-slate-100 flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                <div>
-                  <span className="text-xs font-bold text-slate-800 block">Proyección Social / Comunitario</span>
-                  <span className="text-[10px] text-slate-500 mt-0.5 block font-bold">Servicio social complementario acreditado.</span>
+              <div className={`p-3.5 border rounded-xl flex items-center gap-3 ${isPromoted ? "bg-slate-50/50 border-slate-200" : "bg-slate-50/50 border-slate-200"}`}>
+                <div className={`h-5 w-5 rounded-full flex items-center justify-center font-black text-[10px] shrink-0 ${
+                  isPromoted ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                }`}>
+                  {isPromoted ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : "!"}
                 </div>
-              </div>
-
-              <div className="p-3 border rounded-lg bg-slate-50/50 border-slate-100 flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                 <div>
-                  <span className="text-xs font-bold text-slate-800 block">Certificación de Idioma Extranjero</span>
-                  <span className="text-[10px] text-slate-500 mt-0.5 block font-bold font-mono">Suficiencia inglés validado Nivel B2 Académico.</span>
-                </div>
-              </div>
-
-              <div className="p-3 border rounded-lg bg-white border-slate-200 flex items-center gap-3">
-                <div className="h-5 w-5 rounded-full border border-amber-300 bg-amber-50 text-amber-600 flex items-center justify-center font-black text-[10px] shrink-0 animate-pulse">!</div>
-                <div>
-                  <span className="text-xs font-bold text-slate-800 block">Prácticas Pre-Profesionales</span>
-                  <span className="text-[10px] text-slate-500 mt-0.5 block font-bold">Validación modular de prácticas en curso académico.</span>
+                  <span className="text-xs font-bold text-slate-800 block">Prácticas Pre-Profesionales (EFSRT)</span>
+                  <span className="text-[10.5px] text-slate-600 mt-0.5 block font-bold">
+                    {isPromoted ? "Módulos I, II y III acreditados formalmente." : "Se habilitan formalmente tras la culminación del Ciclo II/III."}
+                  </span>
                 </div>
               </div>
             </div>
@@ -404,12 +419,14 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                   strokeWidth="10" 
                   fill="transparent" 
                   strokeDasharray="314" 
-                  strokeDashoffset={314 - (314 * (weightedGpa / 20))}
+                  strokeDashoffset={314 - (314 * (isPromoted ? (weightedGpa / 20) : 0))}
                   className="transition-all duration-300" 
                 />
               </svg>
               <div className="absolute flex flex-col justify-center items-center">
-                <span className="text-3xl font-black text-slate-800 tracking-tighter">{weightedGpa}</span>
+                <span className="text-3xl font-black text-slate-800 tracking-tighter">
+                  {isPromoted ? weightedGpa : "--"}
+                </span>
                 <span className="text-[8px] text-slate-400 uppercase font-black">sobre 20</span>
               </div>
             </div>
@@ -417,16 +434,21 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             <div className="text-xs font-semibold">
               <span className="text-slate-500">Rendimiento Estimado: </span>
               <span className={`font-black ${
-                weightedGpa >= 16 ? "text-emerald-600" : weightedGpa >= 13 ? "text-slate-800" : "text-rose-600"
+                isPromoted 
+                  ? (weightedGpa >= 16 ? "text-emerald-600" : "text-slate-800")
+                  : "text-amber-600"
               }`}>
-                {weightedGpa >= 16 ? "Sobresaliente" : weightedGpa >= 13 ? "Aceptable" : "Bajo Rendimiento"}
+                {isPromoted 
+                  ? (weightedGpa >= 16 ? "Sobresaliente" : "Aceptable")
+                  : "Pendiente de Calificaciones Oficiales"
+                }
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 pt-4 border-t border-slate-100 text-xs font-semibold">
               <div className="p-2 bg-slate-50 rounded">
                 <span className="text-[9px] text-slate-400 uppercase font-bold block">Créditos de Ciclo</span>
-                <span className="text-slate-900 font-mono text-sm font-black block mt-1">{cycleCreditsSum?.toFixed(1) || "0.0"}</span>
+                <span className="text-slate-900 font-mono text-sm font-black block mt-1">{cycleCreditsSum?.toFixed(1) || "16.0"}</span>
               </div>
               <div className="p-2 bg-slate-50 rounded">
                 <span className="text-[9px] text-slate-400 uppercase font-bold block">Cursos de Ciclo</span>
@@ -442,12 +464,12 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-slate-100 rounded-full border flex items-center justify-center font-bold text-slate-700 text-sm">
-                CM
+              <div className="h-10 w-10 bg-[#800521]/10 rounded-full border border-[#800521]/20 flex items-center justify-center font-bold text-[#800521] text-xs">
+                CA
               </div>
               <div>
-                <span className="text-xs font-bold text-slate-850 block">Ing. Carlos Mendoza</span>
-                <span className="text-[10px] text-slate-400 block font-medium">Coordinador & Mentor de Alumnos</span>
+                <span className="text-xs font-bold text-slate-850 block">Coordinación de Carrera</span>
+                <span className="text-[10px] text-slate-400 block font-medium">Tutoría y Asesoría Académica • {currentProgram?.name || "IESTP SFA"}</span>
               </div>
             </div>
 
@@ -479,43 +501,78 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
           </div>
 
           <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-xs space-y-4">
-            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Descarga de Documentación</span>
+            <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Descarga de Documentación Oficial</span>
             
             <div className="space-y-2">
               <button 
-                onClick={() => setToastNotice({
-                  id: Date.now(),
-                  message: `Generando y descargando Boleta Oficial de Notas (${selectedQueryCycle} Ciclo).`,
-                  kind: "info",
-                })}
-                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all"
+                type="button"
+                onClick={async () => {
+                  await generateBoletaNotasPdf(
+                    selectedQueryCycle,
+                    `${personalData.name} ${personalData.lastName}`,
+                    personalData.dni,
+                    currentProgram?.name || "Electricidad Industrial",
+                    activeCoursesList.map((c) => ({
+                      code: c.code,
+                      name: c.name,
+                      credits: c.credits,
+                      grade: c.simGrade,
+                    }))
+                  );
+                }}
+                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all shadow-2xs"
               >
                 <span className="flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-slate-400" /> Boleta de Notas ({selectedQueryCycle} Ciclo)</span>
-                <Download className="w-3.5 h-3.5 text-slate-400" />
+                <Download className="w-3.5 h-3.5 text-[#800521]" />
               </button>
 
               <button 
-                onClick={() => setToastNotice({
-                  id: Date.now(),
-                  message: "Abriendo Plan Curricular Completo del Estudiante firmado digitalmente.",
-                  kind: "info",
-                })}
-                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all"
+                type="button"
+                onClick={async () => {
+                  await generateCurriculumPlanPdf(
+                    currentProgram?.name || "Electricidad Industrial",
+                    `${personalData.name} ${personalData.lastName}`,
+                    personalData.dni
+                  );
+                }}
+                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all shadow-2xs"
               >
                 <span className="flex items-center gap-2"><ClipboardList className="w-3.5 h-3.5 text-slate-400" /> Plan Curricular Completo</span>
-                <Download className="w-3.5 h-3.5 text-slate-400" />
+                <Download className="w-3.5 h-3.5 text-[#800521]" />
               </button>
 
               <button 
-                onClick={() => setToastNotice({
-                  id: Date.now(),
-                  message: "Descargando Ficha de Matrícula Consolidada semestre activo.",
-                  kind: "info",
-                })}
-                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all"
+                type="button"
+                onClick={async () => {
+                  await generateMatriculaPdf({
+                    studentName: personalData.name,
+                    studentLastName: personalData.lastName,
+                    dni: personalData.dni,
+                    studentCode: personalData.dni ? `202710001` : "202710001",
+                    programName: currentProgram?.name || "Electricidad Industrial",
+                    period: "2027-I",
+                    cycle: "Ciclo I",
+                    shift: enrollment.shift || "Mañana",
+                    courses: activeCoursesList.map((c) => ({
+                      code: c.code,
+                      name: c.name,
+                      credits: c.credits,
+                      cycle: selectedQueryCycle,
+                      type: c.type,
+                      group: "EI-I-A",
+                      tsg: "Teoría / Taller",
+                      status: isPromoted ? "APROBADO" : "MATRICULADO",
+                    })),
+                    totalCredits: cycleCreditsSum || 16,
+                    totalCourses: activeCoursesList.length,
+                    maxCredits: 22,
+                    paymentStatus: "PAGADO (S/. 250.00)",
+                  });
+                }}
+                className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-[11px] p-2.5 rounded-lg border flex items-center justify-between cursor-pointer transition-all shadow-2xs"
               >
                 <span className="flex items-center gap-2"><FileText className="w-3.5 h-3.5 text-slate-400" /> Ficha de Matrícula Activa</span>
-                <Download className="w-3.5 h-3.5 text-slate-400" />
+                <Download className="w-3.5 h-3.5 text-[#800521]" />
               </button>
             </div>
           </div>

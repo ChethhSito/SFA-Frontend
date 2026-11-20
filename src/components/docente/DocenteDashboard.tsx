@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
-  Users, BookOpen, Clock, FileText, CheckCircle,
-  Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronRight, BarChart3, Settings, AlertCircle, RefreshCw, FileSpreadsheet, Megaphone
+  Users, BookOpen, Clock, FileText, CheckCircle, CheckCircle2,
+  Upload, Plus, Save, Award, Trash2, Calendar, LayoutDashboard, LogOut, GraduationCap, ChevronRight, ChevronLeft, BarChart3, Settings, AlertCircle, RefreshCw, FileSpreadsheet, Megaphone, LibraryBig,
+  MapPin, ShieldCheck, Menu, X, FileCheck, Clock3, School
 } from "lucide-react";
 import { Course, CourseMaterial, CourseAssignment, CourseEvaluation, AttendanceRecord, StudentPersonalData, Teacher, Enrollment, MpaPeriod, MpaAcademicGroup, MpaProgramTask, MpaCourse, MpaClassroom, MpaShift } from "../../types";
 
@@ -13,6 +14,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import PageHeader from "../ui/PageHeader";
 import PageTransition from "../ui/PageTransition";
 import AlertBox from "../ui/AlertBox";
+import Sidebar from "../ui/Sidebar";
 
 // Modular Docente Components
 import { ROSTER, getWeekTheme, WeeklyObservation } from "./DocenteTypes";
@@ -32,6 +34,7 @@ import GuidesLibrary from "../shared/GuidesLibrary";
 import AcademicCalendarBoard from "../shared/AcademicCalendarBoard";
 import TeacherProceduresTab from "./TeacherProceduresTab";
 import TeacherScheduleTab, { TeacherScheduleData } from "./TeacherScheduleTab";
+import TeacherProfileTab from "./TeacherProfileTab";
 import { fetchMpaCollection } from "../../services/mpaApi";
 import { fileToBase64, fetchCourseObservations, createCourseObservation, deleteCourseObservation } from "../../services/api";
 
@@ -155,6 +158,11 @@ export default function DocenteDashboard({
 
   // Mobile navigation views toggling
   const [showMobileSidebarCurso, setShowMobileSidebarCurso] = useState(false);
+  const [showMobileNav, setShowMobileNav] = useState(false);
+
+  // Desktop sidebars collapsible states (toggle in the center/middle border)
+  const [isMainSidebarCollapsed, setIsMainSidebarCollapsed] = useState(false);
+  const [isCourseSidebarCollapsed, setIsCourseSidebarCollapsed] = useState(false);
 
   // Resolve courses and teachers safely with storage cache fallback
   const allCourses = courses.length > 0 ? courses : (() => {
@@ -340,10 +348,12 @@ export default function DocenteDashboard({
     if (attachment && (!attachment.size || attachment.size > 10 * 1024 * 1024)) {
       notify("El adjunto debe tener como máximo 10 MB.", false); return false;
     }
+    const cleanTitle = title.replace(/^\[Semana\s*\d+\]\s*/i, "").trim();
+    const formattedTitle = `[Semana ${selectedWeek}] ${cleanTitle}`;
     const newAsg: CourseAssignment = {
       id: `asg-${Date.now()}`,
       courseId: selectedCourseId,
-      title: `[Semana ${selectedWeek}] ${title}`,
+      title: formattedTitle,
       description: desc,
       dueDate: dueDate,
       submissions: []
@@ -351,6 +361,7 @@ export default function DocenteDashboard({
     if (attachment) {
       try {
         newAsg.attachment = attachment.name;
+        newAsg.attachmentName = attachment.name;
         newAsg.contentBase64 = await fileToBase64(attachment);
         newAsg.mimeType = attachment.type || "application/octet-stream";
       } catch { notify("No se pudo leer el archivo adjunto.", false); return false; }
@@ -362,10 +373,91 @@ export default function DocenteDashboard({
     return saved;
   };
 
+  // Actions: Edit assignment
+  const handleEditAssignment = async (id: string, updated: Partial<CourseAssignment>, newAttachment?: File) => {
+    if (!selectedCourseId) return false;
+    let attachmentData: Partial<CourseAssignment> = {};
+    if (newAttachment) {
+      if (newAttachment.size > 10 * 1024 * 1024) {
+        notify("El archivo adjunto debe tener como máximo 10 MB.", false);
+        return false;
+      }
+      try {
+        const base64 = await fileToBase64(newAttachment);
+        attachmentData = {
+          attachment: newAttachment.name,
+          attachmentName: newAttachment.name,
+          contentBase64: base64,
+          mimeType: newAttachment.type || "application/octet-stream"
+        };
+      } catch {
+        notify("No se pudo leer el archivo adjunto.", false);
+        return false;
+      }
+    }
+
+    const updatedList = assignments.map((asg) => {
+      if (asg.id === id) {
+        let title = updated.title !== undefined ? updated.title : asg.title;
+        if (updated.title !== undefined) {
+          const clean = updated.title.replace(/^\[Semana\s*\d+\]\s*/i, "").trim();
+          title = `[Semana ${selectedWeek}] ${clean}`;
+        }
+        return {
+          ...asg,
+          ...updated,
+          ...attachmentData,
+          title,
+          attachment: attachmentData.attachment || updated.attachment || asg.attachment || asg.attachmentName,
+          attachmentName: attachmentData.attachmentName || updated.attachmentName || asg.attachmentName || asg.attachment,
+        };
+      }
+      return asg;
+    });
+
+    const saved = await onUpdateAssignments(updatedList);
+    notify(saved ? "Tarea actualizada correctamente." : "No se pudo actualizar la tarea.", saved);
+    return saved;
+  };
+
   // Actions: Delete assignment
   const handleDeleteAssignment = async (id: string) => {
     const saved = await onUpdateAssignments(assignments.filter((a) => a.id !== id));
     notify(saved ? "Tarea eliminada." : "No se pudo eliminar la tarea.", saved);
+  };
+
+  // Actions: Grade assignment submission
+  const handleGradeSubmission = async (assignmentId: string, studentDni: string, grade: number, feedback: string) => {
+    const updated = assignments.map((asg) => {
+      if (asg.id === assignmentId) {
+        const existingSubmissions = asg.submissions || [];
+        const subIndex = existingSubmissions.findIndex((s) => s.studentDni === studentDni);
+        let nextSubs = [...existingSubmissions];
+        if (subIndex >= 0) {
+          nextSubs[subIndex] = {
+            ...nextSubs[subIndex],
+            grade,
+            feedback
+          };
+        } else {
+          const student = studentsList[studentDni] || ROSTER.find((r) => r.dni === studentDni);
+          nextSubs.push({
+            studentDni,
+            studentName: student ? `${student.name} ${student.lastName}` : "Estudiante",
+            fileName: "Entrega_Digital.pdf",
+            submitDate: new Date().toISOString(),
+            grade,
+            feedback
+          });
+        }
+        return { ...asg, submissions: nextSubs };
+      }
+      return asg;
+    });
+
+    const saved = await onUpdateAssignments(updated);
+    notify(saved ? "Calificación guardada y sincronizada con el estudiante." : "No se pudo guardar la calificación.", saved);
+    return saved;
   };
 
   // Actions: Add observation
@@ -442,9 +534,13 @@ export default function DocenteDashboard({
 
     const realAttendanceRate = attTotal > 0 ? (attPresente / attTotal) * 100 : 0;
 
+    const uniqueBaseCourses = new Set(teacherCourses.map((c) => c.code.replace(/-(TEO|TAL|LAB)$/, "")));
+    const uniqueStudents = ROSTER.length;
+
     return {
-      totalCourses: teacherCourses.length,
-      totalStudents: ROSTER.length * teacherCourses.length,
+      totalCourses: uniqueBaseCourses.size,
+      totalComponents: teacherCourses.length,
+      totalStudents: uniqueStudents,
       pendingGrades: pendingReviews,
       attendanceRate: realAttendanceRate
     };
@@ -454,18 +550,26 @@ export default function DocenteDashboard({
 
   // Course schedule is sourced from the same MPA programming as Mi Horario.
   const getCourseSchedulesList = (courseCode: string) => {
-    const mpaCourse = scheduleData?.courses.find((course) => course.code === courseCode);
+    const baseCode = courseCode.replace(/-(TEO|TAL|LAB)$/, "");
+    const componentType = courseCode.endsWith("-TEO") ? "Teoría" : courseCode.endsWith("-TAL") ? "Taller" : courseCode.endsWith("-LAB") ? "Laboratorio" : null;
+    const mpaCourse = scheduleData?.courses.find((course) => course.code === courseCode || course.code === baseCode);
     if (!mpaCourse) return [];
-    return currentTeacherSessions.filter((task) => task.courseId === mpaCourse.id)
-      .map((task) => ({
-        type: task.sessionType,
-        day: task.dayOfWeek || "Sin día",
-        start: task.startTime || "",
-        end: task.endTime || "",
-        classroom: scheduleData?.classrooms.find((classroom) => classroom.id === task.classroomId)?.name || task.classroomId,
-        group: scheduleData?.groups.find((group) => group.id === task.groupId)?.name || task.groupId,
-        freq: "Semanal",
-      }));
+    return currentTeacherSessions.filter((task) => {
+      if (task.courseId !== mpaCourse.id) return false;
+      if (!componentType) return true;
+      if (componentType === "Teoría") return task.sessionType === "Teoría" || (task.dayOfWeek === "Lunes" && task.startTime?.includes("08:00"));
+      if (componentType === "Taller") return (task.sessionType === "Laboratorio" || task.sessionType === "Taller") && task.dayOfWeek === "Lunes" && task.startTime?.includes("11:00");
+      if (componentType === "Laboratorio") return (task.sessionType === "Laboratorio" || task.sessionType === "Taller") && task.dayOfWeek === "Viernes";
+      return true;
+    }).map((task) => ({
+      type: task.sessionType,
+      day: task.dayOfWeek || "Sin día",
+      start: task.startTime || "",
+      end: task.endTime || "",
+      classroom: scheduleData?.classrooms.find((classroom) => classroom.id === task.classroomId)?.name || task.classroomId,
+      group: scheduleData?.groups.find((group) => group.id === task.groupId)?.name || task.groupId,
+      freq: "Semanal",
+    }));
   };
   const getCourseScheduleSummary = (courseCode: string) => {
     const rows = getCourseSchedulesList(courseCode);
@@ -491,57 +595,93 @@ export default function DocenteDashboard({
     <div id="docente-viewport" className="flex h-screen w-full overflow-hidden bg-slate-100 select-none text-left font-sans">
       {notice ? <Toast notice={notice} onClose={closeNotice} /> : null}
 
-      {/* 1. SIDEBAR PRINCIPAL */}
-      <div className="hidden md:block">
-        <SidebarPrincipal
-          teacherDni={teacherDni}
-          teacher={currentTeacher}
-          courses={teacherCourses}
-          selectedCourseId={selectedCourseId}
-          onSelectCourse={(courseId) => {
-            setSelectedCourseId(courseId);
-            if (courseId) {
-              setActiveSection("general");
-              setActiveTab("curso");
-            } else {
-              setActiveTab("dashboard");
-            }
-          }}
-          activeTab={activeTab === "curso" ? "cursos" : activeTab}
-          setActiveTab={(tab) => {
-            setActiveTab(tab);
-            setSelectedCourseId(null);
-          }}
-          onLogout={onLogout}
-          onGoToPortal={onGoToPortal}
-        />
-      </div>
+      {/* 1. SIDEBAR PRINCIPAL (Mismo componente institucional estándar) */}
+      <Sidebar
+        institution={{
+          name: "IESTP SFA",
+          subtitle: "Portal Docente"
+        }}
+        user={{
+          name: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Manuel Ramos Salazar",
+          role: currentTeacher?.specialty || "Control de Motores, PLC, Automatización",
+          status: currentTeacher?.status?.toUpperCase() || "DISPONIBLE"
+        }}
+        sections={[
+          {
+            title: "CONSOLA DOCENTE",
+            items: [
+              { label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" />, route: "dashboard", active: selectedCourseId === null && activeTab === "dashboard" },
+              { label: "Mis Cursos", icon: <BookOpen className="w-4 h-4" />, route: "cursos", active: activeTab === "cursos" || selectedCourseId !== null },
+              { label: "Mi Horario", icon: <Clock className="w-4 h-4" />, route: "horario", active: selectedCourseId === null && activeTab === "horario" },
+              { label: "Control de Asistencia", icon: <Users className="w-4 h-4" />, route: "control_asistencia", active: selectedCourseId === null && activeTab === "control_asistencia" },
+              { label: "Avisos y Reportes", icon: <Megaphone className="w-4 h-4" />, route: "avisos_reportes", active: selectedCourseId === null && activeTab === "avisos_reportes" },
+              { label: "Evaluaciones de Cursos", icon: <FileSpreadsheet className="w-4 h-4" />, route: "evaluaciones_cursos", active: selectedCourseId === null && activeTab === "evaluaciones_cursos" },
+              { label: "Guías y Reglamentos", icon: <LibraryBig className="w-4 h-4" />, route: "guias", active: selectedCourseId === null && activeTab === "guias" },
+              { label: "Calendario Académico", icon: <Calendar className="w-4 h-4" />, route: "calendar", active: selectedCourseId === null && activeTab === "calendar" },
+              { label: "Mis Trámites", icon: <FileText className="w-4 h-4" />, route: "tramites", active: selectedCourseId === null && activeTab === "tramites" },
+              { label: "Configuración", icon: <Settings className="w-4 h-4" />, route: "configuracion", active: selectedCourseId === null && activeTab === "configuracion" }
+            ]
+          }
+        ]}
+        isCollapsed={isMainSidebarCollapsed}
+        onToggleCollapse={setIsMainSidebarCollapsed}
+        onItemClick={(route) => {
+          setSelectedCourseId(null);
+          if (route === "cursos") {
+            setActiveTab("cursos");
+          } else {
+            setActiveTab(route);
+          }
+        }}
+        onLogout={onLogout}
+        onGoToPortal={onGoToPortal}
+      />
 
       {/* 2. SIDEBAR SECUNDARIO CURRICULAR DINÁMICO */}
       {selectedCourseId && activeTab === "curso" && (
-        <div className="hidden md:block shrink-0">
-          <SidebarCurso
-            courseId={selectedCourseId}
-            courseName={selectedCourse?.name || ""}
-            courseCode={selectedCourse?.code || ""}
-            activeSection={activeSection}
-            selectedWeek={selectedWeek}
-            selectedWeekOption={selectedWeekOption}
-            onSelectGeneral={() => setActiveSection("general")}
-            onSelectHorarios={() => setActiveSection("horarios")}
-            onSelectCierre={() => setActiveSection("cierre")}
-            onSelectWeekOption={(weekNum, option) => {
-              setActiveSection("week");
-              setSelectedWeek(weekNum);
-              setSelectedWeekOption(option);
-            }}
-          />
+        <div className={`hidden md:block shrink-0 relative z-20 transition-all duration-300 ease-in-out ${isCourseSidebarCollapsed ? "w-12 bg-[#FFFBFB] border-r border-rose-200/90" : "w-64"}`}>
+          <div className={`w-64 h-full transition-opacity duration-200 overflow-hidden ${isCourseSidebarCollapsed ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+            <SidebarCurso
+              courseId={selectedCourseId}
+              courseName={selectedCourse?.name || ""}
+              courseCode={selectedCourse?.code || ""}
+              activeSection={activeSection}
+              selectedWeek={selectedWeek}
+              selectedWeekOption={selectedWeekOption}
+              onSelectGeneral={() => setActiveSection("general")}
+              onSelectHorarios={() => setActiveSection("horarios")}
+              onSelectCierre={() => setActiveSection("cierre")}
+              onSelectWeekOption={(weekNum, option) => {
+                setActiveSection("week");
+                setSelectedWeek(weekNum);
+                setSelectedWeekOption(option);
+              }}
+            />
+          </div>
+
+          {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (Blanco limpio con anillo rosáceo institucional) */}
+          <button
+            type="button"
+            onClick={() => setIsCourseSidebarCollapsed(!isCourseSidebarCollapsed)}
+            title={isCourseSidebarCollapsed ? "Expandir semanas del curso" : "Ocultar semanas del curso"}
+            className={`absolute top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border border-rose-300 hover:border-[#800521] w-[26px] h-[26px] rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
+              isCourseSidebarCollapsed 
+                ? "right-2" 
+                : "-right-[13px]"
+            }`}
+          >
+            {isCourseSidebarCollapsed ? (
+              <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            ) : (
+              <ChevronLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
+            )}
+          </button>
         </div>
       )}
 
       {/* MOBILE HEADER RESPONSIVENESS AND DRAWERS */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b flex items-center justify-between px-4 z-40 select-none">
-        <div className="flex items-center gap-2">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-40 select-none shadow-xs">
+        <div className="flex items-center gap-2.5">
           {selectedCourseId ? (
             <button
               onClick={() => {
@@ -552,32 +692,36 @@ export default function DocenteDashboard({
                   setShowMobileSidebarCurso(true);
                 }
               }}
-              className="text-xs font-black text-[#8B0026] hover:bg-slate-50 px-2.5 py-1.5 border rounded-lg"
+              className="text-xs font-black text-[#800521] hover:bg-slate-50 px-2.5 py-1.5 border border-slate-200 rounded-lg cursor-pointer flex items-center gap-1"
             >
               ← {showMobileSidebarCurso ? "Listado" : "Estructura"}
             </button>
           ) : (
-            <div className="h-8 w-8 bg-[#8B0026] text-[#CFA020] rounded-lg flex items-center justify-center font-bold">
-              <GraduationCap className="w-4 h-4" />
-            </div>
+            <button
+              onClick={() => setShowMobileNav(!showMobileNav)}
+              className="p-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 cursor-pointer flex items-center justify-center"
+              title="Abrir menú"
+            >
+              {showMobileNav ? <X className="w-5 h-5 text-[#800521]" /> : <Menu className="w-5 h-5 text-[#800521]" />}
+            </button>
           )}
-          <span className="text-xs font-black text-[#8B0026] truncate max-w-[150px] uppercase">
+          <span className="text-xs font-black text-[#800521] truncate max-w-[170px] uppercase font-display">
             {selectedCourseId ? (showMobileSidebarCurso ? "Curso: " + selectedCourse?.code : selectedCourse?.name) : "Portal Docente"}
           </span>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           {selectedCourseId && (
             <button
               onClick={() => setShowMobileSidebarCurso(!showMobileSidebarCurso)}
-              className="text-[10px] uppercase font-black px-2 py-1 bg-amber-400 text-slate-900 rounded border"
+              className="text-[10px] uppercase font-black px-2.5 py-1 bg-amber-400 text-slate-900 rounded-md border border-amber-500 cursor-pointer shadow-2xs"
             >
               {showMobileSidebarCurso ? "Ver Contenido" : "Menú Curso"}
             </button>
           )}
           <button
             onClick={onLogout}
-            className="text-[10px] font-bold text-slate-400 hover:text-red-750"
+            className="text-[10px] font-black text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-md hover:bg-rose-100 cursor-pointer uppercase"
           >
             Salir
           </button>
@@ -616,68 +760,122 @@ export default function DocenteDashboard({
         </div>
       )}
 
-      {!selectedCourseId && (
-        <div className="md:hidden fixed top-14 bottom-0 left-0 w-64 z-30 bg-white border-r">
-          <SidebarPrincipal
-            teacherDni={teacherDni}
-            teacher={currentTeacher}
-            courses={teacherCourses}
-            selectedCourseId={selectedCourseId}
-            onSelectCourse={(courseId) => {
-              setSelectedCourseId(courseId);
-              if (courseId) {
-                setActiveSection("general");
-                setActiveTab("curso");
-                setShowMobileSidebarCurso(true);
-              }
-            }}
-            activeTab={activeTab === "curso" ? "cursos" : activeTab}
-            setActiveTab={setActiveTab}
-            onLogout={onLogout}
-          onGoToPortal={onGoToPortal}
-        />
+      {!selectedCourseId && showMobileNav && (
+        <div className="md:hidden fixed inset-0 top-14 z-30 bg-slate-950/50 backdrop-blur-2xs" onClick={() => setShowMobileNav(false)}>
+          <div className="w-64 h-full bg-white border-r shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <SidebarPrincipal
+              teacherDni={teacherDni}
+              teacher={currentTeacher}
+              courses={teacherCourses}
+              selectedCourseId={selectedCourseId}
+              onSelectCourse={(courseId) => {
+                setSelectedCourseId(courseId);
+                setShowMobileNav(false);
+                if (courseId) {
+                  setActiveSection("general");
+                  setActiveTab("curso");
+                  setShowMobileSidebarCurso(true);
+                }
+              }}
+              activeTab={activeTab === "curso" ? "cursos" : activeTab}
+              setActiveTab={(tab) => {
+                setActiveTab(tab);
+                setShowMobileNav(false);
+              }}
+              onLogout={onLogout}
+              onGoToPortal={onGoToPortal}
+            />
+          </div>
         </div>
       )}
 
       {/* 3. PRIMARY CONTENT AREA WORKSPACE */}
-      <main className="flex-1 overflow-y-auto bg-slate-50 relative pt-14 md:pt-0">
+      <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden bg-slate-50 relative z-10 pt-14 md:pt-0">
         <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
 
           {/* TAB 1: DASHBOARD (HOME) */}
           {selectedCourseId === null && activeTab === "dashboard" && (
             <PageTransition id="teacher-dashboard" className="space-y-6 text-left">
+              {/* Institutional Burgundy Header Banner */}
               <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-8 overflow-hidden text-left border-b-4 border-amber-500">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/60 opacity-95" />
-                <div className="relative z-10 space-y-3">
-                  <span className="bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-sm block w-max select-none font-mono">
-                    SISTEMA INTRANET INSTITUCIONAL • PORTAL DOCENTE
-                  </span>
-                  <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-none pt-1">
-                    ¡Buenos días, {currentTeacher ? `Profesor(a) ${currentTeacher.lastName || currentTeacher.name}` : "Profesor(a)"}!
-                  </h2>
-                  <p className="text-xs text-white/90 font-medium">
-                    Gestione la carga académica, controle avance de syllabus presencial y valide calificaciones nacionales.
-                  </p>
+                <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521] to-slate-950/85 opacity-95" />
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+                      SISTEMA INTRANET INSTITUCIONAL • PORTAL DOCENTE
+                    </span>
+                    <h1 className="text-2xl md:text-3.5xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+                      ¡Buenos días, {currentTeacher ? `Profesor(a) ${currentTeacher.lastName || currentTeacher.name}` : "Profesor(a)"}!
+                    </h1>
+                    <p className="text-xs text-white/90 font-medium max-w-2xl font-mono">
+                      Gestione la carga académica asignada, controle asistencias de sesión, califique tareas y valide actas curriculares.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 bg-white/10 backdrop-blur-xs border border-white/20 px-3.5 py-2.5 rounded-xl shadow-inner text-xs">
+                    <ShieldCheck className="w-5 h-5 text-amber-300 shrink-0" />
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-amber-300 block">Condición Docente</span>
+                      <span className="font-extrabold text-white text-[11px] uppercase">
+                        {currentTeacher?.careerId === "electronica" ? "Electricidad Industrial" : currentTeacher?.careerId === "contabilidad" ? "Contabilidad" : "Docente Titular"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Informative KPIs Dashboard Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-xl p-5 border border-slate-150/80 shadow-xs flex flex-col justify-between text-left">
-                  <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest block">Asignaturas a Cargo</span>
-                  <span className="text-2xl font-black text-slate-900 block mt-2">{globalStats.totalCourses} Materias</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-3xs flex items-center justify-between text-left hover:shadow-md transition-all">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Asignaturas a Cargo</span>
+                    <span className="text-2xl font-black text-slate-900 block font-display tracking-tight">
+                      {globalStats.totalCourses} Asignatura{globalStats.totalCourses === 1 ? "" : "s"}
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-bold block">
+                      Periodo Académico 2027-I
+                    </span>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-red-50 text-[#800521] border border-red-100 flex items-center justify-center shrink-0">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
                 </div>
-                <div className="bg-white rounded-xl p-5 border border-slate-150/80 shadow-xs flex flex-col justify-between text-left">
-                  <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest block">Alumnos Regulados</span>
-                  <span className="text-2xl font-black text-slate-900 block mt-2">{globalStats.totalStudents} Alumnos</span>
+
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-3xs flex items-center justify-between text-left hover:shadow-md transition-all">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Alumnos a Cargo</span>
+                    <span className="text-2xl font-black text-slate-900 block font-display tracking-tight">
+                      {globalStats.totalStudents} Alumno{globalStats.totalStudents === 1 ? "" : "s"}
+                    </span>
+                    <span className="text-[10px] text-emerald-600 font-bold block">
+                      Grupo EI-I-A • Matriculado
+                    </span>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 border border-blue-100 flex items-center justify-center shrink-0">
+                    <Users className="w-6 h-6" />
+                  </div>
                 </div>
-                <div className="bg-white rounded-xl p-5 border border-slate-150/80 shadow-xs flex flex-col justify-between text-left">
-                  <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest block">Revisiones Pendientes</span>
-                  <span className="text-2xl font-black text-[#8B0026] block mt-2">{globalStats.pendingGrades} Entregas</span>
+
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-3xs flex items-center justify-between text-left hover:shadow-md transition-all">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Revisiones Pendientes</span>
+                    <span className="text-2xl font-black text-amber-700 block font-display tracking-tight">{globalStats.pendingGrades} Tareas</span>
+                    <span className="text-[10px] text-slate-500 font-bold block">Evidencias por calificar</span>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center shrink-0">
+                    <FileCheck className="w-6 h-6" />
+                  </div>
                 </div>
-                <div className="bg-white rounded-xl p-5 border border-slate-150/80 shadow-xs flex flex-col justify-between text-left">
-                  <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest block">Quórum de Asistencia</span>
-                  <span className="text-2xl font-black text-emerald-600 block mt-2">{globalStats.attendanceRate}% Promedio</span>
+
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-3xs flex items-center justify-between text-left hover:shadow-md transition-all">
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Tasa de Asistencia</span>
+                    <span className="text-2xl font-black text-emerald-600 block font-display tracking-tight">{globalStats.attendanceRate}%</span>
+                    <span className="text-[10px] text-slate-500 font-bold block">Registro oficial al día</span>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
                 </div>
               </div>
 
@@ -685,137 +883,183 @@ export default function DocenteDashboard({
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Left Column: Short course references directory */}
-                <Card className="lg:col-span-2 text-left">
-                  <CardHeader>
-                    <div>
-                      <CardTitle>Listado de Cursos Tecnológicos Asignados</CardTitle>
-                      <CardDescription>Haga clic en gestionar para abrir la estructura académica y curricular de 16 semanas.</CardDescription>
+                <div className="lg:col-span-2 space-y-4 text-left">
+                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-3xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-5 border-b border-slate-150">
+                      <div>
+                        <h3 className="text-base font-black text-slate-900 tracking-tight uppercase">
+                          Mis Cursos Asignados
+                        </h3>
+                        <p className="text-xs text-slate-500 font-medium">
+                          Selecciona el curso para ingresar al aula virtual, materiales y registro de notas.
+                        </p>
+                      </div>
+                      <span className="text-xs bg-slate-100 text-slate-700 font-bold px-3 py-1 rounded-full w-max">
+                        {dashboardCourses.length} de {teacherCourses.length} cursos
+                      </span>
                     </div>
-                  </CardHeader>
-                  <CardContent className="p-5 font-sans space-y-3">
-                    {dashboardCourses.map((rawCourse) => {
-                      const c = getCourseWithSchedule(rawCourse);
-                      return (
-                        <div
-                          key={c.id}
-                          className="p-5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col justify-between gap-4 transition-all hover:bg-slate-150/50"
-                        >
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-[9px] bg-red-50 text-[#8B0026] border border-red-200 px-2 py-0.5 rounded-sm font-black uppercase">
-                                  {c.code}
-                                </span>
-                                <span className="text-[10.5px] font-black text-[#CFA020] uppercase font-mono tracking-wide">
-                                  {c.credits} CRÉDITOS
+
+                    <div className="space-y-4">
+                      {dashboardCourses.map((rawCourse) => {
+                        const c = getCourseWithSchedule(rawCourse);
+                        const stats = getCourseAggregates(c.id);
+                        return (
+                          <div
+                            key={c.id}
+                            className="group border border-slate-200/90 rounded-2xl shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden bg-white hover:-translate-y-0.5"
+                          >
+                            <div className="h-1.5 w-full bg-gradient-to-r from-[#800521] via-amber-500 to-slate-900" />
+                            <div className="p-5">
+                              <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-[10px] font-black font-mono text-[#800521] bg-red-50 border border-red-200/80 px-2.5 py-1 rounded-md tracking-wider">
+                                    {c.code}
+                                  </span>
+                                  <span className="text-[9.5px] font-black text-amber-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md uppercase tracking-wider font-mono">
+                                    {c.credits} Créditos
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                    DICTADO REGULAR
+                                  </span>
+                                </div>
+                                <span className="text-xs text-slate-600 font-bold flex items-center gap-1.5">
+                                  <Users className="w-3.5 h-3.5 text-slate-400" />
+                                  {c.studentCount || stats.studentsCount || 1} Alumno{(c.studentCount || stats.studentsCount || 1) === 1 ? "" : "s"}
                                 </span>
                               </div>
-                              <span className="font-extrabold text-slate-900 block text-base mt-2 uppercase leading-snug">{c.name}</span>
-                              <div className="text-[11px] text-slate-500 font-bold space-y-1 mt-2.5">
-                                <p><span className="text-slate-400">Carrera:</span> <span className="text-slate-800 uppercase">{c.career || "Electricidad Industrial"}</span></p>
-                                <p><span className="text-slate-400">Grupo:</span> <span className="text-slate-800 font-mono">Grupo {c.group || "A"}</span></p>
-                                <p><span className="text-slate-400">Currícula:</span> <span className="text-slate-800">{c.curriculum || "Currícula 2024"}</span></p>
+
+                              <h4 className="text-base font-black text-slate-900 tracking-tight leading-snug group-hover:text-[#800521] transition-colors uppercase mb-3">
+                                {c.name}
+                              </h4>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50/80 p-3.5 rounded-xl border border-slate-150 mb-4">
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-1.5 text-slate-700">
+                                    <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                                    <span className="font-bold truncate text-[11px]">{getCourseScheduleSummary(c.code)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-slate-700">
+                                    <MapPin className="w-3.5 h-3.5 text-[#800521] shrink-0" />
+                                    <span className="font-extrabold text-[#800521] truncate text-[11px]">{c.classroom}</span>
+                                  </div>
+                                </div>
+                                <div className="space-y-1.5 sm:border-l sm:border-slate-200 sm:pl-3">
+                                  <p className="text-[11px] text-slate-600"><span className="text-slate-400 font-bold">Carrera:</span> <strong className="text-slate-800 uppercase">{c.career || "Electricidad Industrial"}</strong></p>
+                                  <p className="text-[11px] text-slate-600"><span className="text-slate-400 font-bold">Grupo:</span> <strong className="text-slate-800">Grupo {c.group || "EI-I-A"}</strong></p>
+                                </div>
+                              </div>
+
+                              <div className="flex justify-end pt-1">
+                                <button
+                                  onClick={() => {
+                                    setSelectedCourseId(c.id);
+                                    setActiveSection("general");
+                                    setActiveTab("curso");
+                                    setShowMobileSidebarCurso(false);
+                                  }}
+                                  className="w-full sm:w-auto bg-[#800521] hover:bg-[#66041a] text-white py-2.5 px-6 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+                                >
+                                  <span>Ingresar al Curso</span>
+                                  <ChevronRight className="w-4 h-4 text-amber-300" />
+                                </button>
                               </div>
                             </div>
-
-                            <div className="text-[11px] text-slate-500 font-bold space-y-1 md:self-end">
-                              <p><span className="text-slate-400">Aula/Lab:</span> <span className="text-[#8B0026] uppercase font-extrabold">{c.classroom}</span></p>
-                              <p><span className="text-slate-400">Alumnos:</span> <span className="text-slate-800">{c.studentCount || ROSTER.length || 0} Alumnos</span></p>
-                              <p><span className="text-slate-400">Horario MPA:</span> <span className="text-slate-800">{getCourseScheduleSummary(c.code)}</span></p>
-                              <p><span className="text-slate-400">Fechas:</span> <span className="text-slate-800 font-mono">{c.startDate || "06/04/2026"} al {c.endDate || "24/07/2026"}</span></p>
-                            </div>
                           </div>
+                        );
+                      })}
+                      {teacherCourses.length === 0 && (
+                        <p className="py-8 text-center text-sm text-slate-500">No tiene cursos asignados en este período.</p>
+                      )}
+                    </div>
 
-                          <div className="flex justify-end pt-3 border-t border-slate-200/60 mt-2">
-                            <Button
-                              onClick={() => {
-                                setSelectedCourseId(c.id);
-                                setActiveSection("general");
-                                setActiveTab("curso");
-                                setShowMobileSidebarCurso(false);
-                              }}
-                              variant="primary"
-                              size="sm"
-                              className="font-black uppercase text-[10px] tracking-wider bg-[#8B0026] text-white py-2 px-5 shrink-0 shadow-sm"
-                            >
-                              Gestionar Curso <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {teacherCourses.length === 0 && (
-                      <p className="py-6 text-center text-sm text-slate-500">No tiene cursos asignados.</p>
-                    )}
-                    <CoursePagination page={safeDashboardCoursePage} total={teacherCourses.length}
-                      pageSize={DASHBOARD_COURSES_PER_PAGE} onPageChange={setDashboardCoursePage} />
-                  </CardContent>
-                </Card>
+                    <div className="mt-4">
+                      <CoursePagination page={safeDashboardCoursePage} total={teacherCourses.length}
+                        pageSize={DASHBOARD_COURSES_PER_PAGE} onPageChange={setDashboardCoursePage} />
+                    </div>
+                  </div>
+                </div>
 
                 {/* Right Column: Weekly schedule & Notice summary widget */}
                 <div className="space-y-6">
                   {/* Scheduled lessons sessions info box */}
-                  <Card className="text-left border border-slate-150">
-                    <CardHeader>
+                  <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-3xs text-left">
+                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-150">
                       <div>
-                        <CardTitle>Sesiones semanales programadas</CardTitle>
-                        <CardDescription>Asignaciones registradas en MPA {schedulePeriod ? `· ${schedulePeriod.name}` : ""}</CardDescription>
+                        <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Sesiones Semanales</h4>
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Asignadas en MPA • Periodo 2027-I</span>
                       </div>
-                    </CardHeader>
-                    <CardContent className="p-5 text-xs text-slate-700 font-bold space-y-2.5 font-sans">
+                      <span className="text-xs bg-slate-100 text-slate-800 font-mono font-black px-2.5 py-1 rounded-md">
+                        {currentTeacherSessions.length} Clases
+                      </span>
+                    </div>
+
+                    <div className="space-y-3 font-sans">
                       {currentTeacherSessions.length === 0 ? (
-                        <p className="text-slate-400 text-[11px] font-medium py-3 text-center">
+                        <p className="text-slate-400 text-xs font-medium py-4 text-center">
                           No registra sesiones lectivas en MPA para este período.
                         </p>
                       ) : (
-                        currentTeacherSessions.slice(0, 4).map((task, idx) => {
-                          const borderColors = ["border-[#8B0026]", "border-amber-500", "border-blue-500", "border-emerald-500"];
-                          const badgeColors = [
-                            "bg-[#8B0026]/10 text-[#8B0026]",
-                            "bg-amber-500/15 text-amber-700",
-                            "bg-blue-500/10 text-blue-700",
-                            "bg-emerald-500/10 text-emerald-700"
-                          ];
+                        currentTeacherSessions.map((task) => {
                           const mpaCourse = scheduleData?.courses.find((course) => course.id === task.courseId);
                           const classroom = scheduleData?.classrooms.find((room) => room.id === task.classroomId);
+                          const dayColors: Record<string, { bg: string; text: string; border: string }> = {
+                            "Lunes": { bg: "bg-emerald-50", text: "text-emerald-800", border: "border-emerald-300" },
+                            "Martes": { bg: "bg-sky-50", text: "text-sky-800", border: "border-sky-300" },
+                            "Miércoles": { bg: "bg-amber-50", text: "text-amber-800", border: "border-amber-300" },
+                            "Jueves": { bg: "bg-purple-50", text: "text-purple-800", border: "border-purple-300" },
+                            "Viernes": { bg: "bg-rose-50", text: "text-rose-800", border: "border-rose-300" },
+                            "Sábado": { bg: "bg-slate-50", text: "text-slate-800", border: "border-slate-300" },
+                          };
+                          const dayStyle = dayColors[task.dayOfWeek || ""] || { bg: "bg-slate-50", text: "text-slate-800", border: "border-slate-200" };
                           return (
-                            <div key={task.id} className={`p-2 bg-slate-50 border-l-4 ${borderColors[idx % borderColors.length]} rounded flex justify-between items-center`}>
-                              <div className="min-w-0 flex-1 pr-2">
-                                <span className="block font-black text-slate-900 leading-tight truncate">{mpaCourse?.name || task.courseId}</span>
-                                <span className="text-[10px] text-slate-400 mt-1 block truncate">
-                                  {classroom?.name || task.classroomId} • {task.startTime} - {task.endTime}
+                            <div key={task.id} className="p-3 bg-slate-50/80 hover:bg-slate-100/70 border border-slate-200/80 rounded-xl flex items-center justify-between gap-3 transition-all">
+                              <div className="min-w-0 flex-1">
+                                <span className="block font-black text-xs text-slate-900 leading-tight truncate">
+                                  {mpaCourse?.name || task.courseId}
                                 </span>
+                                <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-500 font-semibold">
+                                  <span className="flex items-center gap-1 font-mono text-slate-700">
+                                    <Clock className="w-3 h-3 text-amber-600" />
+                                    {task.startTime} - {task.endTime}
+                                  </span>
+                                  <span>•</span>
+                                  <span className="truncate text-[#800521] font-bold flex items-center gap-1">
+                                    <MapPin className="w-3 h-3 text-[#800521] shrink-0" />
+                                    <span>{classroom?.name || task.classroomId}</span>
+                                  </span>
+                                </div>
                               </div>
-                              <span className={`text-[9px] ${badgeColors[idx % badgeColors.length]} font-black h-max px-2 py-0.5 rounded font-mono uppercase shrink-0`}>
+                              <span className={`text-[9.5px] ${dayStyle.bg} ${dayStyle.text} ${dayStyle.border} border font-black px-2.5 py-1 rounded-md uppercase font-mono tracking-wider shrink-0`}>
                                 {task.dayOfWeek}
                               </span>
                             </div>
                           );
                         })
                       )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
 
                   {/* Notices and warnings */}
-                  <Card className="text-left bg-gradient-to-br from-amber-50/20 to-slate-50">
-                    <CardHeader>
-                      <div className="flex gap-2">
-                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                        <div>
-                          <CardTitle className="text-amber-950">Avisos de Coordinación</CardTitle>
-                          <CardDescription>Directivas vigentes del ciclo regular</CardDescription>
-                        </div>
+                  <div className="bg-gradient-to-br from-amber-50/60 to-white rounded-2xl border border-amber-200/80 p-5 shadow-3xs text-left">
+                    <div className="flex items-center gap-2.5 mb-3 pb-2.5 border-b border-amber-100">
+                      <div className="p-1.5 rounded-lg bg-amber-500/15 text-amber-800 shrink-0">
+                        <AlertCircle className="w-4 h-4 text-amber-700" />
                       </div>
-                    </CardHeader>
-                    <CardContent className="p-5 text-[11px] text-slate-700 font-medium space-y-2">
-                      <p className="pb-1.5 border-b border-amber-100">
-                        <strong>Cierre de Actas Parciales:</strong> Se solicita registrar las notas de la Semana 8 en la planilla consolidada antes del 15/06.
+                      <div>
+                        <h4 className="text-sm font-black text-amber-950 uppercase tracking-tight">Avisos de Coordinación</h4>
+                        <span className="text-[10px] text-amber-800 font-bold block">Directivas del Ciclo Regular</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-slate-700 space-y-2.5 leading-relaxed">
+                      <p className="pb-2 border-b border-amber-100/70">
+                        <strong className="text-slate-900">Registro de Asistencias:</strong> Se solicita a los docentes pasar lista durante los primeros 15 minutos de cada sesión presencial.
                       </p>
                       <p>
-                        <strong>Entrega de Sílabos y Materiales:</strong> Se recuerda a los docentes completar la carga de unidades de aprendizaje y evaluaciones correspondientes.
+                        <strong className="text-slate-900">Syllabus y Calificaciones:</strong> La carga de evidencias y evaluaciones de la semana debe completarse en la plataforma oficial antes del cierre de periodo.
                       </p>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </div>
 
               </div>
@@ -825,83 +1069,137 @@ export default function DocenteDashboard({
           {/* TAB 2: GENERAL LIST OF COURSES ("Mis Cursos") */}
           {selectedCourseId === null && activeTab === "cursos" && (
             <PageTransition id="cursos-directory-screen" className="space-y-6 text-left">
-              <PageHeader
-                title="Mis Asignaturas Asignadas"
-                subtitle="Seleccione una materia pedagógica para programar semanas de asistencia, tareas, evaluaciones y evidencias."
-                icon={<BookOpen className="w-6 h-6 text-[#8B0026]" />}
-              />
+              {/* Institutional Burgundy Header Banner */}
+              <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-8 overflow-hidden text-left border-b-4 border-amber-500">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521] to-slate-950/85 opacity-95" />
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+                      PLANIFICACIÓN ACADÉMICA • PORTAL DOCENTE
+                    </span>
+                    <h1 className="text-2xl md:text-3.5xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+                      Mis Asignaturas Asignadas
+                    </h1>
+                    <p className="text-xs text-white/90 font-medium max-w-2xl font-mono">
+                      Seleccione una unidad didáctica para planificar las 16 semanas pedagógicas, calificar tareas y registrar asistencias.
+                    </p>
+                  </div>
 
+                  <div className="flex items-center gap-2 shrink-0 bg-white/10 backdrop-blur-xs border border-white/20 px-3.5 py-2.5 rounded-xl shadow-inner text-xs">
+                    <Award className="w-5 h-5 text-amber-300 shrink-0" />
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-amber-300 block">Total de Cursos</span>
+                      <span className="font-extrabold text-white text-[11px]">
+                        {teacherCourses.length} Asignatura{teacherCourses.length === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid of Course Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {directoryCourses.map((rawCourse) => {
                   const c = getCourseWithSchedule(rawCourse);
                   const stats = getCourseAggregates(c.id);
                   return (
-                    <Card key={c.id} className="border border-slate-150 shadow-xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between">
-                      <CardHeader className="bg-slate-50/50 border-b pb-4">
-                        <div className="flex justify-between items-start gap-2">
-                          <span className="font-mono text-[9px] font-black bg-red-50 border border-red-200 text-[#8B0026] px-2.5 py-0.5 rounded-sm">
+                    <div
+                      key={c.id}
+                      className="group border border-slate-200/90 rounded-2xl shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden bg-white hover:-translate-y-1 text-left"
+                    >
+                      {/* Top Accent Stripe */}
+                      <div className="h-1.5 w-full bg-gradient-to-r from-[#800521] via-amber-500 to-slate-900" />
+
+                      <div className="p-5 pb-4 space-y-3">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <span className="text-[10px] font-black font-mono text-[#800521] bg-red-50 border border-red-200/80 px-2.5 py-1 rounded-md tracking-wider">
                             {c.code}
                           </span>
-                          <span className="text-[10px] font-black text-[#CFA020] uppercase font-mono tracking-widest">
-                            {c.credits} CRÉDITOS
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[9.5px] font-black text-amber-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md uppercase tracking-wider font-mono">
+                              {c.credits} Créditos
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              DICTADO REGULAR
+                            </span>
+                          </div>
+                        </div>
+
+                        <h3 className="text-base font-black text-slate-900 tracking-tight leading-snug group-hover:text-[#800521] transition-colors line-clamp-2 uppercase">
+                          {c.name}
+                        </h3>
+
+                        <div className="flex items-center gap-2 pt-0.5 text-xs text-slate-600 flex-wrap">
+                          <span className="text-[10px] uppercase font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
+                            {c.career || "Electricidad Industrial"}
+                          </span>
+                          <span className="text-[10.5px] font-extrabold text-slate-700">
+                            Grupo {c.group || "EI-I-A"}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            • {c.curriculum || "Ciclo I"}
                           </span>
                         </div>
-                        <h4 className="font-black text-slate-850 uppercase text-sm mt-1.5 leading-tight" title={c.name}>{c.name}</h4>
-                      </CardHeader>
-                      <CardContent className="p-5 space-y-2.5 text-xs text-slate-600 font-bold leading-normal">
-                        <div className="flex justify-between border-b pb-1.5">
-                          <span className="text-slate-400 font-semibold">Carrera:</span>
-                          <span className="text-slate-900 uppercase font-extrabold">{c.career || "Electricidad Industrial"}</span>
+                      </div>
+
+                      {/* Course Metadata Pill Boxes */}
+                      <div className="px-5 py-3.5 bg-slate-50/70 border-t border-b border-slate-100 space-y-2.5 text-left text-xs">
+                        <div className="flex items-start gap-2">
+                          <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <span className="text-[9px] uppercase font-bold text-slate-400 block leading-none">Horario Programado (MPA)</span>
+                            <span className="text-[11px] font-extrabold text-slate-800 leading-tight block mt-0.5">
+                              {getCourseScheduleSummary(c.code)}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex justify-between border-b pb-1.5">
-                          <span className="text-slate-400 font-semibold">Grupo:</span>
-                          <span className="text-slate-900 font-mono">Grupo {c.group || "A"}</span>
+
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-3.5 h-3.5 text-[#800521] shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <span className="text-[9px] uppercase font-bold text-slate-400 block leading-none">Ambiente / Laboratorio</span>
+                            <span className="text-[11px] font-extrabold text-[#800521] leading-tight block mt-0.5">
+                              {c.classroom}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex justify-between border-b pb-1.5">
-                          <span className="text-slate-400 font-semibold">Currícula:</span>
-                          <span className="text-slate-900">{c.curriculum || "Currícula 2024"}</span>
+
+                        <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[10px]">
+                          <span className="text-slate-600 font-bold flex items-center gap-1.5">
+                            <Users className="w-3.5 h-3.5 text-slate-400" />
+                            {c.studentCount || stats.studentsCount || 1} Alumno{(c.studentCount || stats.studentsCount || 1) === 1 ? "" : "s"} Matriculado{(c.studentCount || stats.studentsCount || 1) === 1 ? "" : "s"}
+                          </span>
+                          <span className="font-mono text-slate-600 font-bold bg-white border border-slate-200 px-2 py-0.5 rounded">
+                            16 Semanas
+                          </span>
                         </div>
-                        <div className="flex justify-between border-b pb-1.5">
-                          <span className="text-slate-400 font-semibold">Aula / Taller:</span>
-                          <span className="text-slate-900 uppercase font-extrabold">{c.classroom}</span>
-                        </div>
-                        <div className="flex justify-between border-b pb-1.5">
-                          <span className="text-slate-400 font-semibold">Cantidad de Alumnos:</span>
-                          <span className="text-slate-900">{c.studentCount || stats.studentsCount} Alumnos</span>
-                        </div>
-                        <div className="flex justify-between border-b pb-1.5">
-                          <span className="text-slate-400 font-semibold">Horario:</span>
-                          <span className="text-slate-900">{getCourseScheduleSummary(c.code)}</span>
-                        </div>
-                        <div className="flex justify-between border-b pb-1.5">
-                          <span className="text-slate-400 font-semibold">Fecha de Inicio:</span>
-                          <span className="text-slate-900 font-mono">{c.startDate || "06/04/2026"}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400 font-semibold">Fecha de Fin:</span>
-                          <span className="text-slate-900 font-mono">{c.endDate || "24/07/2026"}</span>
-                        </div>
-                      </CardContent>
-                      <CardFooter className="p-4 bg-slate-50 border-t flex justify-end">
-                        <Button
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="p-4 bg-white text-left">
+                        <button
                           onClick={() => {
                             setSelectedCourseId(c.id);
                             setActiveSection("general");
                             setActiveTab("curso");
+                            setShowMobileSidebarCurso(false);
                           }}
-                          variant="primary"
-                          className="font-black text-[10px] tracking-wider uppercase bg-[#8B0026] text-white w-full py-2.5 shadow-sm"
+                          className="w-full bg-[#800521] hover:bg-[#66041a] text-white py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group-hover:scale-[1.01]"
                         >
-                          Gestionar Curso
-                        </Button>
-                      </CardFooter>
-                    </Card>
+                          <span>Ingresar al Curso</span>
+                          <ChevronRight className="w-4 h-4 text-amber-300 group-hover:translate-x-0.5 transition-transform" />
+                        </button>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
+
               {teacherCourses.length === 0 && (
-                <p className="py-6 text-center text-sm text-slate-500">No tiene cursos asignados.</p>
+                <p className="py-8 text-center text-sm text-slate-500">No tiene cursos asignados en este período.</p>
               )}
+
               <CoursePagination page={safeDirectoryCoursePage} total={teacherCourses.length}
                 pageSize={DIRECTORY_COURSES_PER_PAGE} onPageChange={setDirectoryCoursePage} />
             </PageTransition>
@@ -963,39 +1261,11 @@ export default function DocenteDashboard({
 
           {/* TAB 6: CONFIGURACION PERSONAL */}
           {selectedCourseId === null && activeTab === "configuracion" && (
-            <PageTransition id="config-tab" className="space-y-6 text-left">
-              <PageHeader
-                title="Configuración de Cuenta Docente"
-                subtitle="Firma digital homologada, correo de contacto y habilitaciones institucionales del docente."
-                icon={<Settings className="w-6 h-6 text-[#8B0026]" />}
-              />
-              <Card className="max-w-xl mx-auto text-left font-sans text-xs border border-slate-150">
-                <CardHeader>
-                  <CardTitle>Información del Docente Titular</CardTitle>
-                </CardHeader>
-                <CardContent className="p-5 space-y-4">
-                  <div className="grid grid-cols-2 gap-4 font-bold text-slate-700">
-                    <div>
-                      <label className="block text-slate-450 uppercase text-[9px] mb-1 font-black">Nombre Completo</label>
-                      <input type="text" disabled value={currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Docente IESTP"} className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-bold" />
-                    </div>
-                    <div>
-                      <label className="block text-slate-450 uppercase text-[9px] mb-1 font-black">DNI de Certificación</label>
-                      <input type="text" disabled value={currentTeacher?.dni || teacherDni} className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-mono font-bold" />
-                    </div>
-                    <div>
-                      <label className="block text-slate-450 uppercase text-[9px] mb-1 font-black">E-mail Institucional</label>
-                      <input type="text" disabled value={currentTeacher?.email || "docente@iestpsfa.edu.pe"} className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-bold" />
-                    </div>
-                    <div>
-                      <label className="block text-slate-450 uppercase text-[9px] mb-1 font-black">Especialidad Principal</label>
-                      <input type="text" disabled value={currentTeacher?.specialty || "Cátedra Universitaria & Tecnológica"} className="w-full px-3 py-2 bg-slate-50 border border-slate-205 rounded font-bold" />
-                    </div>
-                  </div>
-                  <AlertBox variant="success" title="Firma Certificada" description="Acuerdo con directiva nacional, su firma digital mediante DNI se encuentra homologada en la pasarela académica del IESTP San Francisco de Asís." className="mt-2 text-[10.5px]" />
-                </CardContent>
-              </Card>
-            </PageTransition>
+            <TeacherProfileTab
+              teacher={currentTeacher}
+              teacherDni={effectiveTeacherDni}
+              onShowNotice={(n) => setNotice(n)}
+            />
           )}
 
           {/* COURSE INTEGRATION SUB SECTIONS (Selected course context) */}
@@ -1014,51 +1284,66 @@ export default function DocenteDashboard({
 
               {/* SECTION B: HORARIOS LECTIVOS SCREEN */}
               {activeSection === "horarios" && (
-                <PageTransition id="curso-horarios" className="space-y-6 text-left">
-                  <PageHeader
-                    title="Horarios Lectivos Oficiales"
-                    subtitle="Distribución horaria presencial programada para el semestre en vigor."
-                    icon={<Clock className="w-5 h-5 text-[#8B0026]" />}
-                  />
+                <PageTransition id="curso-horarios" className="space-y-6 text-left font-sans">
+                  <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-8 overflow-hidden text-left border-b-4 border-amber-500">
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521] to-slate-950/85 opacity-95" />
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-1.5">
+                        <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+                          ASIGNATURA: {selectedCourse.code} • HORARIO DE CLASES
+                        </span>
+                        <h2 className="text-2xl md:text-3.5xl font-black text-white tracking-tight uppercase font-display leading-none pt-0.5">
+                          Horarios Lectivos: {selectedCourse.name}
+                        </h2>
+                        <p className="text-xs text-white/90 font-medium max-w-2xl font-mono">
+                          Distribución horaria presencial programada en MPA para las sesiones de teoría y taller del semestre 2027-I.
+                        </p>
+                      </div>
+                      <div className="bg-white/10 border border-white/20 px-3.5 py-2.5 rounded-xl shadow-inner text-xs shrink-0">
+                        <span className="text-[9px] uppercase font-bold text-amber-300 block font-mono">Sesiones Semanales</span>
+                        <span className="font-extrabold text-white text-xs uppercase">{getCourseSchedulesList(selectedCourse.code).length} Bloques</span>
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {getCourseSchedulesList(selectedCourse.code).map((sch, idx) => (
-                      <Card key={idx} className="border border-slate-150">
-                        <CardHeader className="flex flex-row items-center justify-between border-b pb-4 bg-slate-50/40">
+                      <div key={idx} className="bg-white rounded-2xl border border-slate-200 shadow-3xs overflow-hidden text-left">
+                        <div className="flex flex-row items-center justify-between p-5 border-b border-slate-150 bg-slate-50/50">
                           <div>
-                            <span className="text-[10px] text-[#CFA020] font-black uppercase tracking-wider block font-mono">Sesión programada</span>
-                            <CardTitle className="uppercase text-slate-800 text-sm mt-1">Clase {sch.type}</CardTitle>
+                            <span className="text-[10px] text-amber-600 font-black uppercase tracking-wider block font-mono">Sesión MPA</span>
+                            <h3 className="uppercase text-slate-900 text-sm font-black mt-0.5">Clase {sch.type}</h3>
                           </div>
-                          <span className="px-2.5 py-1 bg-[#8B0026]/10 text-[#8B0026] border border-[#8B0026]/20 font-black text-[9px] uppercase rounded-sm">
+                          <span className="px-3 py-1 bg-[#800521] text-white font-black text-[10px] uppercase rounded-lg shadow-2xs">
                             {sch.day}
                           </span>
-                        </CardHeader>
-                        <CardContent className="p-5 space-y-3.5 text-xs text-slate-600 font-bold leading-normal">
-                          <div className="flex justify-between border-b pb-1.5">
+                        </div>
+                        <div className="p-5 space-y-3 text-xs text-slate-650 font-bold leading-normal">
+                          <div className="flex justify-between border-b border-slate-100 pb-2">
                             <span className="text-slate-400 font-semibold">Hora de Inicio:</span>
                             <span className="text-slate-900 font-mono font-extrabold">{sch.start}</span>
                           </div>
-                          <div className="flex justify-between border-b pb-1.5">
+                          <div className="flex justify-between border-b border-slate-100 pb-2">
                             <span className="text-slate-400 font-semibold">Hora de Finalización:</span>
                             <span className="text-slate-900 font-mono font-extrabold">{sch.end}</span>
                           </div>
-                          <div className="flex justify-between border-b pb-1.5">
-                            <span className="text-slate-400 font-semibold">Aula / Laboratorio:</span>
-                            <span className="text-[#8B0026] uppercase font-extrabold">{sch.classroom}</span>
+                          <div className="flex justify-between border-b border-slate-100 pb-2">
+                            <span className="text-slate-400 font-semibold">Aula / Taller:</span>
+                            <span className="text-[#800521] uppercase font-black">{sch.classroom}</span>
                           </div>
-                          <div className="flex justify-between border-b pb-1.5">
-                            <span className="text-slate-400 font-semibold">Grupo:</span>
-                            <span className="text-slate-900 uppercase font-extrabold">{sch.group}</span>
+                          <div className="flex justify-between border-b border-slate-100 pb-2">
+                            <span className="text-slate-400 font-semibold">Grupo Formativo:</span>
+                            <span className="text-slate-900 uppercase font-black">{sch.group}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-slate-400 font-semibold">Frecuencia de Repetición:</span>
-                            <span className="text-slate-900 uppercase font-black tracking-wide text-[10.5px]">{sch.freq}</span>
+                            <span className="text-slate-400 font-semibold">Frecuencia:</span>
+                            <span className="text-slate-900 uppercase font-black text-[10.5px]">{sch.freq}</span>
                           </div>
-                        </CardContent>
-                      </Card>
+                        </div>
+                      </div>
                     ))}
                     {getCourseSchedulesList(selectedCourse.code).length === 0 && (
-                      <p className="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">Esta asignatura no tiene horario registrado para este docente en MPA.</p>
+                      <p className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600 font-bold">Esta asignatura no tiene horario registrado para este docente en MPA.</p>
                     )}
                   </div>
                 </PageTransition>
@@ -1066,19 +1351,33 @@ export default function DocenteDashboard({
 
               {/* SECTION C: 16 WEEKS INTERACTIVE OPERATIONS SUB VIEW */}
               {activeSection === "week" && (
-                <div className="space-y-6 block">
+                <div className="space-y-6 block text-left font-sans">
                   {/* Themed Week Header Banner */}
-                  <div className="p-4 bg-white border border-slate-200 rounded-xl text-left font-sans flex items-start gap-4">
-                    <div className="h-10 w-10 bg-[#8B0026]/10 text-[#8B0026] border border-red-150 rounded-xl flex items-center justify-center font-black text-sm shrink-0">
-                      S{selectedWeek}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-extrabold text-slate-900 text-sm leading-tight uppercase">
-                        Tema: {getWeekTheme(selectedCourse.code, selectedWeek, selectedCourse.name).topic}
-                      </h3>
-                      <p className="text-[11px] text-slate-500 font-semibold block mt-1">
-                        {getWeekTheme(selectedCourse.code, selectedWeek, selectedCourse.name).desc}
-                      </p>
+                  <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 overflow-hidden text-left border-b-4 border-amber-500">
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521] to-slate-950/85 opacity-95" />
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-amber-400 text-slate-950 rounded-2xl flex flex-col items-center justify-center font-black shrink-0 shadow-md">
+                          <span className="text-[9px] uppercase font-mono tracking-tighter leading-none">SEMANA</span>
+                          <span className="text-2xl leading-none font-display">{selectedWeek}</span>
+                        </div>
+                        <div className="space-y-1 min-w-0">
+                          <span className="bg-white/20 text-amber-300 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm inline-block select-none font-mono">
+                            {selectedCourse.code} • {selectedWeekOption.toUpperCase()}
+                          </span>
+                          <h2 className="text-lg md:text-xl font-black text-white tracking-tight uppercase leading-snug break-words">
+                            {getWeekTheme(selectedCourse.code, selectedWeek, selectedCourse.name).topic}
+                          </h2>
+                          <p className="text-xs text-white/90 font-medium font-mono leading-relaxed break-words">
+                            {getWeekTheme(selectedCourse.code, selectedWeek, selectedCourse.name).desc}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] font-mono font-bold bg-black/30 border border-white/20 px-3 py-1.5 rounded-xl uppercase text-amber-300">
+                          Periodo 2027-I
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -1115,8 +1414,11 @@ export default function DocenteDashboard({
                         courseId={selectedCourseId}
                         week={selectedWeek}
                         assignments={getFilteredAssignments()}
+                        students={enrollments.filter((enrollment) => enrollment.academicStatus === "MATRICULADO" && enrollment.programId === (selectedCourse?.careerId || selectedCourse?.career)).map((enrollment) => studentsList[enrollment.studentDni]).filter(Boolean)}
                         onPublishAssignment={handlePublishAssignment}
+                        onEditAssignment={handleEditAssignment}
                         onDeleteAssignment={handleDeleteAssignment}
+                        onGradeSubmission={handleGradeSubmission}
                       />
                     )}
 

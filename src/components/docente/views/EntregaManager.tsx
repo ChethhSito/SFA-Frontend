@@ -33,7 +33,7 @@ export function EntregaManager({ courseId, week, assignment, onOpenGradingTab }:
           dni: std.dni,
           name: `${std.name} ${std.lastName}`,
           fileName: existing.fileName || "entrega_adjunta.pdf",
-          submitDate: existing.submitDate || "2026-06-03 16:40",
+          submitDate: existing.submitDate || new Date().toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" }),
           status: existing.grade !== undefined ? "Calificado" : "Pendiente de Calificación",
         };
       }

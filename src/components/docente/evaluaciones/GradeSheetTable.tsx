@@ -29,30 +29,30 @@ export const GradeSheetTable: React.FC<GradeSheetTableProps> = ({
   onPublishOfficial
 }) => {
   return (
-    <Card className="border border-slate-150">
-      <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-4">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-3xs overflow-hidden text-left font-sans">
+      <div className="p-5 border-b border-slate-150 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <CardTitle>Planilla Digital de Registro Seguro de Calificaciones</CardTitle>
-          <CardDescription>Edición bloqueada contra escritura directa. Haga clic sobre cualquier celda para desbloquear mediante su firma digital.</CardDescription>
+          <h3 className="text-sm font-black uppercase text-slate-900">Planilla Digital de Registro de Calificaciones</h3>
+          <p className="text-xs text-slate-500 mt-0.5">Edición protegida con firma digital PIN. Haga clic sobre la calificación a modificar.</p>
         </div>
         <div className="flex flex-wrap gap-2 md:self-center shrink-0">
-          <Button
+          <button
+            type="button"
             onClick={onExportExcel}
-            variant="secondary"
-            className="font-bold text-[10px] uppercase py-2.5 px-3.5 flex items-center gap-1.5"
+            className="font-bold text-[10.5px] uppercase py-2 px-3.5 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-all cursor-pointer shadow-2xs"
           >
-            <Download className="w-3.5 h-3.5" /> Exportar Excel
-          </Button>
-          <Button
+            <Download className="w-3.5 h-3.5 text-emerald-600" /> Exportar Excel
+          </button>
+          <button
+            type="button"
             onClick={onExportPDF}
-            variant="secondary"
-            className="font-bold text-[10px] uppercase py-2.5 px-3.5 flex items-center gap-1.5"
+            className="font-bold text-[10.5px] uppercase py-2 px-3.5 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 transition-all cursor-pointer shadow-2xs"
           >
-            <Printer className="w-3.5 h-3.5" /> Exportar PDF
-          </Button>
+            <Printer className="w-3.5 h-3.5 text-[#800521]" /> Imprimir / PDF
+          </button>
         </div>
-      </CardHeader>
-      <CardContent className="p-0 overflow-x-auto select-text">
+      </div>
+      <div className="p-0 overflow-x-auto select-text">
         <table className="w-full text-xs font-bold border-collapse text-left min-w-[700px]">
           <thead>
             <tr className="bg-slate-50 border-b text-slate-500 uppercase tracking-wider text-[9px] font-black">
@@ -137,24 +137,24 @@ export const GradeSheetTable: React.FC<GradeSheetTableProps> = ({
         </table>
 
         {/* Save Panel footer row */}
-        <div className="p-5 bg-slate-50 border-t flex flex-col sm:flex-row justify-between items-center gap-3">
-          <Button
+        <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+          <button
+            type="button"
             onClick={onSaveSheet}
-            variant="secondary"
-            className="font-black text-[11px] uppercase tracking-wider py-3 px-6"
+            className="w-full sm:w-auto font-black text-[11px] uppercase tracking-wider py-2.5 px-5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-750 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
           >
-            <Save className="w-4 h-4 mr-1.5 text-slate-500" /> Guardar Cambios
-          </Button>
+            <Save className="w-4 h-4 text-slate-500" /> Guardar Borrador
+          </button>
           <div className="flex-1" />
-          <Button
+          <button
+            type="button"
             onClick={onPublishOfficial}
-            variant="primary"
-            className="font-black text-[11px] uppercase tracking-wider py-3 px-6 bg-[#8B0026] text-white"
+            className="w-full sm:w-auto font-black text-[11px] uppercase tracking-wider py-2.5 px-6 rounded-xl bg-[#800521] hover:bg-[#66041a] text-white transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg active:scale-95"
           >
-            <Check className="w-4 h-4 mr-1.5" /> Publicar Promedios Oficiales
-          </Button>
+            <Check className="w-4 h-4 text-amber-300" /> Publicar Promedios Oficiales
+          </button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };

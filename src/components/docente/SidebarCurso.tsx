@@ -46,13 +46,13 @@ export function SemanaAccordion({
   ] as const;
 
   return (
-    <div className="border-b border-slate-200/50">
+    <div className="border-b border-rose-100/70">
       <button
         onClick={onToggleExpanded}
         className={`w-full py-2.5 px-3 flex items-center justify-between transition-colors text-left text-[11px] font-extrabold ${
           isActiveWeek
-            ? "bg-[#8B0026]/5 text-[#8B0026]"
-            : "text-slate-750 hover:bg-slate-100 hover:text-slate-900"
+            ? "bg-rose-100/70 text-[#800521] border-l-2 border-[#800521]"
+            : "text-slate-700 hover:bg-rose-50/60 hover:text-[#800521]"
         }`}
       >
         <span className="tracking-wide">SEMANA {weekNumber}</span>
@@ -66,7 +66,7 @@ export function SemanaAccordion({
       </button>
 
       {isExpanded && (
-        <div className="py-1 bg-white/40 pl-4 space-y-0.5">
+        <div className="py-1 bg-white/60 pl-4 space-y-0.5">
           {options.map((opt) => {
             const isOptActive = isActiveWeek && selectedOption === opt.id;
             return (
@@ -76,7 +76,7 @@ export function SemanaAccordion({
                 className={`w-full text-left py-1.5 px-2.5 rounded-lg transition-all duration-150 flex items-center gap-2 cursor-pointer text-[10.5px] font-bold ${
                   isOptActive
                     ? "bg-[#8D0C26]/10 text-[#8B0026] border-l-2 border-[#8B0026] font-black"
-                    : "text-slate-550 hover:bg-slate-50 hover:text-slate-950"
+                    : "text-slate-600 hover:bg-rose-50/50 hover:text-slate-950"
                 }`}
               >
                 <span className={`${isOptActive ? "text-[#8B0026]" : "text-slate-400"}`}>{opt.icon}</span>
@@ -116,23 +116,42 @@ export default function SidebarCurso({
     setExpandedWeeks((prev) => ({ ...prev, [week]: !prev[week] }));
   };
 
+  const upperCode = (courseCode || "").toUpperCase();
+  const componentBadge = upperCode.includes("TEO")
+    ? { label: "Teoría", className: "text-[#800521] bg-[#800521]/10 border-[#800521]/20" }
+    : upperCode.includes("TAL")
+    ? { label: "Taller", className: "text-amber-800 bg-amber-50 border-amber-200" }
+    : upperCode.includes("LAB")
+    ? { label: "Laboratorio", className: "text-emerald-700 bg-emerald-50 border-emerald-200" }
+    : null;
+
   return (
-    <aside className="w-64 h-full bg-slate-50 border-r border-slate-200 flex flex-col shrink-0 select-none text-left">
-      {/* Current Course Code Header */}
-      <div className="p-5 border-b border-slate-200 shrink-0">
-        <span className="text-[9px] font-black text-[#8B0026] bg-red-50 border border-red-200 px-2 py-0.5 rounded-sm select-none block w-max uppercase tracking-widest font-mono">
-          Asignatura: {courseCode}
-        </span>
-        <h3 className="text-xs font-black text-slate-900 tracking-tight block mt-1.5 truncate uppercase" title={courseName}>
+    <aside className="w-64 h-full bg-[#FFFBFB] border-r border-rose-200/90 flex flex-col shrink-0 select-none text-left">
+      {/* Top institutional color stripe */}
+      <div className="h-1 w-full bg-gradient-to-r from-[#800521] via-amber-500 to-[#800521] shrink-0" />
+
+      {/* Current Course Code Header with reddish institutional styling */}
+      <div className="p-4 border-b border-rose-100 bg-gradient-to-b from-rose-50/70 to-[#FFFBFB] shrink-0">
+        <div className="flex items-center justify-between gap-1">
+          <span className="text-[9px] font-black text-[#800521] bg-rose-100/90 border border-rose-250 px-2 py-0.5 rounded-sm select-none block w-max uppercase tracking-widest font-mono shadow-2xs">
+            {courseCode}
+          </span>
+          {componentBadge && (
+            <span className={`text-[8.5px] font-black border px-1.5 py-0.5 rounded uppercase font-mono ${componentBadge.className}`}>
+              {componentBadge.label}
+            </span>
+          )}
+        </div>
+        <h3 className="text-xs font-black text-slate-900 tracking-tight block mt-1.5 leading-snug break-words uppercase" title={courseName}>
           {courseName}
         </h3>
-        <p className="text-[9px] text-[#CFA020] font-bold tracking-wider uppercase block mt-1">
+        <p className="text-[9px] text-[#800521] font-bold tracking-wider uppercase block mt-1">
           Estructura Académica
         </p>
       </div>
 
       {/* Main Secondary Links Scroll Box */}
-      <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+      <div className="flex-1 overflow-y-auto custom-scrollbar divide-y divide-rose-100/60 pr-0.5">
         
         {/* GENERAL VIEW BUTTON */}
         <div className="p-2 shrink-0 space-y-1">
@@ -140,8 +159,8 @@ export default function SidebarCurso({
             onClick={onSelectGeneral}
             className={`w-full py-2.5 px-3 rounded-lg transition-all text-xs font-black uppercase text-left flex items-center gap-2 cursor-pointer ${
               activeSection === "general"
-                ? "bg-[#8B0026] text-white shadow-sm font-black"
-                : "text-slate-700 hover:bg-slate-100"
+                ? "bg-[#800521] text-white shadow-sm font-black"
+                : "text-slate-700 hover:bg-rose-50/70 hover:text-[#800521]"
             }`}
           >
             <BookOpen className="w-4 h-4 shrink-0" />
@@ -153,8 +172,8 @@ export default function SidebarCurso({
             onClick={onSelectHorarios}
             className={`w-full py-2.5 px-3 rounded-lg transition-all text-xs font-black uppercase text-left flex items-center gap-2 cursor-pointer ${
               activeSection === "horarios"
-                ? "bg-[#8B0026] text-white shadow-sm font-black"
-                : "text-slate-700 hover:bg-slate-100"
+                ? "bg-[#800521] text-white shadow-sm font-black"
+                : "text-slate-700 hover:bg-rose-50/70 hover:text-[#800521]"
             }`}
           >
             <Clock className="w-4 h-4 shrink-0" />
@@ -164,10 +183,10 @@ export default function SidebarCurso({
 
         {/* WEEKS ACCORDION LIST */}
         <div className="flex-1">
-          <span className="text-[9px] text-slate-400 font-extrabold uppercase tracking-widest block px-4 py-2 mt-2">
+          <span className="text-[9px] text-[#800521] font-black uppercase tracking-widest block px-4 py-2 mt-2">
             Desarrollo por Semanas
           </span>
-          <div className="divide-y divide-slate-100 pb-4">
+          <div className="divide-y divide-rose-100/60 pb-4">
             {Array.from({ length: 16 }, (_, i) => i + 1).map((weekNum) => (
               <SemanaAccordion
                 key={weekNum}

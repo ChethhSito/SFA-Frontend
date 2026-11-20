@@ -55,6 +55,21 @@ export function useTeacherClassroom() {
 
   useEffect(() => {
     void reloadAttendance();
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "sfa_attendance" && e.newValue) {
+        try {
+          const updated = JSON.parse(e.newValue);
+          setAttendance(updated);
+        } catch (err) {
+          console.warn("Error parsing sfa_attendance from storage event:", err);
+        }
+      }
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", handleStorageChange);
+    }
+
     fetchMpaCollection<any>("classrooms").then((items) => {
       setClassrooms(items);
       localStorage.setItem("sfa_classrooms", JSON.stringify(items));
@@ -73,6 +88,12 @@ export function useTeacherClassroom() {
         localStorage.setItem("sfa_courses", JSON.stringify(items));
       }
     }).catch((err) => console.error("Error fetching courses:", err));
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("storage", handleStorageChange);
+      }
+    };
   }, []);
 
   const handleUpdateClassrooms = (updatedList: any[]) => {

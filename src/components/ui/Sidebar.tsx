@@ -59,6 +59,8 @@ export interface SidebarProps {
   onGoToPortal?: () => void;
   extraContent?: ReactNode;
   className?: string;
+  isCollapsed?: boolean;
+  onToggleCollapse?: (collapsed: boolean) => void;
 }
 
 export default function Sidebar({
@@ -76,11 +78,20 @@ export default function Sidebar({
   onLogout,
   onGoToPortal,
   extraContent,
-  className = ""
+  className = "",
+  isCollapsed: propIsCollapsed,
+  onToggleCollapse
 }: SidebarProps) {
   const [isOpenMobile, setIsOpenMobile] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCollapsed = propIsCollapsed !== undefined ? propIsCollapsed : internalCollapsed;
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+
+  const handleToggleCollapse = () => {
+    const next = !isCollapsed;
+    setInternalCollapsed(next);
+    if (onToggleCollapse) onToggleCollapse(next);
+  };
 
   // Resolve institution header values
   const instName = institution?.name || title || "SFA Admisión";
@@ -164,7 +175,7 @@ export default function Sidebar({
     return renderItemIcon(instLogo);
   };
 
-  const SidebarContent = ({ collapsed = false }: { collapsed?: boolean }) => (
+  const renderSidebarContent = (collapsed = false) => (
     <div className="flex flex-col h-full bg-white relative z-20">
       {/* Header of Institution */}
       <div className={`p-4 flex items-center border-b border-slate-100 ${collapsed ? "justify-center" : "gap-3"}`}>
@@ -247,6 +258,7 @@ export default function Sidebar({
                 return (
                   <div key={itemIdx} className="space-y-0.5">
                     <button
+                      type="button"
                       title={collapsed ? item.label : undefined}
                       onClick={() => {
                         if (hasSubItems && !collapsed) {
@@ -420,7 +432,7 @@ export default function Sidebar({
                 </button>
               </div>
               <div className="w-full h-full">
-                <SidebarContent />
+                {renderSidebarContent(false)}
               </div>
             </motion.div>
           </>
@@ -429,16 +441,21 @@ export default function Sidebar({
 
       {/* 3. Sticky and Collapsible Sidebar on Desktop Screens */}
       <aside className={`hidden md:flex flex-col h-full bg-white border-r border-slate-200 shadow-xs shrink-0 select-none relative z-30 transition-all duration-300 ease-in-out ${isCollapsed ? "w-20" : "w-64"} ${className}`}>
-        {/* Toggle arrow button on the right edge */}
+        {/* Toggle arrow button on the right edge (Center Vertical - Institutional Floating) */}
         <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          type="button"
+          onClick={handleToggleCollapse}
           title={isCollapsed ? "Expandir menú lateral" : "Colapsar menú lateral"}
-          className="absolute -right-3.5 top-6 z-40 bg-white hover:bg-slate-50 text-slate-600 hover:text-[#800521] border border-slate-300 w-7 h-7 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer"
+          className="absolute -right-[17px] top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border-2 border-slate-300 hover:border-[#800521] w-[34px] h-[34px] rounded-full flex items-center justify-center shadow-md hover:shadow-xl transition-all cursor-pointer hover:scale-110 active:scale-95 group"
         >
-          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          {isCollapsed ? (
+            <ChevronRight className="w-4.5 h-4.5 transition-transform group-hover:translate-x-0.5" />
+          ) : (
+            <ChevronLeft className="w-4.5 h-4.5 transition-transform group-hover:-translate-x-0.5" />
+          )}
         </button>
 
-        <SidebarContent collapsed={isCollapsed} />
+        {renderSidebarContent(isCollapsed)}
       </aside>
     </>
   );

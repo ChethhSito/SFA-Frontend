@@ -18,6 +18,7 @@ import { Toast, ToastNotice, ToastKind } from "../ui";
 
 // Modular Sub-components for Postulante Dashboard
 import ConstanciaModal from "./modals/ConstanciaModal";
+import MatriculaConfirmationModal from "./modals/MatriculaConfirmationModal";
 import DashboardMainTab from "./tabs/DashboardMainTab";
 import DocumentosTab from "./tabs/DocumentosTab";
 import PagosTab from "./tabs/PagosTab";
@@ -30,6 +31,7 @@ interface PostulanteDashboardProps {
   onUpdateApplicant: (updated: Applicant) => void;
   onLogout: () => void;
   onGoToPortal?: () => void;
+  onSwitchRole?: (role: any, identifier: string) => void;
   enrollments?: Enrollment[];
   onUpdateEnrollment?: (updated: Enrollment) => void;
 }
@@ -47,6 +49,7 @@ function PostulanteDashboardInner({
   onUpdateApplicant,
   onLogout,
   onGoToPortal,
+  onSwitchRole,
   enrollments = [],
   onUpdateEnrollment
 }: PostulanteDashboardProps) {
@@ -225,17 +228,89 @@ function PostulanteDashboardInner({
 
   const globalProgressPercentage = Math.round((approvedCount / totalDocs) * 100);
   const isActuallyAdmitted = applicant.admitted === true || applicant.admitted === "ADMITIDO";
+  const myEnrollment = enrollments.find(e => e.studentDni === applicant.dni);
+  const isEnrolled = myEnrollment?.academicStatus === "MATRICULADO" || applicant.folderStatus === "Enrolled";
+
+  const [isMatriculaCelebrationOpen, setIsMatriculaCelebrationOpen] = useState(false);
+
+  // Auto-mostrar la modal institucional de matrícula al detectarse como matriculado
+  useEffect(() => {
+    if (isEnrolled) {
+      const key = `sfa_matricula_modal_auto_${applicant.dni}`;
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "1");
+        setIsMatriculaCelebrationOpen(true);
+      }
+    }
+  }, [isEnrolled, applicant.dni]);
+
+  const handleProceedToAlumnoPortal = () => {
+    // 1. Limpiar sesión de admisión y establecer sesión de alumno
+    localStorage.removeItem("sfa_session_postulante");
+    localStorage.setItem("sfa_session_alumno", applicant.dni);
+
+    // 2. Asegurar perfil de alumno y estados de ciclo
+    try {
+      let localStudentsObj: any = {};
+      const savedStudents = localStorage.getItem("sfa_students");
+      if (savedStudents) localStudentsObj = JSON.parse(savedStudents);
+      localStudentsObj[applicant.dni] = {
+        dni: applicant.dni,
+        name: applicant.name,
+        lastName: applicant.lastName,
+        email: applicant.email,
+        phone: applicant.phone || "",
+        gender: "Masculino",
+        birthDate: "",
+        address: "",
+        district: "",
+        province: "",
+        emergencyName: "",
+        emergencyPhone: "",
+        emergencyRelation: "Otros"
+      };
+      localStorage.setItem("sfa_students", JSON.stringify(localStudentsObj));
+
+      let localCycles: any = {};
+      const savedCycles = localStorage.getItem("sfa_cycle_statuses") || localStorage.getItem("sfa_cycles");
+      if (savedCycles) localCycles = JSON.parse(savedCycles);
+      if (!localCycles[applicant.dni]) {
+        localCycles[applicant.dni] = [
+          {
+            cycleNumber: 1,
+            year: 2026,
+            status: "Matriculado",
+            average: 0,
+            credits: 16,
+            courses: []
+          }
+        ];
+        localStorage.setItem("sfa_cycle_statuses", JSON.stringify(localCycles));
+      }
+    } catch {}
+
+    setIsMatriculaCelebrationOpen(false);
+
+    // 3. Cambiar rol a alumno
+    if (onSwitchRole) {
+      onSwitchRole("alumno", applicant.dni);
+    } else if (onGoToPortal) {
+      onGoToPortal();
+    } else {
+      window.location.reload();
+    }
+  };
 
   // Notificación Toast temporal y no invasiva al confirmarse la vacante oficial
   useEffect(() => {
-    if (isActuallyAdmitted) {
+    if (isActuallyAdmitted && !isEnrolled) {
       const key = `sfa_toast_admitted_${applicant.dni}`;
       if (!sessionStorage.getItem(key)) {
         sessionStorage.setItem(key, "1");
         notify(`¡Felicidades! Ha alcanzado una vacante oficial en ${currentProgram.name}.`, "success");
       }
     }
-  }, [isActuallyAdmitted, applicant.dni, currentProgram.name]);
+  }, [isActuallyAdmitted, isEnrolled, applicant.dni, currentProgram.name]);
 
   // Normalizar pago si se declaró voucher pero no existe archivo físico de imagen
   const storedVoucher = applicant.paymentVoucherUrl || (applicant.dni ? localStorage.getItem(`sfa_voucher_data_${applicant.dni}`) : null) || undefined;
@@ -533,12 +608,54 @@ function PostulanteDashboardInner({
         onGoToPortal={onGoToPortal}
         userProfile={{
           name: `${applicant.name} ${applicant.lastName}`,
-          role: periodLabel ? `Postulante ${periodLabel}` : "Postulante",
-          status: isActuallyAdmitted ? "ADMITIDO" : "ACTIVO",
+          role: isEnrolled
+            ? (periodLabel ? `Alumno Regular ${periodLabel}` : "Alumno Regular")
+            : (periodLabel ? `Postulante ${periodLabel}` : "Postulante"),
+          status: isEnrolled ? "MATRICULADO" : (isActuallyAdmitted ? "ADMITIDO" : "ACTIVO"),
           avatarBg: "bg-gradient-to-br from-[#8B0020] to-[#590013] text-amber-300 font-black border border-amber-400/40"
         }}
         extraContent={
-          isActuallyAdmitted ? (
+          isEnrolled ? (
+            <div className="bg-emerald-50/90 border border-emerald-200/90 rounded-xl p-3 text-left space-y-2 shadow-3xs animate-fade-in">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
+                    ¡Matrícula Confirmada!
+                  </span>
+                </div>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              </div>
+
+              <div>
+                <h5 className="text-[11px] font-black text-slate-900 leading-tight">
+                  Estudiante Regular • Ciclo I
+                </h5>
+                <span className="text-[9.5px] font-bold text-emerald-700 block mt-0.5">
+                  {currentProgram.name}
+                </span>
+              </div>
+
+              <div className="pt-0.5 flex flex-col gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setIsMatriculaCelebrationOpen(true)}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-wider py-1.5 px-2.5 rounded-lg shadow-3xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Award className="w-3.5 h-3.5" />
+                  <span>Ver Constancia Matrícula</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleProceedToAlumnoPortal}
+                  className="w-full bg-white hover:bg-emerald-50 text-emerald-850 text-[9.5px] font-bold uppercase tracking-wider py-1 px-2 rounded-lg border border-emerald-300 flex items-center justify-center gap-1 transition-all cursor-pointer"
+                >
+                  <span>Ir al Portal del Alumno</span>
+                  <ArrowRight className="w-3 h-3 text-emerald-600" />
+                </button>
+              </div>
+            </div>
+          ) : isActuallyAdmitted ? (
             <div className="bg-emerald-50/90 border border-emerald-200/90 rounded-xl p-3 text-left space-y-2 shadow-3xs animate-fade-in">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
@@ -710,6 +827,17 @@ function PostulanteDashboardInner({
         isOpen={isConstanciaModalOpen}
         onClose={() => setIsConstanciaModalOpen(false)}
         applicant={applicant}
+      />
+
+      {/* MATRÍCULA OFICIAL & CONSTANCIA MODAL */}
+      <MatriculaConfirmationModal
+        isOpen={isMatriculaCelebrationOpen}
+        onClose={() => setIsMatriculaCelebrationOpen(false)}
+        applicant={applicant}
+        enrollment={myEnrollment}
+        currentProgram={currentProgram}
+        periodLabel={periodLabel || "2027-I"}
+        onProceedToAlumno={handleProceedToAlumnoPortal}
       />
 
       {/* STAGED UPLOAD PREVIEW MODAL */}

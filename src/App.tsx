@@ -196,6 +196,7 @@ export default function App() {
           onUpdateEnrollment={handleUpdateEnrollment}
           onLogout={handleLogout}
           onGoToPortal={handleGoPortal}
+          onSwitchRole={handleLoginSuccess}
         />
       )}
 

@@ -1,16 +1,19 @@
 import { AttendanceRecord } from "../../../types";
 import { studentAttendanceRecords } from "../../../utils/attendance";
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { 
-  Zap, Cpu, Sliders, Award, ChevronRight, ChevronDown, BookOpen, Clock, CheckCircle2, 
-  Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark
+  Zap, Cpu, Sliders, Award, ChevronRight, ChevronLeft, ChevronDown, BookOpen, Clock, CheckCircle2, 
+  Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark, MapPin, GraduationCap,
+  Eye, Download, Trash2, Pencil, X, MessageSquare, Send, Check
 } from "lucide-react";
 import { CourseMaterial, CourseAssignment, CourseEvaluation, AcademicProgram, StudentPersonalData } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
 import Toast, { ToastNotice } from "../../ui/Toast";
 import { Card, CardHeader, CardTitle, CardContent } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
-import { courseFileUrl } from "../../../services/api";
+import ConfirmModal from "../../ui/ConfirmModal";
+import { courseFileUrl, fileToBase64 } from "../../../services/api";
 
 const COURSE_WEEKS = 16;
 
@@ -68,6 +71,78 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   const classesCoursesData = enrichedCourses;
   const activeCourse = classesCoursesData.find(c => c.name === selectedCourseDetail);
   const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
+  const [activeCourseComponentId, setActiveCourseComponentId] = useState<string | null>(null);
+  const [isStructureSidebarCollapsed, setIsStructureSidebarCollapsed] = useState(false);
+
+  // Estados interactivos para la entrega de tareas del alumno
+  const [selectedTaskFiles, setSelectedTaskFiles] = useState<Record<string, File | null>>({});
+  const [taskComments, setTaskComments] = useState<Record<string, string>>({});
+  const [editingTaskSubmission, setEditingTaskSubmission] = useState<Record<string, boolean>>({});
+  const [taskSubmitting, setTaskSubmitting] = useState<Record<string, boolean>>({});
+
+  // Visor modal de PDF oficial para guías y entregas
+  const [pdfModal, setPdfModal] = useState<{ url: string; title: string; fileName: string } | null>(null);
+
+  // Modal de confirmación para eliminar entrega
+  const [submissionToDelete, setSubmissionToDelete] = useState<{ assignmentId: string; assignmentTitle: string } | null>(null);
+  const [isDeletingSubmission, setIsDeletingSubmission] = useState(false);
+
+  const subComponents = useMemo(() => {
+    if (!activeCourse) return [];
+    if (activeCourse.code === "EIND-101" || activeCourse.code?.startsWith("EIND-101")) {
+      return [
+        {
+          id: "teo",
+          code: "EIND-101-TEO",
+          name: "Fundamentos de Electricidad y Circuitos CC (Teoría)",
+          shortLabel: "Teoría",
+          badge: "Teoría",
+          schedule: "Lunes 08:00 AM - 10:00 AM",
+          classroom: "Aula 101 - Pabellón A",
+          teacher: activeCourse.teacherName || "Manuel Ramos Salazar",
+          credits: 2,
+          hours: "2 Horas",
+          description: "Clases teóricas de fundamentos y circuitos.",
+          dbCourseId: "6afc831d1bbefb1d4e11dd0e"
+        },
+        {
+          id: "tal",
+          code: "EIND-101-TAL",
+          name: "Fundamentos de Electricidad y Circuitos CC (Taller)",
+          shortLabel: "Taller",
+          badge: "Taller",
+          schedule: "Lunes 11:00 AM - 01:00 PM",
+          classroom: "Taller de Máquinas Eléctricas y Tableros",
+          teacher: activeCourse.teacherName || "Manuel Ramos Salazar",
+          credits: 2,
+          hours: "2 Horas",
+          description: "Prácticas en tableros y máquinas eléctricas.",
+          dbCourseId: "6afe1412016eccb3be7af0eb"
+        },
+        {
+          id: "lab",
+          code: "EIND-101-LAB",
+          name: "Fundamentos de Electricidad y Circuitos CC (Laboratorio)",
+          shortLabel: "Laboratorio",
+          badge: "Laboratorio",
+          schedule: "Viernes 08:00 AM - 10:00 AM",
+          classroom: "Laboratorio de Cómputo y Simulación",
+          teacher: activeCourse.teacherName || "Manuel Ramos Salazar",
+          credits: 1,
+          hours: "2 Horas",
+          description: "Simulación de circuitos y mediciones de laboratorio.",
+          dbCourseId: "6afe141f016eccb3be7af0ec"
+        }
+      ];
+    }
+    return [];
+  }, [activeCourse]);
+
+  useEffect(() => {
+    setActiveCourseComponentId(null);
+  }, [selectedCourseDetail]);
+
+  const selectedComponent = subComponents.find((c) => c.id === activeCourseComponentId) || null;
 
   const renderCourseIcon = (iconName: string, className = "w-4 h-4") => {
     switch (iconName) {
@@ -140,7 +215,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           </div>
         </div>
 
-        {/* Cards Grid */}
+        {/* Cards Grid Rediseñado Moderno */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {classesCoursesData.map((courseItem) => {
             const courseIds = courseItem.attendanceCourseIds || [courseItem.id];
@@ -150,59 +225,78 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               .map((submission) => Number(submission.grade));
             const averageGrade = grades.length ? (grades.reduce((sum, grade) => sum + grade, 0) / grades.length).toFixed(1) : "NR";
             return (
-              <Card key={courseItem.id} className="border border-slate-200/80 shadow-xs flex flex-col justify-between overflow-hidden bg-white hover:shadow-md transition-all duration-200">
-                <div className="p-5 border-b border-slate-100 bg-slate-50/40 space-y-2 text-left">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9.5px] font-black text-[#800521] bg-[#800521]/10 border border-[#800521]/25 px-2.5 py-1 rounded-xs font-mono">
+              <Card key={courseItem.id} className="group border border-slate-200/90 rounded-2xl shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden bg-white hover:-translate-y-1">
+                {/* Top Colored Accent Stripe */}
+                <div className="h-1.5 w-full bg-gradient-to-r from-[#800521] via-amber-500 to-slate-900" />
+                
+                <div className="p-5 pb-4 space-y-3 text-left">
+                  {/* Top Badges */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-[10px] font-black font-mono text-[#800521] bg-red-50 border border-red-200/80 px-2.5 py-1 rounded-md tracking-wider">
                       {courseItem.code}
                     </span>
-                    <span className="text-[9.5px] font-black text-amber-800 bg-amber-50 border border-amber-200 px-2 py-1 rounded-xs uppercase tracking-wider">
-                      {courseItem.credits} Créditos
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9.5px] font-black text-amber-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                        {courseItem.credits} Créditos
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        MATRICULADO
+                      </span>
+                    </div>
                   </div>
-                  <h3 className="text-sm font-black text-slate-900 tracking-tight leading-tight uppercase font-display pt-1">
+
+                  {/* Course Title */}
+                  <h3 className="text-base font-black text-slate-900 tracking-tight leading-snug group-hover:text-[#800521] transition-colors line-clamp-2">
                     {courseItem.name}
                   </h3>
-                </div>
 
-                <div className="p-5 space-y-2.5 text-xs text-slate-600 font-medium leading-relaxed divide-y divide-slate-100">
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-400 font-semibold uppercase text-[10px]">Carrera:</span>
-                    <span className="text-slate-800 font-extrabold uppercase text-[10.5px] truncate max-w-[180px]">
-                      {currentProgram?.name || "ELECTRICIDAD INDUSTRIAL"}
+                  {/* Professor / Mentor */}
+                  <div className="flex items-center gap-2 pt-0.5 text-slate-600">
+                    <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 shrink-0 font-bold text-[10px]">
+                      <GraduationCap className="w-3.5 h-3.5 text-slate-700" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-700 truncate">
+                      {courseItem.teacherName || "Docente Asignado por Carrera"}
                     </span>
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-400 font-semibold uppercase text-[10px]">Grupo:</span>
-                    <span className="text-slate-800 font-bold uppercase">{courseItem.group || "Grupo A"}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-400 font-semibold uppercase text-[10px]">Currícula:</span>
-                    <span className="text-slate-800 font-mono font-bold text-slate-550">{courseItem.curriculum || "Diseño Curricular 2026"}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-400 font-semibold uppercase text-[10px]">Aula / Taller:</span>
-                    <span className="text-slate-800 font-extrabold text-[#800521] truncate max-w-[180px]">
-                      {courseItem.classroom}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-400 font-semibold uppercase text-[10px]">Capacidad del grupo:</span>
-                    <span className="text-slate-850 font-bold">{courseItem.studentCount || 0} cupos</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-400 font-semibold uppercase text-[10px]">Horario:</span>
-                    <span className="text-slate-800 font-mono font-extrabold text-slate-700 truncate max-w-[180px]">
-                      {courseItem.schedule}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 text-[10px]">
-                    <span className="text-slate-400 font-bold uppercase">Promedio Estimado:</span>
-                    <span className="text-[#800521] font-black font-mono text-xs">{averageGrade} / 20</span>
                   </div>
                 </div>
 
-                <div className="p-5 pt-0">
+                {/* Course Metadata Pill Boxes */}
+                <div className="px-5 py-3 bg-slate-50/70 border-t border-b border-slate-100 space-y-2 text-left">
+                  <div className="flex items-start gap-2 text-xs">
+                    <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block leading-none">Horario de Clases</span>
+                      <span className="text-[11px] font-extrabold text-slate-800 leading-tight block mt-0.5">
+                        {courseItem.schedule}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2 text-xs">
+                    <MapPin className="w-3.5 h-3.5 text-[#800521] shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block leading-none">Ambiente / Taller</span>
+                      <span className="text-[11px] font-extrabold text-[#800521] leading-tight block mt-0.5">
+                        {courseItem.classroom}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[10px]">
+                    <span className="text-slate-500 font-bold flex items-center gap-1">
+                      <Users className="w-3 h-3 text-slate-400" />
+                      Grupo {courseItem.group || "EI-I-A"} • {courseItem.studentCount || 35} cupos
+                    </span>
+                    <span className="font-mono font-black text-slate-700 bg-white border border-slate-200 px-1.5 py-0.5 rounded">
+                      Nota: {averageGrade} / 20
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <div className="p-4 bg-white text-left">
                   <button
                     onClick={() => {
                       setSelectedCourseDetail(courseItem.name);
@@ -210,9 +304,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                       setSelectedClassWeek(1);
                       setSelectedClassWeekOption("materiales");
                     }}
-                    className="w-full bg-[#800521] hover:bg-[#9F062A] text-white py-2.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer font-bold select-none"
+                    className="w-full bg-[#800521] hover:bg-[#66041a] text-white py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group-hover:scale-[1.01]"
                   >
-                    Gestionar Curso <ChevronRight className="w-4 h-4" />
+                    <span>Ingresar al Aula Virtual</span>
+                    <ChevronRight className="w-4 h-4 text-amber-300 group-hover:translate-x-0.5 transition-transform" />
                   </button>
                 </div>
               </Card>
@@ -223,57 +318,327 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     );
   }
 
+  if (subComponents.length > 1 && !activeCourseComponentId) {
+    return (
+      <PageTransition id="classes-components-list" className="space-y-6 text-left font-sans">
+        {/* Banner Institucional del Curso */}
+        <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-8 overflow-hidden text-left border-b-4 border-amber-500">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/80 opacity-95" />
+          <div className="relative z-10 space-y-3 max-w-4xl">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-widest px-3 py-1 rounded-sm font-mono">
+                UNIDAD DIDÁCTICA • {activeCourse.code} • {activeCourse.credits || 4} CRÉDITOS
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedCourseDetail("")}
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer"
+              >
+                ← Volver a Mis Asignaturas
+              </button>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-black font-display tracking-tight leading-tight">
+              {activeCourse.name}
+            </h2>
+            <p className="text-xs text-slate-200 font-medium leading-relaxed max-w-2xl">
+              Selecciona a qué clase deseas ingresar para revisar materiales, asistencias y tareas:
+            </p>
+          </div>
+        </div>
+
+        {/* Grid de Tarjetas de Componentes */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {subComponents.map((comp) => (
+            <div
+              key={comp.id}
+              className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group hover:border-[#800521]/40"
+            >
+              <div>
+                {/* Header de la Tarjeta */}
+                <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                  <span className="font-mono text-xs font-black text-[#800521] bg-white border border-slate-200 px-2 py-0.5 rounded-md">
+                    {comp.code}
+                  </span>
+                  <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#800521]/10 text-[#800521] border border-[#800521]/20">
+                    {comp.badge}
+                  </span>
+                </div>
+
+                {/* Contenido Principal */}
+                <div className="p-5 space-y-4 text-left">
+                  <h3 className="text-base font-black text-slate-900 group-hover:text-[#800521] transition-colors leading-snug">
+                    {comp.name}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                    {comp.description}
+                  </p>
+
+                  <div className="space-y-2.5 pt-3 border-t border-slate-100 text-xs">
+                    <div className="flex items-start gap-2">
+                      <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-[9px] uppercase font-bold text-slate-400 block leading-none">Horario de Sesión</span>
+                        <span className="font-mono font-extrabold text-[#800521] text-[11px] block mt-0.5">{comp.schedule}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-[9px] uppercase font-bold text-slate-400 block leading-none">Ambiente / Laboratorio</span>
+                        <span className="font-extrabold text-slate-700 text-[11px] block mt-0.5">{comp.classroom}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <Users className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-[9px] uppercase font-bold text-slate-400 block leading-none">Docente Titular</span>
+                        <span className="font-extrabold text-slate-700 text-[11px] block mt-0.5">{comp.teacher}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botón de Entrada */}
+              <div className="p-5 pt-0 bg-white">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveCourseComponentId(comp.id);
+                    setActiveCourseSection("general");
+                    setSelectedClassWeek(1);
+                    setSelectedClassWeekOption("materiales");
+                  }}
+                  className="w-full bg-[#800521] hover:bg-[#66041a] text-white py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group-hover:scale-[1.01]"
+                >
+                  <span>Ingresar a {comp.shortLabel}</span>
+                  <ChevronRight className="w-4 h-4 text-amber-300 group-hover:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </PageTransition>
+    );
+  }
+
   const getMappedCourseId = (code: string) => {
-    if (code === "EE-101") return "cur-elec-1"; 
-    if (code === "EE-403") return "cur-elec-2"; 
-    if (code === "EE-502") return "cur-elec-3"; 
+    if (code === "EE-101" || code === "EIND-101") return "cur-elec-1"; 
+    if (code === "EE-403" || code === "EIND-102") return "cur-elec-2"; 
+    if (code === "EE-502" || code === "EIND-103") return "cur-elec-3"; 
     return code;
   };
 
   const activeCourseDbId = getMappedCourseId(activeCourse.code);
 
   const filteredDBMaterials = materials.filter(m => {
+    const weekMatches = m.title.includes(`[Semana ${selectedClassWeek}]`) || m.title.includes(`Semana ${selectedClassWeek}`);
+    if (!weekMatches) return false;
+    if (selectedComponent) {
+      return m.courseId === selectedComponent.dbCourseId ||
+             m.courseId === selectedComponent.code ||
+             (selectedComponent.id === "teo" && (m.courseId.includes("teo") || m.title.toLowerCase().includes("teor"))) ||
+             (selectedComponent.id === "tal" && (m.courseId.includes("tal") || m.title.toLowerCase().includes("taller"))) ||
+             (selectedComponent.id === "lab" && (m.courseId.includes("lab") || m.title.toLowerCase().includes("lab") || m.title.toLowerCase().includes("simula")));
+    }
     const courseMatches = activeCourse.attendanceCourseIds?.includes(m.courseId) || m.courseId === activeCourse.id || m.courseId === activeCourseDbId;
-    return courseMatches && (m.title.includes(`[Semana ${selectedClassWeek}]`) || m.title.includes(`Semana ${selectedClassWeek}`));
+    return courseMatches;
   });
 
   const filteredDBAssignments = assignments.filter(a => {
+    const weekMatches = a.kind !== "assessment" && (a.title.includes(`[Semana ${selectedClassWeek}]`) || a.title.includes(`Semana ${selectedClassWeek}`));
+    if (!weekMatches) return false;
+    if (selectedComponent) {
+      return a.courseId === selectedComponent.dbCourseId ||
+             a.courseId === selectedComponent.code ||
+             (selectedComponent.id === "teo" && (a.courseId.includes("teo") || a.title.toLowerCase().includes("teor"))) ||
+             (selectedComponent.id === "tal" && (a.courseId.includes("tal") || a.title.toLowerCase().includes("taller"))) ||
+             (selectedComponent.id === "lab" && (a.courseId.includes("lab") || a.title.toLowerCase().includes("lab") || a.title.toLowerCase().includes("simula")));
+    }
     const courseMatches = activeCourse.attendanceCourseIds?.includes(a.courseId) || a.courseId === activeCourse.id || a.courseId === activeCourseDbId;
-    return courseMatches && a.kind !== "assessment" && (a.title.includes(`[Semana ${selectedClassWeek}]`) || a.title.includes(`Semana ${selectedClassWeek}`));
+    return courseMatches;
   });
 
-  const handleSimulateHWUpload = (asgId: string, customFileName: string) => {
-    if (!customFileName.trim()) return;
-    
-    setSimulationHWFiles(prev => ({ ...prev, [asgId]: customFileName }));
-    
-    const updated = assignments.map(a => {
-      if (a.id === asgId) {
-        const existing = a.submissions || [];
-        const nextSubs = existing.filter(s => s.studentDni !== studentDni);
-        nextSubs.push({
-          studentDni: studentDni,
-          studentName: `${personalData.name} ${personalData.lastName}`,
-          fileName: customFileName,
-          submitDate: new Date().toISOString().split("T")[0]
-        });
-        return { ...a, submissions: nextSubs };
+  // Cálculo de puntualidad / antelación de entrega respecto a la fecha límite
+  const getSubmissionTiming = (submitDateStr?: string, dueDateStr?: string) => {
+    if (!submitDateStr || !dueDateStr) {
+      return { text: "Entregado a tiempo", isEarly: true, days: 0 };
+    }
+    try {
+      const due = new Date(dueDateStr + "T23:59:59");
+      const sub = new Date(submitDateStr);
+      if (isNaN(sub.getTime()) || isNaN(due.getTime())) {
+        return { text: "Entregado a tiempo", isEarly: true, days: 0 };
       }
-      return a;
-    });
-    onUpdateAssignments(updated);
-    setToastNotice({
-      id: Date.now(),
-      message: `Archivo "${customFileName}" subido exitosamente a la plataforma educativa como evidencia.`,
-      kind: "success",
-    });
+      const diffMs = due.getTime() - sub.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+      if (diffDays > 0) {
+        return {
+          text: `Entregado con ${diffDays} ${diffDays === 1 ? 'día' : 'días'}${diffHours > 0 ? ` y ${diffHours} h` : ''} de anticipación`,
+          isEarly: true,
+          days: diffDays
+        };
+      } else if (diffDays === 0 && diffHours >= 0) {
+        return {
+          text: `Entregado con ${diffHours} ${diffHours === 1 ? 'hora' : 'horas'} de anticipación`,
+          isEarly: true,
+          days: 0
+        };
+      } else {
+        const lateDays = Math.abs(diffDays);
+        return {
+          text: `Entregado con ${lateDays} ${lateDays === 1 ? 'día' : 'días'} de retraso`,
+          isEarly: false,
+          days: lateDays
+        };
+      }
+    } catch {
+      return { text: "Entregado a tiempo", isEarly: true, days: 0 };
+    }
+  };
+
+  const formatSubmissionDateTime = (isoDateStr?: string) => {
+    if (!isoDateStr) return "Fecha no registrada";
+    try {
+      const d = new Date(isoDateStr);
+      if (isNaN(d.getTime())) return isoDateStr;
+      return d.toLocaleString("es-PE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      });
+    } catch {
+      return isoDateStr;
+    }
+  };
+
+  const handleStudentSubmitTask = async (asgId: string) => {
+    const file = selectedTaskFiles[asgId];
+    const comment = taskComments[asgId] || "";
+    const targetAsg = assignments.find(a => a.id === asgId);
+    const prevSub = targetAsg?.submissions?.find(s => s.studentDni === studentDni);
+
+    if (!file && !prevSub?.fileName) {
+      setToastNotice({
+        id: Date.now(),
+        message: "Por favor seleccione un archivo en formato PDF o documento para su entrega.",
+        kind: "warning",
+      });
+      return;
+    }
+
+    setTaskSubmitting(prev => ({ ...prev, [asgId]: true }));
+    try {
+      let fileBase64Content = prevSub?.fileBase64 || "";
+      let fileName = prevSub?.fileName || "";
+      let mimeType = prevSub?.mimeType || "application/pdf";
+
+      if (file) {
+        if (file.size > 15 * 1024 * 1024) {
+          setToastNotice({
+            id: Date.now(),
+            message: "El archivo no debe exceder los 15 MB.",
+            kind: "warning",
+          });
+          return;
+        }
+        fileName = file.name;
+        mimeType = file.type || "application/pdf";
+        try {
+          fileBase64Content = await fileToBase64(file);
+        } catch {
+          setToastNotice({
+            id: Date.now(),
+            message: "No se pudo leer el archivo seleccionado.",
+            kind: "error",
+          });
+          return;
+        }
+      }
+
+      const nowIso = new Date().toISOString();
+      const updated = assignments.map(a => {
+        if (a.id === asgId) {
+          const existing = a.submissions || [];
+          const nextSubs = existing.filter(s => s.studentDni !== studentDni);
+          nextSubs.push({
+            studentDni: studentDni,
+            studentName: `${personalData.name} ${personalData.lastName}`,
+            fileName,
+            submitDate: nowIso,
+            comment: comment.trim() || prevSub?.comment || undefined,
+            fileBase64: fileBase64Content,
+            mimeType,
+            grade: prevSub?.grade,
+            feedback: prevSub?.feedback
+          });
+          return { ...a, submissions: nextSubs };
+        }
+        return a;
+      });
+
+      onUpdateAssignments(updated);
+      setSimulationHWFiles(prev => ({ ...prev, [asgId]: fileName }));
+      setEditingTaskSubmission(prev => ({ ...prev, [asgId]: false }));
+      setSelectedTaskFiles(prev => ({ ...prev, [asgId]: null }));
+
+      setToastNotice({
+        id: Date.now(),
+        message: `Tarea entregada exitosamente: "${fileName}".`,
+        kind: "success",
+      });
+    } finally {
+      setTaskSubmitting(prev => ({ ...prev, [asgId]: false }));
+    }
+  };
+
+  const handleDeleteStudentSubmission = () => {
+    if (!submissionToDelete) return;
+    setIsDeletingSubmission(true);
+    try {
+      const asgId = submissionToDelete.assignmentId;
+      const updated = assignments.map(a => {
+        if (a.id === asgId) {
+          const existing = a.submissions || [];
+          const nextSubs = existing.filter(s => s.studentDni !== studentDni);
+          return { ...a, submissions: nextSubs };
+        }
+        return a;
+      });
+      onUpdateAssignments(updated);
+      setSimulationHWFiles(prev => {
+        const next = { ...prev };
+        delete next[asgId];
+        return next;
+      });
+      setSelectedTaskFiles(prev => ({ ...prev, [asgId]: null }));
+      setTaskComments(prev => ({ ...prev, [asgId]: "" }));
+      setEditingTaskSubmission(prev => ({ ...prev, [asgId]: false }));
+      setToastNotice({
+        id: Date.now(),
+        message: "Entrega eliminada correctamente. Puede enviar un nuevo archivo.",
+        kind: "info",
+      });
+    } finally {
+      setIsDeletingSubmission(false);
+      setSubmissionToDelete(null);
+    }
   };
 
   const toggleWeekExpandedLocal = (wNum: number) => {
     setExpandedStudentWeeks(prev => ({ ...prev, [wNum]: !prev[wNum] }));
   };
 
-  const courseResourceIds = activeCourse.attendanceCourseIds || [activeCourse.id];
+  const courseResourceIds = selectedComponent?.dbCourseId
+    ? [selectedComponent.dbCourseId]
+    : (activeCourse.attendanceCourseIds || [activeCourse.id]);
   const courseGrades = assignments.filter((assignment) => courseResourceIds.includes(assignment.courseId))
     .flatMap((assignment) => assignment.submissions || [])
     .filter((submission) => submission.studentDni === studentDni && submission.grade !== undefined)
@@ -284,137 +649,178 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   const courseGradesCount = assignments.filter((assignment) => courseResourceIds.includes(assignment.courseId) && assignment.submissions?.some((submission) => submission.studentDni === studentDni && submission.grade !== undefined)).length;
 
   return (
-    <PageTransition id="classes-workspace" className="flex flex-col md:flex-row gap-6 items-start text-left">
-      {/* LEFT SUB-SIDEBAR: Estructura Académica */}
-      <aside className="w-full md:w-64 shrink-0 bg-white border border-slate-200 rounded-xl flex flex-col overflow-hidden select-none text-left">
-        <div className="p-4 border-b border-slate-200 bg-slate-50/50">
-          <span className="text-[9px] font-black text-[#8B0026] bg-red-50 border border-red-150 px-2 py-0.5 rounded-sm select-none block w-max uppercase tracking-widest font-mono">
-            Asignatura: {activeCourse.code}
-          </span>
-          <h3 className="text-xs font-black text-slate-900 tracking-tight block mt-1.5 truncate uppercase" title={activeCourse.name}>
-            {activeCourse.name}
-          </h3>
-          <p className="text-[9px] text-[#CFA020] font-bold tracking-wider uppercase block mt-1">
-            Estructura Académica
-          </p>
-        </div>
+    <PageTransition id="classes-workspace" className="flex flex-col md:flex-row gap-6 items-start text-left relative">
+      {/* 2. SUB-SIDEBAR DE ESTRUCTURA ACADÉMICA (SEMANAS) CON BOTÓN FLOTANTE */}
+      <div className={`shrink-0 relative z-20 transition-all duration-300 ease-in-out ${isStructureSidebarCollapsed ? "w-0 md:w-10" : "w-full md:w-64"}`}>
+        <div className={`w-full md:w-64 transition-opacity duration-200 overflow-hidden ${isStructureSidebarCollapsed ? "opacity-0 pointer-events-none md:w-0" : "opacity-100"}`}>
+          <aside className="w-full md:w-64 bg-[#FFFBFB] border border-rose-200/90 rounded-2xl flex flex-col overflow-hidden select-none text-left shadow-xs">
+            <div className="h-1 w-full bg-gradient-to-r from-[#800521] via-amber-500 to-[#800521]" />
+            <div className="p-4 border-b border-rose-100 bg-gradient-to-b from-rose-50/70 to-[#FFFBFB]">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-[9px] font-black text-[#8B0026] bg-red-50 border border-red-150 px-2 py-0.5 rounded-sm select-none block w-max uppercase tracking-widest font-mono">
+                  {selectedComponent ? selectedComponent.code : `Asignatura: ${activeCourse.code}`}
+                </span>
+                {selectedComponent && (
+                  <span className="text-[8.5px] font-black text-[#800521] bg-[#800521]/10 border border-[#800521]/20 px-1.5 py-0.5 rounded uppercase font-mono">
+                    {selectedComponent.shortLabel}
+                  </span>
+                )}
+              </div>
+              <h3 className="text-xs font-black text-slate-900 tracking-tight block mt-1.5 leading-snug break-words uppercase" title={selectedComponent ? selectedComponent.name : activeCourse.name}>
+                {selectedComponent ? selectedComponent.name : activeCourse.name}
+              </h3>
+              <p className="text-[9px] text-[#CFA020] font-bold tracking-wider uppercase block mt-1">
+                {selectedComponent ? selectedComponent.badge : "Estructura Académica"}
+              </p>
 
-        <div className="p-2 space-y-1 divide-y divide-slate-100/50 max-h-[500px] overflow-y-auto">
-          <div className="pb-1.5">
-            <button
-              onClick={() => setActiveCourseSection("general")}
-              className={`w-full py-2 px-2.5 rounded-lg transition-all text-[11px] font-black uppercase text-left flex items-center gap-2 cursor-pointer ${
-                activeCourseSection === "general"
-                  ? "bg-[#8B0026] text-white shadow-sm font-black"
-                  : "text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              <BookOpen className="w-3.5 h-3.5 shrink-0" />
-              <span className="tracking-wide">General (Resumen)</span>
-            </button>
-          </div>
+              {subComponents.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveCourseComponentId(null);
+                    setActiveCourseSection("general");
+                  }}
+                  className="mt-3 w-full bg-white hover:bg-slate-100 text-[#800521] border border-slate-200 hover:border-[#800521]/30 rounded-lg text-[9.5px] font-black py-2 px-2 flex items-center justify-center gap-1.5 uppercase transition-all shadow-2xs cursor-pointer"
+                >
+                  <span>← Cambiar Componente</span>
+                </button>
+              )}
+            </div>
 
-          <div className="py-1.5">
-            <button
-              onClick={() => setActiveCourseSection("horarios")}
-              className={`w-full py-2 px-2.5 rounded-lg transition-all text-[11px] font-black uppercase text-left flex items-center gap-2 cursor-pointer ${
-                activeCourseSection === "horarios"
-                  ? "bg-[#8B0026] text-white shadow-sm font-black"
-                  : "text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              <Clock className="w-3.5 h-3.5 shrink-0" />
-              <span className="tracking-wide">Horarios Lectivos</span>
-            </button>
-          </div>
+            <div className="p-2 space-y-1 divide-y divide-slate-100/50 max-h-[500px] overflow-y-auto custom-scrollbar">
+              <div className="pb-1.5">
+                <button
+                  onClick={() => setActiveCourseSection("general")}
+                  className={`w-full py-2 px-2.5 rounded-lg transition-all text-[11px] font-black uppercase text-left flex items-center gap-2 cursor-pointer ${
+                    activeCourseSection === "general"
+                      ? "bg-[#8B0026] text-white shadow-sm font-black"
+                      : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                  <span className="tracking-wide">General (Resumen)</span>
+                </button>
+              </div>
 
-          <div className="py-2 space-y-1">
-            <span className="text-[9.5px] text-slate-400 font-bold uppercase tracking-wider block px-2.5 pb-1">Desarrollo por Semanas</span>
-            
-            {Array.from({ length: COURSE_WEEKS }, (_, idx) => idx + 1).map((wNum) => {
-              const isExpanded = !!expandedStudentWeeks[wNum];
-              const isActiveWeek = activeCourseSection === "week" && selectedClassWeek === wNum;
-              return (
-                <div key={wNum} className="border-b border-slate-100 last:border-none">
-                  <button
-                    onClick={() => toggleWeekExpandedLocal(wNum)}
-                    className={`w-full py-2 px-2.5 flex items-center justify-between transition-colors text-left text-[10.5px] font-extrabold ${
-                      isActiveWeek
-                        ? "bg-[#8B0026]/5 text-[#8B0026]"
-                        : "text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    <span className="tracking-wide">SEMANA {wNum}</span>
-                    <span>
-                      {isExpanded ? (
-                        <ChevronDown className="w-3 h-3 text-slate-500" />
-                      ) : (
-                        <ChevronRight className="w-3 h-3 text-slate-400" />
+              <div className="py-1.5">
+                <button
+                  onClick={() => setActiveCourseSection("horarios")}
+                  className={`w-full py-2 px-2.5 rounded-lg transition-all text-[11px] font-black uppercase text-left flex items-center gap-2 cursor-pointer ${
+                    activeCourseSection === "horarios"
+                      ? "bg-[#8B0026] text-white shadow-sm font-black"
+                      : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <Clock className="w-3.5 h-3.5 shrink-0" />
+                  <span className="tracking-wide">Horarios Lectivos</span>
+                </button>
+              </div>
+
+              <div className="py-2 space-y-1">
+                <span className="text-[9.5px] text-slate-400 font-bold uppercase tracking-wider block px-2.5 pb-1">Desarrollo por Semanas</span>
+                
+                {Array.from({ length: COURSE_WEEKS }, (_, idx) => idx + 1).map((wNum) => {
+                  const isExpanded = !!expandedStudentWeeks[wNum];
+                  const isActiveWeek = activeCourseSection === "week" && selectedClassWeek === wNum;
+                  return (
+                    <div key={wNum} className="border-b border-slate-100 last:border-none">
+                      <button
+                        onClick={() => toggleWeekExpandedLocal(wNum)}
+                        className={`w-full py-2 px-2.5 flex items-center justify-between transition-colors text-left text-[10.5px] font-extrabold ${
+                          isActiveWeek
+                            ? "bg-[#8B0026]/5 text-[#8B0026]"
+                            : "text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        <span className="tracking-wide">SEMANA {wNum}</span>
+                        <span>
+                          {isExpanded ? (
+                            <ChevronDown className="w-3 h-3 text-slate-500" />
+                          ) : (
+                            <ChevronRight className="w-3 h-3 text-slate-400" />
+                          )}
+                        </span>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="py-1 pl-3.5 space-y-0.5">
+                          {[
+                            { id: "asistencia", label: "Asistencia", icon: <Users className="w-3 h-3" /> },
+                            { id: "materiales", label: "Materiales", icon: <Upload className="w-3 h-3" /> },
+                            { id: "tareas", label: "Tareas", icon: <Plus className="w-3 h-3" /> },
+                            { id: "evaluaciones", label: "Evaluaciones", icon: <Award className="w-3 h-3" /> },
+                            { id: "observaciones", label: "Observaciones", icon: <AlertCircle className="w-3 h-3" /> },
+                            { id: "evidencias", label: "Evidencias", icon: <FileText className="w-3 h-3" /> }
+                          ].map((opt) => {
+                            const isSubActive = isActiveWeek && selectedClassWeekOption === opt.id;
+                            return (
+                              <button
+                                key={opt.id}
+                                onClick={() => {
+                                  setActiveCourseSection("week");
+                                  setSelectedClassWeek(wNum);
+                                  setSelectedClassWeekOption(opt.id as any);
+                                }}
+                                className={`w-full text-left py-1.5 px-2 rounded-md transition-all flex items-center gap-2 cursor-pointer text-[10px] font-bold ${
+                                  isSubActive
+                                    ? "bg-[#8B0026]/10 text-[#8B0026] border-l-2 border-[#8B0026] font-black"
+                                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                                }`}
+                              >
+                                <span className={isSubActive ? "text-[#8B0026]" : "text-slate-400"}>{opt.icon}</span>
+                                <span>{opt.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       )}
-                    </span>
-                  </button>
-
-                  {isExpanded && (
-                    <div className="py-1 pl-3.5 space-y-0.5">
-                      {[
-                        { id: "asistencia", label: "Asistencia", icon: <Users className="w-3 h-3" /> },
-                        { id: "materiales", label: "Materiales", icon: <Upload className="w-3 h-3" /> },
-                        { id: "tareas", label: "Tareas", icon: <Plus className="w-3 h-3" /> },
-                        { id: "evaluaciones", label: "Evaluaciones", icon: <Award className="w-3 h-3" /> },
-                        { id: "observaciones", label: "Observaciones", icon: <AlertCircle className="w-3 h-3" /> },
-                        { id: "evidencias", label: "Evidencias", icon: <FileText className="w-3 h-3" /> }
-                      ].map((opt) => {
-                        const isSubActive = isActiveWeek && selectedClassWeekOption === opt.id;
-                        return (
-                          <button
-                            key={opt.id}
-                            onClick={() => {
-                              setActiveCourseSection("week");
-                              setSelectedClassWeek(wNum);
-                              setSelectedClassWeekOption(opt.id as any);
-                            }}
-                            className={`w-full text-left py-1.5 px-2 rounded-md transition-all flex items-center gap-2 cursor-pointer text-[10px] font-bold ${
-                              isSubActive
-                                ? "bg-[#8B0026]/10 text-[#8B0026] border-l-2 border-[#8B0026] font-black"
-                                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                            }`}
-                          >
-                            <span className={isSubActive ? "text-[#8B0026]" : "text-slate-400"}>{opt.icon}</span>
-                            <span>{opt.label}</span>
-                          </button>
-                        );
-                      })}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
 
-          <div className="py-1.5">
-            <button
-              onClick={() => setActiveCourseSection("cierre")}
-              className={`w-full py-2 px-2.5 rounded-lg transition-all text-[11px] font-black uppercase text-left flex items-center gap-2 cursor-pointer ${
-                activeCourseSection === "cierre"
-                  ? "bg-[#8B0026] text-white shadow-sm font-black"
-                  : "text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-              <span className="tracking-wide">Cierre del Curso</span>
-            </button>
-          </div>
+              <div className="py-1.5">
+                <button
+                  onClick={() => setActiveCourseSection("cierre")}
+                  className={`w-full py-2 px-2.5 rounded-lg transition-all text-[11px] font-black uppercase text-left flex items-center gap-2 cursor-pointer ${
+                    activeCourseSection === "cierre"
+                      ? "bg-[#8B0026] text-white shadow-sm font-black"
+                      : "text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span className="tracking-wide">Cierre del Curso</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-50 border-t border-slate-100">
+              <button
+                onClick={() => setSelectedCourseDetail("")}
+                className="w-full bg-slate-100 hover:bg-slate-200 text-[#800521] border border-slate-200/60 rounded-lg text-[10px] font-black py-2.5 flex items-center justify-center gap-1.5 select-none uppercase transition-all cursor-pointer"
+              >
+                ← Volver a Cursos
+              </button>
+            </div>
+          </aside>
         </div>
 
-        <div className="p-3 bg-slate-50 border-t border-slate-100">
-          <button
-            onClick={() => setSelectedCourseDetail("")}
-            className="w-full bg-slate-100 hover:bg-slate-200 text-[#800521] border border-slate-200/60 rounded-lg text-[10px] font-black py-2.5 flex items-center justify-center gap-1.5 select-none uppercase transition-all cursor-pointer"
-          >
-            ← Volver a Cursos
-          </button>
-        </div>
-      </aside>
+        {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (Blanco limpio con borde rosáceo) */}
+        <button
+          type="button"
+          onClick={() => setIsStructureSidebarCollapsed(!isStructureSidebarCollapsed)}
+          title={isStructureSidebarCollapsed ? "Expandir semanas del curso" : "Ocultar semanas del curso"}
+          className={`hidden md:flex absolute top-1/2 -translate-y-1/2 z-40 bg-white hover:bg-[#800521] text-[#800521] hover:text-white border border-rose-300 hover:border-[#800521] w-[26px] h-[26px] rounded-full items-center justify-center shadow-sm hover:shadow-md transition-all cursor-pointer hover:scale-110 active:scale-95 group ${
+            isStructureSidebarCollapsed ? "left-1" : "-right-[13px]"
+          }`}
+        >
+          {isStructureSidebarCollapsed ? (
+            <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+          ) : (
+            <ChevronLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
+          )}
+        </button>
+      </div>
 
       {/* RIGHT PANEL: Dynamic View Workspace */}
       <div className="flex-1 w-full space-y-6">
@@ -423,14 +829,30 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
             <div className="relative bg-[#800521] text-white rounded-xl shadow-md p-6 overflow-hidden text-left border-b-4 border-amber-500">
               <div className="absolute inset-0 bg-linear-gradient(to right,rgba(128,5,33,0.95),rgba(0,0,0,0.65))" />
               <div className="relative z-10 space-y-2">
-                <span className="bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-widest px-3 py-1 w-max select-none rounded-xs block font-mono">
-                  INTRANET ACADÉMICA • PORTAL ALUMNO
-                </span>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-widest px-3 py-1 w-max select-none rounded-xs block font-mono">
+                    {selectedComponent ? `${selectedComponent.code} • ${selectedComponent.badge}` : `INTRANET ACADÉMICA • ${activeCourse.code}`}
+                  </span>
+                  {subComponents.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveCourseComponentId(null);
+                        setActiveCourseSection("general");
+                      }}
+                      className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg px-3 py-1 text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>← Cambiar Componente</span>
+                    </button>
+                  )}
+                </div>
                 <h2 className="text-xl md:text-2xl font-black font-display tracking-tight leading-none pt-1">
-                  {activeCourse.name}
+                  {selectedComponent ? selectedComponent.name : activeCourse.name}
                 </h2>
                 <p className="text-xs text-slate-200 font-medium tracking-wide">
-                  Plan Curricular IESTP San Francisco de Asís • Ciclo Académico Regular
+                  {selectedComponent 
+                    ? `Ambiente: ${selectedComponent.classroom} • Horario: ${selectedComponent.schedule} • Docente: ${selectedComponent.teacher}`
+                    : `Plan Curricular IESTP San Francisco de Asís • Ciclo Académico Regular`}
                 </p>
               </div>
             </div>
@@ -463,22 +885,20 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               <div className="lg:col-span-8 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs text-left">
                 <div className="p-4 border-b border-slate-200 bg-slate-50/40">
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 font-display">
-                    FICHA TÉCNICA DE LA ASIGNATURA ASIGNADA
+                    {selectedComponent ? `FICHA TÉCNICA: ${selectedComponent.badge.toUpperCase()}` : "FICHA TÉCNICA DE LA ASIGNATURA"}
                   </h3>
                 </div>
                 <div className="p-4 divide-y divide-slate-100 text-xs text-slate-700 font-medium leading-relaxed">
                   {[
-                    { k: "Código del curso:", v: activeCourse.code },
-                    { k: "Nombre del curso:", v: activeCourse.name },
+                    { k: "Código de Unidad / Componente:", v: selectedComponent ? selectedComponent.code : activeCourse.code },
+                    { k: "Nombre oficial:", v: selectedComponent ? selectedComponent.name : activeCourse.name },
                     { k: "Carrera Profesional:", v: currentProgram?.name || "ELECTRICIDAD INDUSTRIAL" },
-                    { k: "Grupo Académico:", v: activeCourse.group || "Grupo A" },
-                    { k: "Malla / Diseño Curricular:", v: activeCourse.curriculum || "Diseño Curricular 2026" },
-                    { k: "Créditos Académicos:", v: `${activeCourse.credits} Créditos Oficiales` },
-                    { k: "Aula o Laboratorio:", v: activeCourse.classroom },
-                    { k: "Capacidad del grupo:", v: `${activeCourse.studentCount || 0} cupos` },
-                    { k: "Horario Lectivo Oficial:", v: activeCourse.schedule },
-                    { k: "Rango de Semestre:", v: "2026-04-06 / 2026-07-24 (Regular)" },
-                    { k: "Docente asignado:", v: activeCourse.teacherName || "Por asignar" }
+                    { k: "Modalidad formativa:", v: selectedComponent ? selectedComponent.badge : "Presencial Regular" },
+                    { k: "Créditos Académicos:", v: `${selectedComponent ? selectedComponent.credits : activeCourse.credits} Créditos Oficiales` },
+                    { k: "Ambiente / Taller:", v: selectedComponent ? selectedComponent.classroom : activeCourse.classroom },
+                    { k: "Horario Lectivo Oficial:", v: selectedComponent ? selectedComponent.schedule : activeCourse.schedule },
+                    { k: "Rango de Semestre:", v: activeCourse.dates || "2027-03-22 / 2027-07-30 (Regular)" },
+                    { k: "Docente Titular:", v: selectedComponent ? selectedComponent.teacher : (activeCourse.teacherName || "Manuel Ramos Salazar") }
                   ].map((row, rIdx) => (
                     <div key={rIdx} className="flex justify-between py-2.5">
                       <span className="text-slate-400 font-bold uppercase text-[10px]">{row.k}</span>
@@ -515,7 +935,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           <div className="space-y-6">
             <PageHeader
               title="Horarios Lectivos Oficiales"
-              subtitle="Distribución horaria presencial programada para el semestre en vigor."
+              subtitle={selectedComponent ? `Programación horaria para: ${selectedComponent.name}` : "Distribución horaria presencial programada para el semestre en vigor."}
               icon={<Clock className="w-5 h-5 text-[#8B0026]" />}
             />
             
@@ -523,25 +943,39 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               <Card className="border border-slate-200">
                 <CardHeader className="flex flex-row items-center justify-between border-b pb-4 bg-slate-50/40">
                   <div>
-                    <span className="text-[10px] text-amber-600 font-black uppercase block font-mono">Sesión Programada</span>
-                    <CardTitle className="uppercase text-slate-800 text-sm mt-1">Clase Teórica - Práctica</CardTitle>
+                    <span className="text-[10px] text-amber-600 font-black uppercase block font-mono">
+                      {selectedComponent ? selectedComponent.badge : "Sesión Programada"}
+                    </span>
+                    <CardTitle className="uppercase text-slate-800 text-sm mt-1">
+                      {selectedComponent ? selectedComponent.shortLabel : "Clase Teórica - Práctica"}
+                    </CardTitle>
                   </div>
                   <span className="px-2.5 py-1 bg-[#8B0026]/10 text-[#8B0026] border border-[#8B0026]/20 font-black text-[9px] uppercase rounded-sm">
-                    {activeCourse.schedule.split(" ")[0]}
+                    {selectedComponent ? selectedComponent.schedule.split(" ")[0] : activeCourse.schedule.split(" ")[0]}
                   </span>
                 </CardHeader>
                 <CardContent className="p-5 space-y-3.5 text-xs text-slate-600 font-bold leading-normal">
                   <div className="flex justify-between border-b pb-1.5">
                     <span className="text-slate-400 font-semibold">Horario Establecido:</span>
-                    <span className="text-slate-900 font-mono font-extrabold">{activeCourse.schedule.substring(activeCourse.schedule.indexOf(" ") + 1)}</span>
+                    <span className="text-slate-900 font-mono font-extrabold">
+                      {selectedComponent ? selectedComponent.schedule : activeCourse.schedule}
+                    </span>
                   </div>
                   <div className="flex justify-between border-b pb-1.5">
                     <span className="text-slate-400 font-semibold">Aula / Laboratorio:</span>
-                    <span className="text-[#8B0026] uppercase font-extrabold">{activeCourse.classroom}</span>
+                    <span className="text-[#8B0026] uppercase font-extrabold">
+                      {selectedComponent ? selectedComponent.classroom : activeCourse.classroom}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b pb-1.5">
+                    <span className="text-slate-400 font-semibold">Docente Titular:</span>
+                    <span className="text-slate-900 uppercase font-extrabold">
+                      {selectedComponent ? selectedComponent.teacher : (activeCourse.teacherName || "Manuel Ramos Salazar")}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400 font-semibold">Frecuencia de Repetición:</span>
-                    <span className="text-slate-900 uppercase font-black tracking-wide text-[10.5px]">Semanal síncrono</span>
+                    <span className="text-slate-900 uppercase font-black tracking-wide text-[10.5px]">Semanal síncrono presencial</span>
                   </div>
                 </CardContent>
               </Card>
@@ -566,9 +1000,9 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               <CardContent className="p-5 space-y-4">
                 {(() => {
                   const numAverage = averageGrade !== "NR" ? parseFloat(averageGrade) : null;
-                  const courseStatus = numAverage === null ? "En Curso" : numAverage >= 12.5 ? "Aprobado" : "Desaprobado";
-                  const statusBg = courseStatus === "Aprobado" ? "bg-emerald-50 text-emerald-950 border-emerald-100" : courseStatus === "En Curso" ? "bg-blue-50 text-blue-950 border-blue-100" : "bg-red-50 text-red-950 border-red-100";
-                  const statusLabelColor = courseStatus === "Aprobado" ? "text-emerald-800" : courseStatus === "En Curso" ? "text-blue-800" : "text-red-800";
+                  const courseStatus = numAverage === null ? "Matriculado" : numAverage >= 12.5 ? "Aprobado" : "Desaprobado";
+                  const statusBg = courseStatus === "Aprobado" ? "bg-purple-50 text-purple-900 border-purple-200" : courseStatus === "Matriculado" ? "bg-emerald-50 text-emerald-900 border-emerald-200" : "bg-red-50 text-red-950 border-red-100";
+                  const statusLabelColor = courseStatus === "Aprobado" ? "text-purple-700" : courseStatus === "Matriculado" ? "text-emerald-700" : "text-red-800";
 
                   return (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -634,30 +1068,149 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           const weekTheme = getLocalWeekTheme(activeCourse.code, selectedClassWeek);
           return (
             <div className="space-y-6">
-              <div className="p-4 bg-white border border-slate-200 rounded-xl text-left font-sans flex items-start gap-4">
-                <div className="h-10 w-10 bg-[#8B0026]/10 text-[#8B0026] border border-red-150 rounded-xl flex items-center justify-center font-black text-sm shrink-0">
-                  S{selectedClassWeek}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-extrabold text-slate-900 text-sm leading-tight uppercase">
-                    Tema: {weekTheme.topic}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 font-semibold block mt-1">
-                    {weekTheme.desc}
-                  </p>
+              {/* Themed Week Header Banner (Idéntico estilo institucional que Docente) */}
+              <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 overflow-hidden text-left border-b-4 border-amber-500">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521] to-slate-950/85 opacity-95" />
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-amber-400 text-slate-950 rounded-2xl flex flex-col items-center justify-center font-black shrink-0 shadow-md">
+                      <span className="text-[9px] uppercase font-mono tracking-tighter leading-none">SEMANA</span>
+                      <span className="text-2xl leading-none font-display">{selectedClassWeek}</span>
+                    </div>
+                    <div className="space-y-1 min-w-0">
+                      <span className="bg-white/20 text-amber-300 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm inline-block select-none font-mono">
+                        {selectedComponent ? selectedComponent.code : activeCourse.code} • {selectedClassWeekOption.toUpperCase()}
+                      </span>
+                      <h2 className="text-lg md:text-xl font-black text-white tracking-tight uppercase leading-snug break-words">
+                        {weekTheme.topic}
+                      </h2>
+                      <p className="text-xs text-white/90 font-medium font-mono leading-relaxed break-words">
+                        {weekTheme.desc}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] font-mono font-bold bg-black/30 border border-white/20 px-3 py-1.5 rounded-xl uppercase text-amber-300">
+                      Periodo 2027-I
+                    </span>
+                  </div>
                 </div>
               </div>
 
               <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
                 {selectedClassWeekOption === "asistencia" && (() => {
-                  if (attendanceLoading) return <p role="status">Cargando asistencias...</p>;
-                  if (attendanceError) return <p role="alert" className="text-red-700">{attendanceError}</p>;
-                  const records = studentAttendanceRecords(attendance, activeCourse.attendanceCourseIds || [activeCourse.id, activeCourse.code], studentDni).filter((record) => record.week === selectedClassWeek);
-                  return <div className="space-y-3 text-sm">
-                    <p className="font-bold">Asistencia registrada de la semana {selectedClassWeek}</p>
-                    {records.length ? records.map((record) => <div key={record.id} className="flex justify-between border rounded-lg p-3"><span>{record.date}</span><span>{record.statusMap[studentDni]}</span></div>)
-                      : <p>No hay registros vinculados a esta semana. Consulta el resumen de Asistencia para los registros diarios sin semana asignada.</p>}
-                  </div>;
+                  if (attendanceLoading) return <p role="status" className="p-4 text-xs font-bold text-slate-500">Cargando registros de asistencia...</p>;
+                  if (attendanceError) return <p role="alert" className="p-4 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">{attendanceError}</p>;
+                  
+                  const targetCourseIds = selectedComponent
+                    ? [selectedComponent.dbCourseId, selectedComponent.code, selectedComponent.id]
+                    : (activeCourse.attendanceCourseIds || [activeCourse.id, activeCourse.code, activeCourseDbId]);
+
+                  const records = (attendance || []).filter((record) => {
+                    if (record.week !== selectedClassWeek) return false;
+                    const cId = record.courseId || "";
+                    const matchCourse = targetCourseIds.includes(cId) ||
+                      (selectedComponent?.dbCourseId && cId === selectedComponent.dbCourseId) ||
+                      (selectedComponent?.code && cId === selectedComponent.code) ||
+                      (selectedComponent?.id === "teo" && (cId.toLowerCase().includes("teo") || (record as any).sessionType === "Teoría")) ||
+                      (selectedComponent?.id === "tal" && (cId.toLowerCase().includes("tal") || (record as any).sessionType === "Taller")) ||
+                      (selectedComponent?.id === "lab" && (cId.toLowerCase().includes("lab") || (record as any).sessionType === "Laboratorio"));
+                    
+                    if (!matchCourse) return false;
+                    return record.statusMap && record.statusMap[studentDni] !== undefined;
+                  });
+
+                  const formatSessionDate = (rawDate: string) => {
+                    if (!rawDate) return "Fecha no especificada";
+                    const parts = rawDate.split("-");
+                    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    return rawDate;
+                  };
+
+                  return (
+                    <div className="space-y-4 text-left font-sans">
+                      {/* Institutional Section Header Box (Same as Docente) */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-red-50 text-[#800521] border border-red-200 flex items-center justify-center font-black shrink-0">
+                            <Users className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-black uppercase text-slate-900 tracking-tight">
+                              Semana {selectedClassWeek}: Control Diario de Asistencia
+                            </h3>
+                            <p className="text-xs text-slate-500 font-medium">
+                              {selectedComponent ? `${selectedComponent.classroom} • ${selectedComponent.schedule} • Docente: ${selectedComponent.teacher}` : "Historial de sesiones dictadas y control de puntualidad."}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full text-xs font-black font-mono shrink-0">
+                          {records.length} {records.length === 1 ? "Sesión Registrada" : "Sesiones Registradas"}
+                        </span>
+                      </div>
+
+                      {records.length > 0 ? (
+                        <div className="space-y-3">
+                          {records.map((record) => {
+                            const status = record.statusMap[studentDni] || "Sin registrar";
+                            let badgeClass = "bg-slate-100 text-slate-650 border-slate-200";
+                            let statusIcon = <Clock className="w-4 h-4 text-slate-400" />;
+                            if (status === "Presente") {
+                              badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                              statusIcon = <CheckCircle2 className="w-4 h-4 text-emerald-600" />;
+                            } else if (status === "Tardanza") {
+                              badgeClass = "bg-amber-50 text-amber-700 border-amber-200";
+                              statusIcon = <Clock className="w-4 h-4 text-amber-600" />;
+                            } else if (status === "Falta") {
+                              badgeClass = "bg-rose-50 text-rose-700 border-rose-200";
+                              statusIcon = <AlertCircle className="w-4 h-4 text-rose-600" />;
+                            } else if (status === "Justificado") {
+                              badgeClass = "bg-blue-50 text-blue-700 border-blue-200";
+                              statusIcon = <CheckCircle className="w-4 h-4 text-blue-600" />;
+                            }
+
+                            return (
+                              <div key={record.id || (record as any)._id} className="p-4 bg-white border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs hover:border-[#800521]/30 transition-all">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-[#800521] shrink-0 font-mono">
+                                    <Calendar className="w-5 h-5" />
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-sm font-black text-slate-900">
+                                        Fecha: {formatSessionDate(record.date)}
+                                      </span>
+                                      <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 font-mono">
+                                        {selectedComponent ? selectedComponent.badge : "Dictado Regular"}
+                                      </span>
+                                    </div>
+                                    <span className="text-xs text-slate-500 font-medium block mt-0.5">
+                                      {selectedComponent ? `${selectedComponent.classroom} • Horario: ${selectedComponent.schedule} • Docente: ${selectedComponent.teacher}` : activeCourse.schedule}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 self-end sm:self-center">
+                                  <span className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase font-mono border flex items-center gap-1.5 ${badgeClass}`}>
+                                    {statusIcon}
+                                    <span>{status}</span>
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="p-10 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center space-y-2">
+                          <Clock className="w-8 h-8 text-slate-300" />
+                          <p className="text-xs font-black text-slate-700 uppercase tracking-tight">No hay sesiones registradas en esta semana</p>
+                          <p className="text-xs text-slate-400 font-medium max-w-sm">
+                            El docente registrará la lista al momento de iniciar las horas lectivas presenciales.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
                 })()}
 
                 {selectedClassWeekOption === "materiales" && (() => {
@@ -725,100 +1278,388 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                     );
                   }
                   return (
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                       {asgs.map((asg: any) => {
                         const prevSub = asg.submissions?.find((s: any) => s.studentDni === studentDni);
                         const hasSubmitted = !!simulationHWFiles[asg.id] || !!prevSub;
                         const currentFileName = simulationHWFiles[asg.id] || prevSub?.fileName || "";
-                        const submissionDate = prevSub?.submitDate || new Date().toISOString().split("T")[0];
+                        const submissionDate = prevSub?.submitDate || new Date().toISOString();
                         const isGraded = prevSub?.grade !== undefined;
-                        
+                        const isEditingThis = !!editingTaskSubmission[asg.id];
+                        const timing = getSubmissionTiming(prevSub?.submitDate, asg.dueDate);
+
+                        const guideFileName = asg.attachmentName || asg.attachment;
+                        const guideUrl = asg.contentBase64 
+                          ? `data:${asg.mimeType || 'application/pdf'};base64,${asg.contentBase64}` 
+                          : courseFileUrl('assignments', asg.id);
+
+                        const studentFileUrl = prevSub?.fileBase64 
+                          ? `data:${prevSub.mimeType || 'application/pdf'};base64,${prevSub.fileBase64}`
+                          : '#';
+
+                        const cleanDisplayTitle = asg.title.replace(/^\[Semana\s*\d+\]\s*/i, "").trim();
+
                         return (
-                          <div key={asg.id} className="border border-slate-200 rounded-xl p-4 space-y-4 bg-white shadow-xs">
-                            <div className="space-y-1">
-                              <span className="text-[9px] bg-red-100 text-[#8B0026] border border-red-200 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
-                                Tarea Programada
-                              </span>
-                              <h4 className="text-xs font-black text-slate-850 pt-1">{asg.title}</h4>
-                              <p className="text-[11px] text-slate-550 font-medium leading-relaxed font-sans">{asg.description}</p>
+                          <div key={asg.id} className="border border-slate-200 rounded-2xl p-5 space-y-4 bg-white shadow-3xs text-left">
+                            {/* Cabecera de la Tarea */}
+                            <div className="space-y-1.5">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-[10px] bg-[#800521]/10 text-[#800521] border border-[#800521]/20 px-2.5 py-0.5 rounded-full font-black uppercase font-mono tracking-wider">
+                                  Semana {selectedClassWeek} • Tarea Programada
+                                </span>
+                                <span className="text-[10.5px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-md border border-slate-200 flex items-center gap-1 font-mono">
+                                  <Calendar className="w-3.5 h-3.5 text-amber-700" />
+                                  Límite: <strong className="text-slate-800">{asg.dueDate}</strong>
+                                </span>
+                              </div>
+                              <h4 className="text-sm font-black text-slate-900 pt-0.5" title={asg.title}>
+                                {cleanDisplayTitle || asg.title}
+                              </h4>
+                              <p className="text-xs text-slate-600 font-medium leading-relaxed font-sans">
+                                {asg.description}
+                              </p>
                             </div>
 
-                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 text-[10px] font-bold text-slate-600 space-y-1.5 font-sans">
-                              <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" /> <span className="text-slate-400">Fecha Límite:</span> <span className="text-slate-800 font-extrabold">{asg.dueDate}</span></div>
-                              {asg.rubric && <div className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5 text-amber-500 shrink-0" /> <span className="text-slate-400">Rúbrica de Evaluación:</span> <span className="text-slate-800 font-black">{asg.rubric}</span></div>}
-                              {asg.attachment && <div className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" /> <span className="text-slate-400">Guía de Apoyo:</span> {asg.storedFileName ? <a href={courseFileUrl('assignments', asg.id)} className="text-blue-600 underline font-mono">{asg.attachment}</a> : <span className="text-slate-500 font-mono">{asg.attachment} (no disponible)</span>}</div>}
-                            </div>
+                            {/* Rúbrica y Criterios */}
+                            {asg.rubric && (
+                              <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 flex items-start gap-2.5 text-xs">
+                                <Award className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                                <div className="space-y-0.5">
+                                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-800 block">
+                                    Criterios de Evaluación y Rúbrica
+                                  </span>
+                                  <p className="text-xs font-bold text-amber-950 font-sans leading-relaxed">
+                                    {asg.rubric}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
 
-                            <div className="pt-2 border-t border-slate-100 space-y-3">
-                              <span className="text-[9.5px] text-slate-450 font-black uppercase tracking-wider block">Estado del Envío:</span>
-                              
-                              {hasSubmitted ? (
-                                <div className="p-3 bg-emerald-50 border border-emerald-150 text-emerald-900 rounded-lg space-y-1.5 font-sans">
-                                  <div className="flex items-center gap-2 font-black text-xs">
-                                    <CheckCircle className="w-4 h-4 text-emerald-600" />
-                                    <span>¡TAREA ENVIADA EXITOSAMENTE!</span>
+                            {/* Guía de Apoyo Adjunta Oficial con diseño institucional */}
+                            {guideFileName && (
+                              <div className="bg-slate-50 hover:bg-slate-50/90 border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 transition-colors">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-10 h-10 rounded-xl bg-red-50 text-[#800521] border border-red-200 flex items-center justify-center shrink-0 shadow-3xs">
+                                    <FileText className="w-5 h-5" />
                                   </div>
-                                  <p className="text-[10px] text-emerald-800 font-bold">
-                                    Archivo de entrega: <span className="font-mono text-emerald-950 font-black underline">{currentFileName}</span>
-                                  </p>
-                                  <p className="text-[9px] text-emerald-650 font-semibold">
-                                    Fecha de envío registrado: {submissionDate}
-                                  </p>
+                                  <div className="min-w-0 text-left">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block font-mono">
+                                      Guía de Apoyo del Docente
+                                    </span>
+                                    <span className="text-xs font-bold text-slate-800 block truncate max-w-xs sm:max-w-md font-mono" title={guideFileName}>
+                                      {guideFileName}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPdfModal({
+                                        url: guideUrl,
+                                        title: "Guía de Apoyo Oficial de Taller",
+                                        fileName: guideFileName
+                                      });
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-[#800521] border border-slate-200 rounded-xl text-xs font-bold shadow-3xs transition-all cursor-pointer active:scale-95"
+                                    title="Ver guía en visor modal oficial"
+                                  >
+                                    <Eye className="w-3.5 h-3.5 text-[#800521]" />
+                                    <span>Ver Guía</span>
+                                  </button>
+
+                                  <a
+                                    href={guideUrl}
+                                    download={guideFileName}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#800521] hover:bg-[#66041a] text-white rounded-xl text-xs font-bold shadow-3xs transition-all cursor-pointer active:scale-95"
+                                    title="Descargar guía de apoyo"
+                                  >
+                                    <Download className="w-3.5 h-3.5 text-amber-300" />
+                                    <span>Descargar</span>
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* SECCIÓN DEL ESTADO DEL ENVÍO DEL ESTUDIANTE */}
+                            <div className="pt-3 border-t border-slate-150 space-y-3">
+                              <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">
+                                Estado de la Entrega:
+                              </span>
+
+                              {hasSubmitted && !isEditingThis ? (
+                                <div className="p-4 sm:p-5 bg-emerald-50/70 border border-emerald-200/90 rounded-2xl space-y-4 font-sans text-left">
+                                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200/60 pb-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="bg-emerald-600 text-white font-black text-[10px] uppercase tracking-wider px-3 py-1 rounded-full shadow-3xs flex items-center gap-1.5">
+                                        <CheckCircle className="w-3.5 h-3.5" />
+                                        Entregado para Calificar
+                                      </span>
+                                    </div>
+
+                                    {/* Indicador de Antelación / Puntualidad */}
+                                    <div className={`px-2.5 py-1 rounded-lg text-xs font-bold border flex items-center gap-1.5 font-mono ${
+                                      timing.isEarly 
+                                        ? "bg-emerald-100 text-emerald-900 border-emerald-300" 
+                                        : "bg-amber-100 text-amber-900 border-amber-300"
+                                    }`}>
+                                      <Clock className="w-3.5 h-3.5" />
+                                      <span>{timing.text}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Archivo entregado con acciones */}
+                                  <div className="bg-white rounded-xl border border-emerald-200 p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-3xs">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center justify-center shrink-0">
+                                        <FileText className="w-5 h-5" />
+                                      </div>
+                                      <div className="min-w-0 text-left">
+                                        <span className="text-xs font-black text-slate-900 block truncate font-mono" title={currentFileName}>
+                                          {currentFileName}
+                                        </span>
+                                        <span className="text-[10.5px] text-slate-400 font-semibold block">
+                                          Registrado el: {formatSubmissionDateTime(submissionDate)}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      {prevSub?.fileBase64 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setPdfModal({
+                                              url: studentFileUrl,
+                                              title: "Informe Entregado por el Alumno",
+                                              fileName: currentFileName
+                                            });
+                                          }}
+                                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                                          title="Ver mi informe en visor modal"
+                                        >
+                                          <Eye className="w-3.5 h-3.5 text-slate-600" />
+                                          <span>Ver Mi Archivo</span>
+                                        </button>
+                                      )}
+
+                                      {prevSub?.fileBase64 && (
+                                        <a
+                                          href={studentFileUrl}
+                                          download={currentFileName}
+                                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-3xs"
+                                          title="Descargar mi archivo"
+                                        >
+                                          <Download className="w-3.5 h-3.5" />
+                                          <span>Descargar</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Comentario del Alumno */}
+                                  {prevSub?.comment && (
+                                    <div className="bg-white/80 border border-emerald-200/70 rounded-xl p-3 space-y-1">
+                                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-emerald-800 tracking-wider">
+                                        <MessageSquare className="w-3.5 h-3.5" />
+                                        <span>Comentario de entrega del estudiante:</span>
+                                      </div>
+                                      <p className="text-xs text-slate-700 italic font-medium leading-relaxed pl-5">
+                                        "{prevSub.comment}"
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {/* Calificación y Retroalimentación si ya fue calificada */}
                                   {isGraded ? (
-                                    <div className="mt-2 bg-white border border-emerald-200 p-2.5 rounded-md space-y-1 text-slate-800">
-                                      <div className="text-[10px] font-black text-slate-450 uppercase font-mono">Nota del Docente:</div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-lg font-black font-mono text-[#800521]">{prevSub.grade} / 20</span>
-                                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 py-0.5 px-2 rounded">Calificado</span>
+                                    <div className="bg-white border-2 border-emerald-300 rounded-xl p-4 space-y-2 text-left shadow-xs">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">
+                                          Calificación Oficial del Docente
+                                        </span>
+                                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                          Registrado en Acta
+                                        </span>
+                                      </div>
+                                      <div className="flex items-baseline gap-2">
+                                        <span className="text-2xl font-black font-mono text-[#800521]">
+                                          {prevSub.grade}
+                                        </span>
+                                        <span className="text-xs font-bold text-slate-400 font-mono">/ 20 Puntos</span>
                                       </div>
                                       {prevSub.feedback && (
-                                        <p className="text-[10.5px] text-slate-600 italic font-medium leading-normal mt-1">
-                                          "{prevSub.feedback}"
-                                        </p>
+                                        <div className="pt-2 border-t border-slate-100 space-y-1">
+                                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                                            Retroalimentación Pedagógica:
+                                          </span>
+                                          <p className="text-xs text-slate-700 font-medium leading-relaxed italic bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                            "{prevSub.feedback}"
+                                          </p>
+                                        </div>
                                       )}
                                     </div>
                                   ) : (
-                                    <span className="inline-block mt-1 bg-yellow-400 text-slate-900 py-0.5 px-2 rounded-sm text-[9px] font-black uppercase">
-                                      Esperando Calificación del Docente
-                                    </span>
+                                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                                      <div className="flex items-center gap-2">
+                                        <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                                        <span className="text-xs font-bold text-amber-800">
+                                          Esperando revisión y calificación del docente
+                                        </span>
+                                      </div>
+
+                                      {/* Botones para Editar y Eliminar Entrega */}
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingTaskSubmission(prev => ({ ...prev, [asg.id]: true }));
+                                            if (prevSub?.comment) {
+                                              setTaskComments(prev => ({ ...prev, [asg.id]: prevSub.comment }));
+                                            }
+                                          }}
+                                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold shadow-3xs transition-all cursor-pointer"
+                                          title="Modificar entrega de archivo o comentario"
+                                        >
+                                          <Pencil className="w-3.5 h-3.5 text-slate-500" />
+                                          <span>Editar Entrega</span>
+                                        </button>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setSubmissionToDelete({
+                                              assignmentId: asg.id,
+                                              assignmentTitle: asg.title
+                                            });
+                                          }}
+                                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold shadow-3xs transition-all cursor-pointer"
+                                          title="Eliminar entrega para volver a subirla"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                          <span>Eliminar</span>
+                                        </button>
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
                               ) : (
-                                <div className="p-3.5 bg-slate-50 border border-slate-200 border-dashed rounded-lg text-xs font-sans space-y-3">
-                                  <p className="text-slate-500 font-bold text-[11px] text-center">
-                                    Arrastre su archivo corregido aquí, o ingrese el nombre del entregable para sincronizar:
-                                  </p>
-                                  <div className="flex gap-2">
+                                /* FORMULARIO DE ENVÍO DE TAREA */
+                                <div className="p-4 sm:p-5 bg-slate-50/70 border-2 border-dashed border-slate-200 rounded-2xl space-y-4 font-sans text-left">
+                                  <div className="space-y-1">
+                                    <h5 className="text-xs font-black text-slate-800 uppercase tracking-tight">
+                                      {isEditingThis ? "Editar Entrega de Tarea" : "Cargar Entrega de Tarea"}
+                                    </h5>
+                                    <p className="text-[11px] text-slate-500 font-medium">
+                                      Adjunte su informe técnico en PDF, hojas de cálculo o esquemas solicitados en la rúbrica.
+                                    </p>
+                                  </div>
+
+                                  {/* Selector de Archivo */}
+                                  <div>
+                                    {!selectedTaskFiles[asg.id] ? (
+                                      <label
+                                        htmlFor={`hw-file-input-${asg.id}`}
+                                        className="w-full border-2 border-dashed border-slate-300 hover:border-[#800521] bg-white hover:bg-rose-50/20 rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group block"
+                                      >
+                                        <div className="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-red-50 text-slate-500 group-hover:text-[#800521] flex items-center justify-center transition-colors">
+                                          <Upload className="w-5 h-5" />
+                                        </div>
+                                        <div className="space-y-0.5">
+                                          <span className="text-xs font-bold text-slate-700 group-hover:text-[#800521] block">
+                                            Haga clic para seleccionar o arrastre su archivo aquí
+                                          </span>
+                                          <span className="text-[10px] text-slate-400 font-semibold block">
+                                            Formatos soportados: PDF, Word, Excel, esquemas CAD (Máx. 15 MB)
+                                          </span>
+                                        </div>
+                                      </label>
+                                    ) : (
+                                      <div className="w-full bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between gap-3 shadow-3xs">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                          <div className="w-9 h-9 rounded-lg bg-red-50 text-[#800521] border border-red-200 flex items-center justify-center shrink-0">
+                                            <FileText className="w-5 h-5" />
+                                          </div>
+                                          <div className="min-w-0 text-left">
+                                            <span className="text-xs font-black text-slate-900 block truncate font-mono">
+                                              {selectedTaskFiles[asg.id]?.name}
+                                            </span>
+                                            <span className="text-[10px] text-slate-400 font-semibold block">
+                                              {((selectedTaskFiles[asg.id]?.size || 0) / 1024).toFixed(1)} KB • Archivo listo para enviar
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedTaskFiles(prev => ({ ...prev, [asg.id]: null }))}
+                                          className="p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                          title="Cambiar archivo"
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    )}
+
                                     <input
-                                      type="text"
-                                      id={`hw-filename-input-${asg.id}`}
-                                      placeholder="Ej: informe_semana3_castillo.pdf"
-                                      className="bg-white border rounded h-10 px-2.5 py-1.5 font-mono text-slate-800 flex-1 text-xs focus:ring-1 focus:ring-[#800521] focus:outline-none"
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          const input = document.getElementById(`hw-filename-input-${asg.id}`) as HTMLInputElement;
-                                          if (input && input.value.trim()) {
-                                            handleSimulateHWUpload(asg.id, input.value);
-                                          }
+                                      type="file"
+                                      id={`hw-file-input-${asg.id}`}
+                                      accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0] || null;
+                                        if (file) {
+                                          setSelectedTaskFiles(prev => ({ ...prev, [asg.id]: file }));
                                         }
                                       }}
+                                      className="hidden"
                                     />
-                                    <button
-                                      onClick={() => {
-                                        const input = document.getElementById(`hw-filename-input-${asg.id}`) as HTMLInputElement;
-                                        if (input && input.value.trim()) {
-                                          handleSimulateHWUpload(asg.id, input.value);
-                                        } else {
-                                          setToastNotice({
-                                            id: Date.now(),
-                                            message: "Por favor digite un nombre de archivo válido.",
-                                            kind: "warning",
-                                          });
-                                        }
+                                  </div>
+
+                                  {/* Comentario opcional para el docente */}
+                                  <div>
+                                    <label className="block text-[10px] font-black uppercase text-slate-500 mb-1.5 tracking-wider">
+                                      Comentarios o notas de entrega para el docente (opcional):
+                                    </label>
+                                    <textarea
+                                      rows={2}
+                                      value={taskComments[asg.id] || ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setTaskComments(prev => ({ ...prev, [asg.id]: val }));
                                       }}
-                                      className="bg-[#800521] hover:bg-[#9F062A] text-white h-10 px-4 rounded text-[10.5px] font-black uppercase cursor-pointer select-none"
+                                      placeholder="Ej: Profesor, adjunto el informe con los esquemas de Proteus y los cálculos revisados según la guía."
+                                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-[#800521] transition-all resize-none placeholder:text-slate-400"
+                                    />
+                                  </div>
+
+                                  {/* Botones de acción */}
+                                  <div className="flex items-center justify-end gap-2.5 pt-1">
+                                    {isEditingThis && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditingTaskSubmission(prev => ({ ...prev, [asg.id]: false }))}
+                                        className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                                      >
+                                        Cancelar
+                                      </button>
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      disabled={taskSubmitting[asg.id] || (!selectedTaskFiles[asg.id] && !prevSub?.fileName)}
+                                      onClick={() => handleStudentSubmitTask(asg.id)}
+                                      className="bg-[#800521] hover:bg-[#66041a] text-white font-black text-xs uppercase px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
                                     >
-                                      Entregar
+                                      <Upload className="w-4 h-4 text-amber-300" />
+                                      <span>
+                                        {taskSubmitting[asg.id] 
+                                          ? "Enviando..." 
+                                          : isEditingThis 
+                                            ? "Guardar Cambios de Entrega" 
+                                            : "Entregar Tarea Evaluativa"}
+                                      </span>
                                     </button>
                                   </div>
                                 </div>
@@ -906,14 +1747,19 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 })()}
 
                 {selectedClassWeekOption === "observaciones" && (
-                  <div className="space-y-3 font-sans">
-                    <div className="bg-sky-50 text-sky-900 border border-sky-100 p-3 rounded-lg text-[11px] font-bold flex items-center gap-2">
-                      <Bookmark className="w-4 h-4 text-sky-600 shrink-0" />
-                      <span>Bitácora de seguimiento escolar. Anotaciones registradas por el docente encargado de aula para la <strong>Semana {selectedClassWeek}</strong>.</span>
+                  <div className="space-y-4 font-sans text-left">
+                    <div className="bg-[#800521]/5 text-[#800521] border border-[#800521]/15 p-3.5 rounded-xl text-[11px] font-bold flex items-center gap-2">
+                      <Bookmark className="w-4 h-4 text-[#800521] shrink-0" />
+                      <span>Bitácora de seguimiento escolar y formativo para la <strong>Semana {selectedClassWeek}</strong>.</span>
                     </div>
-                    <p className="text-xs text-slate-500 italic p-4 text-center border rounded-lg bg-slate-50/50">
-                      No se registran observaciones disciplinarias ni de rendimiento para esta semana en su ficha del alumno.
-                    </p>
+
+                    <div className="p-8 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center space-y-1.5">
+                      <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-tight">Expediente Conforme</h4>
+                      <p className="text-[11px] text-slate-400 font-medium max-w-sm">
+                        No se registran observaciones disciplinarias ni de rendimiento para esta semana en su ficha del estudiante.
+                      </p>
+                    </div>
                   </div>
                 )}
 
@@ -959,6 +1805,98 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
       {toastNotice && (
         <Toast notice={toastNotice} onClose={() => setToastNotice(null)} />
+      )}
+
+      {/* Modal de Confirmación para Eliminar Entrega del Estudiante */}
+      <ConfirmModal
+        isOpen={!!submissionToDelete}
+        variant="danger"
+        title="Eliminar Entrega de Tarea"
+        message={
+          <div className="space-y-3 text-left">
+            <p className="text-xs text-slate-600 leading-relaxed">
+              ¿Está seguro de que desea retirar su entrega realizada para:
+            </p>
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3">
+              <span className="text-xs font-black text-slate-900 block truncate">
+                {submissionToDelete?.assignmentTitle}
+              </span>
+            </div>
+            <p className="text-[11px] text-amber-700 font-semibold bg-amber-50 border border-amber-200/60 rounded-lg p-2.5">
+              Al retirar su entrega, el docente no podrá visualizar el archivo anterior y deberá subir una nueva entrega antes de la fecha límite.
+            </p>
+          </div>
+        }
+        confirmText="Sí, Eliminar Entrega"
+        cancelText="Cancelar"
+        isLoading={isDeletingSubmission}
+        onClose={() => setSubmissionToDelete(null)}
+        onConfirm={handleDeleteStudentSubmission}
+      />
+
+      {/* Visor Modal de PDF Oficial (Guías y Entregables) */}
+      {pdfModal && typeof document !== "undefined" && createPortal(
+        <div 
+          className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPdfModal(null);
+          }}
+        >
+          <div 
+            className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col h-[85vh] overflow-hidden my-auto animate-in zoom-in-95 duration-200 text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header del Visor */}
+            <div className="bg-[#800521] text-white px-5 py-3.5 flex items-center justify-between shrink-0 shadow-xs border-b border-[#800521]/20">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-1.5 rounded-lg bg-white/10 text-amber-300">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-white">
+                    {pdfModal.title}
+                  </h3>
+                  <p className="text-[10.5px] text-rose-200 font-mono truncate max-w-md">
+                    {pdfModal.fileName}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button 
+                  onClick={() => setPdfModal(null)}
+                  className="text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                  title="Cerrar visor"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Cuerpo del Visor con iframe embebido */}
+            <div className="flex-1 p-2 bg-slate-100 flex flex-col overflow-hidden">
+              <iframe
+                src={pdfModal.url}
+                title={pdfModal.fileName}
+                className="w-full flex-1 rounded-xl border border-slate-300 bg-white"
+              />
+            </div>
+
+            {/* Footer */}
+            <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-between shrink-0">
+              <span className="text-[11px] font-mono text-slate-500 font-bold truncate max-w-sm">
+                {pdfModal.fileName}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPdfModal(null)}
+                className="bg-[#800521] hover:bg-[#66041a] text-white text-xs font-black uppercase tracking-wider px-5 py-2 rounded-xl transition-all shadow-xs cursor-pointer active:scale-95"
+              >
+                Cerrar Visor
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </PageTransition>
   );

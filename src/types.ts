@@ -174,11 +174,12 @@ export interface CourseMaterial {
 
 export interface CourseAssignment {
   kind?: "assignment" | "assessment";
-    attachment?: string;
-    rubric?: string;
-    contentBase64?: string;
-    mimeType?: string;
-    storedFileName?: string;
+  attachment?: string;
+  attachmentName?: string;
+  rubric?: string;
+  contentBase64?: string;
+  mimeType?: string;
+  storedFileName?: string;
   id: string;
   courseId: string;
   title: string;
@@ -189,6 +190,9 @@ export interface CourseAssignment {
     studentName: string;
     fileName: string;
     submitDate: string;
+    comment?: string;
+    fileBase64?: string;
+    mimeType?: string;
     grade?: number; // scale 0-20
     feedback?: string;
   }[];
@@ -299,6 +303,7 @@ export interface MpaCourse {
   labHours?: number;
   status?: "Activo" | "Inactivo";
   careerId?: string;
+  cycle?: number;
   referenceCycle?: number;
   type?: "General" | "Especialidad";
 }

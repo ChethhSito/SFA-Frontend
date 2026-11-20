@@ -77,7 +77,7 @@ CURSOS EVALUADOS:
 ${courses.map((c, i) => `${i + 1}. ${c.name} | NOTA: ${c.grade} | ${c.approved ? 'APROBADO' : 'DESAPROBADO'}`).join("\n")}
 ----------------------------------------
 Documento oficial emitido por la Secretaría Académica.
-Periodo Lectivo 2026-I • Lima, Perú.
+Periodo Lectivo 2027-I • Lima, Perú.
 ========================================
     `;
     const blob = new Blob([textContent], { type: "text/plain;charset=utf-8" });
@@ -193,7 +193,7 @@ Periodo Lectivo 2026-I • Lima, Perú.
 
             <div className="flex items-center justify-between pt-4 border-t border-slate-200 text-[8px] font-mono text-slate-400">
               <span>FIRMA DIGITAL SECRETARÍA ACADÉMICA</span>
-              <span>VERIFICACIÓN INSTITUCIONAL SFA-2026</span>
+              <span>VERIFICACIÓN INSTITUCIONAL SFA-2027</span>
             </div>
           </div>
         </div>

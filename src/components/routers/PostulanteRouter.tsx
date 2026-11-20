@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import PostulanteDashboard from "../postulante";
 import { Applicant, Enrollment } from "../../types";
 import { Lock, ArrowLeft, Loader2 } from "lucide-react";
 import Button from "../ui/Button";
-import { fetchApplicantByDni } from "../../services/api";
+import { fetchApplicantByDni, fetchEnrollmentByDni } from "../../services/api";
 
 interface PostulanteRouterProps {
   applicants: Applicant[];
@@ -12,6 +12,7 @@ interface PostulanteRouterProps {
   onUpdateEnrollment: (updatedEnr: Enrollment) => void;
   onLogout: () => void;
   onGoToPortal?: () => void;
+  onSwitchRole?: (role: any, identifier: string) => void;
 }
 
 const DOC_KEYS = ["dniFile", "certificadoFile", "partidaFile", "fotoFile"] as const;
@@ -23,9 +24,11 @@ export default function PostulanteRouter({
   onUpdateEnrollment,
   onLogout,
   onGoToPortal,
+  onSwitchRole,
 }: PostulanteRouterProps) {
   const [session, setSession] = useState<string | null>(null);
   const [liveApplicant, setLiveApplicant] = useState<Applicant | null>(null);
+  const [liveEnrollment, setLiveEnrollment] = useState<Enrollment | null>(null);
   const [loading, setLoading] = useState(true);
   const [, setSyncTick] = useState(0);
 
@@ -41,14 +44,21 @@ export default function PostulanteRouter({
     let cancelled = false;
     const loadFromMongo = (showSpinner: boolean) => {
       if (showSpinner) setLoading(true);
-      fetchApplicantByDni(s)
-        .then((apiApp) => {
-          if (!cancelled && apiApp) {
-            setLiveApplicant(apiApp);
+      Promise.all([
+        fetchApplicantByDni(s),
+        fetchEnrollmentByDni(s)
+      ])
+        .then(([apiApp, apiEnr]) => {
+          if (!cancelled) {
+            if (apiApp) setLiveApplicant(apiApp);
+            if (apiEnr) {
+              setLiveEnrollment(apiEnr);
+              onUpdateEnrollment(apiEnr);
+            }
           }
         })
         .catch((err) => {
-          console.error("Error fetching REST API applicant in PostulanteRouter:", err);
+          console.error("Error fetching REST API data in PostulanteRouter:", err);
         })
         .finally(() => {
           if (!cancelled && showSpinner) setLoading(false);
@@ -81,6 +91,34 @@ export default function PostulanteRouter({
   }, []);
 
   const currentDni = session || "";
+
+  const effectiveEnrollments = useMemo(() => {
+    let list = [...enrollments];
+    if (liveEnrollment) {
+      const idx = list.findIndex(e => e.studentDni === liveEnrollment.studentDni);
+      if (idx >= 0) {
+        list[idx] = { ...list[idx], ...liveEnrollment };
+      } else {
+        list.push(liveEnrollment);
+      }
+    }
+    try {
+      const saved = localStorage.getItem("sfa_enrollments");
+      if (saved) {
+        const parsed: Enrollment[] = JSON.parse(saved);
+        const mySaved = parsed.find(e => e.studentDni === currentDni);
+        if (mySaved) {
+          const idx = list.findIndex(e => e.studentDni === currentDni);
+          if (idx >= 0) {
+            list[idx] = { ...list[idx], ...mySaved };
+          } else {
+            list.push(mySaved);
+          }
+        }
+      }
+    } catch {}
+    return list;
+  }, [enrollments, liveEnrollment, currentDni]);
 
   let storedApp: Applicant | null = null;
   try {
@@ -243,11 +281,12 @@ export default function PostulanteRouter({
   return (
     <PostulanteDashboard
       applicant={applicantToRender}
-      enrollments={enrollments}
+      enrollments={effectiveEnrollments}
       onUpdateApplicant={handleUpdateLiveApplicant}
       onUpdateEnrollment={onUpdateEnrollment}
       onLogout={onLogout}
       onGoToPortal={onGoToPortal}
+      onSwitchRole={onSwitchRole}
     />
   );
 }
