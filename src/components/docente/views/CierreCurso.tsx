@@ -291,13 +291,13 @@ export function CierreCurso({
         headStyles: { fillColor: [128, 5, 33], textColor: 255, fontStyle: "bold", halign: "center" },
         columnStyles: {
           0: { cellWidth: 8, halign: "center" },
-          1: { cellWidth: 22, halign: "center" },
-          2: { cellWidth: 55 },
-          3: { cellWidth: 18, halign: "center" },
-          4: { cellWidth: 18, halign: "center" },
-          5: { cellWidth: 18, halign: "center" },
-          6: { cellWidth: 18, halign: "center" },
-          7: { cellWidth: 12, halign: "center", fontStyle: "bold" },
+          1: { cellWidth: 20, halign: "center" },
+          2: { cellWidth: 50 },
+          3: { cellWidth: 17, halign: "center" },
+          4: { cellWidth: 17, halign: "center" },
+          5: { cellWidth: 17, halign: "center" },
+          6: { cellWidth: 17, halign: "center" },
+          7: { cellWidth: 14, halign: "center", fontStyle: "bold" },
           8: { cellWidth: 22, halign: "center", fontStyle: "bold" }
         },
         alternateRowStyles: { fillColor: [248, 250, 252] }

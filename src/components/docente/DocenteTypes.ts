@@ -93,7 +93,14 @@ export const getDynamicRoster = (): StudentRosterItem[] => {
  * Proxy object exposing real student roster dynamically based on current context
  */
 export const ROSTER: StudentRosterItem[] = new Proxy([] as StudentRosterItem[], {
-  get(target, prop) {
+  get(target, prop, receiver) {
+    if (typeof prop === "symbol") {
+      if (prop === Symbol.iterator) {
+        const list = getDynamicRoster();
+        return list[Symbol.iterator].bind(list);
+      }
+      return Reflect.get(target, prop, receiver);
+    }
     const list = getDynamicRoster();
     if (prop === "length") {
       return list.length;
@@ -113,11 +120,11 @@ export const ROSTER: StudentRosterItem[] = new Proxy([] as StudentRosterItem[], 
     if (prop === "forEach") {
       return (cb: any) => list.forEach(cb);
     }
-    if (prop === Symbol.iterator) {
-      return list[Symbol.iterator].bind(list);
+    if (typeof (list as any)[prop] === "function") {
+      return ((list as any)[prop]).bind(list);
     }
-    const idx = Number(prop as string);
-    if (!isNaN(idx)) {
+    const idx = Number(prop);
+    if (!isNaN(idx) && Number.isInteger(idx) && String(idx) === prop) {
       return list[idx];
     }
     return (list as any)[prop];
