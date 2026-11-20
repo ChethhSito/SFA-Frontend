@@ -889,8 +889,8 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
         {activeCourseSection === "cierre" && (
           <div className="space-y-6">
             <PageHeader
-              title="Cierre de Curso y Planilla de Notas"
-              subtitle="Consolidado definitivo de notas del alumno para la habilitación de actas oficiales."
+              title="Consolidado y Situación Final del Curso"
+              subtitle="Consolidado definitivo de calificaciones semestrales, promedio ponderado y condición académica del alumno."
               icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
             />
 
