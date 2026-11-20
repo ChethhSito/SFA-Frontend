@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import {
   Users, FileText, CreditCard, Award, GraduationCap, CheckSquare,
-  TrendingUp, BookOpen, BrainCircuit, Calendar, CheckCircle2, Coins
+  TrendingUp, BookOpen, BrainCircuit, Calendar, CheckCircle2, Coins, Loader2
 } from "lucide-react";
 import {
   Applicant,
@@ -131,7 +131,7 @@ export default function MgeDashboard({
 
   // Tab-local state
   const [selectedCourseId, setSelectedCourseId] = useState<string>(courses[0]?.id || "");
-  const [selectedTaskTitle, setSelectedTaskTitle] = useState<string>("Evaluación Final");
+  const [selectedTaskTitle, setSelectedTaskTitle] = useState<string>("PROMEDIO_CONSOLIDADO");
   const [temporaryGrades, setTemporaryGrades] = useState<{ [dni: string]: number }>({});
   const [selectedAttendanceCourseId, setSelectedAttendanceCourseId] = useState<string>(courses[0]?.id || "");
   const [selectedAttendanceDate, setSelectedAttendanceDate] = useState<string>(
@@ -708,11 +708,26 @@ export default function MgeDashboard({
         </header>
 
         {/* Content area */}
-        {saving ? <p role="status" className="p-3">Guardando cambios en el servidor...</p> : null}
+        {saving ? (
+          <div className="p-3 bg-amber-50 border-b border-amber-200 text-amber-900 text-xs font-bold flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-[#800521]" />
+            <span>Guardando cambios en el servidor central...</span>
+          </div>
+        ) : null}
         <fieldset disabled={saving} className="flex-1 min-h-0 min-w-0 border-0 overflow-y-auto p-4 md:p-6 custom-scrollbar">
 
-        {activeSubTab === "estudiantes" && (
-            sourceLoading ? <p role="status">Cargando el padrón y las matrículas...</p> : sourceError ? <p role="alert" className="text-red-700">{sourceError} Recargue para reintentar.</p> : <MgeEstudiantesTab
+          {activeSubTab === "estudiantes" && (
+            sourceLoading ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-center p-6 my-2">
+                <Loader2 className="w-10 h-10 text-[#800521] animate-spin" />
+                <span className="text-xs font-black text-slate-800 uppercase tracking-widest font-mono">
+                  Cargando Padrón General de Estudiantes...
+                </span>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Sincronizando información académica y de matrículas en tiempo real
+                </span>
+              </div>
+            ) : sourceError ? <p role="alert" className="text-red-700">{sourceError} Recargue para reintentar.</p> : <MgeEstudiantesTab
               filteredStudents={filteredStudents}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
@@ -723,7 +738,17 @@ export default function MgeDashboard({
           )}
 
           {activeSubTab === "matricula_gral" && (
-            sourceLoading ? <p role="status">Cargando matrículas...</p> : sourceError ? <p role="alert" className="text-red-700">{sourceError} Recargue para reintentar.</p> : <MgeMatriculaTab
+            sourceLoading ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-center p-6 my-2">
+                <Loader2 className="w-10 h-10 text-[#800521] animate-spin" />
+                <span className="text-xs font-black text-slate-800 uppercase tracking-widest font-mono">
+                  Cargando Matrículas y Turnos Institucionales...
+                </span>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Verificando condición académica de ingresantes y promovidos
+                </span>
+              </div>
+            ) : sourceError ? <p role="alert" className="text-red-700">{sourceError} Recargue para reintentar.</p> : <MgeMatriculaTab
               processedStudents={processedStudents}
               onToggleAcademicStatus={(dni) => { void runSave(() => handleToggleAcademicStatus(dni)); }}
               onShiftChange={(dni, shift) => { void runSave(() => handleEnrollmentShiftChange(dni, shift)); }}
@@ -773,7 +798,17 @@ export default function MgeDashboard({
           )}
 
           {activeSubTab === "historial" && (
-            sourceLoading || assignmentsLoading ? <p role="status">Cargando registros académicos...</p> : sourceError || assignmentsError ? <p role="alert" className="text-red-700">{sourceError || assignmentsError} Recargue la página para reintentar.</p> : <MgeHistorialTab
+            sourceLoading || assignmentsLoading ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-center p-6 my-2">
+                <Loader2 className="w-10 h-10 text-[#800521] animate-spin" />
+                <span className="text-xs font-black text-slate-800 uppercase tracking-widest font-mono">
+                  Cargando Historial Académico y Actas Oficiales...
+                </span>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Auditando calificaciones y récord acumulado
+                </span>
+              </div>
+            ) : sourceError || assignmentsError ? <p role="alert" className="text-red-700">{sourceError || assignmentsError} Recargue la página para reintentar.</p> : <MgeHistorialTab
               processedStudents={processedStudents}
               courses={courses}
               assignments={assignments}
@@ -783,7 +818,17 @@ export default function MgeDashboard({
           )}
 
           {activeSubTab === "constancias" && (
-            sourceLoading || graduationsLoading ? <p role="status">Cargando expedientes...</p> : sourceError ? <p role="alert" className="text-red-700">{sourceError}</p> : graduationsError ? <GraduationAccessPanel error={graduationsError} onReload={onReloadGraduations} /> : <MgeConstanciasTab
+            sourceLoading || graduationsLoading ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-center p-6 my-2">
+                <Loader2 className="w-10 h-10 text-[#800521] animate-spin" />
+                <span className="text-xs font-black text-slate-800 uppercase tracking-widest font-mono">
+                  Cargando Expedientes y Certificados...
+                </span>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Consultando estado de graduación y requisitos EFSRT
+                </span>
+              </div>
+            ) : sourceError ? <p role="alert" className="text-red-700">{sourceError}</p> : graduationsError ? <GraduationAccessPanel error={graduationsError} onReload={onReloadGraduations} /> : <MgeConstanciasTab
               graduations={graduations}
               studentsList={studentsList}
               processedStudents={processedStudents}
@@ -794,7 +839,17 @@ export default function MgeDashboard({
           )}
 
           {activeSubTab === "reportes" && (
-            sourceLoading ? <p role="status">Cargando datos de estudiantes y matrícula...</p> : sourceError ? <p role="alert" className="text-red-700">{sourceError} Recargue la página para reintentar.</p> : <MgeReportesTab
+            sourceLoading ? (
+              <div className="flex flex-col items-center justify-center py-24 gap-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-center p-6 my-2">
+                <Loader2 className="w-10 h-10 text-[#800521] animate-spin" />
+                <span className="text-xs font-black text-slate-800 uppercase tracking-widest font-mono">
+                  Cargando Reportes y Estadísticas Curriculares...
+                </span>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Compilando métricas institucionales del periodo activo
+                </span>
+              </div>
+            ) : sourceError ? <p role="alert" className="text-red-700">{sourceError} Recargue la página para reintentar.</p> : <MgeReportesTab
               enrollments={enrollments}
               students={processedStudents}
               attendance={attendance}

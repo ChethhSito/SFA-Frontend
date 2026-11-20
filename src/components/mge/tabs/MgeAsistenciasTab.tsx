@@ -1,5 +1,5 @@
 import React from "react";
-import { CheckSquare } from "lucide-react";
+import { CheckSquare, Loader2 } from "lucide-react";
 import { Course, AttendanceRecord } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
 import { academicToday } from "../../../utils/attendance";
@@ -44,7 +44,19 @@ export default function MgeAsistenciasTab({
       )
     : [];
 
-  if (loading) return <p role="status">Cargando asistencias del servidor...</p>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-center p-6 my-2">
+        <Loader2 className="w-10 h-10 text-[#800521] animate-spin" />
+        <span className="text-xs font-black text-slate-800 uppercase tracking-widest font-mono">
+          Cargando Asistencias del Servidor...
+        </span>
+        <span className="text-[11px] text-slate-400 font-medium">
+          Sincronizando marcas de asistencia y asistencia acumulada
+        </span>
+      </div>
+    );
+  }
   if (error) return <div role="alert" className="space-y-3 text-red-700"><p>{error}</p><button type="button" onClick={() => { void onReload(); }} className="rounded-lg border px-3 py-2">Reintentar carga</button></div>;
 
   return (

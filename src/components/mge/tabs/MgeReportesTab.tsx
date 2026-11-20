@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { AttendanceRecord, Enrollment } from "../../../types";
 import { fetchPayments } from "../../../services/api";
@@ -79,7 +80,12 @@ export default function MgeReportesTab({ enrollments, students, attendance, atte
         })}
       </section>
       <section className="border rounded-xl p-5 bg-white space-y-4"><h3 className="font-bold">Asistencia registrada</h3>
-        {attendanceLoading ? <p role="status">Cargando asistencias...</p> : attendanceError ? <p role="alert" className="text-red-700">{attendanceError}</p> : <><p className="text-4xl font-bold">{stats.attendanceRate == null ? "Sin datos" : `${stats.attendanceRate}%`}</p><p className="text-sm">{stats.recordedMarks} marcas de alumnos activos hasta hoy (Lima). Presente, tardanza y justificado cuentan como asistencia. Los días sin marcar y futuros quedan excluidos.</p></>}
+        {attendanceLoading ? (
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-600 py-3">
+            <Loader2 className="w-4 h-4 text-[#800521] animate-spin" />
+            <span>Cargando métricas de asistencia...</span>
+          </div>
+        ) : attendanceError ? <p role="alert" className="text-red-700">{attendanceError}</p> : <><p className="text-4xl font-bold">{stats.attendanceRate == null ? "Sin datos" : `${stats.attendanceRate}%`}</p><p className="text-sm">{stats.recordedMarks} marcas de alumnos activos hasta hoy (Lima). Presente, tardanza y justificado cuentan como asistencia. Los días sin marcar y futuros quedan excluidos.</p></>}
       </section>
     </div>
     <div className="flex flex-wrap gap-3">

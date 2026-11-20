@@ -30,8 +30,17 @@ export default function CourseEnrollmentTab({
   personalData,
   currentProgram
 }: CourseEnrollmentTabProps) {
+  const currentStudentDni = enrollment.studentDni || personalData?.dni || "74859612";
+  const isPromotedCycle2 = typeof window !== "undefined" && (
+    localStorage.getItem(`sfa_student_promoted_cycle2_${currentStudentDni}`) === "true" ||
+    localStorage.getItem(`sfa_student_promoted_cycle2_${personalData?.dni}`) === "true"
+  );
+  const isCycle2Paid = typeof window !== "undefined" && (
+    localStorage.getItem(`sfa_cycle2_payment_${currentStudentDni}`) === "true"
+  );
+  const cycleNum = isPromotedCycle2 ? 2 : (studentGroup?.cycle || 1);
   const period = data.periods.find((item) => item.id === studentGroup?.periodId);
-  const periodLabel = period?.name || "2027-I";
+  const periodLabel = isPromotedCycle2 ? "2027-II" : (period?.name || "2027-I");
   const studentCode = personalData?.dni ? `202710001` : "202710001";
   const studentFullName = personalData
     ? `${personalData.lastName || ''}, ${personalData.name || ''}`.trim() || "Quispe Rojas, Mateo Sebastián"
@@ -40,8 +49,6 @@ export default function CourseEnrollmentTab({
 
   // Derive official registered courses for the student's active cycle
   const registeredCoursesList = useMemo(() => {
-    // 1. Try to find courses from data.curriculum and data.courses
-    const cycleNum = studentGroup?.cycle || 1;
     let list: Array<{
       id: string;
       code: string;
@@ -67,23 +74,32 @@ export default function CourseEnrollmentTab({
         credits: c.credits || 4,
         cycle: cycleNum,
         type: c.type === "General" ? "General" : "Obligatorio",
-        group: studentGroup?.name || "EI-I-A",
+        group: cycleNum === 2 ? "EI-II-A" : (studentGroup?.name || "EI-I-A"),
         sg: 0,
         tsg: idx % 2 === 0 ? "Teoría / Taller" : idx % 3 === 0 ? "Práctica" : "Taller",
-        status: "Matriculado"
+        status: isPromotedCycle2 && !isCycle2Paid ? "Pendiente de Pago" : "Matriculado"
       }));
     } else {
-      // Fallback official Ciclo I courses
-      list = [
-        { id: "eind-101", code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, cycle: 1, type: "Obligatorio", group: "EI-I-A", sg: 0, tsg: "Teoría / Taller", status: "Matriculado" },
-        { id: "eind-102", code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, cycle: 1, type: "Obligatorio", group: "EI-I-A", sg: 0, tsg: "Taller", status: "Matriculado" },
-        { id: "eind-103", code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, cycle: 1, type: "Obligatorio", group: "EI-I-A", sg: 0, tsg: "Práctica", status: "Matriculado" },
-        { id: "eind-104", code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, cycle: 1, type: "General", group: "EI-I-A", sg: 0, tsg: "Teoría", status: "Matriculado" },
-        { id: "eind-105", code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2, cycle: 1, type: "General", group: "EI-I-A", sg: 0, tsg: "Laboratorio", status: "Matriculado" },
-      ];
+      if (cycleNum === 2) {
+        list = [
+          { id: "eind-201", code: "EIND-201", name: "Circuitos Eléctricos en Corriente Alterna", credits: 4, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Teoría / Taller", status: isCycle2Paid ? "Matriculado" : "Pendiente de Pago" },
+          { id: "eind-202", code: "EIND-202", name: "Máquinas Eléctricas Estáticas y Transformadores", credits: 4, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Taller", status: isCycle2Paid ? "Matriculado" : "Pendiente de Pago" },
+          { id: "eind-203", code: "EIND-203", name: "Mediciones e Instrumentación Eléctrica", credits: 3, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Laboratorio", status: isCycle2Paid ? "Matriculado" : "Pendiente de Pago" },
+          { id: "eind-204", code: "EIND-204", name: "Electrónica Básica Aplicada", credits: 3, cycle: 2, type: "General", group: "EI-II-A", sg: 0, tsg: "Práctica", status: isCycle2Paid ? "Matriculado" : "Pendiente de Pago" },
+          { id: "eind-205", code: "EIND-205", name: "Inglés Técnico para Electricidad", credits: 2, cycle: 2, type: "General", group: "EI-II-A", sg: 0, tsg: "Teoría", status: isCycle2Paid ? "Matriculado" : "Pendiente de Pago" },
+        ];
+      } else {
+        list = [
+          { id: "eind-101", code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, cycle: 1, type: "Obligatorio", group: "EI-I-A", sg: 0, tsg: "Teoría / Taller", status: "Matriculado" },
+          { id: "eind-102", code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, cycle: 1, type: "Obligatorio", group: "EI-I-A", sg: 0, tsg: "Taller", status: "Matriculado" },
+          { id: "eind-103", code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, cycle: 1, type: "Obligatorio", group: "EI-I-A", sg: 0, tsg: "Práctica", status: "Matriculado" },
+          { id: "eind-104", code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, cycle: 1, type: "General", group: "EI-I-A", sg: 0, tsg: "Teoría", status: "Matriculado" },
+          { id: "eind-105", code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2, cycle: 1, type: "General", group: "EI-I-A", sg: 0, tsg: "Laboratorio", status: "Matriculado" },
+        ];
+      }
     }
     return list;
-  }, [data.courses, enrollment.programId, studentGroup]);
+  }, [data.courses, enrollment.programId, studentGroup, cycleNum, isPromotedCycle2, isCycle2Paid]);
 
   const totalCredits = registeredCoursesList.reduce((acc, c) => acc + c.credits, 0);
 
@@ -160,6 +176,33 @@ export default function CourseEnrollmentTab({
           </div>
         </div>
       </div>
+
+      {/* Banner de Pago Requerido para Ciclo II si aún no canceló */}
+      {isPromotedCycle2 && !isCycle2Paid && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+          <div className="space-y-0.5 text-left">
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-200/60 px-2 py-0.5 rounded font-mono">
+              Paso Requerido • Matrícula Ciclo II
+            </span>
+            <h4 className="text-sm font-black text-slate-900">
+              Ciclo II Habilitado: Pago de Matrícula Pendiente (S/ 250.00)
+            </h4>
+            <p className="text-xs text-slate-600">
+              El estudiante ha concluido y aprobado el Ciclo I. Registre o abone la tasa de matrícula del Ciclo II para su validación oficial en Caja (MAF) y Secretaría (MGE).
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.setItem(`sfa_cycle2_payment_${currentStudentDni}`, "true");
+              window.location.reload();
+            }}
+            className="bg-[#800521] hover:bg-[#9F062A] text-white font-black text-xs uppercase px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 cursor-pointer"
+          >
+            Pagar Matrícula (S/ 250.00)
+          </button>
+        </div>
+      )}
 
       {/* 2. Main Two-Column Layout (Modelo Universidad adaptado a SFA) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
@@ -283,9 +326,15 @@ export default function CourseEnrollmentTab({
             </div>
             <div className="flex justify-between items-center py-1 border-b border-slate-100">
               <span className="text-slate-400 font-bold">Estado de Pago</span>
-              <span className="font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[10px]">
-                Pagó
-              </span>
+              {isPromotedCycle2 && !isCycle2Paid ? (
+                <span className="font-black text-amber-700 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded text-[10px] font-mono">
+                  Pendiente (S/ 250.00)
+                </span>
+              ) : (
+                <span className="font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-mono">
+                  Pagó
+                </span>
+              )}
             </div>
             <div className="flex justify-between items-center py-1 border-b border-slate-100">
               <span className="text-slate-400 font-bold">Permitir Cruces</span>

@@ -686,6 +686,21 @@ export default function AlumnoDashboard({
       } else if (assessmentSub?.grade !== undefined) {
         grade = assessmentSub.grade;
         subDesc = `${assessmentAssignment?.title}`;
+      } else {
+        // Check if student has simulated cycle 1 completion
+        try {
+          const rawSim = typeof window !== "undefined" ? localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) : null;
+          if (rawSim) {
+            const simData = JSON.parse(rawSim);
+            const simCourse = simData.courses?.find((sc: any) => sc.code === c.code || sc.name === c.name);
+            if (simCourse && !simCourse.isManual && typeof simCourse.grade === "number") {
+              grade = simCourse.grade;
+              subDesc = "Acta Oficial de Calificaciones Consolidada (MGE)";
+            }
+          }
+        } catch {
+          // ignore
+        }
       }
 
       return {

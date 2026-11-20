@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { fetchTutoringReferrals, markTutoringReferralRead, updateTutoringCase, TutoringReferral } from "../../../services/api";
 
 const caseLabels = { PENDIENTE: "Pendiente", EN_ATENCION: "En atención", CERRADO: "Cerrado" };
@@ -69,7 +70,12 @@ export default function TutoringNotifications({ refresh }: { refresh: number }) 
       <button type="button" disabled={loading || saving} onClick={() => setRetry((value) => value + 1)} className="rounded-lg bg-slate-100 px-3 py-2 disabled:opacity-50">Actualizar bandeja</button>
     </div>
     <p className="text-sm text-slate-600">Avisos internos de MGE creados al registrar una derivación. Marcar un aviso como leído no significa que el caso haya sido atendido.</p>
-    {loading ? <p role="status">Cargando notificaciones...</p> : error ? <p role="alert" className="text-red-700">{error}</p> : items.length === 0 ? <p>No hay derivaciones registradas.</p> : null}
+    {loading ? (
+      <div className="flex items-center gap-2 text-xs font-bold text-slate-600 py-3">
+        <Loader2 className="w-4 h-4 text-[#800521] animate-spin" />
+        <span>Cargando notificaciones de tutoría...</span>
+      </div>
+    ) : error ? <p role="alert" className="text-red-700">{error}</p> : items.length === 0 ? <p>No hay derivaciones registradas.</p> : null}
     {!loading && items.map((item) => <article key={item.studentDni} className="border-t pt-3 space-y-2">
       <p className="font-semibold">{item.studentName} · {item.studentDni} · {item.readAt ? "Leído" : "Sin leer"}</p>
       <p className="text-sm whitespace-pre-wrap break-words">{item.reason}</p>

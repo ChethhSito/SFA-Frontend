@@ -177,7 +177,7 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
             <div className="h-1 bg-[#D97706] w-full" />
 
             {/* 2. Student Info Header */}
-            <div className="p-4 sm:p-5 bg-white space-y-3">
+            <div className="p-4 sm:p-5 pb-10 bg-white space-y-3">
               <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-left space-y-1">
                 <div className="text-xs font-black text-slate-900 uppercase">
                   Estudiante: <span className="text-slate-800">{studentName.toUpperCase()}</span>

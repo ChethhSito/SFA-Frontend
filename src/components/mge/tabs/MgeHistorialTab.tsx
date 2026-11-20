@@ -5,6 +5,7 @@ import { ProcessedStudent } from "../mgeTypes";
 import { recordedHistory } from "../../../utils/mgeReports";
 import { createHistoryPdf } from "../../../utils/historyPdf";
 import { academicToday } from "../../../utils/attendance";
+import { MgeSimularCicloModal } from "../modals/MgeSimularCicloModal";
 
 interface Props {
   processedStudents: ProcessedStudent[];
@@ -47,6 +48,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
   const { programs } = useAcademicCatalog();
   const [printError, setPrintError] = useState("");
   const [downloading, setDownloading] = useState(false);
+  const [showSimulateCiclo1Modal, setShowSimulateCiclo1Modal] = useState(false);
   const student = processedStudents.find((row) => row.dni === selectedHistoryDni);
 
   const [promotedState, setPromotedState] = useState<Record<string, boolean>>(() => {
@@ -104,18 +106,28 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
             <h3 className="font-bold text-lg">{student.name} {student.lastName} · {student.dni}</h3>
             <p className="text-sm text-slate-700">{program} · <span className="font-bold text-[#800521]">{effectiveStatus}</span> · {student.shift || "Sin turno registrado"}</p>
           </div>
-          <button
-            type="button"
-            onClick={toggleStudentPromotion}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm border ${
-              isStudentPromoted
-                ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
-                : "bg-emerald-700 hover:bg-emerald-800 text-white border-emerald-700"
-            }`}
-            title="Acreditar los 6 semestres formativos para la emisión del certificado oficial"
-          >
-            {isStudentPromoted ? "Restablecer a Ciclo I" : "Acreditar Plan Completo (6 Ciclos / Egresado)"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowSimulateCiclo1Modal(true)}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm border bg-[#800521] hover:bg-[#66041a] text-white border-[#800521] cursor-pointer"
+              title="Consolidar y cerrar las actas del Ciclo I para promover al estudiante a Ciclo II"
+            >
+              Simular Cierre de Ciclo I
+            </button>
+            <button
+              type="button"
+              onClick={toggleStudentPromotion}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm border ${
+                isStudentPromoted
+                  ? "bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+                  : "bg-emerald-700 hover:bg-emerald-800 text-white border-emerald-700"
+              }`}
+              title="Acreditar los 6 semestres formativos para la emisión del certificado oficial"
+            >
+              {isStudentPromoted ? "Restablecer a Ciclo I" : "Acreditar Plan Completo (6 Ciclos / Egresado)"}
+            </button>
+          </div>
         </div>
         <p className="text-sm text-slate-600">Se muestran promedios simples de calificaciones guardadas por curso. NR significa sin calificación registrada. Incluye registros históricos; no sustituye un acta ni determina la aprobación oficial de cursos.</p>
         <div className="flex flex-wrap gap-3 items-center">
@@ -135,5 +147,19 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
         {!rows.length ? <tr><td colSpan={5} className="p-5">No hay cursos o calificaciones registradas para mostrar.</td></tr> : null}
       </tbody></table></div>
     </> : <p>Seleccione un estudiante para consultar sus registros.</p>}
+
+    {student && (
+      <MgeSimularCicloModal
+        isOpen={showSimulateCiclo1Modal}
+        onClose={() => setShowSimulateCiclo1Modal(false)}
+        student={student}
+        courses={courses}
+        assignments={assignments}
+        onSimulated={() => {
+          // re-render rows
+          setPromotedState((prev) => ({ ...prev }));
+        }}
+      />
+    )}
   </div>;
 }

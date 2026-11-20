@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { fetchCertificateFile, fetchCertificates, IssuedCertificate, registerCertificate, revokeCertificate, verifyCertificate } from "../../../services/api";
 import { downloadFile } from "../../../utils/mgeExports";
 import { academicToday } from "../../../utils/attendance";
@@ -62,7 +63,12 @@ export default function CertificateDocuments({ dni, ready }: { dni: string; read
     <h4 className="font-semibold">PDF del certificado emitido</h4>
     <p className="text-sm text-slate-600">Adjunte el documento emitido por la institución con su número y fecha reales. Se conserva el PDF original y se verifica su integridad; el sistema no genera ni valida una firma institucional.</p>
     <button type="button" disabled={loading || busy} onClick={() => setRetry((value) => value + 1)} className="border rounded-lg px-3 py-2 disabled:opacity-50">Actualizar documentos</button>
-    {loading ? <p role="status">Cargando documentos...</p> : loadError ? <p role="alert" className="text-red-700 text-sm">{loadError}</p> : <>
+    {loading ? (
+      <div className="flex items-center gap-2 text-xs font-bold text-slate-600 py-3">
+        <Loader2 className="w-4 h-4 text-[#800521] animate-spin" />
+        <span>Cargando documentos emitidos...</span>
+      </div>
+    ) : loadError ? <p role="alert" className="text-red-700 text-sm">{loadError}</p> : <>
       {!current ? <fieldset disabled={busy || !ready} className="grid sm:grid-cols-2 gap-3">
         <label className="text-sm">Número del documento<input value={number} onChange={(event) => setNumber(event.target.value)} maxLength={80} className="block border rounded-lg p-2 w-full mt-1" /></label>
         <label className="text-sm">Fecha de emisión<input type="date" value={date} max={academicToday()} onChange={(event) => setDate(event.target.value)} className="block border rounded-lg p-2 w-full mt-1" /></label>
