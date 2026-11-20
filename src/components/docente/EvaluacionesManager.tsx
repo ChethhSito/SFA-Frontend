@@ -404,7 +404,7 @@ export default function EvaluacionesManager({
                     onChange={(e) => {
                       const val = e.target.value;
                       setSelectedComponent(val);
-                      if (val && !title) {
+                      if (val) {
                         const v = formula.variables.find(item => item.id === val);
                         if (v) setTitle(v.label);
                       }
