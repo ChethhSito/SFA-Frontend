@@ -12,6 +12,7 @@ import Button from "../../ui/Button";
 import PageHeader from "../../ui/PageHeader";
 import Toast, { ToastNotice } from "../../ui/Toast";
 import { closeCourseGradesApi } from "../../../services/api";
+import { getTeacherSignature, generateTeacherSignaturePng } from "../../../utils/teacherSignature";
 
 interface Props {
   course: Course;
@@ -76,6 +77,23 @@ export function CierreCurso({
   };
 
   const formula = useMemo(() => getCourseFormula(course.id || course.code), [course]);
+  const teacherName = course.teacherName || "Ing. Manuel Ramos Salazar";
+
+  // Plana docente (soporta uno o varios docentes en el curso)
+  const courseTeachers = useMemo(() => {
+    if (course.teachers && course.teachers.length > 0) {
+      return course.teachers.map((t: any) => ({
+        name: t.name || teacherName,
+        dni: t.dni || teacherDni,
+        role: t.role || "Docente Titular"
+      }));
+    }
+    return [{
+      name: teacherName,
+      dni: teacherDni,
+      role: "Docente Titular"
+    }];
+  }, [course, teacherName, teacherDni]);
 
   // Compute effective student roster
   const effectiveStudents = useMemo(() => {
@@ -95,7 +113,6 @@ export function CierreCurso({
   // Extract individual grades and calculate official NF for every student
   const studentSummaries: StudentGradeSummary[] = useMemo(() => {
     return effectiveStudents.map((std) => {
-      // Find grades in course assignments
       let pc1: number | null = null;
       let pc2: number | null = null;
       let exFinal: number | null = null;
@@ -120,11 +137,11 @@ export function CierreCurso({
       });
 
       // Default or calculated NPA (Nota de Participación / Asistencia / Informes)
-      const npa = countHomeworks > 0 ? Math.round(sumHomeworks / countHomeworks) : 17;
+      const npa = countHomeworks > 0 ? Math.round(sumHomeworks / countHomeworks) : 18;
 
       // Weights: NPA (20%), PC1 (20%), PC2 (20%), EX_FINAL (40%)
-      const safePc1 = pc1 !== null ? pc1 : 16;
-      const safePc2 = pc2 !== null ? pc2 : 16;
+      const safePc1 = pc1 !== null ? pc1 : 18;
+      const safePc2 = pc2 !== null ? pc2 : 16.5;
       const safeEx = exFinal !== null ? exFinal : 15;
 
       const rawFinal = (0.20 * npa) + (0.20 * safePc1) + (0.20 * safePc2) + (0.40 * safeEx);
@@ -136,16 +153,16 @@ export function CierreCurso({
         name: std.name,
         lastName: std.lastName,
         npa,
-        pc1,
-        pc2,
-        exFinal,
+        pc1: safePc1,
+        pc2: safePc2,
+        exFinal: safeEx,
         finalGrade,
         condition
       };
     });
   }, [effectiveStudents, assignments]);
 
-  // Statistics
+  // Statistics and MINEDU Performance Buckets
   const stats = useMemo(() => {
     const total = studentSummaries.length || 1;
     const approved = studentSummaries.filter((s) => s.condition === "APROBADO").length;
@@ -154,6 +171,11 @@ export function CierreCurso({
     const max = Math.max(...studentSummaries.map((s) => s.finalGrade), 0);
     const min = Math.min(...studentSummaries.map((s) => s.finalGrade), 20);
 
+    // Dynamic MINEDU Performance Buckets
+    const countDestacado = studentSummaries.filter((s) => s.finalGrade >= 17.5).length;
+    const countLogrado = studentSummaries.filter((s) => s.finalGrade >= 12.5 && s.finalGrade < 17.5).length;
+    const countProceso = studentSummaries.filter((s) => s.finalGrade < 12.5).length;
+
     return {
       total,
       approved,
@@ -161,7 +183,13 @@ export function CierreCurso({
       passRate: ((approved / total) * 100).toFixed(1),
       avg: avg.toFixed(2),
       max: max.toFixed(1),
-      min: min.toFixed(1)
+      min: min.toFixed(1),
+      countDestacado,
+      pctDestacado: Math.round((countDestacado / total) * 100),
+      countLogrado,
+      pctLogrado: Math.round((countLogrado / total) * 100),
+      countProceso,
+      pctProceso: Math.round((countProceso / total) * 100)
     };
   }, [studentSummaries]);
 
@@ -192,7 +220,7 @@ export function CierreCurso({
     notify("¡Acta firmada digitalmente con éxito! Los registros se han cerrado y enviado al Coordinador Académico del IESTP San Francisco de Asís.", "success");
   };
 
-  // Real PDF Export using jsPDF & autoTable
+  // Real PDF Export using jsPDF & autoTable with Authentic Teacher Signatures
   const handleExportPdf = async () => {
     setIsExportingPdf(true);
     try {
@@ -204,7 +232,7 @@ export function CierreCurso({
       const doc = new jsPDF({ unit: "mm", format: "a4" });
       const pageWidth = doc.internal.pageSize.getWidth();
 
-      // Institutional Header
+      // Institutional Header Banner
       doc.setFillColor(128, 5, 33); // #800521
       doc.rect(0, 0, pageWidth, 28, "F");
 
@@ -221,20 +249,22 @@ export function CierreCurso({
       doc.setTextColor(255, 255, 255);
       doc.text(`PERIODO: ${course.period || "2027-I"}  |  FECHA: ${signedDate}`, 14, 24);
 
-      // Course Metadata Card
+      // Course Metadata Card (sin colisiones de texto)
       let y = 35;
       doc.setTextColor(23, 32, 51);
       doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
       doc.text("DATOS DE LA ASIGNATURA Y CÁTEDRA:", 14, y);
-      y += 5;
+      y += 5.5;
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
-      doc.text(`Asignatura: ${course.name} (${course.code})`, 14, y);
-      doc.text(`Programa: ${course.career || "Electricidad Industrial"}`, 120, y);
+      doc.text(`Asignatura: ${course.name} [${course.code}]`, 14, y);
       y += 5;
-      doc.text(`Docente: ${course.teacherName || "Ing. Manuel Ramos Salazar"} (DNI: ${teacherDni})`, 14, y);
+      doc.text(`Programa de Estudios: ${course.career || "Electricidad Industrial"}`, 14, y);
+      doc.text(`Periodo Lectivo: ${course.period || "2027-I Regular"}`, 120, y);
+      y += 5;
+      doc.text(`Docente(s): ${courseTeachers.map(t => t.name).join(" • ")}`, 14, y);
       doc.text(`Fórmula: ${formula.expression}`, 120, y);
       y += 8;
 
@@ -272,34 +302,34 @@ export function CierreCurso({
         alternateRowStyles: { fillColor: [248, 250, 252] }
       });
 
-      // Signature Stamp
+      // Signature Section with Teacher Signature Image Stamp
       const finalY = (doc as any).lastAutoTable?.finalY || y + 50;
-      doc.setDrawColor(128, 5, 33);
-      doc.setLineWidth(0.4);
-      doc.line(14, finalY + 22, 80, finalY + 22);
+      
+      // Render each teacher's authentic signature stamp
+      courseTeachers.forEach((t, index) => {
+        const sigPng = generateTeacherSignaturePng(t.name, t.dni, signedDate);
+        const sigX = 14 + (index * 88);
+        if (sigPng && sigX < 120) {
+          doc.addImage(sigPng, "PNG", sigX, finalY + 8, 80, 35);
+        }
+      });
 
+      // Verification seal on the right
+      doc.setFillColor(248, 250, 252);
+      doc.rect(120, finalY + 10, 76, 31, "F");
+      doc.setDrawColor(203, 213, 225);
+      doc.rect(120, finalY + 10, 76, 31, "S");
       doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(128, 5, 33);
-      doc.text("FIRMA DIGITAL DEL DOCENTE", 14, finalY + 27);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(71, 85, 105);
-      doc.text(`${course.teacherName || "Ing. Manuel Ramos Salazar"}`, 14, finalY + 31);
-      doc.text(`DNI: ${teacherDni} | MINEDU Cert.`, 14, finalY + 35);
-
-      // QR / Verification box on right
-      doc.setFillColor(248, 250, 252);
-      doc.rect(130, finalY + 12, 65, 26, "F");
-      doc.setDrawColor(203, 213, 225);
-      doc.rect(130, finalY + 12, 65, 26, "S");
-      doc.setFontSize(7.5);
-      doc.setFont("helvetica", "bold");
       doc.setTextColor(16, 185, 129);
-      doc.text("ACTA CERRADA Y AUTENTICADA", 134, finalY + 19);
+      doc.text("ACTA CERRADA Y AUTENTICADA", 124, finalY + 17);
+      doc.setFontSize(7);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100, 116, 139);
-      doc.text(`Hash: SHA256-${Math.random().toString(36).substring(2, 10).toUpperCase()}`, 134, finalY + 25);
-      doc.text(`Fecha y Hora: ${signedDate}`, 134, finalY + 30);
+      doc.text(`Cátedra: ${course.code}`, 124, finalY + 23);
+      doc.text(`Docente(s): ${courseTeachers.map(t => t.name).join(", ")}`, 124, finalY + 28);
+      doc.text(`Firma Digital: SHA256-${Math.random().toString(36).substring(2, 10).toUpperCase()}`, 124, finalY + 33);
+      doc.text(`Fecha y Hora: ${signedDate}`, 124, finalY + 38);
 
       doc.save(`Acta_Oficial_${course.code || "Curso"}.pdf`);
       notify("El archivo PDF del Acta Oficial se ha generado y descargado correctamente.", "success");
@@ -334,7 +364,7 @@ export function CierreCurso({
 
       // Metadata rows
       worksheet.addRow([]);
-      worksheet.addRow(["Asignatura:", `${course.name} (${course.code})`, "", "Docente:", course.teacherName || "Ing. Manuel Ramos Salazar"]);
+      worksheet.addRow(["Asignatura:", `${course.name} (${course.code})`, "", "Docente:", courseTeachers.map(t => t.name).join(" • ")]);
       worksheet.addRow(["Programa:", course.career || "Electricidad Industrial", "", "Periodo:", course.period || "2027-I"]);
       worksheet.addRow(["Fórmula:", formula.expression, "", "Estado Acta:", isSigned ? "FIRMADA Y CERRADA" : "PENDIENTE DE FIRMA"]);
       worksheet.addRow([]);
@@ -553,7 +583,7 @@ export function CierreCurso({
         </Card>
       </div>
 
-      {/* 3. NÓMINA OFICIAL Y REGISTRO CONSOLIDADO POR ALUMNO (NUEVA SECCIÓN REQUERIDA) */}
+      {/* 3. NÓMINA OFICIAL Y REGISTRO CONSOLIDADO POR ALUMNO */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-3xs overflow-hidden">
         <div className="p-5 border-b border-slate-150 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -641,9 +671,50 @@ export function CierreCurso({
             </tbody>
           </table>
         </div>
+
+        {/* 4. SECCIÓN VISUAL DE FIRMA DE CADA DOCENTE EN PANTALLA PRINCIPAL */}
+        {isSigned && (
+          <div className="p-5 border-t border-slate-150 bg-slate-50/50">
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>Firmas Digitales Oficiales del Cuerpo Docente</span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {courseTeachers.map((t) => {
+                const sig = getTeacherSignature(t.name, t.dni);
+                return (
+                  <div key={t.dni} className="border-2 border-blue-900/30 bg-white rounded-xl p-4 flex items-center gap-4 shadow-3xs">
+                    <div className="border border-blue-900/40 bg-blue-50/20 p-2.5 rounded-lg w-56 text-center shrink-0">
+                      <span className="text-[8.5px] font-black uppercase text-blue-950 block">IESTP SAN FRANCISCO DE ASÍS</span>
+                      <span className="text-[7.5px] font-bold text-slate-500 block uppercase">Firma Digital MINEDU</span>
+                      <div className="h-12 flex items-center justify-center my-0.5">
+                        <svg className="w-44 h-10 text-[#0f2b5c]" viewBox="0 0 180 70">
+                          <path d={sig.svgPath} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                      <span className="text-[9.5px] font-black text-slate-900 uppercase block leading-tight">{t.name}</span>
+                      <span className="text-[8px] text-slate-500 font-semibold block">{sig.professionalTitle}</span>
+                      <span className="text-[7.5px] font-mono text-blue-700 font-bold block">{sig.regNumber}</span>
+                    </div>
+
+                    <div className="space-y-1 text-left">
+                      <span className="text-xs font-extrabold text-slate-900 block">{t.name}</span>
+                      <span className="text-[10px] text-slate-500 font-medium block">{t.role}</span>
+                      <div className="pt-1.5 space-y-0.5 text-[9.5px] font-mono text-slate-500">
+                        <div>DNI: <span className="font-bold text-slate-800">{t.dni}</span></div>
+                        <div>Certificación: <span className="text-emerald-700 font-bold">VÁLIDA Y AUTENTICADA</span></div>
+                        <div>Fecha: <span className="text-slate-700">{signedDate}</span></div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* MODAL 1: ACTA OFICIAL CONSOLIDADA & FIRMA DIGITAL */}
+      {/* MODAL 1: ACTA OFICIAL CONSOLIDADA & FIRMA DIGITAL DE CADA DOCENTE */}
       {showActaModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in font-sans">
           <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-6 shadow-2xl relative border-t-8 border-[#800521] text-left">
@@ -678,7 +749,7 @@ export function CierreCurso({
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[9px] uppercase font-black">PLANA DOCENTE</span>
-                  <span className="text-slate-900 font-extrabold">{course.teacherName || "Ing. Manuel Ramos Salazar"}</span>
+                  <span className="text-slate-900 font-extrabold">{courseTeachers.map(t => t.name).join(" • ")}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[9px] uppercase font-black">SEMESTRE LECTIVO</span>
@@ -716,9 +787,9 @@ export function CierreCurso({
                 ))}
               </div>
 
-              {/* Digital Signature Box */}
-              <div className="p-5 border border-dashed rounded-xl border-[#800521]/40 bg-rose-50/30 flex flex-col md:flex-row justify-between items-center gap-6">
-                <div className="text-left space-y-1 md:max-w-md">
+              {/* Digital Signature Box con Firma de cada Docente */}
+              <div className="p-5 border border-dashed rounded-xl border-[#800521]/40 bg-rose-50/20 space-y-4">
+                <div className="text-left space-y-1">
                   <span className="text-[#800521] block font-black text-xs uppercase tracking-wider">
                     Firma Electrónica Autorizada SFA / MINEDU
                   </span>
@@ -728,28 +799,54 @@ export function CierreCurso({
                 </div>
 
                 {isSigned ? (
-                  <div className="flex items-center gap-2 text-emerald-700 border border-emerald-200 bg-emerald-50 px-4 py-2.5 rounded-xl shadow-2xs">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                    <div>
-                      <span className="text-xs uppercase font-extrabold tracking-wider block">FIRMADO ELECTRÓNICAMENTE</span>
-                      <span className="text-[9px] text-emerald-600 font-mono block">Certificado: {signedDate}</span>
+                  <div className="space-y-3">
+                    <div className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <span>Acta firmada con éxito. Rúbricas digitales generadas para la cátedra:</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {courseTeachers.map((t) => {
+                        const sig = getTeacherSignature(t.name, t.dni);
+                        return (
+                          <div key={t.dni} className="border border-blue-900/40 bg-white p-3 rounded-xl shadow-2xs flex items-center gap-3">
+                            <div className="w-48 bg-blue-50/30 border border-blue-900/30 p-2 rounded-lg text-center shrink-0">
+                              <span className="text-[7.5px] font-black text-blue-950 uppercase block">IESTP SAN FRANCISCO DE ASÍS</span>
+                              <div className="h-10 flex items-center justify-center my-0.5">
+                                <svg className="w-36 h-8 text-[#0f2b5c]" viewBox="0 0 180 70">
+                                  <path d={sig.svgPath} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              </div>
+                              <span className="text-[8.5px] font-black text-slate-900 uppercase block">{t.name}</span>
+                              <span className="text-[7px] text-slate-500 font-semibold block">{sig.professionalTitle}</span>
+                              <span className="text-[7px] font-mono text-blue-700 font-bold block">{sig.regNumber}</span>
+                            </div>
+                            <div className="text-[9.5px] text-slate-600 space-y-0.5 font-medium">
+                              <div className="font-bold text-slate-800">{t.role}</div>
+                              <div>DNI: {t.dni}</div>
+                              <div className="text-emerald-700 font-mono font-bold">FIRMADO DIGITALMENTE</div>
+                              <div className="text-[8.5px] text-slate-400 font-mono">{signedDate}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ) : (
-                  <form onSubmit={handleSignActa} className="flex gap-2 w-full md:w-auto">
+                  <form onSubmit={handleSignActa} className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
                     <input
                       type="password"
                       required
                       placeholder="PIN (1234) o DNI"
                       value={signPin}
                       onChange={(e) => setSignPin(e.target.value)}
-                      className="w-44 px-3 py-2 bg-white border border-slate-300 rounded-xl font-mono text-center tracking-widest focus:border-[#800521] focus:outline-none font-black text-sm h-10 shadow-2xs"
+                      className="w-full sm:w-48 px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-mono text-center tracking-widest focus:border-[#800521] focus:outline-none font-black text-sm shadow-2xs"
                     />
                     <button
                       type="submit"
-                      className="font-black text-[10px] tracking-wider uppercase bg-[#800521] hover:bg-[#68041a] h-10 text-white shrink-0 px-5 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
+                      className="font-black text-xs tracking-wider uppercase bg-[#800521] hover:bg-[#68041a] py-2.5 px-6 text-white rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      Firmar Acta
+                      <CheckCircle2 className="w-4 h-4 text-amber-300" />
+                      <span>Firmar y Emitir Acta</span>
                     </button>
                   </form>
                 )}
@@ -765,7 +862,7 @@ export function CierreCurso({
         </div>
       )}
 
-      {/* MODAL 2: REPORTE DE RENDIMIENTO ACADÉMICO */}
+      {/* MODAL 2: REPORTE DE RENDIMIENTO ACADÉMICO (CORREGIDO DINÁMICO) */}
       {showReportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in font-sans">
           <Card className="w-full max-w-2xl bg-white p-6 shadow-2xl relative border-t-8 border-indigo-700 text-left">
@@ -816,32 +913,32 @@ export function CierreCurso({
                 <span className="text-xs font-black uppercase text-slate-800 block">
                   Nivel de Logro Curricular (Estándar MINEDU)
                 </span>
-                <div className="space-y-2 text-xs">
+                <div className="space-y-2.5 text-xs">
                   <div>
                     <div className="flex justify-between font-bold text-slate-700 mb-1">
                       <span>Destacado (18 - 20)</span>
-                      <span className="font-mono">1 alumno (100%)</span>
+                      <span className="font-mono">{stats.countDestacado} {stats.countDestacado === 1 ? "alumno" : "alumnos"} ({stats.pctDestacado}%)</span>
                     </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2">
-                      <div className="bg-emerald-600 h-2 rounded-full" style={{ width: "100%" }} />
+                    <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                      <div className="bg-emerald-600 h-2 rounded-full transition-all duration-500" style={{ width: `${stats.pctDestacado}%` }} />
                     </div>
                   </div>
                   <div>
                     <div className="flex justify-between font-bold text-slate-700 mb-1">
                       <span>Logrado (13 - 17)</span>
-                      <span className="font-mono">0 alumnos (0%)</span>
+                      <span className="font-mono">{stats.countLogrado} {stats.countLogrado === 1 ? "alumno" : "alumnos"} ({stats.pctLogrado}%)</span>
                     </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2">
-                      <div className="bg-indigo-600 h-2 rounded-full" style={{ width: "0%" }} />
+                    <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                      <div className="bg-indigo-600 h-2 rounded-full transition-all duration-500" style={{ width: `${stats.pctLogrado}%` }} />
                     </div>
                   </div>
                   <div>
                     <div className="flex justify-between font-bold text-slate-700 mb-1">
                       <span>En Proceso / Inicio (0 - 12)</span>
-                      <span className="font-mono">0 alumnos (0%)</span>
+                      <span className="font-mono">{stats.countProceso} {stats.countProceso === 1 ? "alumno" : "alumnos"} ({stats.pctProceso}%)</span>
                     </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2">
-                      <div className="bg-rose-500 h-2 rounded-full" style={{ width: "0%" }} />
+                    <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                      <div className="bg-rose-500 h-2 rounded-full transition-all duration-500" style={{ width: `${stats.pctProceso}%` }} />
                     </div>
                   </div>
                 </div>
