@@ -718,39 +718,41 @@ export function CierreCurso({
       {/* MODAL 1: ACTA OFICIAL CONSOLIDADA & FIRMA DIGITAL DE CADA DOCENTE */}
       {showActaModal && typeof document !== "undefined" && createPortal(
         <div 
-          className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150 font-sans"
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[99999] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto font-sans"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowActaModal(false);
           }}
         >
-          <Card 
-            className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-6 shadow-2xl relative border-t-8 border-[#800521] text-left animate-in zoom-in-95 duration-150"
+          <div 
+            className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 border-t-8 border-t-[#800521] overflow-hidden my-auto text-left flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={() => setShowActaModal(false)}
-              className="absolute top-4 right-4 p-1.5 hover:bg-slate-100 rounded-lg cursor-pointer text-slate-400 hover:text-slate-700 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <CardHeader className="border-b pb-4">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
               <div className="flex items-center gap-3">
                 <div className="h-11 w-11 bg-[#800521] text-amber-300 rounded-xl flex items-center justify-center font-bold shadow-md shrink-0">
                   <GraduationCap className="w-6 h-6" />
                 </div>
                 <div>
-                  <CardTitle className="text-base font-black uppercase text-slate-900">
+                  <h3 className="text-base font-black uppercase text-slate-900 tracking-tight">
                     ACTA OFICIAL DE EVALUACIÓN SEMESTRAL
-                  </CardTitle>
-                  <CardDescription className="text-xs text-slate-500">
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
                     IESTP San Francisco de Asís • Cátedra: {course.name} ({course.code})
-                  </CardDescription>
+                  </p>
                 </div>
               </div>
-            </CardHeader>
+              <button
+                type="button"
+                onClick={() => setShowActaModal(false)}
+                className="p-1.5 hover:bg-slate-100 rounded-lg cursor-pointer text-slate-400 hover:text-slate-700 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-            <CardContent className="p-5 font-sans space-y-5 text-slate-800 text-xs font-bold leading-normal">
+            <div className="p-6 font-sans space-y-5 text-slate-800 text-xs font-bold leading-normal overflow-y-auto flex-1">
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-wrap justify-between gap-4">
                 <div>
                   <span className="text-slate-400 block text-[9px] uppercase font-black">PROGRAMA ACADÉMICO</span>
@@ -762,7 +764,7 @@ export function CierreCurso({
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[9px] uppercase font-black">SEMESTRE LECTIVO</span>
-                  <span className="text-slate-900 font-extrabold">{course.period || "Periodo 2027-I Regular"}</span>
+                  <span className="text-slate-900 font-extrabold">{(course as any).period || "Periodo 2027-I Regular"}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[9px] uppercase font-black">FÓRMULA CURRICULAR</span>
@@ -860,14 +862,14 @@ export function CierreCurso({
                   </form>
                 )}
               </div>
-            </CardContent>
+            </div>
 
-            <CardFooter className="bg-slate-50 justify-end gap-2 p-4 border-t border-slate-100">
+            <div className="bg-slate-50 justify-end gap-2 p-4 border-t border-slate-100 flex items-center shrink-0">
               <Button onClick={() => setShowActaModal(false)} variant="outline" className="font-bold text-xs">
                 Cerrar Vista Preliminar
               </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
         </div>,
         document.body
       )}
@@ -875,39 +877,41 @@ export function CierreCurso({
       {/* MODAL 2: REPORTE DE RENDIMIENTO ACADÉMICO (CORREGIDO DINÁMICO) */}
       {showReportModal && typeof document !== "undefined" && createPortal(
         <div 
-          className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150 font-sans"
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[99999] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto font-sans"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowReportModal(false);
           }}
         >
-          <Card 
-            className="w-full max-w-2xl bg-white p-6 shadow-2xl relative border-t-8 border-indigo-700 text-left animate-in zoom-in-95 duration-150"
+          <div 
+            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 border-t-8 border-t-indigo-700 overflow-hidden my-auto text-left flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={() => setShowReportModal(false)}
-              className="absolute top-4 right-4 p-1.5 hover:bg-slate-100 rounded-lg cursor-pointer text-slate-400 hover:text-slate-700 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <CardHeader className="border-b pb-4">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl flex items-center justify-center font-bold shadow-xs shrink-0">
                   <BarChart3 className="w-5 h-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-base font-black uppercase text-slate-900">
+                  <h3 className="text-base font-black uppercase text-slate-900 tracking-tight">
                     Reporte Ejecutivo de Rendimiento Académico
-                  </CardTitle>
-                  <CardDescription className="text-xs text-slate-500">
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
                     Métricas de logro y distribución de calificaciones (Periodo 2027-I)
-                  </CardDescription>
+                  </p>
                 </div>
               </div>
-            </CardHeader>
+              <button
+                type="button"
+                onClick={() => setShowReportModal(false)}
+                className="p-1.5 hover:bg-slate-100 rounded-lg cursor-pointer text-slate-400 hover:text-slate-700 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-            <CardContent className="p-5 space-y-5">
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
                   <span className="text-[9.5px] uppercase font-black text-emerald-800 block">Tasa de Aprobación</span>
@@ -961,14 +965,14 @@ export function CierreCurso({
                   </div>
                 </div>
               </div>
-            </CardContent>
+            </div>
 
-            <CardFooter className="bg-slate-50 justify-end gap-2 p-4 border-t border-slate-100">
+            <div className="bg-slate-50 justify-end gap-2 p-4 border-t border-slate-100 flex items-center shrink-0">
               <Button onClick={() => setShowReportModal(false)} variant="outline" className="font-bold text-xs">
                 Cerrar Reporte
               </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
         </div>,
         document.body
       )}

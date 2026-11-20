@@ -35,8 +35,10 @@ const SIGNATURE_PRESETS: Record<string, { path: string; title: string; reg: stri
 /**
  * Obtiene la información de rúbrica caligráfica y registro profesional para cualquier docente
  */
-export function getTeacherSignature(name: string, dni: string): TeacherSignatureData {
-  const upper = name.toUpperCase();
+export function getTeacherSignature(name?: string, dni?: string): TeacherSignatureData {
+  const safeName = (name || "Manuel Ramos Salazar").trim();
+  const safeDni = (dni || "08529631").trim();
+  const upper = safeName.toUpperCase();
   let presetKey = Object.keys(SIGNATURE_PRESETS).find(k => upper.includes(k));
 
   let preset = presetKey ? SIGNATURE_PRESETS[presetKey] : null;
@@ -45,15 +47,15 @@ export function getTeacherSignature(name: string, dni: string): TeacherSignature
     // Generar firma determinista basada en el nombre
     const isIng = upper.includes("ING") || upper.includes("ELECTRIC") || upper.includes("MEC");
     const title = isIng ? "Ingeniero Docente Titular" : "Licenciado Docente Ordinario";
-    const reg = `MINEDU Reg. DOC-${dni.slice(-4) || "2026"}`;
+    const reg = `MINEDU Reg. DOC-${safeDni.slice(-4) || "2026"}`;
     // Trazo dinámico caligráfico
     const path = "M 18 42 C 25 18, 30 12, 38 18 C 45 25, 48 45, 55 38 C 62 30, 70 20, 78 28 C 85 36, 92 45, 102 38 C 112 30, 122 35, 132 40 C 142 32, 152 42, 165 38 M 20 54 Q 92 48 168 52";
     preset = { path, title, reg };
   }
 
   return {
-    teacherName: name,
-    dni,
+    teacherName: safeName,
+    dni: safeDni,
     professionalTitle: preset.title,
     regNumber: preset.reg,
     svgPath: preset.path,
