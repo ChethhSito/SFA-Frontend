@@ -716,15 +716,22 @@ export default function DocenteDashboard({
             </div>
           </div>
 
-          {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (Círculo Granate Institucional con Libro Dorado) */}
+          {/* Desplegable / botón de SEMANAS DEL CURSO (Círculo Granate Institucional con Libro Dorado) */}
           <button
             type="button"
             onClick={() => setIsCourseSidebarCollapsed(!isCourseSidebarCollapsed)}
             title={isCourseSidebarCollapsed ? "Ver Semanas del Curso (1 a 16)" : "Ocultar Semanas del Curso"}
-            className="absolute -right-[14px] top-[54%] -translate-y-1/2 z-40 bg-[#800521] hover:bg-[#68031a] text-amber-300 hover:text-white border-2 border-white ring-2 ring-[#800521]/25 w-[28px] h-[28px] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all cursor-pointer hover:scale-110 active:scale-95 group"
+            className={`absolute top-[48%] -translate-y-1/2 z-40 transition-all cursor-pointer group ${
+              isCourseSidebarCollapsed
+                ? "left-0 bg-[#800521] hover:bg-[#68031a] text-amber-300 hover:text-white rounded-r-xl py-2 px-1.5 shadow-lg border-y border-r border-white/20 flex items-center gap-1 hover:pl-2"
+                : "-right-[14px] bg-[#800521] hover:bg-[#68031a] text-white border-2 border-white ring-2 ring-[#800521]/25 w-[28px] h-[28px] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 active:scale-95"
+            }`}
           >
             {isCourseSidebarCollapsed ? (
-              <BookOpen className="w-3.5 h-3.5 text-amber-300 group-hover:scale-110 transition-transform" />
+              <>
+                <BookOpen className="w-3.5 h-3.5 text-amber-300 group-hover:scale-110 transition-transform" />
+                <ChevronRight className="w-3 h-3 text-white/90" />
+              </>
             ) : (
               <ChevronLeft className="w-3.5 h-3.5 text-white group-hover:-translate-x-0.5 transition-transform" />
             )}
