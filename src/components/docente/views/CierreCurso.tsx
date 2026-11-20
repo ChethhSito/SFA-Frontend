@@ -815,7 +815,7 @@ export function CierreCurso({
                 ))}
               </div>
 
-              {/* Digital Signature Box con Firma de cada Docente */}
+              {/* Digital Signature Box con Firma de cada Docente y Vista Previa */}
               <div className="p-5 border border-dashed rounded-xl border-[#800521]/40 bg-rose-50/20 space-y-4">
                 <div className="text-left space-y-1">
                   <span className="text-[#800521] block font-black text-xs uppercase tracking-wider">
@@ -826,49 +826,70 @@ export function CierreCurso({
                   </p>
                 </div>
 
-                {isSigned ? (
-                  <div className="space-y-3">
-                    <div className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      <span>Acta firmada con éxito. Rúbricas digitales generadas para la cátedra:</span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {courseTeachers.map((t) => {
-                        const sig = getTeacherSignature(t.name, t.dni);
-                        return (
-                          <div key={t.dni} className="border border-blue-900/40 bg-white p-3 rounded-xl shadow-2xs flex items-center gap-3">
-                            <div className="w-48 bg-blue-50/30 border border-blue-900/30 p-2 rounded-lg text-center shrink-0">
-                              <span className="text-[7.5px] font-black text-blue-950 uppercase block">IESTP SAN FRANCISCO DE ASÍS</span>
-                              <div className="h-10 flex items-center justify-center my-0.5">
-                                {sig.customSignatureUrl ? (
-                                  <img 
-                                    src={sig.customSignatureUrl} 
-                                    alt="Firma Digital Docente" 
-                                    className="max-h-10 max-w-36 object-contain mx-auto"
-                                  />
-                                ) : (
-                                  <svg className="w-36 h-8 text-[#0f2b5c]" viewBox="0 0 180 70">
-                                    <path d={sig.svgPath} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                                  </svg>
-                                )}
-                              </div>
-                              <span className="text-[8.5px] font-black text-slate-900 uppercase block">{t.name}</span>
-                              <span className="text-[7px] text-slate-500 font-semibold block">{sig.professionalTitle}</span>
-                              <span className="text-[7px] font-mono text-blue-700 font-bold block">{sig.regNumber}</span>
+                {/* Vista Previa Oficial de la Firma Digital de Cada Docente */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className={`flex items-center gap-1.5 ${isSigned ? 'text-emerald-800' : 'text-slate-700'}`}>
+                      {isSigned ? (
+                        <>
+                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                          <span>Acta Oficial Firmada y Autenticada:</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-4 h-4 text-[#800521]" />
+                          <span>Vista Previa de la Firma Digital a Estampar:</span>
+                        </>
+                      )}
+                    </span>
+                    <span className={`text-[9.5px] font-mono px-2 py-0.5 rounded font-black uppercase ${isSigned ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900 border border-amber-300'}`}>
+                      {isSigned ? 'Firmado en SFA' : 'Vista Previa (Pendiente de PIN)'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {courseTeachers.map((t) => {
+                      const sig = getTeacherSignature(t.name, t.dni);
+                      return (
+                        <div key={t.dni} className="border border-blue-900/40 bg-white p-3 rounded-xl shadow-2xs flex items-center gap-3">
+                          <div className="w-48 bg-blue-50/30 border border-blue-900/30 p-2 rounded-lg text-center shrink-0">
+                            <span className="text-[7.5px] font-black text-blue-950 uppercase block">IESTP SAN FRANCISCO DE ASÍS</span>
+                            <div className="h-10 flex items-center justify-center my-0.5">
+                              {sig.customSignatureUrl ? (
+                                <img 
+                                  src={sig.customSignatureUrl} 
+                                  alt="Firma Digital Docente" 
+                                  className="max-h-10 max-w-36 object-contain mx-auto"
+                                />
+                              ) : (
+                                <svg className="w-36 h-8 text-[#0f2b5c]" viewBox="0 0 180 70">
+                                  <path d={sig.svgPath} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              )}
                             </div>
-                            <div className="text-[9.5px] text-slate-600 space-y-0.5 font-medium">
-                              <div className="font-bold text-slate-800">{t.role}</div>
-                              <div>DNI: {t.dni}</div>
-                              <div className="text-emerald-700 font-mono font-bold">FIRMADO DIGITALMENTE</div>
-                              <div className="text-[8.5px] text-slate-400 font-mono">{signedDate}</div>
+                            <span className="text-[8.5px] font-black text-slate-900 uppercase block leading-tight">{t.name}</span>
+                            <span className="text-[7px] text-slate-500 font-semibold block">{sig.professionalTitle}</span>
+                            <span className="text-[7px] font-mono text-blue-700 font-bold block">{sig.regNumber}</span>
+                          </div>
+                          <div className="text-[9.5px] text-slate-600 space-y-0.5 font-medium">
+                            <div className="font-bold text-slate-800">{t.role}</div>
+                            <div>DNI: {t.dni}</div>
+                            <div className={`font-mono font-bold ${isSigned ? 'text-emerald-700' : 'text-amber-700'}`}>
+                              {isSigned ? 'FIRMADO DIGITALMENTE' : 'RÚBRICA HOMOLOGADA'}
+                            </div>
+                            <div className="text-[8.5px] text-slate-400 font-mono">
+                              {isSigned ? signedDate : 'Pendiente de emisión'}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ) : (
-                  <form onSubmit={handleSignActa} className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+                </div>
+
+                {/* Formulario de Firma o Mensaje de Certificación */}
+                {!isSigned ? (
+                  <form onSubmit={handleSignActa} className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center pt-1 border-t border-slate-200/60">
                     <input
                       type="password"
                       required
@@ -885,10 +906,20 @@ export function CierreCurso({
                       <span>Firmar y Emitir Acta</span>
                     </button>
                   </form>
+                ) : (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-xs font-bold text-emerald-900">
+                    <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
+                    <span>Acta oficial debidamente cerrada y registrada en la plataforma académica ministerial.</span>
+                  </div>
                 )}
-                <div className="text-[10px] text-slate-500 font-medium pt-1">
-                  💡 <span className="font-semibold">Firma manuscrita y PIN personalizado:</span> Puede subir la foto de su firma y cambiar su clave PIN en <strong className="text-[#800521]">Configuración &gt; Firma Digital Homologada</strong>.
+
+                <div className="flex items-start gap-2 p-3 bg-white border border-slate-200 rounded-xl text-[10.5px] text-slate-600 font-medium">
+                  <ShieldCheck className="w-4 h-4 text-[#800521] shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-slate-800">Firma manuscrita y PIN de acreditación:</strong> Puede actualizar su foto de firma o PIN en <span className="font-bold text-[#800521]">Configuración &gt; Firma Digital Homologada</span>.
+                  </div>
                 </div>
+              </div>
               </div>
             </div>
 
