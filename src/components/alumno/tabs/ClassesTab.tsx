@@ -780,6 +780,26 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   // Multi-component Course Formula Calculation (Integral: Evaluación Continua 60% + Examen Final Integral 40%)
   const courseMultiComponentData = useMemo(() => {
     // Helper to calculate continuous evaluations of each component dynamically from assignments
+    const getShortEvaluationLabel = (title: string): string => {
+      if (/PC\s*1|Práctica Calificada\s*1/i.test(title)) return "PC1";
+      if (/PC\s*2|Práctica Calificada\s*2/i.test(title)) return "PC2";
+      if (/PC\s*3|Práctica Calificada\s*3/i.test(title)) return "PC3";
+      if (/EX_FINAL|EXAMEN FINAL/i.test(title)) return "Ex. Final";
+      if (/Informe/i.test(title)) {
+        const match = title.match(/Informe\s*(?:Práctico\s*)?(\d+)/i);
+        return match ? `Informe ${match[1]}` : "Informe";
+      }
+      if (/Tablero/i.test(title)) return "Tableros";
+      if (/Montaje/i.test(title)) return "Montaje";
+      if (/Práctica Final|Practica Final/i.test(title)) return "Práct. Final";
+      if (/Simulaci[oó]n/i.test(title)) return "Simulación";
+      if (/Medici[oó]n/i.test(title)) return "Mediciones";
+
+      const clean = title.replace(/\[.*?\]/g, "").replace(/\(.*?\)/g, "").trim();
+      const words = clean.split(/[:\s-]+/).filter(Boolean);
+      return words.slice(0, 2).join(" ") || "Actividad";
+    };
+
     const getCompGrades = (compCode: string, compDbId: string, keywords: string[]) => {
       const compAsgs = assignments.filter((a) => {
         if (a.title.startsWith("[Planilla] ")) return false;
@@ -810,7 +830,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
       const sum = gradedSubs.reduce((acc, curr) => acc + (curr.grade || 0), 0);
       const avg = Number((sum / gradedSubs.length).toFixed(1));
       const summary = gradedSubs.map((s) => {
-        const shortName = s.title.replace(/^\[.*?\]\s*/, "").replace(/\(.*?\)/, "").trim();
+        const shortName = getShortEvaluationLabel(s.title);
         return `${shortName}: ${s.grade}`;
       }).join(" • ");
 
@@ -878,7 +898,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           name: "Teoría",
           fullName: "Fundamentos de Electricidad y Circuitos CC (Teoría)",
           credits: 2,
-          weightLabel: "40% de Continua (2 Créditos)",
+          weightLabel: "PESO: 40% (2 CR)",
           weight: 0.40,
           grade: gradeTeo,
           weightedContribution: teoContrib,
@@ -893,7 +913,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           name: "Taller",
           fullName: "Fundamentos de Electricidad y Circuitos CC (Taller)",
           credits: 2,
-          weightLabel: "40% de Continua (2 Créditos)",
+          weightLabel: "PESO: 40% (2 CR)",
           weight: 0.40,
           grade: gradeTal,
           weightedContribution: talContrib,
@@ -908,7 +928,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           name: "Laboratorio",
           fullName: "Fundamentos de Electricidad y Circuitos CC (Laboratorio)",
           credits: 1,
-          weightLabel: "20% de Continua (1 Crédito)",
+          weightLabel: "PESO: 20% (1 CR)",
           weight: 0.20,
           grade: gradeLab,
           weightedContribution: labContrib,
@@ -1143,12 +1163,12 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                         : "bg-white border-slate-200 hover:border-slate-300"
                         }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-mono font-bold text-slate-500 uppercase bg-slate-100 px-2 py-0.5 rounded">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <span className="text-[9px] font-mono font-bold text-slate-500 uppercase bg-slate-100 px-2 py-0.5 rounded whitespace-nowrap">
                           {comp.code}
                         </span>
-                        <span className="text-[9px] font-mono font-black text-[#800521] bg-rose-100/70 border border-rose-200 px-2 py-0.5 rounded uppercase">
-                          PESO: {comp.weightLabel}
+                        <span className="text-[9px] font-mono font-black text-[#800521] bg-rose-50 border border-rose-200/80 px-2 py-0.5 rounded uppercase whitespace-nowrap">
+                          {comp.weightLabel}
                         </span>
                       </div>
 
@@ -1189,7 +1209,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                             {comp.condition}
                           </span>
                         </div>
-                        <div className="text-[8.5px] text-slate-400 font-mono">
+                        <div className="text-[8.5px] text-slate-500 font-mono tracking-tight leading-relaxed" title={comp.summaryEvaluations}>
                           {comp.summaryEvaluations}
                         </div>
                       </div>
