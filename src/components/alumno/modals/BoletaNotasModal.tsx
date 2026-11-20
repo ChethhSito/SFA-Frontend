@@ -129,15 +129,15 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
         </div>
 
         {/* Modal Body: High-Fidelity Vector-Crisp A4 Official Document */}
-        <div className="flex-1 p-3 sm:p-5 bg-slate-200/60 overflow-y-auto flex justify-center custom-scrollbar">
+        <div className="flex-1 p-3 sm:p-6 bg-slate-200/60 overflow-y-auto custom-scrollbar">
           <div 
             id="boleta-oficial-print-card"
-            className="w-full max-w-[680px] bg-white shadow-xl rounded-sm border border-slate-300 overflow-hidden flex flex-col text-slate-800 font-sans"
+            className="w-full max-w-[660px] mx-auto my-1 bg-white shadow-xl rounded-sm border border-slate-300 overflow-hidden flex flex-col text-slate-800 font-sans"
           >
             {/* 1. Institutional Banner */}
-            <div className="bg-[#800521] px-4 py-3 flex items-center justify-between gap-3 relative select-none">
+            <div className="bg-[#800521] px-4 py-2.5 flex items-center justify-between gap-3 relative select-none">
               <div className="flex items-center gap-3">
-                <div className="w-13 h-13 bg-white rounded-lg p-1 shadow-sm shrink-0 flex items-center justify-center">
+                <div className="w-12 h-12 bg-white rounded-lg p-1 shadow-sm shrink-0 flex items-center justify-center">
                   <img 
                     src={SFA_LOGO_BASE64} 
                     alt="Escudo Oficial IESTP San Francisco de Asís" 
@@ -177,8 +177,8 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
             <div className="h-1 bg-[#D97706] w-full" />
 
             {/* 2. Student Info Header */}
-            <div className="p-4 bg-white space-y-3">
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-left space-y-1">
+            <div className="p-4 sm:p-5 bg-white space-y-3">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-left space-y-1">
                 <div className="text-xs font-black text-slate-900 uppercase">
                   Estudiante: <span className="text-slate-800">{studentName.toUpperCase()}</span>
                 </div>
@@ -206,7 +206,7 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
                       <th className="py-2 px-3 text-center">Condición Académica</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-[10.5px]">
+                  <tbody className="divide-y divide-slate-100 text-[10px] sm:text-[10.5px]">
                     {formattedCourses.map((c, idx) => {
                       const isGraded = c.grade !== undefined && c.grade > 0;
                       const isApproved = isGraded && c.grade! >= 12.5;
@@ -217,19 +217,19 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
 
                       return (
                         <tr key={c.code} className={idx % 2 === 1 ? "bg-slate-50/70" : "bg-white"}>
-                          <td className="py-2 px-3 font-mono font-bold text-[#800521] text-[10px]">
+                          <td className="py-1.5 px-3 font-mono font-bold text-[#800521] text-[10px]">
                             {c.code}
                           </td>
-                          <td className="py-2 px-3 font-medium text-slate-800">
+                          <td className="py-1.5 px-3 font-medium text-slate-800">
                             {c.name}
                           </td>
-                          <td className="py-2 px-2 text-center font-mono font-semibold text-slate-600 text-[10px]">
+                          <td className="py-1.5 px-2 text-center font-mono font-semibold text-slate-600 text-[10px]">
                             {c.credits.toFixed(1)}
                           </td>
-                          <td className="py-2 px-2 text-center font-mono font-black text-slate-900">
+                          <td className="py-1.5 px-2 text-center font-mono font-black text-slate-900">
                             {gradeDisplay}
                           </td>
-                          <td className="py-2 px-3 text-center">
+                          <td className="py-1.5 px-3 text-center">
                             <span className={`text-[9.5px] font-black uppercase font-mono ${
                               conditionDisplay === "APROBADO"
                                 ? "text-emerald-700"
@@ -247,12 +247,12 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
                 </table>
               </div>
 
-              {/* 4. Signatures and Official Stamp Section */}
-              <div className="pt-6 pb-2 grid grid-cols-3 items-end gap-2 text-center select-none">
+              {/* 4. Signatures and Official Stamp Section with generous breathing room */}
+              <div className="pt-4 pb-6 px-2 grid grid-cols-3 items-center gap-2 text-center select-none">
                 {/* Left Signature: Secretaria General */}
                 <div className="flex flex-col items-center">
-                  <div className="h-10 flex items-end justify-center w-full">
-                    <svg viewBox="0 0 160 40" className="w-28 h-9 text-[#1241A0]">
+                  <div className="h-9 flex items-end justify-center w-full">
+                    <svg viewBox="0 0 160 40" className="w-28 h-8 text-[#1241A0]">
                       <path
                         d="M 15 28 Q 28 8 42 22 T 68 12 Q 82 30 102 18 T 132 24"
                         fill="none"
@@ -271,7 +271,7 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
                       </text>
                     </svg>
                   </div>
-                  <div className="w-36 border-t border-slate-400 mt-1 mb-1" />
+                  <div className="w-32 border-t border-slate-400 mt-1 mb-1" />
                   <span className="text-[8px] font-bold text-slate-900 uppercase block leading-tight">
                     Mg. Carmen R. Valdivia Morán
                   </span>
@@ -285,8 +285,8 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
 
                 {/* Center: Official Seal */}
                 <div className="flex flex-col items-center justify-center">
-                  <div className="w-20 h-20 rounded-full border-2 border-[#800521] p-0.5 flex items-center justify-center relative shadow-2xs">
-                    <div className="w-full h-full rounded-full border border-dashed border-[#800521]/70 flex flex-col items-center justify-center text-center p-1 bg-rose-50/20">
+                  <div className="w-18 h-18 rounded-full border-2 border-[#800521] p-0.5 flex items-center justify-center relative shadow-2xs">
+                    <div className="w-full h-full rounded-full border border-dashed border-[#800521]/70 flex flex-col items-center justify-center text-center p-0.5 bg-rose-50/20">
                       <span className="text-[5px] font-extrabold text-[#800521] uppercase leading-tight">
                         IESTP San Francisco de Asís
                       </span>
@@ -308,8 +308,8 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
 
                 {/* Right Signature: Director General */}
                 <div className="flex flex-col items-center">
-                  <div className="h-10 flex items-end justify-center w-full">
-                    <svg viewBox="0 0 160 40" className="w-28 h-9 text-[#1241A0]">
+                  <div className="h-9 flex items-end justify-center w-full">
+                    <svg viewBox="0 0 160 40" className="w-28 h-8 text-[#1241A0]">
                       <path
                         d="M 18 30 Q 32 6 48 24 T 76 8 Q 94 28 116 14 T 142 22"
                         fill="none"
@@ -328,7 +328,7 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
                       </text>
                     </svg>
                   </div>
-                  <div className="w-36 border-t border-slate-400 mt-1 mb-1" />
+                  <div className="w-32 border-t border-slate-400 mt-1 mb-1" />
                   <span className="text-[8px] font-bold text-slate-900 uppercase block leading-tight">
                     Dr. Juan Alberto Morales Rojas
                   </span>
@@ -341,6 +341,9 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
                 </div>
               </div>
             </div>
+          </div>
+          <div className="h-4 w-full shrink-0" />
+        </div>
           </div>
         </div>
 
