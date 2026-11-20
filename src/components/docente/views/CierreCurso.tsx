@@ -920,7 +920,6 @@ export function CierreCurso({
                   </div>
                 </div>
               </div>
-              </div>
             </div>
 
             <div className="bg-slate-50 justify-end gap-2 p-4 border-t border-slate-100 flex items-center shrink-0">
