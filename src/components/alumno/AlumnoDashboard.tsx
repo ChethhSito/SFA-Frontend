@@ -844,7 +844,7 @@ export default function AlumnoDashboard({
             try {
               sessionStorage.removeItem("sfa_alumno_course_detail");
               sessionStorage.removeItem("sfa_alumno_course_comp_id");
-            } catch {}
+            } catch { }
             setActiveCourseSection("general");
           }
           setActiveTab(route as typeof activeTab);
@@ -855,47 +855,70 @@ export default function AlumnoDashboard({
 
       {/* 2. SIDEBAR SECUNDARIO CURRICULAR DINÁMICO (SEMANAS) */}
       {showCourseSidebar && (
-        <div className="hidden md:flex shrink-0 relative z-20 h-full w-64 min-w-[16rem]">
-          <SidebarCursoAlumno
-            courseCode={activeSelectedComponent ? activeSelectedComponent.code : (activeCourseObj?.code || selectedCourseDetail)}
-            courseName={activeSelectedComponent ? activeSelectedComponent.name : (activeCourseObj?.name || selectedCourseDetail)}
-            componentBadge={activeSelectedComponent ? {
-              label: activeSelectedComponent.badge,
-              className: activeSelectedComponent.id === "teo"
-                ? "text-[#800521] bg-[#800521]/10 border-[#800521]/20"
-                : activeSelectedComponent.id === "tal"
-                ? "text-amber-800 bg-amber-50 border-amber-200"
-                : "text-emerald-700 bg-emerald-50 border-emerald-200"
-            } : null}
-            hasMultipleComponents={activeCourseSubComponents.length > 1}
-            onChangeComponent={() => {
-              setActiveCourseComponentId(null);
-              try {
-                sessionStorage.removeItem("sfa_alumno_course_comp_id");
-              } catch {}
-              setActiveCourseSection("general");
-            }}
-            activeSection={activeCourseSection}
-            selectedWeek={selectedClassWeek}
-            selectedWeekOption={selectedClassWeekOption}
-            onSelectGeneral={() => setActiveCourseSection("general")}
-            onSelectHorarios={() => setActiveCourseSection("horarios")}
-            onSelectCierre={() => setActiveCourseSection("cierre")}
-            onSelectWeekOption={(weekNum, option) => {
-              setActiveCourseSection("week");
-              setSelectedClassWeek(weekNum);
-              setSelectedClassWeekOption(option);
-            }}
-            onBackToCourses={() => {
-              setSelectedCourseDetail("");
-              setActiveCourseComponentId(null);
-              try {
-                sessionStorage.removeItem("sfa_alumno_course_detail");
-                sessionStorage.removeItem("sfa_alumno_course_comp_id");
-              } catch {}
-              setActiveCourseSection("general");
-            }}
-          />
+        <div className="hidden md:flex shrink-0 relative z-20 h-full">
+          {/* Animated sliding panel */}
+          <div
+            className={`transition-all duration-300 ease-in-out h-full overflow-hidden ${
+              isCourseSidebarCollapsed ? "w-0 min-w-0" : "w-64 min-w-[16rem]"
+            }`}
+          >
+            <div className="w-64 h-full">
+              <SidebarCursoAlumno
+                courseCode={activeSelectedComponent ? activeSelectedComponent.code : (activeCourseObj?.code || selectedCourseDetail)}
+                courseName={activeSelectedComponent ? activeSelectedComponent.name : (activeCourseObj?.name || selectedCourseDetail)}
+                componentBadge={activeSelectedComponent ? {
+                  label: activeSelectedComponent.badge,
+                  className: activeSelectedComponent.id === "teo"
+                    ? "text-[#800521] bg-[#800521]/10 border-[#800521]/20"
+                    : activeSelectedComponent.id === "tal"
+                      ? "text-amber-800 bg-amber-50 border-amber-200"
+                      : "text-emerald-700 bg-emerald-50 border-emerald-200"
+                } : null}
+                hasMultipleComponents={activeCourseSubComponents.length > 1}
+                onChangeComponent={() => {
+                  setActiveCourseComponentId(null);
+                  try {
+                    sessionStorage.removeItem("sfa_alumno_course_comp_id");
+                  } catch { }
+                  setActiveCourseSection("general");
+                }}
+                activeSection={activeCourseSection}
+                selectedWeek={selectedClassWeek}
+                selectedWeekOption={selectedClassWeekOption}
+                onSelectGeneral={() => setActiveCourseSection("general")}
+                onSelectHorarios={() => setActiveCourseSection("horarios")}
+                onSelectCierre={() => setActiveCourseSection("cierre")}
+                onSelectWeekOption={(weekNum, option) => {
+                  setActiveCourseSection("week");
+                  setSelectedClassWeek(weekNum);
+                  setSelectedClassWeekOption(option);
+                }}
+                onBackToCourses={() => {
+                  setSelectedCourseDetail("");
+                  setActiveCourseComponentId(null);
+                  try {
+                    sessionStorage.removeItem("sfa_alumno_course_detail");
+                    sessionStorage.removeItem("sfa_alumno_course_comp_id");
+                  } catch { }
+                  setActiveCourseSection("general");
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Desplegable / botón flotante 2: SEMANAS DEL CURSO (Círculo Granate Institucional con Libro Dorado) */}
+          <button
+            type="button"
+            onClick={() => setIsCourseSidebarCollapsed(!isCourseSidebarCollapsed)}
+            title={isCourseSidebarCollapsed ? "Ver Semanas del Curso (1 a 16)" : "Ocultar Semanas del Curso"}
+            className="absolute -right-[14px] top-[54%] -translate-y-1/2 z-40 bg-[#800521] hover:bg-[#68031a] text-amber-300 hover:text-white border-2 border-white ring-2 ring-[#800521]/25 w-[28px] h-[28px] rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all cursor-pointer hover:scale-110 active:scale-95 group"
+          >
+            {isCourseSidebarCollapsed ? (
+              <BookOpen className="w-3.5 h-3.5 text-amber-300 group-hover:scale-110 transition-transform" />
+            ) : (
+              <ChevronLeft className="w-3.5 h-3.5 text-white group-hover:-translate-x-0.5 transition-transform" />
+            )}
+          </button>
         </div>
       )}
 
