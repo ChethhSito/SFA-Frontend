@@ -767,21 +767,31 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     };
   }, [assignments, courseResourceIds, activeCourse, activeCourseDbId, studentDni]);
 
-  // Multi-component Course Formula Calculation (Integral 3 partes: Teoría, Taller, Laboratorio)
+  // Multi-component Course Formula Calculation (Integral: Evaluación Continua 60% + Examen Final Integral 40%)
   const courseMultiComponentData = useMemo(() => {
-    // Component 1: Teoría
-    const gradeTeo = officialGradeData.finalGrade; // 16.5
-    // Component 2: Taller
-    const gradeTal = 17.0; // 17.0
-    // Component 3: Laboratorio
-    const gradeLab = 17.0; // 17.0
+    // Evaluaciones continuas de cada componente (Semanas 1 a 15):
+    // Componente 1: Teoría Continua (NPA: 18, PC1: 18, PC2: 16.5) -> Promedio continuo = 17.5
+    const gradeTeo = officialGradeData.pc1 !== null && officialGradeData.pc2 !== null && officialGradeData.npa !== null
+      ? Number((0.30 * officialGradeData.npa + 0.35 * officialGradeData.pc1 + 0.35 * officialGradeData.pc2).toFixed(1))
+      : 17.5;
+    // Componente 2: Taller Continuo (Tableros: 17, Montaje: 16.5, Práctica: 17.5) -> Promedio continuo = 17.0
+    const gradeTal = 17.0;
+    // Componente 3: Laboratorio Continuo (Simulación: 16.5, Mediciones: 17.5) -> Promedio continuo = 17.0
+    const gradeLab = 17.0;
 
-    // Ponderación oficial curricular por créditos (Teoría: 2 cr, Taller: 2 cr, Laboratorio: 1 cr -> Total: 5 cr)
-    const weightTeo = 0.40;
-    const weightTal = 0.40;
-    const weightLab = 0.20;
+    // Ponderación de la Evaluación Continua (PEC - 60% de la Nota Final) por créditos:
+    // Teoría: 40% del continuo (2 cr), Taller: 40% del continuo (2 cr), Laboratorio: 20% del continuo (1 cr)
+    const weightTeoInPec = 0.40;
+    const weightTalInPec = 0.40;
+    const weightLabInPec = 0.20;
 
-    const integratedGrade = Number((weightTeo * gradeTeo + weightTal * gradeTal + weightLab * gradeLab).toFixed(1)); // 16.8
+    const continuousGrade = Number((weightTeoInPec * gradeTeo + weightTalInPec * gradeTal + weightLabInPec * gradeLab).toFixed(1)); // 17.2
+
+    // Examen Final Integral del Curso (40% de la Nota Final - transversal a toda la Unidad Didáctica)
+    const finalExamGrade = officialGradeData.exFinal !== null ? officialGradeData.exFinal : 15.0; // 15.0
+
+    // Nota Final Oficial: 60% Continuo + 40% Examen Final Integral
+    const integratedGrade = Number((0.60 * continuousGrade + 0.40 * finalExamGrade).toFixed(1)); // 16.3
     const isIntegratedApproved = integratedGrade >= 12.5;
 
     return {
@@ -793,14 +803,14 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           name: "Teoría",
           fullName: "Fundamentos de Electricidad y Circuitos CC (Teoría)",
           credits: 2,
-          weightLabel: "40% (2 Créditos)",
+          weightLabel: "40% de Continua (2 Créditos)",
           weight: 0.40,
           grade: gradeTeo,
-          weightedContribution: Number((weightTeo * gradeTeo).toFixed(2)),
+          weightedContribution: Number((0.60 * weightTeoInPec * gradeTeo).toFixed(2)),
           condition: gradeTeo >= 12.5 ? "APROBADO" : "DESAPROBADO",
           teacher: "Manuel Ramos Salazar",
-          formula: "0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
-          summaryEvaluations: "PC1: 18 • PC2: 16.5 • EX_FINAL: 15 • NPA: 18"
+          formula: "0.30*NPA + 0.35*PC1 + 0.35*PC2",
+          summaryEvaluations: "NPA: 18 • PC1: 18 • PC2: 16.5 (Evaluación Continua)"
         },
         {
           id: "tal",
@@ -808,10 +818,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           name: "Taller",
           fullName: "Fundamentos de Electricidad y Circuitos CC (Taller)",
           credits: 2,
-          weightLabel: "40% (2 Créditos)",
+          weightLabel: "40% de Continua (2 Créditos)",
           weight: 0.40,
           grade: gradeTal,
-          weightedContribution: Number((weightTal * gradeTal).toFixed(2)),
+          weightedContribution: Number((0.60 * weightTalInPec * gradeTal).toFixed(2)),
           condition: gradeTal >= 12.5 ? "APROBADO" : "DESAPROBADO",
           teacher: "Manuel Ramos Salazar",
           formula: "0.30*TABLEROS + 0.30*MONTAJE + 0.40*PRACT_FINAL",
@@ -823,17 +833,20 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           name: "Laboratorio",
           fullName: "Fundamentos de Electricidad y Circuitos CC (Laboratorio)",
           credits: 1,
-          weightLabel: "20% (1 Crédito)",
+          weightLabel: "20% de Continua (1 Crédito)",
           weight: 0.20,
           grade: gradeLab,
-          weightedContribution: Number((weightLab * gradeLab).toFixed(2)),
+          weightedContribution: Number((0.60 * weightLabInPec * gradeLab).toFixed(2)),
           condition: gradeLab >= 12.5 ? "APROBADO" : "DESAPROBADO",
           teacher: "Manuel Ramos Salazar",
           formula: "0.50*SIMULACION + 0.50*MEDICIONES",
           summaryEvaluations: "Simulación CC: 16.5 • Mediciones: 17.5"
         }
       ],
-      integralFormulaExpression: "0.40*TEORÍA + 0.40*TALLER + 0.20*LABORATORIO",
+      continuousGrade,
+      finalExamGrade,
+      finalExamContribution: Number((0.40 * finalExamGrade).toFixed(2)),
+      integralFormulaExpression: "0.60*(0.40*TEO + 0.40*TAL + 0.20*LAB) + 0.40*EX_FINAL",
       integralGrade: integratedGrade,
       isIntegratedApproved,
       integralCondition: isIntegratedApproved ? "APROBADO" : "DESAPROBADO",
@@ -1100,6 +1113,35 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Hito Integrador: Examen Final del Curso Completo (40%) */}
+                <div className="mt-4 p-4 rounded-xl border border-amber-300 bg-amber-50/70 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-mono font-black text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded uppercase">
+                      HITO FINAL DEL CURSO • PESO: 40% OFICIAL
+                    </span>
+                    <h4 className="text-xs font-black text-slate-900 uppercase">
+                      Examen Final Integral de la Unidad Didáctica
+                    </h4>
+                    <p className="text-[10px] text-slate-600 font-medium">
+                      Evaluación comprehensiva transversal de toda la asignatura (evalúa conjuntamente Teoría, Taller y Laboratorio).
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0 bg-white px-4 py-2.5 rounded-xl border border-amber-200 shadow-2xs">
+                    <div>
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Nota Examen Final</span>
+                      <span className="text-lg font-black font-mono text-slate-900 block leading-tight">
+                        {courseMultiComponentData.finalExamGrade.toFixed(1)}
+                      </span>
+                    </div>
+                    <div className="text-right border-l pl-3 border-slate-200">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Aporte a Nota Final</span>
+                      <span className="text-sm font-black font-mono text-[#800521] block leading-tight">
+                        +{courseMultiComponentData.finalExamContribution.toFixed(2)} pts
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

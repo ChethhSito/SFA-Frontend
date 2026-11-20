@@ -13,12 +13,10 @@ export interface CourseFormula {
 export const COURSE_FORMULAS: Record<string, CourseFormula> = {
   "EIND-101": {
     courseCode: "EIND-101",
-    expression: "0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+    expression: "0.60*PEC + 0.40*EX_FINAL",
     variables: [
-      { id: "NPA", label: "Nota de Participación", weight: 0.20 },
-      { id: "PC1", label: "Práctica Calificada 1", weight: 0.20 },
-      { id: "PC2", label: "Práctica Calificada 2", weight: 0.20 },
-      { id: "EX_FINAL", label: "Examen Final", weight: 0.40 },
+      { id: "PEC", label: "Evaluación Continua (Teoría 40% + Taller 40% + Lab 20%)", weight: 0.60 },
+      { id: "EX_FINAL", label: "Examen Final Integral del Curso", weight: 0.40 },
     ],
   },
   "EIND-102": {
