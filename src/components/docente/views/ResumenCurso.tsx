@@ -8,6 +8,7 @@ interface ResumenCursoProps {
   assignmentsCount: number;
   incidentsCount: number;
   studentsCount: number;
+  totalGradesCount?: number;
   averageGpa: number;
 }
 
@@ -17,6 +18,7 @@ export function ResumenCurso({
   assignmentsCount,
   incidentsCount,
   studentsCount,
+  totalGradesCount,
   averageGpa,
 }: ResumenCursoProps) {
   const isApproved = averageGpa >= 12.5;
@@ -108,14 +110,14 @@ export function ResumenCurso({
           <span className="text-[9.5px] text-slate-400 font-extrabold uppercase tracking-wider block font-mono">Tareas Publicadas</span>
           <div className="flex items-baseline gap-1.5 mt-2">
             <span className="text-2xl font-black text-slate-900 font-mono">{assignmentsCount}</span>
-            <span className="text-[10px] text-slate-500 font-bold uppercase">Talleres</span>
+            <span className="text-[10px] text-slate-500 font-bold uppercase">Actividades</span>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-3xs p-4 text-left">
           <span className="text-[9.5px] text-slate-400 font-extrabold uppercase tracking-wider block font-mono">Notas Registradas</span>
           <div className="flex items-baseline gap-1.5 mt-2">
-            <span className="text-2xl font-black text-slate-900 font-mono">{(studentsCount * assignmentsCount) || 0}</span>
+            <span className="text-2xl font-black text-slate-900 font-mono">{totalGradesCount !== undefined ? totalGradesCount : (assignmentsCount || 0)}</span>
             <span className="text-[10px] text-slate-500 font-bold uppercase">Notas</span>
           </div>
         </div>

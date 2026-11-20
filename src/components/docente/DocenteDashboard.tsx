@@ -530,19 +530,31 @@ export default function DocenteDashboard({
   // Helper to calculate course specific stats
   const getCourseAggregates = (courseId: string) => {
     const courseMats = materials.filter((m) => m.courseId === courseId).length;
-    const courseAsgs = assignments.filter((a) => a.courseId === courseId).length;
+    const validCourseAsgs = assignments.filter((a) => a.courseId === courseId && !a.title.startsWith("[Planilla] "));
+    const courseAsgs = validCourseAsgs.length;
 
     let totalScore = 0;
     let counts = 0;
-    Object.keys(gradesRegistry).forEach((key) => {
-      if (key.startsWith(courseId)) {
-        const item = gradesRegistry[key];
-        if (item && item.grade !== undefined) {
-          totalScore += item.grade;
+    validCourseAsgs.forEach((asg) => {
+      (asg.submissions || []).forEach((sub: any) => {
+        if (sub.grade !== undefined && sub.grade !== null) {
+          totalScore += Number(sub.grade);
           counts++;
         }
-      }
+      });
     });
+
+    if (counts === 0) {
+      Object.keys(gradesRegistry).forEach((key) => {
+        if (key.startsWith(courseId)) {
+          const item = gradesRegistry[key];
+          if (item && item.grade !== undefined) {
+            totalScore += item.grade;
+            counts++;
+          }
+        }
+      });
+    }
 
     const gpa = counts > 0 ? totalScore / counts : 0;
 
@@ -550,7 +562,8 @@ export default function DocenteDashboard({
       materialsCount: courseMats,
       assignmentsCount: courseAsgs,
       incidentsCount: 0,
-      studentsCount: ROSTER.length,
+      studentsCount: 1,
+      totalGradesCount: counts,
       averageGpa: gpa
     };
   };

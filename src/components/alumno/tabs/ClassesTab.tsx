@@ -709,14 +709,15 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   const courseResourceIds = selectedComponent?.dbCourseId
     ? [selectedComponent.dbCourseId]
     : (activeCourse.attendanceCourseIds || [activeCourse.id]);
-  const courseGrades = assignments.filter((assignment) => courseResourceIds.includes(assignment.courseId))
+  const validAssignments = assignments.filter((assignment) => courseResourceIds.includes(assignment.courseId) && !assignment.title.startsWith("[Planilla] "));
+  const courseGrades = validAssignments
     .flatMap((assignment) => assignment.submissions || [])
     .filter((submission) => submission.studentDni === studentDni && submission.grade !== undefined)
     .map((submission) => Number(submission.grade));
   const averageGrade = courseGrades.length ? (courseGrades.reduce((sum, grade) => sum + grade, 0) / courseGrades.length).toFixed(1) : "NR";
   const courseMaterialsCount = materials.filter((material) => courseResourceIds.includes(material.courseId)).length;
-  const courseTasksCount = assignments.filter((assignment) => courseResourceIds.includes(assignment.courseId) && assignment.kind !== "assessment").length;
-  const courseGradesCount = assignments.filter((assignment) => courseResourceIds.includes(assignment.courseId) && assignment.submissions?.some((submission) => submission.studentDni === studentDni && submission.grade !== undefined)).length;
+  const courseTasksCount = validAssignments.filter((assignment) => assignment.kind !== "assessment").length;
+  const courseGradesCount = validAssignments.filter((assignment) => assignment.submissions?.some((submission) => submission.studentDni === studentDni && submission.grade !== undefined)).length;
 
   // Official Weighted Grade calculation (aligned with Docente Cierre and MINEDU standard)
   const officialGradeData = useMemo(() => {
