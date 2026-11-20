@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { 
   X, FileSpreadsheet, CheckCircle2, GraduationCap, Download, 
   BarChart3, Award, FileText, Check, ShieldCheck, Printer, AlertCircle, Users
@@ -715,9 +716,17 @@ export function CierreCurso({
       </div>
 
       {/* MODAL 1: ACTA OFICIAL CONSOLIDADA & FIRMA DIGITAL DE CADA DOCENTE */}
-      {showActaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in font-sans">
-          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-6 shadow-2xl relative border-t-8 border-[#800521] text-left">
+      {showActaModal && typeof document !== "undefined" && createPortal(
+        <div 
+          className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150 font-sans"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowActaModal(false);
+          }}
+        >
+          <Card 
+            className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-6 shadow-2xl relative border-t-8 border-[#800521] text-left animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => setShowActaModal(false)}
               className="absolute top-4 right-4 p-1.5 hover:bg-slate-100 rounded-lg cursor-pointer text-slate-400 hover:text-slate-700 transition-colors"
@@ -859,13 +868,22 @@ export function CierreCurso({
               </Button>
             </CardFooter>
           </Card>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL 2: REPORTE DE RENDIMIENTO ACADÉMICO (CORREGIDO DINÁMICO) */}
-      {showReportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in font-sans">
-          <Card className="w-full max-w-2xl bg-white p-6 shadow-2xl relative border-t-8 border-indigo-700 text-left">
+      {showReportModal && typeof document !== "undefined" && createPortal(
+        <div 
+          className="fixed inset-0 z-[99999] bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-150 font-sans"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowReportModal(false);
+          }}
+        >
+          <Card 
+            className="w-full max-w-2xl bg-white p-6 shadow-2xl relative border-t-8 border-indigo-700 text-left animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => setShowReportModal(false)}
               className="absolute top-4 right-4 p-1.5 hover:bg-slate-100 rounded-lg cursor-pointer text-slate-400 hover:text-slate-700 transition-colors"
@@ -951,7 +969,8 @@ export function CierreCurso({
               </Button>
             </CardFooter>
           </Card>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
