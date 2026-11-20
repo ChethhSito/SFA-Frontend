@@ -125,12 +125,24 @@ export function useMaterialUpload() {
       catch (err) { console.warn("No se pudo guardar la caché de evaluaciones", err); }
     };
     try {
-      // Persist every changed evaluation, not just the last item in the list.
+      // 1. Process deletions
+      for (const previous of assignments) {
+        if (updatedList.some((current) => current.id === previous.id || (previous._id && current.id === previous._id) || (current._id && current._id === previous._id) || (current.title === previous.title))) continue;
+        try {
+          await deleteCourseAssignment(previous._id || previous.id);
+        } catch (delErr) {
+          console.warn("Could not delete assignment on server, proceeding with local deletion:", delErr);
+        }
+        confirmed = confirmed.filter((current) => current.id !== previous.id && (!previous._id || current.id !== previous._id) && current.title !== previous.title);
+        keep(confirmed);
+      }
+
+      // 2. Persist additions and updates
       for (const item of updatedList) {
-        const previous = assignments.find((current) => current.id === item.id);
+        const previous = assignments.find((current) => current.id === item.id || (item._id && current._id === item._id));
         if (previous && JSON.stringify(previous) === JSON.stringify(item)) continue;
         const response = previous
-          ? await updateCourseAssignment(previous.id, { submissions: item.submissions })
+          ? await updateCourseAssignment(previous._id || previous.id, { submissions: item.submissions })
           : await createCourseAssignment(item);
         if (!response) throw new Error("No se pudo guardar la evaluación.");
         const saved = { ...response, id: response._id || response.id };
@@ -139,16 +151,7 @@ export function useMaterialUpload() {
           : [...confirmed, saved];
         keep(confirmed);
       }
-      for (const previous of assignments) {
-        if (updatedList.some((current) => current.id === previous.id)) continue;
-        try {
-          await deleteCourseAssignment(previous.id);
-        } catch (delErr) {
-          console.warn("Could not delete assignment on server, proceeding with local deletion:", delErr);
-        }
-        confirmed = confirmed.filter((current) => current.id !== previous.id);
-        keep(confirmed);
-      }
+
       try {
         if (typeof window !== "undefined" && "BroadcastChannel" in window) {
           const ch = new BroadcastChannel("sfa_realtime_sync");

@@ -83,15 +83,16 @@ export default function EvaluacionesManager({
     setSaving(true);
     try {
       const evaluationIdToDelete = selected.id;
+      const evaluationTitleToDelete = selected.title;
       const linkedComp = selected.curricularComponent;
       
-      // Filter out this assessment
-      let updatedAssignments = assignments.filter((a) => a.id !== evaluationIdToDelete);
+      // Filter out this assessment robustly by ID and Title
+      let updatedAssignments = assignments.filter((a) => a.id !== evaluationIdToDelete && a.title !== evaluationTitleToDelete);
 
       // If it had a curricular component, check if any other evaluation uses it; if not, remove the [Planilla] entry as well
       if (linkedComp) {
         const otherUsesComponent = updatedAssignments.some(
-          (a) => a.courseId === courseId && a.id !== evaluationIdToDelete && (a.curricularComponent === linkedComp || a.title.toUpperCase().includes(`[${linkedComp}]`))
+          (a) => a.courseId === courseId && a.id !== evaluationIdToDelete && a.title !== evaluationTitleToDelete && (a.curricularComponent === linkedComp || a.title.toUpperCase().includes(`[${linkedComp}]`))
         );
         if (!otherUsesComponent) {
           updatedAssignments = updatedAssignments.filter(
