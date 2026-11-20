@@ -138,16 +138,26 @@ export function CierreCurso({
       });
 
       // Default or calculated NPA (Nota de Participación / Asistencia / Informes)
-      const npa = countHomeworks > 0 ? Math.round(sumHomeworks / countHomeworks) : 18;
+      const npa = countHomeworks > 0 ? Math.round(sumHomeworks / countHomeworks) : (pc1 !== null ? pc1 : null);
 
-      // Weights: NPA (20%), PC1 (20%), PC2 (20%), EX_FINAL (40%)
-      const safePc1 = pc1 !== null ? pc1 : 18;
-      const safePc2 = pc2 !== null ? pc2 : 16.5;
-      const safeEx = exFinal !== null ? exFinal : 15;
+      // Real evaluations: No hardcoded fallback
+      const safePc1 = pc1;
+      const safePc2 = pc2;
+      const safeEx = exFinal;
 
-      const rawFinal = (0.20 * npa) + (0.20 * safePc1) + (0.20 * safePc2) + (0.40 * safeEx);
-      const finalGrade = Math.round(rawFinal * 10) / 10;
-      const condition: "APROBADO" | "DESAPROBADO" = finalGrade >= 12.5 ? "APROBADO" : "DESAPROBADO";
+      let finalGrade: number = 0;
+      let condition: "APROBADO" | "DESAPROBADO" | "PENDIENTE" = "PENDIENTE";
+
+      if (safeEx !== null) {
+        const rawFinal = (0.20 * (npa ?? safePc1 ?? 0)) + (0.20 * (safePc1 ?? 0)) + (0.20 * (safePc2 ?? 0)) + (0.40 * safeEx);
+        finalGrade = Math.round(rawFinal * 10) / 10;
+        condition = finalGrade >= 12.5 ? "APROBADO" : "DESAPROBADO";
+      } else {
+        // Examen Final is pending
+        const partial = (0.20 * (npa ?? 0)) + (0.20 * (safePc1 ?? 0)) + (0.20 * (safePc2 ?? 0));
+        finalGrade = Math.round(partial * 10) / 10;
+        condition = "PENDIENTE";
+      }
 
       return {
         dni: std.dni,
@@ -167,20 +177,23 @@ export function CierreCurso({
   const stats = useMemo(() => {
     const total = studentSummaries.length || 1;
     const approved = studentSummaries.filter((s) => s.condition === "APROBADO").length;
-    const failed = total - approved;
-    const avg = studentSummaries.reduce((acc, s) => acc + s.finalGrade, 0) / total;
-    const max = Math.max(...studentSummaries.map((s) => s.finalGrade), 0);
-    const min = Math.min(...studentSummaries.map((s) => s.finalGrade), 20);
+    const failed = studentSummaries.filter((s) => s.condition === "DESAPROBADO").length;
+    const pending = studentSummaries.filter((s) => s.condition === "PENDIENTE").length;
+    const validGrades = studentSummaries.map((s) => s.finalGrade);
+    const avg = validGrades.length ? validGrades.reduce((acc, s) => acc + s, 0) / total : 0;
+    const max = validGrades.length ? Math.max(...validGrades, 0) : 0;
+    const min = validGrades.length ? Math.min(...validGrades, 20) : 0;
 
     // Dynamic MINEDU Performance Buckets
-    const countDestacado = studentSummaries.filter((s) => s.finalGrade >= 17.5).length;
-    const countLogrado = studentSummaries.filter((s) => s.finalGrade >= 12.5 && s.finalGrade < 17.5).length;
-    const countProceso = studentSummaries.filter((s) => s.finalGrade < 12.5).length;
+    const countDestacado = studentSummaries.filter((s) => s.exFinal !== null && s.finalGrade >= 17.5).length;
+    const countLogrado = studentSummaries.filter((s) => s.exFinal !== null && s.finalGrade >= 12.5 && s.finalGrade < 17.5).length;
+    const countProceso = studentSummaries.filter((s) => s.exFinal === null || s.finalGrade < 12.5).length;
 
     return {
       total,
       approved,
       failed,
+      pending,
       passRate: ((approved / total) * 100).toFixed(1),
       avg: avg.toFixed(2),
       max: max.toFixed(1),
@@ -647,24 +660,26 @@ export function CierreCurso({
                       {std.lastName}, {std.name}
                     </td>
                     <td className="py-3.5 px-3 text-center font-mono font-bold text-slate-700">
-                      {std.npa}
+                      {std.npa !== null ? std.npa : <span className="text-slate-400 font-normal">NR</span>}
                     </td>
                     <td className="py-3.5 px-3 text-center font-mono font-bold text-slate-700">
-                      {std.pc1 !== null ? std.pc1 : <span className="text-slate-300">-</span>}
+                      {std.pc1 !== null ? std.pc1 : <span className="text-slate-400 font-normal">NR</span>}
                     </td>
                     <td className="py-3.5 px-3 text-center font-mono font-bold text-slate-700">
-                      {std.pc2 !== null ? std.pc2 : <span className="text-slate-300">-</span>}
+                      {std.pc2 !== null ? std.pc2 : <span className="text-slate-400 font-normal">NR</span>}
                     </td>
                     <td className="py-3.5 px-3 text-center font-mono font-bold text-slate-700">
-                      {std.exFinal !== null ? std.exFinal : <span className="text-slate-300">-</span>}
+                      {std.exFinal !== null ? std.exFinal : <span className="text-slate-400 font-normal">NR</span>}
                     </td>
                     <td className="py-3.5 px-3.5 text-center font-mono font-black text-sm text-[#800521]">
-                      {std.finalGrade.toFixed(1)}
+                      {std.exFinal !== null ? std.finalGrade.toFixed(1) : `${std.finalGrade.toFixed(1)} (Parcial)`}
                     </td>
                     <td className="py-3.5 px-4 text-center">
                       <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
                         std.condition === "APROBADO" 
                           ? "bg-emerald-50 text-emerald-800 border border-emerald-200" 
+                          : std.condition === "PENDIENTE"
+                          ? "bg-amber-50 text-amber-800 border border-amber-200"
                           : "bg-rose-50 text-rose-800 border border-rose-200"
                       }`}>
                         {std.condition}

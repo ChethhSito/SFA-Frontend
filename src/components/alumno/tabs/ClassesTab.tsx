@@ -747,13 +747,22 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
       }
     });
 
-    const vNpa = countHomeworks > 0 ? Math.round(sumHomeworks / countHomeworks) : 18;
-    const vPc1 = pc1 !== null ? pc1 : 18;
-    const vPc2 = pc2 !== null ? pc2 : 16.5;
-    const vExFinal = exFinal !== null ? exFinal : 15;
+    const vNpa = countHomeworks > 0 ? Number((sumHomeworks / countHomeworks).toFixed(1)) : null;
+    const vPc1 = pc1;
+    const vPc2 = pc2;
+    const vExFinal = exFinal;
 
-    const weighted = Number((0.20 * vNpa + 0.20 * vPc1 + 0.20 * vPc2 + 0.40 * vExFinal).toFixed(1));
-    const isApproved = weighted >= 12.5;
+    const hasAnyGrade = vNpa !== null || vPc1 !== null || vPc2 !== null || vExFinal !== null;
+    const isComplete = vNpa !== null && vPc1 !== null && vPc2 !== null && vExFinal !== null;
+
+    let weighted: number | null = null;
+    if (isComplete) {
+      weighted = Number((0.20 * vNpa! + 0.20 * vPc1! + 0.20 * vPc2! + 0.40 * vExFinal!).toFixed(1));
+    } else if (hasAnyGrade) {
+      weighted = Number((0.20 * (vNpa ?? 0) + 0.20 * (vPc1 ?? 0) + 0.20 * (vPc2 ?? 0) + 0.40 * (vExFinal ?? 0)).toFixed(1));
+    }
+
+    const isApproved = weighted !== null && weighted >= 12.5;
 
     return {
       npa: vNpa,
@@ -762,22 +771,71 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
       exFinal: vExFinal,
       finalGrade: weighted,
       isApproved,
-      condition: isApproved ? "APROBADO" : "DESAPROBADO",
+      isComplete,
+      condition: !isComplete ? "EN PROCESO" : (isApproved ? "APROBADO" : "DESAPROBADO"),
       formulaExpression: "0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
     };
   }, [assignments, courseResourceIds, activeCourse, activeCourseDbId, studentDni]);
 
   // Multi-component Course Formula Calculation (Integral: Evaluación Continua 60% + Examen Final Integral 40%)
   const courseMultiComponentData = useMemo(() => {
-    // Evaluaciones continuas de cada componente (Semanas 1 a 15):
-    // Componente 1: Teoría Continua (NPA: 18, PC1: 18, PC2: 16.5) -> Promedio continuo = 17.5
-    const gradeTeo = officialGradeData.pc1 !== null && officialGradeData.pc2 !== null && officialGradeData.npa !== null
-      ? Number((0.30 * officialGradeData.npa + 0.35 * officialGradeData.pc1 + 0.35 * officialGradeData.pc2).toFixed(1))
-      : 17.5;
-    // Componente 2: Taller Continuo (Tableros: 17, Montaje: 16.5, Práctica: 17.5) -> Promedio continuo = 17.0
-    const gradeTal = 17.0;
-    // Componente 3: Laboratorio Continuo (Simulación: 16.5, Mediciones: 17.5) -> Promedio continuo = 17.0
-    const gradeLab = 17.0;
+    // Helper to calculate continuous evaluations of each component dynamically from assignments
+    const getCompGrades = (compCode: string, compDbId: string, keywords: string[]) => {
+      const compAsgs = assignments.filter((a) => {
+        if (a.title.startsWith("[Planilla] ")) return false;
+        // Do not include the transversal final exam in the continuous component average
+        if (/EX_FINAL|EXAMEN FINAL/i.test(a.title)) return false;
+        const cId = a.courseId || "";
+        return cId === compDbId || cId === compCode || keywords.some((kw) => cId.toLowerCase().includes(kw));
+      });
+
+      const gradedSubs = compAsgs
+        .map((a) => {
+          const sub = a.submissions?.find((s: any) => s.studentDni === studentDni && s.grade !== undefined);
+          return {
+            title: a.title,
+            grade: sub ? Number(sub.grade) : null
+          };
+        })
+        .filter((item) => item.grade !== null);
+
+      if (gradedSubs.length === 0) {
+        return {
+          avg: null,
+          count: 0,
+          summary: "Sin evaluaciones registradas"
+        };
+      }
+
+      const sum = gradedSubs.reduce((acc, curr) => acc + (curr.grade || 0), 0);
+      const avg = Number((sum / gradedSubs.length).toFixed(1));
+      const summary = gradedSubs.map((s) => {
+        const shortName = s.title.replace(/^\[.*?\]\s*/, "").replace(/\(.*?\)/, "").trim();
+        return `${shortName}: ${s.grade}`;
+      }).join(" • ");
+
+      return { avg, count: gradedSubs.length, summary };
+    };
+
+    // Componente 1: Teoría
+    const compTeo = getCompGrades("EIND-101-TEO", "6afc831d1bbefb1d4e11dd0e", ["teo", "teor"]);
+    // In theory, if we have NPA, PC1, PC2, calculate ministerial weighted formula: 0.30*NPA + 0.35*PC1 + 0.35*PC2
+    let gradeTeo: number | null = null;
+    let summaryTeo = compTeo.summary;
+    if (officialGradeData.npa !== null && officialGradeData.pc1 !== null && officialGradeData.pc2 !== null) {
+      gradeTeo = Number((0.30 * officialGradeData.npa + 0.35 * officialGradeData.pc1 + 0.35 * officialGradeData.pc2).toFixed(1));
+      summaryTeo = `NPA: ${officialGradeData.npa} • PC1: ${officialGradeData.pc1} • PC2: ${officialGradeData.pc2}`;
+    } else {
+      gradeTeo = compTeo.avg;
+    }
+
+    // Componente 2: Taller
+    const compTal = getCompGrades("EIND-101-TAL", "6afe1412016eccb3be7af0eb", ["tal", "taller"]);
+    const gradeTal: number | null = compTal.avg;
+
+    // Componente 3: Laboratorio
+    const compLab = getCompGrades("EIND-101-LAB", "6afe141f016eccb3be7af0ec", ["lab", "laboratorio"]);
+    const gradeLab: number | null = compLab.avg;
 
     // Ponderación de la Evaluación Continua (PEC - 60% de la Nota Final) por créditos:
     // Teoría: 40% del continuo (2 cr), Taller: 40% del continuo (2 cr), Laboratorio: 20% del continuo (1 cr)
@@ -785,14 +843,31 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     const weightTalInPec = 0.40;
     const weightLabInPec = 0.20;
 
-    const continuousGrade = Number((weightTeoInPec * gradeTeo + weightTalInPec * gradeTal + weightLabInPec * gradeLab).toFixed(1)); // 17.2
+    const teoContrib = gradeTeo !== null ? Number((0.60 * weightTeoInPec * gradeTeo).toFixed(2)) : 0;
+    const talContrib = gradeTal !== null ? Number((0.60 * weightTalInPec * gradeTal).toFixed(2)) : 0;
+    const labContrib = gradeLab !== null ? Number((0.60 * weightLabInPec * gradeLab).toFixed(2)) : 0;
+
+    // Continuous average across active components
+    const continuousGrade = (gradeTeo !== null || gradeTal !== null || gradeLab !== null)
+      ? Number(((weightTeoInPec * (gradeTeo ?? 0) + weightTalInPec * (gradeTal ?? 0) + weightLabInPec * (gradeLab ?? 0))).toFixed(1))
+      : null;
 
     // Examen Final Integral del Curso (40% de la Nota Final - transversal a toda la Unidad Didáctica)
-    const finalExamGrade = officialGradeData.exFinal !== null ? officialGradeData.exFinal : 15.0; // 15.0
+    // Searches across all course assignments for any exam marked EX_FINAL / EXAMEN FINAL
+    const finalExamAsg = assignments.find((a) =>
+      !a.title.startsWith("[Planilla] ") &&
+      /EX_FINAL|EXAMEN FINAL/i.test(a.title)
+    );
+    const finalExamSub = finalExamAsg?.submissions?.find((s: any) => s.studentDni === studentDni && s.grade !== undefined);
+    const finalExamGrade: number | null = finalExamSub ? Number(finalExamSub.grade) : null;
+    const finalExamContrib = finalExamGrade !== null ? Number((0.40 * finalExamGrade).toFixed(2)) : 0;
 
-    // Nota Final Oficial: 60% Continuo + 40% Examen Final Integral
-    const integratedGrade = Number((0.60 * continuousGrade + 0.40 * finalExamGrade).toFixed(1)); // 16.3
-    const isIntegratedApproved = integratedGrade >= 12.5;
+    // Consolidated / Integrated Status
+    const isComplete = gradeTeo !== null && gradeTal !== null && gradeLab !== null && finalExamGrade !== null;
+    const totalAccumulated = Number((teoContrib + talContrib + labContrib + finalExamContrib).toFixed(1));
+    const integratedGrade = isComplete ? totalAccumulated : totalAccumulated;
+    const isIntegratedApproved = isComplete && totalAccumulated >= 12.5;
+    const integralCondition = !isComplete ? "EN PROCESO" : (isIntegratedApproved ? "APROBADO" : "DESAPROBADO");
 
     return {
       hasMultiple: subComponents.length > 1,
@@ -806,11 +881,11 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           weightLabel: "40% de Continua (2 Créditos)",
           weight: 0.40,
           grade: gradeTeo,
-          weightedContribution: Number((0.60 * weightTeoInPec * gradeTeo).toFixed(2)),
-          condition: gradeTeo >= 12.5 ? "APROBADO" : "DESAPROBADO",
+          weightedContribution: teoContrib,
+          condition: gradeTeo === null ? "PENDIENTE" : (gradeTeo >= 12.5 ? "APROBADO" : "DESAPROBADO"),
           teacher: "Manuel Ramos Salazar",
           formula: "0.30*NPA + 0.35*PC1 + 0.35*PC2",
-          summaryEvaluations: "NPA: 18 • PC1: 18 • PC2: 16.5 (Evaluación Continua)"
+          summaryEvaluations: summaryTeo
         },
         {
           id: "tal",
@@ -821,11 +896,11 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           weightLabel: "40% de Continua (2 Créditos)",
           weight: 0.40,
           grade: gradeTal,
-          weightedContribution: Number((0.60 * weightTalInPec * gradeTal).toFixed(2)),
-          condition: gradeTal >= 12.5 ? "APROBADO" : "DESAPROBADO",
+          weightedContribution: talContrib,
+          condition: gradeTal === null ? "PENDIENTE" : (gradeTal >= 12.5 ? "APROBADO" : "DESAPROBADO"),
           teacher: "Manuel Ramos Salazar",
           formula: "0.30*TABLEROS + 0.30*MONTAJE + 0.40*PRACT_FINAL",
-          summaryEvaluations: "Tableros: 17 • Montaje: 16.5 • Práctica Final: 17.5"
+          summaryEvaluations: compTal.summary
         },
         {
           id: "lab",
@@ -836,23 +911,24 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
           weightLabel: "20% de Continua (1 Crédito)",
           weight: 0.20,
           grade: gradeLab,
-          weightedContribution: Number((0.60 * weightLabInPec * gradeLab).toFixed(2)),
-          condition: gradeLab >= 12.5 ? "APROBADO" : "DESAPROBADO",
+          weightedContribution: labContrib,
+          condition: gradeLab === null ? "PENDIENTE" : (gradeLab >= 12.5 ? "APROBADO" : "DESAPROBADO"),
           teacher: "Manuel Ramos Salazar",
           formula: "0.50*SIMULACION + 0.50*MEDICIONES",
-          summaryEvaluations: "Simulación CC: 16.5 • Mediciones: 17.5"
+          summaryEvaluations: compLab.summary
         }
       ],
       continuousGrade,
       finalExamGrade,
-      finalExamContribution: Number((0.40 * finalExamGrade).toFixed(2)),
+      finalExamContribution: finalExamContrib,
       integralFormulaExpression: "0.60*(0.40*TEO + 0.40*TAL + 0.20*LAB) + 0.40*EX_FINAL",
       integralGrade: integratedGrade,
       isIntegratedApproved,
-      integralCondition: isIntegratedApproved ? "APROBADO" : "DESAPROBADO",
+      integralCondition,
+      isComplete,
       totalCredits: 5
     };
-  }, [officialGradeData, subComponents]);
+  }, [assignments, officialGradeData, subComponents, studentDni]);
 
   return (
     <PageTransition id="classes-workspace" className="w-full space-y-6 text-left relative">
@@ -1089,13 +1165,13 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                         <div>
                           <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Promedio Parcial</span>
                           <span className="text-lg font-black font-mono text-slate-900 block leading-tight">
-                            {comp.grade.toFixed(1)}
+                            {comp.grade !== null ? comp.grade.toFixed(1) : "NR"}
                           </span>
                         </div>
                         <div className="text-right">
                           <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Aporte a Nota Final</span>
                           <span className="text-sm font-black font-mono text-[#800521] block leading-tight">
-                            +{comp.weightedContribution.toFixed(2)} pts
+                            {comp.grade !== null ? `+${comp.weightedContribution.toFixed(2)} pts` : "+0.00 pts"}
                           </span>
                         </div>
                       </div>
@@ -1103,7 +1179,13 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                       <div className="pt-2 border-t border-slate-150 text-[9.5px] text-slate-600 font-medium space-y-1">
                         <div className="flex justify-between items-center">
                           <span className="text-slate-400">Condición:</span>
-                          <span className="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded uppercase">
+                          <span className={`font-bold px-1.5 py-0.2 rounded uppercase ${
+                            comp.condition === "APROBADO"
+                              ? "text-emerald-700 bg-emerald-50"
+                              : comp.condition === "PENDIENTE"
+                              ? "text-amber-700 bg-amber-50"
+                              : "text-rose-700 bg-rose-50"
+                          }`}>
                             {comp.condition}
                           </span>
                         </div>
@@ -1132,13 +1214,15 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                     <div>
                       <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Nota Examen Final</span>
                       <span className="text-lg font-black font-mono text-slate-900 block leading-tight">
-                        {courseMultiComponentData.finalExamGrade.toFixed(1)}
+                        {courseMultiComponentData.finalExamGrade !== null ? courseMultiComponentData.finalExamGrade.toFixed(1) : "NR"}
                       </span>
                     </div>
                     <div className="text-right border-l pl-3 border-slate-200">
                       <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Aporte a Nota Final</span>
                       <span className="text-sm font-black font-mono text-[#800521] block leading-tight">
-                        +{courseMultiComponentData.finalExamContribution.toFixed(2)} pts
+                        {courseMultiComponentData.finalExamGrade !== null
+                          ? `+${courseMultiComponentData.finalExamContribution.toFixed(2)} pts`
+                          : "+0.00 pts (Pendiente)"}
                       </span>
                     </div>
                   </div>
@@ -1157,36 +1241,43 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                     Resumen consolidado de rendimiento semestral y cumplimiento curricular oficial.
                   </p>
                 </div>
-                <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 px-3 py-1 rounded-lg uppercase self-start sm:self-auto">
-                  ESTADO: CONSOLIDADO INTEGRAL CERRADO
+                <span className={`text-[10px] font-mono font-bold px-3 py-1 rounded-lg uppercase self-start sm:self-auto ${
+                  courseMultiComponentData.isComplete
+                    ? "bg-emerald-100 text-emerald-900 border border-emerald-300"
+                    : "bg-amber-100 text-amber-900 border border-amber-300"
+                }`}>
+                  {courseMultiComponentData.isComplete ? "ESTADO: CONSOLIDADO INTEGRAL CERRADO" : "ESTADO: EN PROCESO DE EVALUACIÓN"}
                 </span>
               </CardHeader>
               <CardContent className="p-5 space-y-5">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className={`p-4 rounded-xl text-center border ${courseMultiComponentData.isIntegratedApproved
-                    ? "bg-emerald-50 text-emerald-900 border-emerald-200 shadow-2xs"
-                    : "bg-rose-50 text-rose-950 border-rose-200"
+                  <div className={`p-4 rounded-xl text-center border ${
+                    !courseMultiComponentData.isComplete
+                      ? "bg-amber-50 text-amber-900 border-amber-200 shadow-2xs"
+                      : courseMultiComponentData.isIntegratedApproved
+                      ? "bg-emerald-50 text-emerald-900 border-emerald-200 shadow-2xs"
+                      : "bg-rose-50 text-rose-950 border-rose-200"
                     }`}>
-                    <span className="text-[10px] font-black uppercase block tracking-wider text-emerald-700">
+                    <span className="text-[10px] font-black uppercase block tracking-wider text-slate-600">
                       Situación de Curso
                     </span>
                     <span className="text-xl font-black block mt-1 tracking-tight">
                       {courseMultiComponentData.integralCondition}
                     </span>
-                    <span className="text-[9px] font-semibold text-emerald-600 block mt-0.5">
+                    <span className="text-[9px] font-semibold text-slate-500 block mt-0.5">
                       Logro Curricular MINEDU
                     </span>
                   </div>
 
                   <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-200 shadow-2xs">
                     <span className="text-[10px] text-slate-400 font-black uppercase block tracking-wider">
-                      Promedio Ponderado Final
+                      {courseMultiComponentData.isComplete ? "Promedio Ponderado Final" : "Puntaje Parcial Acumulado"}
                     </span>
                     <span className="text-xl font-black text-[#800521] block mt-1 font-mono tracking-tight">
-                      {courseMultiComponentData.integralGrade.toFixed(1)}
+                      {courseMultiComponentData.integralGrade !== null ? courseMultiComponentData.integralGrade.toFixed(1) : "NR"}
                     </span>
                     <span className="text-[9px] font-semibold text-slate-500 block mt-0.5">
-                      Escala Vigesimal (0 - 20)
+                      {courseMultiComponentData.isComplete ? "Escala Vigesimal (0 - 20)" : "Evaluaciones en curso"}
                     </span>
                   </div>
 
@@ -1229,22 +1320,22 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="bg-white p-3 rounded-lg border border-slate-200 text-center shadow-2xs">
                       <span className="text-[9px] font-bold text-slate-400 uppercase block">NPA (20%)</span>
-                      <span className="text-sm font-black font-mono text-slate-800 block mt-1">{officialGradeData.npa}</span>
+                      <span className="text-sm font-black font-mono text-slate-800 block mt-1">{officialGradeData.npa !== null ? officialGradeData.npa : "NR"}</span>
                       <span className="text-[8px] text-slate-400 font-medium block">Participación / Informes</span>
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-slate-200 text-center shadow-2xs">
                       <span className="text-[9px] font-bold text-slate-400 uppercase block">PC1 (20%)</span>
-                      <span className="text-sm font-black font-mono text-slate-800 block mt-1">{officialGradeData.pc1}</span>
+                      <span className="text-sm font-black font-mono text-slate-800 block mt-1">{officialGradeData.pc1 !== null ? officialGradeData.pc1 : "NR"}</span>
                       <span className="text-[8px] text-slate-400 font-medium block">Práctica Calificada 1</span>
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-slate-200 text-center shadow-2xs">
                       <span className="text-[9px] font-bold text-slate-400 uppercase block">PC2 (20%)</span>
-                      <span className="text-sm font-black font-mono text-slate-800 block mt-1">{officialGradeData.pc2}</span>
+                      <span className="text-sm font-black font-mono text-slate-800 block mt-1">{officialGradeData.pc2 !== null ? officialGradeData.pc2 : "NR"}</span>
                       <span className="text-[8px] text-slate-400 font-medium block">Práctica Calificada 2</span>
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-slate-200 text-center shadow-2xs">
                       <span className="text-[9px] font-bold text-slate-400 uppercase block">EX_FINAL (40%)</span>
-                      <span className="text-sm font-black font-mono text-slate-800 block mt-1">{officialGradeData.exFinal}</span>
+                      <span className="text-sm font-black font-mono text-slate-800 block mt-1">{officialGradeData.exFinal !== null ? officialGradeData.exFinal : "NR"}</span>
                       <span className="text-[8px] text-slate-400 font-medium block">Examen Final Modular</span>
                     </div>
                   </div>
