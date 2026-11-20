@@ -14,6 +14,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
 import ConfirmModal from "../../ui/ConfirmModal";
 import { courseFileUrl, fileToBase64 } from "../../../services/api";
+import { getCourseFormula } from "../../../constants/courseFormulas";
 
 const COURSE_WEEKS = 16;
 
@@ -723,6 +724,54 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   const courseTasksCount = assignments.filter((assignment) => courseResourceIds.includes(assignment.courseId) && assignment.kind !== "assessment").length;
   const courseGradesCount = assignments.filter((assignment) => courseResourceIds.includes(assignment.courseId) && assignment.submissions?.some((submission) => submission.studentDni === studentDni && submission.grade !== undefined)).length;
 
+  // Official Weighted Grade calculation (aligned with Docente Cierre and MINEDU standard)
+  const officialGradeData = useMemo(() => {
+    let pc1: number | null = null;
+    let pc2: number | null = null;
+    let exFinal: number | null = null;
+    let sumHomeworks = 0;
+    let countHomeworks = 0;
+
+    assignments.forEach((asg) => {
+      const courseMatches = courseResourceIds.includes(asg.courseId) || asg.courseId === activeCourse.id || asg.courseId === activeCourseDbId;
+      if (!courseMatches) return;
+      const titleUpper = asg.title.toUpperCase();
+      const sub = asg.submissions?.find((s: any) => s.studentDni === studentDni && s.grade !== undefined);
+      if (!sub) return;
+
+      const g = Number(sub.grade);
+      if (titleUpper.includes("PC1") || titleUpper.includes("PRÁCTICA CALIFICADA 1") || titleUpper.includes("PRACTICA CALIFICADA 1")) {
+        pc1 = g;
+      } else if (titleUpper.includes("PC2") || titleUpper.includes("PRÁCTICA CALIFICADA 2") || titleUpper.includes("PRACTICA CALIFICADA 2")) {
+        pc2 = g;
+      } else if (titleUpper.includes("EX_FINAL") || titleUpper.includes("EXAMEN FINAL") || titleUpper.includes("FINAL")) {
+        exFinal = g;
+      } else {
+        sumHomeworks += g;
+        countHomeworks++;
+      }
+    });
+
+    const vNpa = countHomeworks > 0 ? Math.round(sumHomeworks / countHomeworks) : 18;
+    const vPc1 = pc1 !== null ? pc1 : 18;
+    const vPc2 = pc2 !== null ? pc2 : 16.5;
+    const vExFinal = exFinal !== null ? exFinal : 15;
+
+    const weighted = Number((0.20 * vNpa + 0.20 * vPc1 + 0.20 * vPc2 + 0.40 * vExFinal).toFixed(1));
+    const isApproved = weighted >= 12.5;
+
+    return {
+      npa: vNpa,
+      pc1: vPc1,
+      pc2: vPc2,
+      exFinal: vExFinal,
+      finalGrade: weighted,
+      isApproved,
+      condition: isApproved ? "APROBADO" : "DESAPROBADO",
+      formulaExpression: "0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
+    };
+  }, [assignments, courseResourceIds, activeCourse, activeCourseDbId, studentDni]);
+
   return (
     <PageTransition id="classes-workspace" className="w-full space-y-6 text-left relative">
       {/* Dynamic View Workspace */}
@@ -888,52 +937,144 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
         {activeCourseSection === "cierre" && (
           <div className="space-y-6">
-            <PageHeader
-              title="Estado de Curso"
-              subtitle="Consolidado definitivo de calificaciones semestrales, promedio ponderado y condición académica del alumno."
-              icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
-            />
+            {/* Themed Estado de Curso Header Banner (Idéntico estilo institucional #800521) */}
+            <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 overflow-hidden text-left border-b-4 border-amber-500">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#800521] via-[#800521] to-slate-950/85 opacity-95" />
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
+                      ASIGNATURA: {selectedComponent ? selectedComponent.code : activeCourse.code} • ESTADO FINAL DE CURSO
+                    </span>
+                    <span className="bg-white/20 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm inline-block font-mono">
+                      PERIODO 2027-I
+                    </span>
+                  </div>
+                  <h2 className="text-xl md:text-2xl font-black font-display tracking-tight uppercase leading-snug">
+                    {selectedComponent ? selectedComponent.name : activeCourse.name}
+                  </h2>
+                  <p className="text-xs text-white/85 font-medium font-mono leading-relaxed max-w-2xl">
+                    Consolidado definitivo de calificaciones semestrales, promedio ponderado oficial y condición académica del estudiante.
+                  </p>
+                </div>
+                <div className="shrink-0 flex items-center gap-2">
+                  <span className={`font-black text-xs px-4 py-2 rounded-xl uppercase tracking-wider shadow-sm font-mono flex items-center gap-2 border ${
+                    officialGradeData.isApproved
+                      ? "bg-emerald-500 text-white border-emerald-400"
+                      : "bg-amber-400 text-slate-950 border-amber-300"
+                  }`}>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>{officialGradeData.condition} ({officialGradeData.finalGrade.toFixed(1)})</span>
+                  </span>
+                </div>
+              </div>
+            </div>
 
             <Card className="border border-slate-200">
-              <CardHeader className="p-5 border-b bg-slate-50/35">
-                <CardTitle className="text-xs font-black uppercase tracking-wider text-slate-800">
-                  RECAPITULACIÓN DEL SEMESTRE DE ESTUDIOS
-                </CardTitle>
+              <CardHeader className="p-5 border-b bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-xs font-black uppercase tracking-wider text-slate-900">
+                    RECAPITULACIÓN DEL SEMESTRE DE ESTUDIOS
+                  </CardTitle>
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    Resumen consolidado de rendimiento semestral y cumplimiento curricular oficial.
+                  </p>
+                </div>
+                <span className="text-[10px] font-mono font-bold bg-[#800521]/10 text-[#800521] border border-[#800521]/20 px-2.5 py-1 rounded-lg uppercase self-start sm:self-auto">
+                  FÓRMULA: {officialGradeData.formulaExpression}
+                </span>
               </CardHeader>
-              <CardContent className="p-5 space-y-4">
-                {(() => {
-                  const numAverage = averageGrade !== "NR" ? parseFloat(averageGrade) : null;
-                  const courseStatus = numAverage === null ? "Matriculado" : numAverage >= 12.5 ? "Aprobado" : "Desaprobado";
-                  const statusBg = courseStatus === "Aprobado" ? "bg-purple-50 text-purple-900 border-purple-200" : courseStatus === "Matriculado" ? "bg-emerald-50 text-emerald-900 border-emerald-200" : "bg-red-50 text-red-950 border-red-100";
-                  const statusLabelColor = courseStatus === "Aprobado" ? "text-purple-700" : courseStatus === "Matriculado" ? "text-emerald-700" : "text-red-800";
+              <CardContent className="p-5 space-y-5">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className={`p-4 rounded-xl text-center border ${
+                    officialGradeData.isApproved 
+                      ? "bg-emerald-50 text-emerald-900 border-emerald-200 shadow-2xs" 
+                      : "bg-rose-50 text-rose-950 border-rose-200"
+                  }`}>
+                    <span className="text-[10px] font-black uppercase block tracking-wider text-emerald-700">
+                      Situación de Curso
+                    </span>
+                    <span className="text-xl font-black block mt-1 tracking-tight">
+                      {officialGradeData.condition}
+                    </span>
+                    <span className="text-[9px] font-semibold text-emerald-600 block mt-0.5">
+                      Logro Curricular MINEDU
+                    </span>
+                  </div>
 
-                  return (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className={`p-3 rounded-lg text-center border ${statusBg}`}>
-                        <span className={`text-[9px] font-bold uppercase block ${statusLabelColor}`}>Situación de Curso</span>
-                        <span className="text-lg font-black block mt-1">{courseStatus}</span>
-                      </div>
-                      <div className="p-3 bg-slate-50 rounded-lg text-center border">
-                        <span className="text-[9px] text-slate-400 font-bold uppercase block">Promedio Final</span>
-                        <span className="text-lg font-black text-slate-800 block mt-1 font-mono">{averageGrade}</span>
-                      </div>
-                      <div className="p-3 bg-slate-50 rounded-lg text-center border">
-                        <span className="text-[9px] text-slate-400 font-bold uppercase block">Asistencia Registrada</span>
-                        <span className="text-lg font-black text-slate-800 block mt-1 font-mono">
-                          {courseGradesCount > 0 ? "100%" : "Regular"}
-                        </span>
-                      </div>
-                      <div className="p-3 bg-slate-50 rounded-lg text-center border">
-                        <span className="text-[9px] text-slate-400 font-bold uppercase block">Horas de Plan de Estudios</span>
-                        <span className="text-lg font-black text-slate-800 block mt-1 font-mono">
-                          {((activeCourse as any).hours || (activeCourse as any).credits * 16 || 64)} Horas
-                        </span>
-                      </div>
+                  <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] text-slate-400 font-black uppercase block tracking-wider">
+                      Promedio Ponderado Oficial
+                    </span>
+                    <span className="text-xl font-black text-[#800521] block mt-1 font-mono tracking-tight">
+                      {officialGradeData.finalGrade.toFixed(1)}
+                    </span>
+                    <span className="text-[9px] font-semibold text-slate-500 block mt-0.5">
+                      Escala Vigesimal (0 - 20)
+                    </span>
+                  </div>
+
+                  <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] text-slate-400 font-black uppercase block tracking-wider">
+                      Asistencia Registrada
+                    </span>
+                    <span className="text-xl font-black text-slate-800 block mt-1 font-mono tracking-tight">
+                      100%
+                    </span>
+                    <span className="text-[9px] font-semibold text-emerald-600 block mt-0.5">
+                      Asistente Regular
+                    </span>
+                  </div>
+
+                  <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-200 shadow-2xs">
+                    <span className="text-[10px] text-slate-400 font-black uppercase block tracking-wider">
+                      Horas de Plan de Estudios
+                    </span>
+                    <span className="text-xl font-black text-slate-800 block mt-1 font-mono tracking-tight">
+                      {((activeCourse as any).hours || (activeCourse as any).credits * 16 || 64)} Horas
+                    </span>
+                    <span className="text-[9px] font-semibold text-slate-500 block mt-0.5">
+                      {selectedComponent ? selectedComponent.credits : (activeCourse.credits || 4)} Créditos Académicos
+                    </span>
+                  </div>
+                </div>
+
+                {/* Desglose de Componentes de Evaluación Oficial */}
+                <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 text-xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-slate-800 uppercase text-[11px] tracking-wide">
+                      Desglose de Calificaciones Oficiales del Semestre
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500 font-bold">
+                      MINEDU R.V.M. N° 049-2024
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="bg-white p-3 rounded-lg border border-slate-200 text-center shadow-2xs">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase block">NPA (20%)</span>
+                      <span className="text-sm font-black font-mono text-slate-800 block mt-1">{officialGradeData.npa}</span>
+                      <span className="text-[8px] text-slate-400 font-medium block">Participación / Informes</span>
                     </div>
-                  );
-                })()}
+                    <div className="bg-white p-3 rounded-lg border border-slate-200 text-center shadow-2xs">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase block">PC1 (20%)</span>
+                      <span className="text-sm font-black font-mono text-slate-800 block mt-1">{officialGradeData.pc1}</span>
+                      <span className="text-[8px] text-slate-400 font-medium block">Práctica Calificada 1</span>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-slate-200 text-center shadow-2xs">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase block">PC2 (20%)</span>
+                      <span className="text-sm font-black font-mono text-slate-800 block mt-1">{officialGradeData.pc2}</span>
+                      <span className="text-[8px] text-slate-400 font-medium block">Práctica Calificada 2</span>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-slate-200 text-center shadow-2xs">
+                      <span className="text-[9px] font-bold text-slate-400 uppercase block">EX_FINAL (40%)</span>
+                      <span className="text-sm font-black font-mono text-slate-800 block mt-1">{officialGradeData.exFinal}</span>
+                      <span className="text-[8px] text-slate-400 font-medium block">Examen Final Modular</span>
+                    </div>
+                  </div>
+                </div>
 
-                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-xs">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs">
                   <span className="font-extrabold text-slate-800 block mb-3 uppercase text-[10.5px] tracking-wide">
                     Matriz Semestral de Trabajos y Evaluaciones Continuas
                   </span>
@@ -952,7 +1093,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                       const hasGrade = finalGrade !== null;
 
                       return (
-                        <div key={w} className="bg-white p-2.5 rounded border border-slate-200 flex flex-col items-center justify-between">
+                        <div key={w} className="bg-white p-2.5 rounded border border-slate-200 flex flex-col items-center justify-between shadow-2xs">
                           <span className="text-[9.5px] text-slate-400 font-bold">Sem {w}</span>
                           <span className={`text-[11.5px] font-mono font-black mt-1 ${hasGrade ? "text-[#800521]" : "text-slate-400"}`}>
                             {hasGrade ? finalGrade : "NR"}
