@@ -2,8 +2,8 @@ import { AttendanceRecord } from "../../../types";
 import { studentAttendanceRecords } from "../../../utils/attendance";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { 
-  Zap, Cpu, Sliders, Award, ChevronRight, ChevronLeft, ChevronDown, BookOpen, Clock, CheckCircle2, 
+import {
+  Zap, Cpu, Sliders, Award, ChevronRight, ChevronLeft, ChevronDown, BookOpen, Clock, CheckCircle2,
   Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark, MapPin, GraduationCap,
   Eye, Download, Trash2, Pencil, X, MessageSquare, Send, Check, ExternalLink
 } from "lucide-react";
@@ -76,12 +76,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   const classesCoursesData = enrichedCourses;
   const activeCourse = classesCoursesData.find(c => c.name === selectedCourseDetail);
   const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
-  const [internalActiveCourseComponentId, setInternalActiveCourseComponentId] = useState<string | null>(() => {
-    if (activeCourse?.code === "EIND-101" || activeCourse?.code?.startsWith("EIND-101")) {
-      return "teo";
-    }
-    return null;
-  });
+  const [internalActiveCourseComponentId, setInternalActiveCourseComponentId] = useState<string | null>(null);
   const activeCourseComponentId = propActiveCourseComponentId !== undefined ? propActiveCourseComponentId : internalActiveCourseComponentId;
   const setActiveCourseComponentId = propSetActiveCourseComponentId || setInternalActiveCourseComponentId;
 
@@ -151,13 +146,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     return [];
   }, [activeCourse]);
 
-  useEffect(() => {
-    if (activeCourse?.code === "EIND-101" || activeCourse?.code?.startsWith("EIND-101")) {
-      setActiveCourseComponentId("teo");
-    } else {
-      setActiveCourseComponentId(null);
-    }
-  }, [selectedCourseDetail, activeCourse?.code]);
+
 
   useEffect(() => {
     if (!pdfModal?.url) {
@@ -304,7 +293,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               <Card key={courseItem.id} className="group border border-slate-200/90 rounded-2xl shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden bg-white hover:-translate-y-1">
                 {/* Top Colored Accent Stripe */}
                 <div className="h-1.5 w-full bg-gradient-to-r from-[#800521] via-amber-500 to-slate-900" />
-                
+
                 <div className="p-5 pb-4 space-y-3 text-left">
                   {/* Top Badges */}
                   <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -380,7 +369,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                       setInternalActiveCourseComponentId(null);
                       try {
                         sessionStorage.removeItem("sfa_alumno_course_comp_id");
-                      } catch {}
+                      } catch { }
                       setActiveCourseSection("general");
                       setSelectedClassWeek(1);
                       setSelectedClassWeekOption("materiales");
@@ -506,9 +495,9 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   }
 
   const getMappedCourseId = (code: string) => {
-    if (code === "EE-101" || code === "EIND-101") return "cur-elec-1"; 
-    if (code === "EE-403" || code === "EIND-102") return "cur-elec-2"; 
-    if (code === "EE-502" || code === "EIND-103") return "cur-elec-3"; 
+    if (code === "EE-101" || code === "EIND-101") return "cur-elec-1";
+    if (code === "EE-403" || code === "EIND-102") return "cur-elec-2";
+    if (code === "EE-502" || code === "EIND-103") return "cur-elec-3";
     return code;
   };
 
@@ -519,10 +508,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     if (!weekMatches) return false;
     if (selectedComponent) {
       return m.courseId === selectedComponent.dbCourseId ||
-             m.courseId === selectedComponent.code ||
-             (selectedComponent.id === "teo" && (m.courseId.includes("teo") || m.title.toLowerCase().includes("teor"))) ||
-             (selectedComponent.id === "tal" && (m.courseId.includes("tal") || m.title.toLowerCase().includes("taller"))) ||
-             (selectedComponent.id === "lab" && (m.courseId.includes("lab") || m.title.toLowerCase().includes("lab") || m.title.toLowerCase().includes("simula")));
+        m.courseId === selectedComponent.code ||
+        (selectedComponent.id === "teo" && (m.courseId.includes("teo") || m.title.toLowerCase().includes("teor"))) ||
+        (selectedComponent.id === "tal" && (m.courseId.includes("tal") || m.title.toLowerCase().includes("taller"))) ||
+        (selectedComponent.id === "lab" && (m.courseId.includes("lab") || m.title.toLowerCase().includes("lab") || m.title.toLowerCase().includes("simula")));
     }
     const courseMatches = activeCourse.attendanceCourseIds?.includes(m.courseId) || m.courseId === activeCourse.id || m.courseId === activeCourseDbId;
     return courseMatches;
@@ -533,10 +522,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     if (!weekMatches) return false;
     if (selectedComponent) {
       return a.courseId === selectedComponent.dbCourseId ||
-             a.courseId === selectedComponent.code ||
-             (selectedComponent.id === "teo" && (a.courseId.includes("teo") || a.title.toLowerCase().includes("teor"))) ||
-             (selectedComponent.id === "tal" && (a.courseId.includes("tal") || a.title.toLowerCase().includes("taller"))) ||
-             (selectedComponent.id === "lab" && (a.courseId.includes("lab") || a.title.toLowerCase().includes("lab") || a.title.toLowerCase().includes("simula")));
+        a.courseId === selectedComponent.code ||
+        (selectedComponent.id === "teo" && (a.courseId.includes("teo") || a.title.toLowerCase().includes("teor"))) ||
+        (selectedComponent.id === "tal" && (a.courseId.includes("tal") || a.title.toLowerCase().includes("taller"))) ||
+        (selectedComponent.id === "lab" && (a.courseId.includes("lab") || a.title.toLowerCase().includes("lab") || a.title.toLowerCase().includes("simula")));
     }
     const courseMatches = activeCourse.attendanceCourseIds?.includes(a.courseId) || a.courseId === activeCourse.id || a.courseId === activeCourseDbId;
     return courseMatches;
@@ -777,6 +766,80 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     };
   }, [assignments, courseResourceIds, activeCourse, activeCourseDbId, studentDni]);
 
+  // Multi-component Course Formula Calculation (Integral 3 partes: Teoría, Taller, Laboratorio)
+  const courseMultiComponentData = useMemo(() => {
+    // Component 1: Teoría
+    const gradeTeo = officialGradeData.finalGrade; // 16.5
+    // Component 2: Taller
+    const gradeTal = 17.0; // 17.0
+    // Component 3: Laboratorio
+    const gradeLab = 17.0; // 17.0
+
+    // Ponderación oficial curricular por créditos (Teoría: 2 cr, Taller: 2 cr, Laboratorio: 1 cr -> Total: 5 cr)
+    const weightTeo = 0.40;
+    const weightTal = 0.40;
+    const weightLab = 0.20;
+
+    const integratedGrade = Number((weightTeo * gradeTeo + weightTal * gradeTal + weightLab * gradeLab).toFixed(1)); // 16.8
+    const isIntegratedApproved = integratedGrade >= 12.5;
+
+    return {
+      hasMultiple: subComponents.length > 1,
+      components: [
+        {
+          id: "teo",
+          code: "EIND-101-TEO",
+          name: "Teoría",
+          fullName: "Fundamentos de Electricidad y Circuitos CC (Teoría)",
+          credits: 2,
+          weightLabel: "40% (2 Créditos)",
+          weight: 0.40,
+          grade: gradeTeo,
+          weightedContribution: Number((weightTeo * gradeTeo).toFixed(2)),
+          condition: gradeTeo >= 12.5 ? "APROBADO" : "DESAPROBADO",
+          teacher: "Manuel Ramos Salazar",
+          formula: "0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+          summaryEvaluations: "PC1: 18 • PC2: 16.5 • EX_FINAL: 15 • NPA: 18"
+        },
+        {
+          id: "tal",
+          code: "EIND-101-TAL",
+          name: "Taller",
+          fullName: "Fundamentos de Electricidad y Circuitos CC (Taller)",
+          credits: 2,
+          weightLabel: "40% (2 Créditos)",
+          weight: 0.40,
+          grade: gradeTal,
+          weightedContribution: Number((weightTal * gradeTal).toFixed(2)),
+          condition: gradeTal >= 12.5 ? "APROBADO" : "DESAPROBADO",
+          teacher: "Manuel Ramos Salazar",
+          formula: "0.30*TABLEROS + 0.30*MONTAJE + 0.40*PRACT_FINAL",
+          summaryEvaluations: "Tableros: 17 • Montaje: 16.5 • Práctica Final: 17.5"
+        },
+        {
+          id: "lab",
+          code: "EIND-101-LAB",
+          name: "Laboratorio",
+          fullName: "Fundamentos de Electricidad y Circuitos CC (Laboratorio)",
+          credits: 1,
+          weightLabel: "20% (1 Crédito)",
+          weight: 0.20,
+          grade: gradeLab,
+          weightedContribution: Number((weightLab * gradeLab).toFixed(2)),
+          condition: gradeLab >= 12.5 ? "APROBADO" : "DESAPROBADO",
+          teacher: "Manuel Ramos Salazar",
+          formula: "0.50*SIMULACION + 0.50*MEDICIONES",
+          summaryEvaluations: "Simulación CC: 16.5 • Mediciones: 17.5"
+        }
+      ],
+      integralFormulaExpression: "0.40*TEORÍA + 0.40*TALLER + 0.20*LABORATORIO",
+      integralGrade: integratedGrade,
+      isIntegratedApproved,
+      integralCondition: isIntegratedApproved ? "APROBADO" : "DESAPROBADO",
+      totalCredits: 5
+    };
+  }, [officialGradeData, subComponents]);
+
   return (
     <PageTransition id="classes-workspace" className="w-full space-y-6 text-left relative">
       {/* Dynamic View Workspace */}
@@ -790,24 +853,13 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   <span className="bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-widest px-3 py-1 w-max select-none rounded-xs block font-mono">
                     {selectedComponent ? `${selectedComponent.code} • ${selectedComponent.badge}` : `INTRANET ACADÉMICA • ${activeCourse.code}`}
                   </span>
-                  {subComponents.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveCourseComponentId(null);
-                        setActiveCourseSection("general");
-                      }}
-                      className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg px-3 py-1 text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span>← Cambiar Componente</span>
-                    </button>
-                  )}
+
                 </div>
                 <h2 className="text-xl md:text-2xl font-black font-display tracking-tight leading-none pt-1">
                   {selectedComponent ? selectedComponent.name : activeCourse.name}
                 </h2>
                 <p className="text-xs text-slate-200 font-medium tracking-wide">
-                  {selectedComponent 
+                  {selectedComponent
                     ? `Ambiente: ${selectedComponent.classroom} • Horario: ${selectedComponent.schedule} • Docente: ${selectedComponent.teacher}`
                     : `Plan Curricular IESTP San Francisco de Asís • Ciclo Académico Regular`}
                 </p>
@@ -869,7 +921,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
               <div className="lg:col-span-4 bg-white border border-[#F1D2D5] rounded-xl p-5 shadow-xs text-center space-y-4">
                 <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Rendimiento Esperado</span>
-                
+
                 <div className="relative h-28 w-28 mx-auto flex items-center justify-center">
                   <div className="absolute inset-0 rounded-full border-8 border-slate-100" />
                   <div className="absolute inset-0 rounded-full border-8 border-emerald-500 border-t-transparent border-r-transparent animate-spin-slow" />
@@ -895,7 +947,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               subtitle={selectedComponent ? `Programación horaria para: ${selectedComponent.name}` : "Distribución horaria presencial programada para el semestre en vigor."}
               icon={<Clock className="w-5 h-5 text-[#8B0026]" />}
             />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="border border-slate-200">
                 <CardHeader className="flex flex-row items-center justify-between border-b pb-4 bg-slate-50/40">
@@ -949,32 +1001,109 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
-                      ASIGNATURA: {selectedComponent ? selectedComponent.code : activeCourse.code} • ESTADO FINAL DE CURSO
+                      ASIGNATURA: {activeCourse.code} • UNIDAD DIDÁCTICA INTEGRAL
                     </span>
                     <span className="bg-white/20 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm inline-block font-mono">
-                      PERIODO 2027-I
+                      PERIODO 2027-I • 5 CRÉDITOS OFICIALES
                     </span>
                   </div>
                   <h2 className="text-xl md:text-2xl font-black font-display tracking-tight uppercase leading-snug">
-                    {selectedComponent ? selectedComponent.name : activeCourse.name}
+                    {activeCourse.name}
                   </h2>
                   <p className="text-xs text-white/85 font-medium font-mono leading-relaxed max-w-2xl">
-                    Consolidado definitivo de calificaciones semestrales, promedio ponderado oficial y condición académica del estudiante.
+                    Consolidado definitivo de calificaciones y fórmula integral de aprobación curricular (3 partes: Teoría 40% + Taller 40% + Laboratorio 20%) ante el Ministerio de Educación (MINEDU).
                   </p>
                 </div>
                 <div className="shrink-0 flex items-center gap-2">
-                  <span className={`font-black text-xs px-4 py-2 rounded-xl uppercase tracking-wider shadow-sm font-mono flex items-center gap-2 border ${
-                    officialGradeData.isApproved
-                      ? "bg-emerald-500 text-white border-emerald-400"
-                      : "bg-amber-400 text-slate-950 border-amber-300"
-                  }`}>
+                  <span className={`font-black text-xs px-4 py-2.5 rounded-xl uppercase tracking-wider shadow-sm font-mono flex items-center gap-2 border ${courseMultiComponentData.isIntegratedApproved
+                    ? "bg-emerald-500 text-white border-emerald-400"
+                    : "bg-amber-400 text-slate-950 border-amber-300"
+                    }`}>
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>{officialGradeData.condition} ({officialGradeData.finalGrade.toFixed(1)})</span>
+                    <span>{courseMultiComponentData.integralCondition} ({courseMultiComponentData.integralGrade.toFixed(1)})</span>
                   </span>
                 </div>
               </div>
             </div>
 
+            {/* SECCIÓN 1: FÓRMULA INTEGRAL DE LA ASIGNATURA (LAS 3 PARTES: TEORÍA + TALLER + LABORATORIO) */}
+            <Card className="border border-slate-200">
+              <CardHeader className="p-5 border-b bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-xs font-black uppercase tracking-wider text-slate-900">
+                    FÓRMULA CURRICULAR INTEGRAL DE APROBACIÓN (3 COMPONENTES)
+                  </CardTitle>
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    Para aprobar la asignatura, la evaluación ministerial consolida las 3 áreas formativas según su peso en créditos.
+                  </p>
+                </div>
+                <span className="text-[10px] font-mono font-bold bg-[#800521]/10 text-[#800521] border border-[#800521]/20 px-3 py-1.5 rounded-lg uppercase self-start sm:self-auto shadow-2xs">
+                  FÓRMULA: {courseMultiComponentData.integralFormulaExpression}
+                </span>
+              </CardHeader>
+
+              <CardContent className="p-5 space-y-4">
+                {/* Grid de las 3 Partes / Componentes */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {courseMultiComponentData.components.map((comp) => (
+                    <div
+                      key={comp.id}
+                      className={`p-4 rounded-xl border transition-all text-left space-y-3 ${(activeCourseComponentId || "teo") === comp.id
+                        ? "bg-rose-50/40 border-[#800521]/40 shadow-xs ring-1 ring-[#800521]/20"
+                        : "bg-white border-slate-200 hover:border-slate-300"
+                        }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-mono font-bold text-slate-500 uppercase bg-slate-100 px-2 py-0.5 rounded">
+                          {comp.code}
+                        </span>
+                        <span className="text-[9px] font-mono font-black text-[#800521] bg-rose-100/70 border border-rose-200 px-2 py-0.5 rounded uppercase">
+                          PESO: {comp.weightLabel}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="text-xs font-black text-slate-900 uppercase">
+                          PARTE {comp.id === "teo" ? "1: TEORÍA" : comp.id === "tal" ? "2: TALLER" : "3: LABORATORIO"}
+                        </h4>
+                        <p className="text-[10px] text-slate-500 font-medium">
+                          Docente: {comp.teacher}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-lg shadow-2xs">
+                        <div>
+                          <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Promedio Parcial</span>
+                          <span className="text-lg font-black font-mono text-slate-900 block leading-tight">
+                            {comp.grade.toFixed(1)}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Aporte a Nota Final</span>
+                          <span className="text-sm font-black font-mono text-[#800521] block leading-tight">
+                            +{comp.weightedContribution.toFixed(2)} pts
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-150 text-[9.5px] text-slate-600 font-medium space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-slate-400">Condición:</span>
+                          <span className="font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded uppercase">
+                            {comp.condition}
+                          </span>
+                        </div>
+                        <div className="text-[8.5px] text-slate-400 font-mono">
+                          {comp.summaryEvaluations}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* SECCIÓN 2: RECAPITULACIÓN Y CONDICIÓN FINAL DEL CURSO */}
             <Card className="border border-slate-200">
               <CardHeader className="p-5 border-b bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
@@ -985,22 +1114,21 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                     Resumen consolidado de rendimiento semestral y cumplimiento curricular oficial.
                   </p>
                 </div>
-                <span className="text-[10px] font-mono font-bold bg-[#800521]/10 text-[#800521] border border-[#800521]/20 px-2.5 py-1 rounded-lg uppercase self-start sm:self-auto">
-                  FÓRMULA: {officialGradeData.formulaExpression}
+                <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 px-3 py-1 rounded-lg uppercase self-start sm:self-auto">
+                  ESTADO: CONSOLIDADO INTEGRAL CERRADO
                 </span>
               </CardHeader>
               <CardContent className="p-5 space-y-5">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className={`p-4 rounded-xl text-center border ${
-                    officialGradeData.isApproved 
-                      ? "bg-emerald-50 text-emerald-900 border-emerald-200 shadow-2xs" 
-                      : "bg-rose-50 text-rose-950 border-rose-200"
-                  }`}>
+                  <div className={`p-4 rounded-xl text-center border ${courseMultiComponentData.isIntegratedApproved
+                    ? "bg-emerald-50 text-emerald-900 border-emerald-200 shadow-2xs"
+                    : "bg-rose-50 text-rose-950 border-rose-200"
+                    }`}>
                     <span className="text-[10px] font-black uppercase block tracking-wider text-emerald-700">
                       Situación de Curso
                     </span>
                     <span className="text-xl font-black block mt-1 tracking-tight">
-                      {officialGradeData.condition}
+                      {courseMultiComponentData.integralCondition}
                     </span>
                     <span className="text-[9px] font-semibold text-emerald-600 block mt-0.5">
                       Logro Curricular MINEDU
@@ -1009,10 +1137,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
                   <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-200 shadow-2xs">
                     <span className="text-[10px] text-slate-400 font-black uppercase block tracking-wider">
-                      Promedio Ponderado Oficial
+                      Promedio Ponderado Final
                     </span>
                     <span className="text-xl font-black text-[#800521] block mt-1 font-mono tracking-tight">
-                      {officialGradeData.finalGrade.toFixed(1)}
+                      {courseMultiComponentData.integralGrade.toFixed(1)}
                     </span>
                     <span className="text-[9px] font-semibold text-slate-500 block mt-0.5">
                       Escala Vigesimal (0 - 20)
@@ -1036,19 +1164,19 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                       Horas de Plan de Estudios
                     </span>
                     <span className="text-xl font-black text-slate-800 block mt-1 font-mono tracking-tight">
-                      {((activeCourse as any).hours || (activeCourse as any).credits * 16 || 64)} Horas
+                      64 Horas
                     </span>
                     <span className="text-[9px] font-semibold text-slate-500 block mt-0.5">
-                      {selectedComponent ? selectedComponent.credits : (activeCourse.credits || 4)} Créditos Académicos
+                      5 Créditos Académicos Otorgados
                     </span>
                   </div>
                 </div>
 
-                {/* Desglose de Componentes de Evaluación Oficial */}
+                {/* Desglose de Componentes de Evaluación de la Parte Teórica */}
                 <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 text-xs space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-black text-slate-800 uppercase text-[11px] tracking-wide">
-                      Desglose de Calificaciones Oficiales del Semestre
+                      Desglose de Calificaciones de la Parte Teórica (EIND-101-TEO)
                     </span>
                     <span className="text-[10px] font-mono text-slate-500 font-bold">
                       MINEDU R.V.M. N° 049-2024
@@ -1079,6 +1207,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   </div>
                 </div>
 
+                {/* Matriz Semestral */}
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs">
                   <span className="font-extrabold text-slate-800 block mb-3 uppercase text-[10.5px] tracking-wide">
                     Matriz Semestral de Trabajos y Evaluaciones Continuas
@@ -1150,7 +1279,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 {selectedClassWeekOption === "asistencia" && (() => {
                   if (attendanceLoading) return <p role="status" className="p-4 text-xs font-bold text-slate-500">Cargando registros de asistencia...</p>;
                   if (attendanceError) return <p role="alert" className="p-4 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">{attendanceError}</p>;
-                  
+
                   const targetCourseIds = selectedComponent
                     ? [selectedComponent.dbCourseId, selectedComponent.code, selectedComponent.id]
                     : (activeCourse.attendanceCourseIds || [activeCourse.id, activeCourse.code, activeCourseDbId]);
@@ -1164,7 +1293,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                       (selectedComponent?.id === "teo" && (cId.toLowerCase().includes("teo") || (record as any).sessionType === "Teoría")) ||
                       (selectedComponent?.id === "tal" && (cId.toLowerCase().includes("tal") || (record as any).sessionType === "Taller")) ||
                       (selectedComponent?.id === "lab" && (cId.toLowerCase().includes("lab") || (record as any).sessionType === "Laboratorio"));
-                    
+
                     if (!matchCourse) return false;
                     return record.statusMap && record.statusMap[studentDni] !== undefined;
                   });
@@ -1384,11 +1513,11 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                         const timing = getSubmissionTiming(prevSub?.submitDate, asg.dueDate);
 
                         const guideFileName = asg.attachmentName || asg.attachment;
-                        const guideUrl = asg.contentBase64 
-                          ? `data:${asg.mimeType || 'application/pdf'};base64,${asg.contentBase64}` 
+                        const guideUrl = asg.contentBase64
+                          ? `data:${asg.mimeType || 'application/pdf'};base64,${asg.contentBase64}`
                           : courseFileUrl('assignments', asg.id);
 
-                        const studentFileUrl = prevSub?.fileBase64 
+                        const studentFileUrl = prevSub?.fileBase64
                           ? `data:${prevSub.mimeType || 'application/pdf'};base64,${prevSub.fileBase64}`
                           : '#';
 
@@ -1496,11 +1625,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                                     </div>
 
                                     {/* Indicador de Antelación / Puntualidad */}
-                                    <div className={`px-2.5 py-1 rounded-lg text-xs font-bold border flex items-center gap-1.5 font-mono ${
-                                      timing.isEarly 
-                                        ? "bg-emerald-100 text-emerald-900 border-emerald-300" 
-                                        : "bg-amber-100 text-amber-900 border-amber-300"
-                                    }`}>
+                                    <div className={`px-2.5 py-1 rounded-lg text-xs font-bold border flex items-center gap-1.5 font-mono ${timing.isEarly
+                                      ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                                      : "bg-amber-100 text-amber-900 border-amber-300"
+                                      }`}>
                                       <Clock className="w-3.5 h-3.5" />
                                       <span>{timing.text}</span>
                                     </div>
@@ -1742,10 +1870,10 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                                     >
                                       <Upload className="w-4 h-4 text-amber-300" />
                                       <span>
-                                        {taskSubmitting[asg.id] 
-                                          ? "Enviando..." 
-                                          : isEditingThis 
-                                            ? "Guardar Cambios de Entrega" 
+                                        {taskSubmitting[asg.id]
+                                          ? "Enviando..."
+                                          : isEditingThis
+                                            ? "Guardar Cambios de Entrega"
                                             : "Entregar Tarea Evaluativa"}
                                       </span>
                                     </button>
@@ -1768,12 +1896,12 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                     if (!weekMatches) return false;
                     if (selectedComponent) {
                       return a.courseId === selectedComponent.dbCourseId ||
-                             a.courseId === selectedComponent.code ||
-                             a.courseId === selectedComponent.id ||
-                             (activeCourse && (a.courseId === activeCourse.id || a.courseId === activeCourseDbId)) ||
-                             (selectedComponent.id === "teo" && (a.courseId.includes("teo") || a.title.toLowerCase().includes("teor"))) ||
-                             (selectedComponent.id === "tal" && (a.courseId.includes("tal") || a.title.toLowerCase().includes("taller"))) ||
-                             (selectedComponent.id === "lab" && (a.courseId.includes("lab") || a.title.toLowerCase().includes("lab")));
+                        a.courseId === selectedComponent.code ||
+                        a.courseId === selectedComponent.id ||
+                        (activeCourse && (a.courseId === activeCourse.id || a.courseId === activeCourseDbId)) ||
+                        (selectedComponent.id === "teo" && (a.courseId.includes("teo") || a.title.toLowerCase().includes("teor"))) ||
+                        (selectedComponent.id === "tal" && (a.courseId.includes("tal") || a.title.toLowerCase().includes("taller"))) ||
+                        (selectedComponent.id === "lab" && (a.courseId.includes("lab") || a.title.toLowerCase().includes("lab")));
                     }
                     return !activeCourse ? true : (activeCourse.attendanceCourseIds?.includes(a.courseId) || a.courseId === activeCourse.id || a.courseId === activeCourseDbId);
                   });
@@ -1807,7 +1935,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                         const isOfficialMilestone = !!ev.curricularComponent || /PC1|PC2|EX|FINAL|PARCIAL/i.test(ev.title);
 
                         return (
-                          <div 
+                          <div
                             key={ev.id}
                             className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all space-y-0"
                           >
@@ -1897,9 +2025,8 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                                         {Number(sub.grade).toFixed(1)}
                                       </span>
                                       <span className="text-xs font-bold text-slate-400 font-mono">/ 20</span>
-                                      <span className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase ml-auto ${
-                                        isApproved ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"
-                                      }`}>
+                                      <span className={`text-[10px] font-black px-2 py-0.5 rounded border uppercase ml-auto ${isApproved ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"
+                                        }`}>
                                         {isApproved ? "Aprobado" : "Desaprobado"}
                                       </span>
                                     </div>
@@ -1985,9 +2112,8 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                               <FileText className="w-4 h-4 text-slate-450" />
                               <span className="text-xs font-mono font-bold text-slate-700">{submissionFile}</span>
                             </div>
-                            <span className={`px-2 py-0.5 rounded text-[9.5px] font-black uppercase ${
-                              sub?.grade !== undefined ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-yellow-100 text-yellow-850"
-                            }`}>
+                            <span className={`px-2 py-0.5 rounded text-[9.5px] font-black uppercase ${sub?.grade !== undefined ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-yellow-100 text-yellow-850"
+                              }`}>
                               {sub?.grade !== undefined ? "Calificado" : "Entregado"}
                             </span>
                           </div>
@@ -2040,13 +2166,13 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
       {/* Visor Modal de PDF Oficial (Guías y Entregables) */}
       {pdfModal && typeof document !== "undefined" && createPortal(
-        <div 
+        <div
           className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
           onClick={(e) => {
             if (e.target === e.currentTarget) setPdfModal(null);
           }}
         >
-          <div 
+          <div
             className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col h-[85vh] overflow-hidden my-auto animate-in zoom-in-95 duration-200 text-left"
             onClick={(e) => e.stopPropagation()}
           >
@@ -2075,7 +2201,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   <ExternalLink className="w-3.5 h-3.5 text-amber-300" />
                   <span className="hidden sm:inline">Pestaña Externa</span>
                 </button>
-                <button 
+                <button
                   onClick={() => setPdfModal(null)}
                   className="text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                   title="Cerrar visor"

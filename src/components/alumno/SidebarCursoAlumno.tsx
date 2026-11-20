@@ -156,15 +156,7 @@ export default function SidebarCursoAlumno({
           Estructura Académica
         </p>
 
-        {hasMultipleComponents && onChangeComponent && (
-          <button
-            type="button"
-            onClick={onChangeComponent}
-            className="mt-2.5 w-full bg-white hover:bg-slate-100 text-[#800521] border border-slate-200 hover:border-[#800521]/30 rounded-lg text-[9.5px] font-black py-1.5 px-2 flex items-center justify-center gap-1.5 uppercase transition-all shadow-2xs cursor-pointer"
-          >
-            <span>← Cambiar Componente</span>
-          </button>
-        )}
+
       </div>
 
       {/* Main Secondary Links Scroll Box */}

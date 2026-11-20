@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { 
+import {
   User, FileText, Calendar, BookOpen, Clock, Award, HelpCircle, Building, ClipboardList, ArrowLeft,
   ChevronLeft, ChevronRight
 } from "lucide-react";
@@ -73,11 +73,11 @@ export default function AlumnoDashboard({
     }
     return "welcome";
   });
-  
+
   // Profile edit form fields
   const [profileForm, setProfileForm] = useState<StudentPersonalData>({ ...personalData });
   const [profileSavedMsg, setProfileSavedMsg] = useState("");
-  
+
   // Outstanding billing simulation state (el alumno matriculado tiene su matrícula pagada y sin deuda)
   const isEnrolledAndPaid = enrollment.academicStatus === "MATRICULADO" || (enrollment.paymentStatus as string) === "Validado" || (enrollment.paymentStatus as string) === "Pagado" || (enrollment.paymentStatus as string) === "PAGADO";
   const [isPaidInvoice, setIsPaidInvoice] = useState(isEnrolledAndPaid);
@@ -96,7 +96,7 @@ export default function AlumnoDashboard({
   // State members for interactive Consulta Académica multi-sidebar view
   const [selectedQueryCycle, setSelectedQueryCycle] = useState<"I" | "II" | "III" | "IV" | "V" | "VI">("I");
   const [simulatedGrades, setSimulatedGrades] = useState<Record<string, number>>({});
-  
+
   // Custom states for Image 1 and Image 2 High Fidelity replication
   const [expandedAttendanceCourse, setExpandedAttendanceCourse] = useState<string | null>("redes");
   const [selectedAcademicOption, setSelectedAcademicOption] = useState<string>("plan_curricular");
@@ -152,7 +152,7 @@ export default function AlumnoDashboard({
       sessionStorage.setItem("sfa_alumno_course_section", activeCourseSection);
       sessionStorage.setItem("sfa_alumno_class_week", String(selectedClassWeek));
       sessionStorage.setItem("sfa_alumno_week_option", selectedClassWeekOption);
-    } catch {}
+    } catch { }
   }, [activeTab, selectedCourseDetail, activeCourseComponentId, activeCourseSection, selectedClassWeek, selectedClassWeekOption]);
 
   // Academic advisory mailbox simulation
@@ -201,7 +201,7 @@ export default function AlumnoDashboard({
     onUpdateEnrollment(updated);
     try {
       localStorage.setItem(`sfa_doc_status_${studentDni}`, JSON.stringify(updatedDocs));
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
@@ -253,10 +253,12 @@ export default function AlumnoDashboard({
     let current = true;
     fetchMpaCollections().then((data) => {
       if (!current) return;
-      setMpaPlanningData({ tasks: data.tasks, courses: data.courses, schedules: data.schedules,
+      setMpaPlanningData({
+        tasks: data.tasks, courses: data.courses, schedules: data.schedules,
         groups: data.groups, teachers: data.teachers, classrooms: data.classrooms,
         periods: data.periods, shifts: data.shifts,
-        curriculum: data.curriculum, curriculumVersions: data.curriculum_versions });
+        curriculum: data.curriculum, curriculumVersions: data.curriculum_versions
+      });
     }).catch((error) => console.error("Error loading MPA data from local API:", error));
     return () => { current = false; };
   }, []);
@@ -388,7 +390,7 @@ export default function AlumnoDashboard({
   // Map student shift and career to find their registered group in MPA
   const studentGroup = useMemo(() => {
     if (enrollment.groupId) {
-      const found = mpaPlanningData.groups.find((g: any) => 
+      const found = mpaPlanningData.groups.find((g: any) =>
         g.id === enrollment.groupId ||
         (enrollment.groupId.includes("ele") && g.id.includes("electronica")) ||
         (enrollment.groupId.includes("con") && g.id.includes("contabilidad"))
@@ -429,12 +431,12 @@ export default function AlumnoDashboard({
     if (studentTasks.length === 0) return [];
 
     const uniqueCourseIds = Array.from(new Set(studentTasks.map((t: any) => t.courseId)));
-    
+
     return uniqueCourseIds.map((courseId: any) => {
       const courseObj = mpaPlanningData.courses.find((c: any) => c.id === courseId || c.code === courseId);
       const associatedTasks = studentTasks.filter((t: any) => t.courseId === courseId);
       const primaryTask = associatedTasks[0];
-      
+
       const teacherObj = mpaPlanningData.teachers.find((t: any) => t.dni === primaryTask?.teacherDni);
       const classroomObj = mpaPlanningData.classrooms.find((c: any) => c.id === primaryTask?.classroomId);
 
@@ -551,7 +553,7 @@ export default function AlumnoDashboard({
   }, [catalogCourses, enrollment.programId, enrollment.shift, studentGroup, mpaPlanningData.periods]);
 
   const studentCourses = enrollment.registeredCourses ? dynamicMpaCourses : dynamicMpaCourses.length > 0
-    ? dynamicMpaCourses 
+    ? dynamicMpaCourses
     : (ciclo1Courses.length > 0 ? ciclo1Courses : courses.filter((c: any) => c.careerId === enrollment.programId || c.career === currentProgram?.name));
 
   const enrichedCourses = studentCourses.map((c) => {
@@ -587,9 +589,9 @@ export default function AlumnoDashboard({
     // 1. Weekly formative homework / tasks (NPA - Nota de Participación y Actividades Continuas)
     // Weekly reports and workshop tasks across weeks that accumulate and average into the NPA
     const weeklyTasks = courseAssignments
-      .filter((a) => 
-        !a.title.startsWith("[Planilla] ") && 
-        a.kind !== "assessment" && 
+      .filter((a) =>
+        !a.title.startsWith("[Planilla] ") &&
+        a.kind !== "assessment" &&
         !a.curricularComponent
       )
       .map((assignment, index) => {
@@ -733,9 +735,9 @@ export default function AlumnoDashboard({
     return [];
   }, [activeCourseObj]);
 
-  const activeSelectedComponent = activeCourseSubComponents.find(c => c.id === activeCourseComponentId) || (activeCourseSubComponents.length > 0 && activeCourseComponentId ? activeCourseSubComponents[0] : null);
+  const activeSelectedComponent = activeCourseSubComponents.find(c => c.id === activeCourseComponentId) || (activeCourseSubComponents.length > 0 ? activeCourseSubComponents[0] : null);
 
-  const showCourseSidebar = activeTab === "classes" && !!selectedCourseDetail && (activeCourseSubComponents.length <= 1 || !!activeCourseComponentId);
+  const showCourseSidebar = activeTab === "classes" && !!selectedCourseDetail && (activeCourseSubComponents.length === 0 || !!activeCourseComponentId);
 
   return (
     <div id="alumno-portal" className="flex h-screen bg-[#F8F9FA] overflow-hidden font-sans text-slate-800">
@@ -909,154 +911,154 @@ export default function AlumnoDashboard({
               transition={{ duration: 0.25 }}
               className="space-y-6 max-w-7xl mx-auto"
             >
-            {activeTab === "welcome" && (
-              <WelcomeTab
-                personalData={personalData}
-                currentProgram={currentProgram}
-                enrollment={enrollment}
-                setActiveTab={setActiveTab}
-                setProfileInnerTab={setProfileInnerTab}
-                studentTasks={studentTasks}
-                mpaPlanningData={mpaPlanningData}
-                studentGroup={studentGroup}
-                studentCourses={studentCourses}
-              />
-            )}
+              {activeTab === "welcome" && (
+                <WelcomeTab
+                  personalData={personalData}
+                  currentProgram={currentProgram}
+                  enrollment={enrollment}
+                  setActiveTab={setActiveTab}
+                  setProfileInnerTab={setProfileInnerTab}
+                  studentTasks={studentTasks}
+                  mpaPlanningData={mpaPlanningData}
+                  studentGroup={studentGroup}
+                  studentCourses={studentCourses}
+                />
+              )}
 
-            {activeTab === "profile" && (
-              <ProfileTab
-                personalData={personalData}
-                enrollment={enrollment}
-                currentProgram={currentProgram}
-                profileForm={profileForm}
-                setProfileForm={setProfileForm}
-                profileSavedMsg={profileSavedMsg}
-                handleSaveProfile={handleSaveProfile}
-                profileInnerTab={profileInnerTab}
-                setProfileInnerTab={setProfileInnerTab}
-                simulateDocUpload={simulateDocUpload}
-                isPaidInvoice={isPaidInvoice}
-                paymentOp={paymentOp}
-                setPaymentOp={setPaymentOp}
-                paySuccessMsg={paySuccessMsg}
-                handlePayInvoice={handlePayInvoice}
-                onUpdateEnrollment={onUpdateEnrollment}
-                graduation={graduation}
-                enrichedCourses={enrichedCourses}
-              />
-            )}
+              {activeTab === "profile" && (
+                <ProfileTab
+                  personalData={personalData}
+                  enrollment={enrollment}
+                  currentProgram={currentProgram}
+                  profileForm={profileForm}
+                  setProfileForm={setProfileForm}
+                  profileSavedMsg={profileSavedMsg}
+                  handleSaveProfile={handleSaveProfile}
+                  profileInnerTab={profileInnerTab}
+                  setProfileInnerTab={setProfileInnerTab}
+                  simulateDocUpload={simulateDocUpload}
+                  isPaidInvoice={isPaidInvoice}
+                  paymentOp={paymentOp}
+                  setPaymentOp={setPaymentOp}
+                  paySuccessMsg={paySuccessMsg}
+                  handlePayInvoice={handlePayInvoice}
+                  onUpdateEnrollment={onUpdateEnrollment}
+                  graduation={graduation}
+                  enrichedCourses={enrichedCourses}
+                />
+              )}
 
-            {activeTab === "classes" && (
-              <ClassesTab
-                attendance={attendance}
-                attendanceLoading={attendanceLoading}
-                attendanceError={attendanceError}
-                enrichedCourses={enrichedCourses}
-                currentProgram={currentProgram}
-                selectedCourseDetail={selectedCourseDetail}
-                setSelectedCourseDetail={setSelectedCourseDetail}
-                activeCourseComponentId={activeCourseComponentId}
-                setActiveCourseComponentId={setActiveCourseComponentId}
-                activeCourseSection={activeCourseSection}
-                setActiveCourseSection={setActiveCourseSection}
-                selectedClassWeek={selectedClassWeek}
-                setSelectedClassWeek={setSelectedClassWeek}
-                selectedClassWeekOption={selectedClassWeekOption}
-                setSelectedClassWeekOption={setSelectedClassWeekOption}
-                simulationHWFiles={simulationHWFiles}
-                setSimulationHWFiles={setSimulationHWFiles}
-                expandedStudentWeeks={expandedStudentWeeks}
-                setExpandedStudentWeeks={setExpandedStudentWeeks}
-                materials={materials}
-                assignments={assignments}
-                evaluations={evaluations}
-                studentDni={studentDni}
-                personalData={personalData}
-                onUpdateAssignments={onUpdateAssignments}
-              />
-            )}
+              {activeTab === "classes" && (
+                <ClassesTab
+                  attendance={attendance}
+                  attendanceLoading={attendanceLoading}
+                  attendanceError={attendanceError}
+                  enrichedCourses={enrichedCourses}
+                  currentProgram={currentProgram}
+                  selectedCourseDetail={selectedCourseDetail}
+                  setSelectedCourseDetail={setSelectedCourseDetail}
+                  activeCourseComponentId={activeCourseComponentId}
+                  setActiveCourseComponentId={setActiveCourseComponentId}
+                  activeCourseSection={activeCourseSection}
+                  setActiveCourseSection={setActiveCourseSection}
+                  selectedClassWeek={selectedClassWeek}
+                  setSelectedClassWeek={setSelectedClassWeek}
+                  selectedClassWeekOption={selectedClassWeekOption}
+                  setSelectedClassWeekOption={setSelectedClassWeekOption}
+                  simulationHWFiles={simulationHWFiles}
+                  setSimulationHWFiles={setSimulationHWFiles}
+                  expandedStudentWeeks={expandedStudentWeeks}
+                  setExpandedStudentWeeks={setExpandedStudentWeeks}
+                  materials={materials}
+                  assignments={assignments}
+                  evaluations={evaluations}
+                  studentDni={studentDni}
+                  personalData={personalData}
+                  onUpdateAssignments={onUpdateAssignments}
+                />
+              )}
 
-            {activeTab === "enrollment" && (
-              <CourseEnrollmentTab
-                enrollment={enrollment}
-                studentGroup={studentGroup}
-                data={mpaPlanningData}
-                onSaved={onUpdateEnrollment}
-                personalData={personalData}
-                currentProgram={currentProgram}
-              />
-            )}
+              {activeTab === "enrollment" && (
+                <CourseEnrollmentTab
+                  enrollment={enrollment}
+                  studentGroup={studentGroup}
+                  data={mpaPlanningData}
+                  onSaved={onUpdateEnrollment}
+                  personalData={personalData}
+                  currentProgram={currentProgram}
+                />
+              )}
 
-            {activeTab === "schedule" && (
-              <ScheduleTab
-                personalData={personalData}
-                currentProgram={currentProgram}
-                studentTasks={studentTasks}
-                mpaPlanningData={mpaPlanningData}
-                studentGroup={studentGroup}
-              />
-            )}
+              {activeTab === "schedule" && (
+                <ScheduleTab
+                  personalData={personalData}
+                  currentProgram={currentProgram}
+                  studentTasks={studentTasks}
+                  mpaPlanningData={mpaPlanningData}
+                  studentGroup={studentGroup}
+                />
+              )}
 
-            {activeTab === "attendance" && (
-              <AttendanceTab
-                loading={attendanceLoading}
-                error={attendanceError}
-                onReload={onReloadAttendance}
-                enrollment={enrollment}
-                studentDni={studentDni}
-                attendance={attendance}
-                selectedAttendanceSemester={selectedAttendanceSemester}
-                setSelectedAttendanceSemester={setSelectedAttendanceSemester}
-                expandedAttendanceCourse={expandedAttendanceCourse}
-                setExpandedAttendanceCourse={setExpandedAttendanceCourse}
-                setActiveTab={setActiveTab}
-                studentCourses={enrichedCourses}
-                studentTasks={studentTasks}
-                mpaPlanningData={mpaPlanningData}
-                studentGroup={studentGroup}
-              />
-            )}
+              {activeTab === "attendance" && (
+                <AttendanceTab
+                  loading={attendanceLoading}
+                  error={attendanceError}
+                  onReload={onReloadAttendance}
+                  enrollment={enrollment}
+                  studentDni={studentDni}
+                  attendance={attendance}
+                  selectedAttendanceSemester={selectedAttendanceSemester}
+                  setSelectedAttendanceSemester={setSelectedAttendanceSemester}
+                  expandedAttendanceCourse={expandedAttendanceCourse}
+                  setExpandedAttendanceCourse={setExpandedAttendanceCourse}
+                  setActiveTab={setActiveTab}
+                  studentCourses={enrichedCourses}
+                  studentTasks={studentTasks}
+                  mpaPlanningData={mpaPlanningData}
+                  studentGroup={studentGroup}
+                />
+              )}
 
-            {activeTab === "closure" && (
-              <ClosureTab
-                personalData={personalData}
-                enrollment={enrollment}
-                currentProgram={currentProgram}
-                courses={courses}
-                selectedAcademicOption={selectedAcademicOption}
-                setSelectedAcademicOption={setSelectedAcademicOption}
-                selectedSemesterFilter={selectedSemesterFilter}
-                setSelectedSemesterFilter={setSelectedSemesterFilter}
-                selectedPlan={selectedPlan}
-                setSelectedPlan={setSelectedPlan}
-                selectedQueryPeriod={selectedQueryPeriod}
-                setSelectedQueryPeriod={setSelectedQueryPeriod}
-                selectedQueryCycle={selectedQueryCycle}
-                setSelectedQueryCycle={setSelectedQueryCycle}
-                simulatedGrades={simulatedGrades}
-                setSimulatedGrades={setSimulatedGrades}
-                advisorConsultText={advisorConsultText}
-                setAdvisorConsultText={setAdvisorConsultText}
-                advisorConsultSuccess={advisorConsultSuccess}
-                setAdvisorConsultSuccess={setAdvisorConsultSuccess}
-                cycleStatuses={cycleStatuses}
-              />
-            )}
+              {activeTab === "closure" && (
+                <ClosureTab
+                  personalData={personalData}
+                  enrollment={enrollment}
+                  currentProgram={currentProgram}
+                  courses={courses}
+                  selectedAcademicOption={selectedAcademicOption}
+                  setSelectedAcademicOption={setSelectedAcademicOption}
+                  selectedSemesterFilter={selectedSemesterFilter}
+                  setSelectedSemesterFilter={setSelectedSemesterFilter}
+                  selectedPlan={selectedPlan}
+                  setSelectedPlan={setSelectedPlan}
+                  selectedQueryPeriod={selectedQueryPeriod}
+                  setSelectedQueryPeriod={setSelectedQueryPeriod}
+                  selectedQueryCycle={selectedQueryCycle}
+                  setSelectedQueryCycle={setSelectedQueryCycle}
+                  simulatedGrades={simulatedGrades}
+                  setSimulatedGrades={setSimulatedGrades}
+                  advisorConsultText={advisorConsultText}
+                  setAdvisorConsultText={setAdvisorConsultText}
+                  advisorConsultSuccess={advisorConsultSuccess}
+                  setAdvisorConsultSuccess={setAdvisorConsultSuccess}
+                  cycleStatuses={cycleStatuses}
+                />
+              )}
 
-            {activeTab === "notas" && (
-              <GradesTab
-                enrichedCourses={enrichedCourses}
-                selectedCourseDetail={selectedCourseDetail}
-                setSelectedCourseDetail={setSelectedCourseDetail}
-              />
-            )}
+              {activeTab === "notas" && (
+                <GradesTab
+                  enrichedCourses={enrichedCourses}
+                  selectedCourseDetail={selectedCourseDetail}
+                  setSelectedCourseDetail={setSelectedCourseDetail}
+                />
+              )}
 
-            {activeTab === "secretaria" && <ProceduresTab studentDni={studentDni} period="" />}
-            {activeTab === "guias" && <GuidesLibrary audience="student" />}
-            {activeTab === "calendar" && <AcademicCalendarBoard preferredPeriodId={studentGroup?.periodId} />}
-          </motion.div>
-        </AnimatePresence>
-      </main>
+              {activeTab === "secretaria" && <ProceduresTab studentDni={studentDni} period="" />}
+              {activeTab === "guias" && <GuidesLibrary audience="student" />}
+              {activeTab === "calendar" && <AcademicCalendarBoard preferredPeriodId={studentGroup?.periodId} />}
+            </motion.div>
+          </AnimatePresence>
+        </main>
       </div>
 
       {toastNotice && (
