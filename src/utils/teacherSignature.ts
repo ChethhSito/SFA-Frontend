@@ -11,6 +11,7 @@ export interface TeacherSignatureData {
   regNumber: string;
   svgPath: string;
   sealColor: string;
+  customSignatureUrl?: string | null;
 }
 
 // Firmas vectoriales personalizadas por docente
@@ -53,13 +54,31 @@ export function getTeacherSignature(name?: string, dni?: string): TeacherSignatu
     preset = { path, title, reg };
   }
 
+  // Verificar si el docente ha cargado una firma manuscrita personalizada
+  let customSignatureUrl: string | null = null;
+  if (typeof window !== "undefined") {
+    try {
+      customSignatureUrl = localStorage.getItem(`sfa_teacher_signature_${safeDni}`);
+      if (!customSignatureUrl) {
+        const storedProfile = localStorage.getItem(`sfa_teacher_profile_${safeDni}`);
+        if (storedProfile) {
+          const parsed = JSON.parse(storedProfile);
+          if (parsed.customSignatureUrl) {
+            customSignatureUrl = parsed.customSignatureUrl;
+          }
+        }
+      }
+    } catch {}
+  }
+
   return {
     teacherName: safeName,
     dni: safeDni,
     professionalTitle: preset.title,
     regNumber: preset.reg,
     svgPath: preset.path,
-    sealColor: "#0f2b5c" // Azul marino institucional para firma de tinta
+    sealColor: "#0f2b5c", // Azul marino institucional para firma de tinta
+    customSignatureUrl
   };
 }
 
@@ -100,26 +119,21 @@ export function generateTeacherSignaturePng(name: string, dni: string, date: str
   ctx.fillText("FIRMA DIGITAL Y AUTENTICACIÓN MINEDU", 230, 48);
 
   // 3. Rúbrica caligráfica con trazo de tinta azul
-  ctx.save();
-  ctx.translate(35, 30);
-  ctx.scale(2.2, 1.4);
-  ctx.strokeStyle = "#0f2b5c";
-  ctx.lineWidth = 1.8;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  try {
-    const p = new Path2D(sig.svgPath);
-    ctx.stroke(p);
-  } catch {
-    // Fallback if Path2D not supported
-    ctx.beginPath();
-    ctx.moveTo(15, 45);
-    ctx.bezierCurveTo(20, 20, 25, 10, 32, 15);
-    ctx.bezierCurveTo(45, 42, 60, 25, 75, 40);
-    ctx.bezierCurveTo(95, 33, 115, 38, 138, 28);
-    ctx.stroke();
+  if (sig.customSignatureUrl) {
+    try {
+      const img = new Image();
+      img.src = sig.customSignatureUrl;
+      if (img.complete && img.naturalWidth > 0) {
+        ctx.drawImage(img, 130, 55, 200, 75);
+      } else {
+        drawFallbackRubric(ctx, sig.svgPath);
+      }
+    } catch {
+      drawFallbackRubric(ctx, sig.svgPath);
+    }
+  } else {
+    drawFallbackRubric(ctx, sig.svgPath);
   }
-  ctx.restore();
 
   // 4. Datos del docente
   ctx.fillStyle = "#1e293b";
@@ -133,4 +147,26 @@ export function generateTeacherSignaturePng(name: string, dni: string, date: str
   ctx.fillText(`${sig.regNumber} • ${date}`, 230, 172);
 
   return canvas.toDataURL("image/png");
+}
+
+function drawFallbackRubric(ctx: CanvasRenderingContext2D, svgPath: string) {
+  ctx.save();
+  ctx.translate(35, 30);
+  ctx.scale(2.2, 1.4);
+  ctx.strokeStyle = "#0f2b5c";
+  ctx.lineWidth = 1.8;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  try {
+    const p = new Path2D(svgPath);
+    ctx.stroke(p);
+  } catch {
+    ctx.beginPath();
+    ctx.moveTo(15, 45);
+    ctx.bezierCurveTo(20, 20, 25, 10, 32, 15);
+    ctx.bezierCurveTo(45, 42, 60, 25, 75, 40);
+    ctx.bezierCurveTo(95, 33, 115, 38, 138, 28);
+    ctx.stroke();
+  }
+  ctx.restore();
 }

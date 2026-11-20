@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   ShieldCheck, UserCheck, Mail, Phone, MapPin, Award, 
-  KeyRound, Bell, CheckCircle2, Save, Upload, School, Clock3, Lock
+  KeyRound, Bell, CheckCircle2, Save, Upload, School, Clock3, Lock,
+  Trash2, Image as ImageIcon
 } from 'lucide-react';
 import { Teacher } from '../../types';
 import { ToastNotice } from '../ui/Toast';
 import PageTransition from '../ui/PageTransition';
+import { getTeacherSignature } from '../../utils/teacherSignature';
 
 interface TeacherProfileTabProps {
   teacher: Teacher | null;
@@ -44,6 +46,84 @@ export default function TeacherProfileTab({ teacher, teacherDni, onShowNotice }:
 
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [customSignature, setCustomSignature] = useState<string | null>(() => {
+    try {
+      const fromKey = localStorage.getItem(`sfa_teacher_signature_${currentDni}`);
+      if (fromKey) return fromKey;
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.customSignatureUrl) return parsed.customSignatureUrl;
+      }
+    } catch {}
+    return null;
+  });
+
+  const defaultSig = getTeacherSignature(`${form.name} ${form.lastName}`, currentDni);
+
+  const handleSignatureFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      if (onShowNotice) {
+        onShowNotice({
+          id: Date.now(),
+          type: 'warning',
+          title: 'Formato Inválido',
+          message: 'Por favor seleccione una imagen (PNG, JPG o SVG) de su firma manuscrita.'
+        } as any);
+      }
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      setCustomSignature(result);
+      setForm(prev => ({ ...prev, customSignatureUrl: result }));
+      try {
+        localStorage.setItem(`sfa_teacher_signature_${currentDni}`, result);
+        const stored = localStorage.getItem(storageKey);
+        const obj = stored ? JSON.parse(stored) : {};
+        localStorage.setItem(storageKey, JSON.stringify({ ...obj, customSignatureUrl: result }));
+      } catch {}
+      if (onShowNotice) {
+        onShowNotice({
+          id: Date.now(),
+          type: 'success',
+          title: 'Firma Digital Cargada',
+          message: 'Su firma digital manuscrita ha sido cargada con éxito y vinculada a sus actas oficiales.'
+        } as any);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveCustomSignature = () => {
+    setCustomSignature(null);
+    setForm(prev => ({ ...prev, customSignatureUrl: null }));
+    try {
+      localStorage.removeItem(`sfa_teacher_signature_${currentDni}`);
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const obj = JSON.parse(stored);
+        delete obj.customSignatureUrl;
+        localStorage.setItem(storageKey, JSON.stringify(obj));
+      }
+    } catch {}
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (onShowNotice) {
+      onShowNotice({
+        id: Date.now(),
+        type: 'info',
+        title: 'Firma Restablecida',
+        message: 'Se ha restablecido la rúbrica caligráfica oficial por defecto.'
+      } as any);
+    }
+  };
 
   const initials = `${(form.name || 'D').charAt(0)}${(form.lastName || 'T').charAt(0)}`.toUpperCase();
 
@@ -53,7 +133,11 @@ export default function TeacherProfileTab({ teacher, teacherDni, onShowNotice }:
     setSavedSuccess(false);
 
     try {
-      localStorage.setItem(storageKey, JSON.stringify(form));
+      const payload = { ...form, customSignatureUrl: customSignature };
+      localStorage.setItem(storageKey, JSON.stringify(payload));
+      if (customSignature) {
+        localStorage.setItem(`sfa_teacher_signature_${currentDni}`, customSignature);
+      }
     } catch (err) {
       console.error('Error saving profile to localStorage:', err);
     }
@@ -63,10 +147,11 @@ export default function TeacherProfileTab({ teacher, teacherDni, onShowNotice }:
       setSavedSuccess(true);
       if (onShowNotice) {
         onShowNotice({
+          id: Date.now(),
           type: 'success',
-          title: 'Expediente Actualizado',
-          message: 'La información del docente titular y sus credenciales de firma fueron sincronizadas correctamente.'
-        });
+          title: 'Expediente y Firma Actualizados',
+          message: 'La información del docente, clave PIN y firma digital fueron sincronizadas correctamente.'
+        } as any);
       }
       setTimeout(() => setSavedSuccess(false), 4000);
     }, 400);
@@ -178,7 +263,7 @@ export default function TeacherProfileTab({ teacher, teacherDni, onShowNotice }:
             </div>
           </div>
 
-          {/* Tarjeta de Firma Digital Certificada */}
+          {/* Tarjeta de Firma Digital Certificada y Subida de Archivos */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-3xs p-6 space-y-4 border-t-4 border-t-[#800521]">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
@@ -193,8 +278,99 @@ export default function TeacherProfileTab({ teacher, teacherDni, onShowNotice }:
             </div>
 
             <p className="text-[11px] text-slate-600 leading-relaxed">
-              Su firma digital vinculada a su DNI se encuentra acreditada conforme a la directiva institucional y MINEDU para la suscripción de actas oficiales.
+              Su firma digital y rúbrica se aplican en las actas semestrales y consolidación de notas oficiales ante MINEDU.
             </p>
+
+            {/* Recuadro de Visualización y Sello Oficial */}
+            <div className="border-2 border-blue-900/30 bg-blue-50/20 rounded-xl p-3.5 text-center space-y-2">
+              <span className="text-[8px] font-black uppercase text-blue-950 block tracking-wider">
+                IESTP SAN FRANCISCO DE ASÍS • FIRMA DOCENTE
+              </span>
+
+              <div className="h-16 bg-white border border-blue-900/20 rounded-lg flex items-center justify-center p-2 shadow-2xs">
+                {customSignature ? (
+                  <img 
+                    src={customSignature} 
+                    alt="Firma Manuscrita del Docente" 
+                    className="max-h-12 max-w-full object-contain mx-auto"
+                  />
+                ) : (
+                  <svg className="w-48 h-12 text-[#0f2b5c]" viewBox="0 0 180 70">
+                    <path 
+                      d={defaultSig.svgPath} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2.2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                    />
+                  </svg>
+                )}
+              </div>
+
+              <div className="text-left space-y-0.5">
+                <span className="text-[9.5px] font-black text-slate-900 uppercase block text-center leading-tight">
+                  {form.name} {form.lastName}
+                </span>
+                <span className="text-[8px] text-slate-500 font-semibold block text-center">
+                  {defaultSig.professionalTitle} | DNI: {currentDni}
+                </span>
+                <span className="text-[8px] font-mono text-emerald-700 font-bold block text-center">
+                  {customSignature ? '✓ FIRMA MANUSCRITA PERSONALIZADA' : '✓ RÚBRICA CALIGRÁFICA OFICIAL'}
+                </span>
+              </div>
+            </div>
+
+            {/* Acciones para Subir o Cambiar Firma */}
+            <div className="space-y-2">
+              <input 
+                ref={fileInputRef}
+                type="file" 
+                accept="image/png,image/jpeg,image/svg+xml"
+                onChange={handleSignatureFileChange}
+                className="hidden" 
+              />
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full bg-[#800521] hover:bg-[#68041a] text-white py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer active:scale-98"
+              >
+                <Upload className="w-4 h-4 text-amber-300" />
+                <span>{customSignature ? 'Reemplazar Mi Firma' : 'Subir Mi Firma (PNG / JPG)'}</span>
+              </button>
+
+              {customSignature && (
+                <button
+                  type="button"
+                  onClick={handleRemoveCustomSignature}
+                  className="w-full bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 py-2 px-3 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Restablecer Rúbrica Oficial por Defecto</span>
+                </button>
+              )}
+            </div>
+
+            {/* Configuración del PIN de Firma */}
+            <div className="pt-2 border-t border-slate-150 space-y-2">
+              <label className="block text-[10px] font-black uppercase text-slate-500">
+                PIN Oficial de Firma (4 dígitos)
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="password"
+                  maxLength={8}
+                  value={form.pin || '1234'}
+                  onChange={(e) => setForm({ ...form, pin: e.target.value })}
+                  placeholder="1234"
+                  className="w-28 px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-black text-center text-sm outline-none focus:border-[#800521] text-slate-900 shadow-2xs"
+                />
+                <span className="text-[10px] text-slate-500 font-semibold leading-tight">
+                  Clave para firmar actas en Cierre de Curso y guardar calificaciones. (Por defecto: 1234)
+                </span>
+              </div>
+            </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5 text-[10.5px] font-mono">
               <div className="flex justify-between">
@@ -208,10 +384,6 @@ export default function TeacherProfileTab({ teacher, teacherDni, onShowNotice }:
               <div className="flex justify-between">
                 <span className="text-slate-400">Vigencia:</span>
                 <span className="font-bold text-emerald-600">Periodo Activo 2027 (Acreditado)</span>
-              </div>
-              <div className="flex justify-between pt-1 border-t border-slate-200">
-                <span className="text-slate-400">PIN de Firma:</span>
-                <span className="font-bold text-[#800521]">•••• (PIN Acreditado)</span>
               </div>
             </div>
           </div>
