@@ -376,6 +376,11 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   <button
                     onClick={() => {
                       setSelectedCourseDetail(courseItem.name);
+                      if (setActiveCourseComponentId) setActiveCourseComponentId(null);
+                      setInternalActiveCourseComponentId(null);
+                      try {
+                        sessionStorage.removeItem("sfa_alumno_course_comp_id");
+                      } catch {}
                       setActiveCourseSection("general");
                       setSelectedClassWeek(1);
                       setSelectedClassWeekOption("materiales");

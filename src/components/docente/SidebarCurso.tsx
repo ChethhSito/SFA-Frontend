@@ -18,6 +18,7 @@ export interface SidebarCursoProps {
   onSelectHorarios: () => void;
   onSelectCierre: () => void;
   onSelectWeekOption: (week: number, option: WeekOption) => void;
+  onBackToCourses?: () => void;
 }
 
 export function SemanaAccordion({
@@ -100,7 +101,8 @@ export default function SidebarCurso({
   onSelectGeneral,
   onSelectHorarios,
   onSelectCierre,
-  onSelectWeekOption
+  onSelectWeekOption,
+  onBackToCourses
 }: SidebarCursoProps) {
   const [expandedWeeks, setExpandedWeeks] = useState<{ [key: number]: boolean }>({
     1: true
@@ -217,6 +219,18 @@ export default function SidebarCurso({
         </div>
 
       </div>
+
+      {/* Footer Action: Back to Courses list */}
+      {onBackToCourses && (
+        <div className="p-3 bg-slate-50 border-t border-slate-100 shrink-0">
+          <button
+            onClick={onBackToCourses}
+            className="w-full bg-slate-100 hover:bg-slate-200 text-[#800521] border border-slate-200/60 rounded-lg text-[10px] font-black py-2.5 flex items-center justify-center gap-1.5 select-none uppercase transition-all cursor-pointer"
+          >
+            ← Volver a Mis Cursos
+          </button>
+        </div>
+      )}
     </aside>
   );
 }
