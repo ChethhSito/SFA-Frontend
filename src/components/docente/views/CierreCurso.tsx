@@ -30,12 +30,10 @@ interface StudentGradeSummary {
   dni: string;
   name: string;
   lastName: string;
-  npa: number;
-  pc1: number | null;
-  pc2: number | null;
-  exFinal: number | null;
+  grades: Record<string, number | null>;
   finalGrade: number;
-  condition: "APROBADO" | "DESAPROBADO";
+  condition: "APROBADO" | "DESAPROBADO" | "PENDIENTE";
+  isComplete: boolean;
 }
 
 export function CierreCurso({ 
@@ -77,8 +75,35 @@ export function CierreCurso({
     setToastNotice({ id: Date.now(), message, kind });
   };
 
-  const formula = useMemo(() => getCourseFormula(course.id || course.code), [course]);
+  const formula = useMemo(() => getCourseFormula(course.code || course.id), [course]);
   const teacherName = course.teacherName || "Ing. Manuel Ramos Salazar";
+
+  // Filter course-specific assignments strictly
+  const courseMatchIds = useMemo(() => {
+    const s = new Set<string>();
+    if (course.id) s.add(course.id);
+    if ((course as any)._id) s.add((course as any)._id);
+    if (course.code) s.add(course.code);
+    return s;
+  }, [course]);
+
+  const courseAssignments = useMemo(() => {
+    return assignments.filter((a) => {
+      const cId = a.courseId || "";
+      if (courseMatchIds.has(cId)) return true;
+      if (course.code && cId.toUpperCase() === course.code.toUpperCase()) return true;
+      if (course.code?.includes("TAL")) {
+        return cId.toLowerCase().includes("tal") || cId === "6afe1412016eccb3be7af0eb";
+      }
+      if (course.code?.includes("LAB")) {
+        return cId.toLowerCase().includes("lab") || cId === "6afe141f016eccb3be7af0ec";
+      }
+      if (course.code?.includes("TEO")) {
+        return cId.toLowerCase().includes("teo") || cId === "6afc831d1bbefb1d4e11dd0e";
+      }
+      return false;
+    });
+  }, [assignments, courseMatchIds, course.code]);
 
   // Plana docente (soporta uno o varios docentes en el curso)
   const courseTeachers = useMemo(() => {
@@ -111,51 +136,60 @@ export function CierreCurso({
     return [];
   }, [students]);
 
-  // Extract individual grades and calculate official NF for every student
+  // Extract individual grades and calculate official NF for every student dynamically using formula.variables
   const studentSummaries: StudentGradeSummary[] = useMemo(() => {
     return effectiveStudents.map((std) => {
-      let pc1: number | null = null;
-      let pc2: number | null = null;
-      let exFinal: number | null = null;
-      let sumHomeworks = 0;
-      let countHomeworks = 0;
+      const grades: Record<string, number | null> = {};
 
-      assignments.forEach((asg) => {
-        const titleUpper = asg.title.toUpperCase();
-        const sub = asg.submissions?.find((s) => s.studentDni === std.dni && s.grade !== undefined);
-        if (!sub) return;
+      const regularHomeworks = courseAssignments.filter((a) =>
+        !a.title.startsWith("[Planilla] ") &&
+        a.kind !== "assessment" &&
+        !a.curricularComponent &&
+        !/\[PC\d+\]|PC\d+|EX_FINAL|EXAMEN|FINAL|TABLEROS|MONTAJE|SIMULACION|MEDICIONES|PRACT_FINAL/i.test(a.title)
+      );
 
-        if (titleUpper.includes("PC1") || titleUpper.includes("PRÁCTICA CALIFICADA 1") || titleUpper.includes("PRACTICA CALIFICADA 1")) {
-          pc1 = sub.grade!;
-        } else if (titleUpper.includes("PC2") || titleUpper.includes("PRÁCTICA CALIFICADA 2") || titleUpper.includes("PRACTICA CALIFICADA 2")) {
-          pc2 = sub.grade!;
-        } else if (titleUpper.includes("EX_FINAL") || titleUpper.includes("EXAMEN FINAL") || titleUpper.includes("FINAL")) {
-          exFinal = sub.grade!;
+      formula.variables.forEach((v) => {
+        let val: number | null = null;
+        if (v.id === "NPA") {
+          const studentGrades = regularHomeworks
+            .map((a) => a.submissions?.find((s) => s.studentDni === std.dni && typeof s.grade === "number")?.grade)
+            .filter((g): g is number => typeof g === "number");
+          if (studentGrades.length > 0) {
+            val = Number((studentGrades.reduce((a, b) => a + b, 0) / studentGrades.length).toFixed(1));
+          }
         } else {
-          sumHomeworks += sub.grade!;
-          countHomeworks++;
+          const matchingAsg = courseAssignments.find((a) =>
+            !a.title.startsWith("[Planilla] ") && (
+              a.curricularComponent === v.id ||
+              a.title.toUpperCase().includes(`[${v.id}]`) ||
+              a.title.toUpperCase().includes(v.id) ||
+              (v.id === "EX_FINAL" && /EX_FINAL|EXAMEN FINAL/i.test(a.title))
+            )
+          );
+          const sub = matchingAsg?.submissions?.find((s) => s.studentDni === std.dni && typeof s.grade === "number");
+          if (sub) {
+            val = sub.grade;
+          } else {
+            const planillaAsg = courseAssignments.find((a) => a.title === `[Planilla] ${v.id}`);
+            const planSub = planillaAsg?.submissions?.find((s) => s.studentDni === std.dni && typeof s.grade === "number");
+            if (planSub) val = planSub.grade;
+          }
         }
+        grades[v.id] = val;
       });
 
-      // Default or calculated NPA (Nota de Participación / Asistencia / Informes)
-      const npa = countHomeworks > 0 ? Math.round(sumHomeworks / countHomeworks) : (pc1 !== null ? pc1 : null);
-
-      // Real evaluations: No hardcoded fallback
-      const safePc1 = pc1;
-      const safePc2 = pc2;
-      const safeEx = exFinal;
-
-      let finalGrade: number = 0;
+      const hasAll = formula.variables.every((v) => grades[v.id] !== null && grades[v.id] !== undefined);
+      let finalGrade = 0;
       let condition: "APROBADO" | "DESAPROBADO" | "PENDIENTE" = "PENDIENTE";
 
-      if (safeEx !== null) {
-        const rawFinal = (0.20 * (npa ?? safePc1 ?? 0)) + (0.20 * (safePc1 ?? 0)) + (0.20 * (safePc2 ?? 0)) + (0.40 * safeEx);
-        finalGrade = Math.round(rawFinal * 10) / 10;
+      if (hasAll) {
+        finalGrade = Number(formula.variables.reduce((acc, v) => acc + (grades[v.id]! * v.weight), 0).toFixed(1));
         condition = finalGrade >= 12.5 ? "APROBADO" : "DESAPROBADO";
       } else {
-        // Examen Final is pending
-        const partial = (0.20 * (npa ?? 0)) + (0.20 * (safePc1 ?? 0)) + (0.20 * (safePc2 ?? 0));
-        finalGrade = Math.round(partial * 10) / 10;
+        const gradedVars = formula.variables.filter((v) => grades[v.id] !== null && grades[v.id] !== undefined);
+        if (gradedVars.length > 0) {
+          finalGrade = Number(gradedVars.reduce((acc, v) => acc + (grades[v.id]! * v.weight), 0).toFixed(1));
+        }
         condition = "PENDIENTE";
       }
 
@@ -163,15 +197,13 @@ export function CierreCurso({
         dni: std.dni,
         name: std.name,
         lastName: std.lastName,
-        npa,
-        pc1: safePc1,
-        pc2: safePc2,
-        exFinal: safeEx,
+        grades,
         finalGrade,
-        condition
+        condition,
+        isComplete: hasAll
       };
     });
-  }, [effectiveStudents, assignments]);
+  }, [effectiveStudents, courseAssignments, formula.variables]);
 
   // Statistics and MINEDU Performance Buckets
   const stats = useMemo(() => {
@@ -185,9 +217,9 @@ export function CierreCurso({
     const min = validGrades.length ? Math.min(...validGrades, 20) : 0;
 
     // Dynamic MINEDU Performance Buckets
-    const countDestacado = studentSummaries.filter((s) => s.exFinal !== null && s.finalGrade >= 17.5).length;
-    const countLogrado = studentSummaries.filter((s) => s.exFinal !== null && s.finalGrade >= 12.5 && s.finalGrade < 17.5).length;
-    const countProceso = studentSummaries.filter((s) => s.exFinal === null || s.finalGrade < 12.5).length;
+    const countDestacado = studentSummaries.filter((s) => s.isComplete && s.finalGrade >= 17.5).length;
+    const countLogrado = studentSummaries.filter((s) => s.isComplete && s.finalGrade >= 12.5 && s.finalGrade < 17.5).length;
+    const countProceso = studentSummaries.filter((s) => !s.isComplete || s.finalGrade < 12.5).length;
 
     return {
       total,
@@ -291,15 +323,13 @@ export function CierreCurso({
       doc.text(`Fórmula: ${formula.expression}`, 120, y);
       y += 8;
 
-      // Table of Students
+      // Table of Students dynamically mapped to formula variables
+      const varHeaders = formula.variables.map((v) => `${v.id} (${Math.round(v.weight * 100)}%)`);
       const tableRows = studentSummaries.map((s, idx) => [
         (idx + 1).toString(),
         s.dni,
         `${s.lastName}, ${s.name}`,
-        s.npa.toString(),
-        s.pc1 !== null ? s.pc1.toString() : "18",
-        s.pc2 !== null ? s.pc2.toString() : "16.5",
-        s.exFinal !== null ? s.exFinal.toString() : "15",
+        ...formula.variables.map((v) => s.grades[v.id] !== null && s.grades[v.id] !== undefined ? s.grades[v.id]!.toFixed(1) : "NR"),
         s.finalGrade.toFixed(1),
         s.condition
       ]);
@@ -307,21 +337,10 @@ export function CierreCurso({
       autoTable(doc, {
         startY: y,
         margin: { left: 14, right: 14 },
-        head: [["#", "DNI", "Estudiante", "NPA (20%)", "PC1 (20%)", "PC2 (20%)", "EX_FIN (40%)", "NF", "Condición"]],
+        head: [["#", "DNI", "Estudiante", ...varHeaders, "NF", "Condición"]],
         body: tableRows,
         styles: { font: "helvetica", fontSize: 8, cellPadding: 2.5, valign: "middle" },
         headStyles: { fillColor: [128, 5, 33], textColor: 255, fontStyle: "bold", halign: "center" },
-        columnStyles: {
-          0: { cellWidth: 8, halign: "center" },
-          1: { cellWidth: 20, halign: "center" },
-          2: { cellWidth: 50 },
-          3: { cellWidth: 17, halign: "center" },
-          4: { cellWidth: 17, halign: "center" },
-          5: { cellWidth: 17, halign: "center" },
-          6: { cellWidth: 17, halign: "center" },
-          7: { cellWidth: 14, halign: "center", fontStyle: "bold" },
-          8: { cellWidth: 22, halign: "center", fontStyle: "bold" }
-        },
         alternateRowStyles: { fillColor: [248, 250, 252] }
       });
 
@@ -393,8 +412,9 @@ export function CierreCurso({
       worksheet.addRow(["Fórmula:", formula.expression, "", "Estado Acta:", isSigned ? "FIRMADA Y CERRADA" : "PENDIENTE DE FIRMA"]);
       worksheet.addRow([]);
 
-      // Headers row
-      const headerRow = worksheet.addRow(["#", "DNI", "Estudiante", "NPA (20%)", "PC1 (20%)", "PC2 (20%)", "EX_FINAL (40%)", "Nota Final", "Condición"]);
+      // Headers row dynamically mapped to formula variables
+      const varHeaders = formula.variables.map((v) => `${v.id} (${Math.round(v.weight * 100)}%)`);
+      const headerRow = worksheet.addRow(["#", "DNI", "Estudiante", ...varHeaders, "Nota Final", "Condición"]);
       headerRow.height = 24;
       headerRow.eachCell((cell: any) => {
         cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
@@ -404,28 +424,26 @@ export function CierreCurso({
 
       // Data rows
       studentSummaries.forEach((s, idx) => {
-        const row = worksheet.addRow([
+        const rowData = [
           idx + 1,
           s.dni,
           `${s.lastName}, ${s.name}`,
-          s.npa,
-          s.pc1 !== null ? s.pc1 : 18,
-          s.pc2 !== null ? s.pc2 : 16.5,
-          s.exFinal !== null ? s.exFinal : 15,
+          ...formula.variables.map((v) => s.grades[v.id] !== null && s.grades[v.id] !== undefined ? s.grades[v.id]! : "NR"),
           s.finalGrade,
           s.condition
-        ]);
+        ];
+        const row = worksheet.addRow(rowData);
         row.alignment = { vertical: "middle" };
         row.getCell(1).alignment = { horizontal: "center" };
         row.getCell(2).alignment = { horizontal: "center" };
-        row.getCell(4).alignment = { horizontal: "center" };
-        row.getCell(5).alignment = { horizontal: "center" };
-        row.getCell(6).alignment = { horizontal: "center" };
-        row.getCell(7).alignment = { horizontal: "center" };
-        row.getCell(8).alignment = { horizontal: "center" };
-        row.getCell(8).font = { bold: true };
-        row.getCell(9).alignment = { horizontal: "center" };
-        row.getCell(9).font = { bold: true, color: { argb: s.condition === "APROBADO" ? "FF166534" : "FF991B1B" } };
+        const numCols = rowData.length;
+        for (let col = 4; col <= numCols; col++) {
+          row.getCell(col).alignment = { horizontal: "center" };
+        }
+        const nfCell = row.getCell(numCols - 1);
+        nfCell.font = { bold: true };
+        const condCell = row.getCell(numCols);
+        condCell.font = { bold: true, color: { argb: s.condition === "APROBADO" ? "FF166534" : "FF991B1B" } };
       });
 
       // Column widths
@@ -635,10 +653,11 @@ export function CierreCurso({
                 <th className="py-3 px-3.5 text-center w-12">#</th>
                 <th className="py-3 px-3.5 w-28 text-center">DNI</th>
                 <th className="py-3 px-4">Estudiante</th>
-                <th className="py-3 px-3 text-center">NPA (20%)</th>
-                <th className="py-3 px-3 text-center">PC1 (20%)</th>
-                <th className="py-3 px-3 text-center">PC2 (20%)</th>
-                <th className="py-3 px-3 text-center">EX_FINAL (40%)</th>
+                {formula.variables.map((v) => (
+                  <th key={v.id} className="py-3 px-3 text-center">
+                    {v.id} ({Math.round(v.weight * 100)}%)
+                  </th>
+                ))}
                 <th className="py-3 px-3.5 text-center">Nota Final (NF)</th>
                 <th className="py-3 px-4 text-center">Condición</th>
                 <th className="py-3 px-4 text-center">Estado Acta</th>
@@ -647,7 +666,7 @@ export function CierreCurso({
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
               {studentSummaries.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="py-8 text-center text-slate-400 font-bold">
+                  <td colSpan={6 + formula.variables.length} className="py-8 text-center text-slate-400 font-bold">
                     No hay estudiantes registrados en la nómina de este curso.
                   </td>
                 </tr>
@@ -659,20 +678,16 @@ export function CierreCurso({
                     <td className="py-3.5 px-4 font-extrabold text-slate-900">
                       {std.lastName}, {std.name}
                     </td>
-                    <td className="py-3.5 px-3 text-center font-mono font-bold text-slate-700">
-                      {std.npa !== null ? std.npa : <span className="text-slate-400 font-normal">NR</span>}
-                    </td>
-                    <td className="py-3.5 px-3 text-center font-mono font-bold text-slate-700">
-                      {std.pc1 !== null ? std.pc1 : <span className="text-slate-400 font-normal">NR</span>}
-                    </td>
-                    <td className="py-3.5 px-3 text-center font-mono font-bold text-slate-700">
-                      {std.pc2 !== null ? std.pc2 : <span className="text-slate-400 font-normal">NR</span>}
-                    </td>
-                    <td className="py-3.5 px-3 text-center font-mono font-bold text-slate-700">
-                      {std.exFinal !== null ? std.exFinal : <span className="text-slate-400 font-normal">NR</span>}
-                    </td>
+                    {formula.variables.map((v) => {
+                      const val = std.grades[v.id];
+                      return (
+                        <td key={v.id} className="py-3.5 px-3 text-center font-mono font-bold text-slate-700">
+                          {val !== null && val !== undefined ? val : <span className="text-slate-400 font-normal">NR</span>}
+                        </td>
+                      );
+                    })}
                     <td className="py-3.5 px-3.5 text-center font-mono font-black text-sm text-[#800521]">
-                      {std.exFinal !== null ? std.finalGrade.toFixed(1) : `${std.finalGrade.toFixed(1)} (Parcial)`}
+                      {std.isComplete ? std.finalGrade.toFixed(1) : `${std.finalGrade.toFixed(1)} (Parcial)`}
                     </td>
                     <td className="py-3.5 px-4 text-center">
                       <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
@@ -808,11 +823,12 @@ export function CierreCurso({
               <div className="space-y-2 border rounded-xl overflow-hidden divide-y divide-slate-100">
                 <div className="p-3 bg-slate-100 flex justify-between text-[10px] font-black text-slate-500 tracking-wider uppercase select-none">
                   <span className="w-1/3">DNI & Alumno</span>
-                  <span className="w-1/6 text-center">NPA (20%)</span>
-                  <span className="w-1/6 text-center">PC1 (20%)</span>
-                  <span className="w-1/6 text-center">PC2 (20%)</span>
-                  <span className="w-1/6 text-center">EX_FINAL (40%)</span>
-                  <span className="w-1/6 text-center">Promedio Final</span>
+                  {formula.variables.map((v) => (
+                    <span key={v.id} className="flex-1 text-center font-mono">
+                      {v.id} ({Math.round(v.weight * 100)}%)
+                    </span>
+                  ))}
+                  <span className="w-24 text-center">Promedio Final</span>
                 </div>
                 {studentSummaries.map((std) => (
                   <div key={std.dni} className="p-3.5 flex justify-between items-center bg-white hover:bg-slate-50">
@@ -820,11 +836,15 @@ export function CierreCurso({
                       <span className="font-extrabold text-slate-900 block">{std.lastName}, {std.name}</span>
                       <span className="text-[10px] text-slate-400 font-mono">DNI: {std.dni}</span>
                     </div>
-                    <span className="w-1/6 text-center font-mono font-bold text-slate-700">{std.npa}</span>
-                    <span className="w-1/6 text-center font-mono font-bold text-slate-700">{std.pc1 !== null ? std.pc1 : 18}</span>
-                    <span className="w-1/6 text-center font-mono font-bold text-slate-700">{std.pc2 !== null ? std.pc2 : 16.5}</span>
-                    <span className="w-1/6 text-center font-mono font-bold text-slate-700">{std.exFinal !== null ? std.exFinal : 15}</span>
-                    <span className="w-1/6 text-center font-mono font-black text-[#800521] text-sm">
+                    {formula.variables.map((v) => {
+                      const val = std.grades[v.id];
+                      return (
+                        <span key={v.id} className="flex-1 text-center font-mono font-bold text-slate-700">
+                          {val !== null && val !== undefined ? val : "NR"}
+                        </span>
+                      );
+                    })}
+                    <span className="w-24 text-center font-mono font-black text-[#800521] text-sm">
                       {std.finalGrade.toFixed(1)}
                     </span>
                   </div>

@@ -10,6 +10,7 @@ import { SecurePinModal } from "./evaluaciones/SecurePinModal";
 interface Props {
   students: StudentPersonalData[];
   courseId: string;
+  courseCode?: string;
   week: number;
   assignments: CourseAssignment[];
   onUpdateAssignments: (assignments: CourseAssignment[]) => Promise<boolean>;
@@ -18,15 +19,16 @@ interface Props {
 export default function EvaluacionesManager({ 
   students, 
   courseId, 
+  courseCode,
   week, 
   assignments, 
   onUpdateAssignments 
 }: Props) {
-  const formula = useMemo(() => getCourseFormula(courseId), [courseId]);
+  const formula = useMemo(() => getCourseFormula(courseCode || courseId), [courseCode, courseId]);
 
   const evaluations = useMemo(() => assignments.filter((item) => 
-    item.courseId === courseId && item.kind === "assessment" && item.title.startsWith(`[Semana ${week}]`)
-  ), [assignments, courseId, week]);
+    (item.courseId === courseId || (courseCode && item.courseId === courseCode)) && item.kind === "assessment" && item.title.startsWith(`[Semana ${week}]`)
+  ), [assignments, courseId, courseCode, week]);
 
   const [selectedId, setSelectedId] = useState("");
   const selected = evaluations.find((item) => item.id === selectedId) || evaluations[0];
@@ -64,7 +66,7 @@ export default function EvaluacionesManager({
   const assignedComponentsMap = useMemo(() => {
     const map: Record<string, { week?: number; title: string }> = {};
     assignments
-      .filter((a) => a.courseId === courseId && !a.title.startsWith("[Planilla] "))
+      .filter((a) => (a.courseId === courseId || (courseCode && a.courseId === courseCode)) && !a.title.startsWith("[Planilla] "))
       .forEach((a) => {
         const comp = a.curricularComponent || formula.variables.find((v) => v.id !== "NPA" && (a.title.toUpperCase().includes(`[${v.id}]`) || a.title.toUpperCase().includes(v.id)))?.id;
         if (comp && comp !== "NPA") {
@@ -74,7 +76,7 @@ export default function EvaluacionesManager({
         }
       });
     return map;
-  }, [assignments, courseId, formula.variables]);
+  }, [assignments, courseId, courseCode, formula.variables]);
 
   const [confirmDeleteModalOpen, setConfirmDeleteModalOpen] = useState(false);
 
@@ -123,12 +125,17 @@ export default function EvaluacionesManager({
 
     // Auto-detect official milestone if not explicitly chosen in dropdown
     if (!finalComponent) {
-      if (upperTitle.includes("PC1") || upperTitle.includes("PRÁCTICA CALIFICADA 1") || upperTitle.includes("PRACTICA CALIFICADA 1")) {
-        finalComponent = "PC1";
-      } else if (upperTitle.includes("PC2") || upperTitle.includes("PRÁCTICA CALIFICADA 2") || upperTitle.includes("PRACTICA CALIFICADA 2")) {
-        finalComponent = "PC2";
-      } else if (upperTitle.includes("EX_FINAL") || upperTitle.includes("EXAMEN FINAL") || upperTitle.includes("FINAL")) {
-        finalComponent = "EX_FINAL";
+      for (const v of formula.variables) {
+        if (v.id === "NPA") continue;
+        if (
+          upperTitle.includes(`[${v.id}]`) ||
+          upperTitle.includes(v.id) ||
+          upperTitle.includes(v.label.toUpperCase()) ||
+          (v.id === "EX_FINAL" && (upperTitle.includes("EXAMEN FINAL") || upperTitle.includes("FINAL")))
+        ) {
+          finalComponent = v.id;
+          break;
+        }
       }
     }
 
@@ -147,6 +154,7 @@ export default function EvaluacionesManager({
       const isMentionedInTitle = 
         upperTitle.includes(`[${v.id}]`) ||
         upperTitle.includes(v.id) ||
+        upperTitle.includes(v.label.toUpperCase()) ||
         (v.id === "PC1" && (upperTitle.includes("PRÁCTICA CALIFICADA 1") || upperTitle.includes("PRACTICA CALIFICADA 1"))) ||
         (v.id === "PC2" && (upperTitle.includes("PRÁCTICA CALIFICADA 2") || upperTitle.includes("PRACTICA CALIFICADA 2"))) ||
         (v.id === "EX_FINAL" && (upperTitle.includes("EXAMEN FINAL") || upperTitle.includes("FINAL")));
@@ -161,7 +169,7 @@ export default function EvaluacionesManager({
     }
 
     const tag = finalComponent ? `[${finalComponent}] ` : "";
-    const cleanTitle = title.trim().replace(/^\[(PC1|PC2|EX_FINAL|NPA)\]\s*/i, "");
+    const cleanTitle = title.trim().replace(/^\[[A-Za-z0-9_]+\]\s*/i, "");
     const evaluationTitle = `[Semana ${week}] ${tag}${cleanTitle}`;
     if (evaluations.some((item) => item.title.toLowerCase() === evaluationTitle.toLowerCase())) {
       notify("Ya existe una evaluación con ese nombre en esta semana.", "warning");
@@ -275,15 +283,15 @@ export default function EvaluacionesManager({
       }
     }
 
-    // Check if this evaluation is linked to an official formula component (PC1, PC2, etc.)
+    // Check if this evaluation is linked to an official formula component (PC1, PC2, TABLEROS, etc.)
     const linkedVar = selected.curricularComponent || 
-      formula.variables.find(v => selected.title.toUpperCase().includes(v.id))?.id;
+      formula.variables.find(v => v.id !== "NPA" && (selected.title.toUpperCase().includes(`[${v.id}]`) || selected.title.toUpperCase().includes(v.id)))?.id;
 
     let updatedAssignments = assignments.map((item) => item.id === selected.id ? { ...item, submissions } : item);
 
     if (linkedVar) {
       const planillaTitle = `[Planilla] ${linkedVar}`;
-      const existingPlanilla = updatedAssignments.find(a => a.courseId === courseId && a.title === planillaTitle);
+      const existingPlanilla = updatedAssignments.find(a => (a.courseId === courseId || (courseCode && a.courseId === courseCode)) && a.title === planillaTitle);
       const planillaSubmissions = existingPlanilla ? [...existingPlanilla.submissions] : [];
 
       submissions.forEach(sub => {
@@ -486,7 +494,7 @@ export default function EvaluacionesManager({
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 font-bold uppercase text-[9.5px]">Hito Curricular:</span>
                     <span className="font-mono font-black text-[#800521] px-2 py-0.5 bg-rose-50 border border-rose-200 rounded text-[10px]">
-                      {selected.curricularComponent || "Evaluación Continua"}
+                      {selected.curricularComponent || formula.variables.find(v => v.id !== "NPA" && (selected.title.toUpperCase().includes(`[${v.id}]`) || selected.title.toUpperCase().includes(v.id)))?.id || "Evaluación Continua"}
                     </span>
                   </div>
                 </div>

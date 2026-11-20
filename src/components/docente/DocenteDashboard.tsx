@@ -1500,6 +1500,7 @@ export default function DocenteDashboard({
                     {selectedWeekOption === "evaluaciones" && (
                       <EvaluacionesManager
                         courseId={selectedCourseId}
+                        courseCode={selectedCourse?.code}
                         week={selectedWeek}
                         students={enrollments.filter((enrollment) => enrollment.academicStatus === "MATRICULADO" && enrollment.programId === (selectedCourse?.careerId || selectedCourse?.career)).map((enrollment) => studentsList[enrollment.studentDni]).filter(Boolean)}
                         assignments={assignments}
