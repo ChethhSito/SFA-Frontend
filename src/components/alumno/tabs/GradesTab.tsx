@@ -223,15 +223,6 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                 <span className="text-[11px] text-slate-500 font-bold uppercase block">
                   {activeCourse?.code} • {activeCourse?.classroom}
                 </span>
-                <div className="pt-1.5">
-                  <button 
-                    type="button"
-                    onClick={() => setShowBoletaModal(true)}
-                    className="bg-[#9F062A] hover:bg-[#800521] text-white font-black text-[10.5px] py-1.5 px-3.5 rounded-xl flex items-center gap-1.5 uppercase transition-all shadow-xs cursor-pointer select-none active:scale-95"
-                  >
-                    <Printer className="w-3.5 h-3.5 text-amber-300" /> Descargar Boleta
-                  </button>
-                </div>
               </div>
 
               {activeStats.hasAnyGrade && (

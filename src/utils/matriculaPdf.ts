@@ -747,7 +747,14 @@ export async function generateCurriculumPlanPdf(programName: string, studentName
   return pdf;
 }
 
-export async function generateBoletaNotasPdf(cycle: string, studentName: string, dni: string, programName: string, courses: Array<{ code: string; name: string; credits: number; grade?: number }>) {
+export async function generateBoletaNotasPdf(
+  cycle: string,
+  studentName: string,
+  dni: string,
+  programName: string,
+  courses: Array<{ code: string; name: string; credits: number; grade?: number }>,
+  shouldSave: boolean = true
+) {
   const [{ jsPDF }, { default: autoTable }] = await Promise.all([
     import("jspdf"),
     import("jspdf-autotable"),
@@ -793,8 +800,12 @@ export async function generateBoletaNotasPdf(cycle: string, studentName: string,
       c.code,
       c.name,
       c.credits.toFixed(1),
-      c.grade !== undefined && c.grade > 0 ? c.grade.toString().padStart(2, "0") : "--",
-      c.grade !== undefined && c.grade >= 13 ? "APROBADO" : "MATRICULADO",
+      c.grade !== undefined && c.grade > 0
+        ? (Number.isInteger(c.grade) ? c.grade.toString().padStart(2, "0") : c.grade.toFixed(1))
+        : "--",
+      c.grade !== undefined && c.grade > 0
+        ? (c.grade >= 12.5 ? "APROBADO" : "DESAPROBADO")
+        : "MATRICULADO",
     ]),
     styles: { font: "helvetica", fontSize: 8, cellPadding: 2.2, valign: "middle" },
     headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: "bold", fontSize: 8 },
@@ -814,6 +825,8 @@ export async function generateBoletaNotasPdf(cycle: string, studentName: string,
   const sigY = Math.min(boletaFinalY + 6, height - 38);
   drawOfficialSignaturesAndSeal(pdf, width, margin, sigY, "REGISTRO DE NOTAS");
 
-  pdf.save(`Boleta_Notas_SFA_Ciclo_${cycle}_${dni}.pdf`);
+  if (shouldSave) {
+    pdf.save(`Boleta_Notas_SFA_Ciclo_${cycle}_${dni}.pdf`);
+  }
   return pdf;
 }
