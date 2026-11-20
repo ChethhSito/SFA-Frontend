@@ -7,7 +7,7 @@ import { CourseFormulaCard } from "./evaluaciones/CourseFormulaCard";
 import { COURSE_FORMULAS, CourseFormula, getCourseFormula } from "../../constants/courseFormulas";
 import { SecurePinModal } from "./evaluaciones/SecurePinModal";
 import { EditGradeModal } from "./evaluaciones/EditGradeModal";
-import { GradeSheetTable } from "./evaluaciones/GradeSheetTable";
+import { GradeSheetTable, SubcomponentData } from "./evaluaciones/GradeSheetTable";
 
 interface EvaluacionesCursosPrincipalProps {
   courses: Course[];
@@ -31,6 +31,7 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
   const [activeStudentDni, setActiveStudentDni] = useState("");
   const [activeStudentName, setActiveStudentName] = useState("");
   const [activeVariableId, setActiveVariableId] = useState("");
+  const [activeCourseIdForEdit, setActiveCourseIdForEdit] = useState("");
   const [tempGrade, setTempGrade] = useState("");
   const [keypadNumbers, setKeypadNumbers] = useState<number[]>([]);
   const [enteredPin, setEnteredPin] = useState("");
@@ -41,14 +42,60 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
     setNotification({ id: Date.now(), message, kind });
   };
 
-  // Setup default course on first load
-  useEffect(() => {
-    if (courses.length > 0 && !selectedCourseId) {
-      setSelectedCourseId(courses[0].id);
-    }
+  // Group courses by base code (e.g. "EIND-101") so that a professor with all subcomponents has one unified entry
+  const courseOptions = useMemo(() => {
+    const map = new Map<string, Course[]>();
+    courses.forEach((c) => {
+      const baseCode = c.code.replace(/-(TEO|TAL|LAB)$/i, "");
+      if (!map.has(baseCode)) map.set(baseCode, []);
+      map.get(baseCode)!.push(c);
+    });
+
+    const options: Array<{
+      id: string;
+      code: string;
+      name: string;
+      isUnified: boolean;
+      allComponents: Course[];
+    }> = [];
+
+    map.forEach((componentList, baseCode) => {
+      if (componentList.length > 1) {
+        const teo = componentList.find((c) => /TEO/i.test(c.code)) || componentList[0];
+        const baseName = teo.name.replace(/\s*\((Teoría|Taller|Laboratorio)\)\s*$/i, "").trim();
+        options.push({
+          id: teo.id,
+          code: baseCode,
+          name: `${baseName} (Curso Completo)`,
+          isUnified: true,
+          allComponents: componentList
+        });
+      } else {
+        const c = componentList[0];
+        options.push({
+          id: c.id,
+          code: c.code,
+          name: c.name,
+          isUnified: false,
+          allComponents: [c]
+        });
+      }
+    });
+
+    return options;
   }, [courses]);
 
-  const selectedCourse = courses.find((c) => c.id === selectedCourseId) || null;
+  // Setup default course on first load
+  useEffect(() => {
+    if (courseOptions.length > 0 && !selectedCourseId) {
+      setSelectedCourseId(courseOptions[0].id);
+    }
+  }, [courseOptions, selectedCourseId]);
+
+  const selectedCourseOption = courseOptions.find((o) => o.id === selectedCourseId) || courseOptions[0] || null;
+  const isUnified = selectedCourseOption?.isUnified ?? false;
+  const selectedCourse = courses.find((c) => c.id === selectedCourseId) || courses[0] || null;
+  const isTheoryCourse = selectedCourse ? (/TEO/i.test(selectedCourse.code) || isUnified) : false;
   const formula = selectedCourse ? getCourseFormula(selectedCourse.code) : COURSE_FORMULAS["default"];
 
   const roster = useMemo(() => {
@@ -127,8 +174,165 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
     return sheet;
   }, [assignments, selectedCourseId, formula.variables]);
 
+  // Subcomponents calculation for Taller and Laboratorio (expandable in Theory)
+  const subComponents = useMemo((): SubcomponentData[] => {
+    if (!isTheoryCourse) return [];
+
+    const baseCode = (selectedCourse?.code || "").replace(/-(TEO|TAL|LAB)$/i, "");
+    
+    // Find matching Taller and Lab courses across courses
+    const talCourse = courses.find((c) => c.code.replace(/-(TEO|TAL|LAB)$/i, "") === baseCode && /TAL/i.test(c.code));
+    const labCourse = courses.find((c) => c.code.replace(/-(TEO|TAL|LAB)$/i, "") === baseCode && /LAB/i.test(c.code));
+
+    const result: SubcomponentData[] = [];
+
+    if (talCourse || isUnified) {
+      const talId = talCourse?.id || "6afe1412016eccb3be7af0eb";
+      const talCode = talCourse?.code || `${baseCode}-TAL`;
+      const talFormula = getCourseFormula(talCode);
+      const canEditTal = Boolean(talCourse);
+
+      const studentGrades: Record<string, { values: Record<string, number | null>; average: number | null }> = {};
+
+      roster.forEach((std) => {
+        const values: Record<string, number | null> = {};
+        talFormula.variables.forEach((v) => {
+          const asg = assignments.find((a) =>
+            (a.courseId === talId || a.courseId === talCode || a.courseId?.toLowerCase().includes("tal")) &&
+            !a.title.startsWith("[Planilla] ") && (
+              a.curricularComponent === v.id ||
+              a.title.toUpperCase().includes(`[${v.id}]`) ||
+              a.title.toUpperCase().includes(v.id)
+            )
+          );
+          const sub = asg?.submissions?.find((s: any) => s.studentDni === std.dni && s.grade !== undefined);
+          values[v.id] = sub ? Number(sub.grade) : null;
+        });
+
+        const presentValues = talFormula.variables.map((v) => values[v.id]).filter((g): g is number => g !== null);
+        const hasAll = talFormula.variables.every((v) => values[v.id] !== null);
+        let average: number | null = null;
+        if (hasAll) {
+          const sum = talFormula.variables.reduce((acc, v) => acc + (values[v.id]! * v.weight), 0);
+          average = Number(sum.toFixed(1));
+        } else if (presentValues.length > 0) {
+          average = Number((presentValues.reduce((a, b) => a + b, 0) / presentValues.length).toFixed(1));
+        }
+
+        studentGrades[std.dni] = { values, average };
+      });
+
+      result.push({
+        id: "tal",
+        code: talCode,
+        name: "Taller",
+        fullName: talCourse?.name || "Fundamentos de Electricidad y Circuitos CC (Taller)",
+        weightPct: 40,
+        credits: 2,
+        courseId: talId,
+        teacherName: talCourse?.teacherName || "Manuel Ramos Salazar",
+        canEdit: canEditTal,
+        variables: talFormula.variables,
+        studentGrades
+      });
+    }
+
+    if (labCourse || isUnified) {
+      const labId = labCourse?.id || "6afe141f016eccb3be7af0ec";
+      const labCode = labCourse?.code || `${baseCode}-LAB`;
+      const labFormula = getCourseFormula(labCode);
+      const canEditLab = Boolean(labCourse);
+
+      const studentGrades: Record<string, { values: Record<string, number | null>; average: number | null }> = {};
+
+      roster.forEach((std) => {
+        const values: Record<string, number | null> = {};
+        labFormula.variables.forEach((v) => {
+          const asg = assignments.find((a) =>
+            (a.courseId === labId || a.courseId === labCode || a.courseId?.toLowerCase().includes("lab")) &&
+            !a.title.startsWith("[Planilla] ") && (
+              a.curricularComponent === v.id ||
+              a.title.toUpperCase().includes(`[${v.id}]`) ||
+              a.title.toUpperCase().includes(v.id)
+            )
+          );
+          const sub = asg?.submissions?.find((s: any) => s.studentDni === std.dni && s.grade !== undefined);
+          values[v.id] = sub ? Number(sub.grade) : null;
+        });
+
+        const presentValues = labFormula.variables.map((v) => values[v.id]).filter((g): g is number => g !== null);
+        const hasAll = labFormula.variables.every((v) => values[v.id] !== null);
+        let average: number | null = null;
+        if (hasAll) {
+          const sum = labFormula.variables.reduce((acc, v) => acc + (values[v.id]! * v.weight), 0);
+          average = Number(sum.toFixed(1));
+        } else if (presentValues.length > 0) {
+          average = Number((presentValues.reduce((a, b) => a + b, 0) / presentValues.length).toFixed(1));
+        }
+
+        studentGrades[std.dni] = { values, average };
+      });
+
+      result.push({
+        id: "lab",
+        code: labCode,
+        name: "Laboratorio",
+        fullName: labCourse?.name || "Fundamentos de Electricidad y Circuitos CC (Laboratorio)",
+        weightPct: 20,
+        credits: 1,
+        courseId: labId,
+        teacherName: labCourse?.teacherName || "Manuel Ramos Salazar",
+        canEdit: canEditLab,
+        variables: labFormula.variables,
+        studentGrades
+      });
+    }
+
+    return result;
+  }, [isTheoryCourse, isUnified, selectedCourse, courses, assignments, roster]);
+
   // Helper formula average solver
   const computeStudentAverage = (studentDni: string) => {
+    if (isTheoryCourse && subComponents.length > 0) {
+      const vNpa = sheetData[`${studentDni}-NPA`];
+      const vPc1 = sheetData[`${studentDni}-PC1`];
+      const vPc2 = sheetData[`${studentDni}-PC2`];
+      const vExFinal = sheetData[`${studentDni}-EX_FINAL`];
+
+      const npaNum = vNpa ? parseFloat(vNpa) : null;
+      const pc1Num = vPc1 ? parseFloat(vPc1) : null;
+      const pc2Num = vPc2 ? parseFloat(vPc2) : null;
+      const exFinalNum = vExFinal ? parseFloat(vExFinal) : null;
+
+      // Theory continuous
+      let gradeTeo: number | null = null;
+      if (npaNum !== null && pc1Num !== null && pc2Num !== null) {
+        gradeTeo = Number((0.30 * npaNum + 0.35 * pc1Num + 0.35 * pc2Num).toFixed(1));
+      } else {
+        const valid = [npaNum, pc1Num, pc2Num].filter((g): g is number => g !== null && !isNaN(g));
+        if (valid.length > 0) gradeTeo = Number((valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1));
+      }
+
+      const talComp = subComponents.find((c) => c.id === "tal");
+      const gradeTal = talComp?.studentGrades[studentDni]?.average ?? null;
+
+      const labComp = subComponents.find((c) => c.id === "lab");
+      const gradeLab = labComp?.studentGrades[studentDni]?.average ?? null;
+
+      const teoContrib = gradeTeo !== null ? 0.60 * 0.40 * gradeTeo : 0;
+      const talContrib = gradeTal !== null ? 0.60 * 0.40 * gradeTal : 0;
+      const labContrib = gradeLab !== null ? 0.60 * 0.20 * gradeLab : 0;
+      const exFinalContrib = exFinalNum !== null ? 0.40 * exFinalNum : 0;
+
+      const isComplete = gradeTeo !== null && gradeTal !== null && gradeLab !== null && exFinalNum !== null;
+      const total = Number((teoContrib + talContrib + labContrib + exFinalContrib).toFixed(1));
+
+      return {
+        average: total,
+        missingAny: !isComplete
+      };
+    }
+
     let average = 0;
     let missingAny = false;
 
@@ -153,11 +357,18 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
   };
 
   // 1. SECURE EDIT INITIATION
-  const initiateSecureEdit = (studentDni: string, studentName: string, variableId: string, currentVal: string) => {
+  const initiateSecureEdit = (
+    studentDni: string,
+    studentName: string,
+    variableId: string,
+    currentVal: string,
+    targetCourseId?: string
+  ) => {
     setActiveStudentDni(studentDni);
     setActiveStudentName(studentName);
     setActiveVariableId(variableId);
     setTempGrade(currentVal);
+    setActiveCourseIdForEdit(targetCourseId || selectedCourseId);
     
     // Shuffle virtual keypad digits (0-9)
     const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -236,8 +447,9 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
       minute: "2-digit"
     });
 
+    const courseIdToSave = activeCourseIdForEdit || selectedCourseId;
     const existing = assignments.find((assignment) =>
-      assignment.courseId === selectedCourseId && (
+      assignment.courseId === courseIdToSave && (
         assignment.title === `[Planilla] ${activeVariableId}` ||
         assignment.curricularComponent === activeVariableId ||
         assignment.title.toUpperCase().includes(`[${activeVariableId}]`) ||
@@ -271,7 +483,7 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
     const assessment: CourseAssignment = existing ? { ...existing, submissions } : {
       id: `assessment-${Date.now()}`,
       kind: "assessment",
-      courseId: selectedCourseId,
+      courseId: courseIdToSave,
       curricularComponent: activeVariableId,
       weekNumber: activeVariableId === "EX_FINAL" ? 15 : undefined,
       title: assessmentTitle,
@@ -366,9 +578,9 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
                 onChange={(e) => setSelectedCourseId(e.target.value)}
                 className="bg-white text-slate-900 font-extrabold text-xs py-2 px-3 rounded-lg border-0 cursor-pointer transition-all outline-none"
               >
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id} className="text-slate-900 bg-white">
-                    [{c.code}] {c.name}
+                {courseOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id} className="text-slate-900 bg-white">
+                    [{opt.code}] {opt.name}
                   </option>
                 ))}
               </select>
@@ -425,6 +637,8 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
             onExportPDF={handleExportPDF}
             onSaveSheet={handleSaveSheet}
             onPublishOfficial={handlePublishOfficial}
+            subComponents={subComponents}
+            isTheoryCourse={isTheoryCourse}
           />
         </div>
       ) : (
