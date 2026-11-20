@@ -1514,6 +1514,19 @@ export default function DocenteDashboard({
                     course={selectedCourse}
                     weeksCount={16}
                     {...getCourseAggregates(selectedCourseId)}
+                    assignments={assignments}
+                    students={
+                      (() => {
+                        const filtered = enrollments
+                          .filter((e) => e.academicStatus === "MATRICULADO" && (!selectedCourse?.careerId || e.programId === selectedCourse.careerId || e.programId === selectedCourse.career))
+                          .map((e) => studentsList[e.studentDni])
+                          .filter(Boolean);
+                        if (filtered.length > 0) return filtered;
+                        if (studentsList && Object.keys(studentsList).length > 0) return Object.values(studentsList);
+                        return ROSTER as any;
+                      })()
+                    }
+                    teacherDni={teacherDni}
                   />
                 </PageTransition>
               )}
