@@ -155,20 +155,28 @@ export const GradesTab: React.FC<GradesTabProps> = ({
 
       {/* Summary row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-blue-600 flex items-center justify-between text-left">
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-[#800521] flex items-center justify-between text-left">
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Nota de Participación</span>
-              <span className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 font-mono">
-                {cycleNpaAverage !== null ? "Al Día" : "Sin Registro"}
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Promedio del Ciclo</span>
+              <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded font-mono ${
+                hasAnyEvaluations && Number(cycleProgressiveAverage) >= 12.5
+                  ? "bg-emerald-50 text-emerald-800"
+                  : "bg-slate-100 text-slate-700"
+              }`}>
+                {hasAnyEvaluations ? "Ponderado Oficial" : "Sin Registro"}
               </span>
             </div>
-            <p className="text-2xl font-black text-slate-900 mt-1 font-mono">{cycleNpaAverage !== null ? cycleNpaAverage : "0.0"}</p>
+            <p className="text-2xl font-black text-slate-900 mt-1 font-mono">
+              {hasAnyEvaluations ? cycleProgressiveAverage : "0.0"}
+            </p>
             <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">
-              {allGradedWeeklyTasks.length} tarea{allGradedWeeklyTasks.length === 1 ? "" : "s"} calificada{allGradedWeeklyTasks.length === 1 ? "" : "s"}
+              {hasAnyEvaluations 
+                ? `${coursesWithEvaluations.length} de ${enrichedCourses.length} curso${enrichedCourses.length === 1 ? "" : "s"} calificado${coursesWithEvaluations.length === 1 ? "" : "s"}`
+                : "Semestre Académico 2027-I"}
             </span>
           </div>
-          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+          <div className="p-2.5 bg-[#800521]/10 text-[#800521] rounded-xl">
             <Award className="w-5 h-5" />
           </div>
         </div>
