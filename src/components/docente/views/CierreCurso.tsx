@@ -316,13 +316,14 @@ export function CierreCurso({
       const finalY = (doc as any).lastAutoTable?.finalY || y + 50;
       
       // Render each teacher's authentic signature stamp
-      courseTeachers.forEach((t, index) => {
-        const sigPng = generateTeacherSignaturePng(t.name, t.dni, signedDate);
+      for (let index = 0; index < courseTeachers.length; index++) {
+        const t = courseTeachers[index];
+        const sigPng = await generateTeacherSignaturePng(t.name, t.dni, signedDate);
         const sigX = 14 + (index * 88);
         if (sigPng && sigX < 120) {
           doc.addImage(sigPng, "PNG", sigX, finalY + 8, 80, 35);
         }
-      });
+      }
 
       // Verification seal on the right
       doc.setFillColor(248, 250, 252);

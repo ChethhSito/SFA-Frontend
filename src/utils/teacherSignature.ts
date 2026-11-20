@@ -85,7 +85,7 @@ export function getTeacherSignature(name?: string, dni?: string): TeacherSignatu
 /**
  * Renderiza la firma en un DataURL PNG para exportación directa a jsPDF
  */
-export function generateTeacherSignaturePng(name: string, dni: string, date: string): string {
+export async function generateTeacherSignaturePng(name: string, dni: string, date: string): Promise<string> {
   if (typeof document === "undefined") return "";
 
   const canvas = document.createElement("canvas");
@@ -118,13 +118,26 @@ export function generateTeacherSignaturePng(name: string, dni: string, date: str
   ctx.font = "bold 9.5px Helvetica, Arial, sans-serif";
   ctx.fillText("FIRMA DIGITAL Y AUTENTICACIÓN MINEDU", 230, 48);
 
-  // 3. Rúbrica caligráfica con trazo de tinta azul
+  // 3. Rúbrica caligráfica con trazo de tinta azul o imagen manuscrita subida
   if (sig.customSignatureUrl) {
     try {
       const img = new Image();
-      img.src = sig.customSignatureUrl;
-      if (img.complete && img.naturalWidth > 0) {
-        ctx.drawImage(img, 130, 55, 200, 75);
+      await new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        img.src = sig.customSignatureUrl!;
+      });
+
+      if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+        // Calcular aspect ratio para centrar dentro del recuadro de firma (200x75)
+        const maxWidth = 200;
+        const maxHeight = 75;
+        const ratio = Math.min(maxWidth / img.naturalWidth, maxHeight / img.naturalHeight);
+        const drawWidth = img.naturalWidth * ratio;
+        const drawHeight = img.naturalHeight * ratio;
+        const drawX = 230 - (drawWidth / 2);
+        const drawY = 55 + ((maxHeight - drawHeight) / 2);
+        ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
       } else {
         drawFallbackRubric(ctx, sig.svgPath);
       }
