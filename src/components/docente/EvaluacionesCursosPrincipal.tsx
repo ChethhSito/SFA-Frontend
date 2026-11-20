@@ -62,9 +62,10 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
     map.forEach((componentList, baseCode) => {
       if (componentList.length > 1) {
         const teo = componentList.find((c) => /TEO/i.test(c.code)) || componentList[0];
+        const teoId = teo.id || (teo as any)._id || teo.code;
         const baseName = teo.name.replace(/\s*\((Teoría|Taller|Laboratorio)\)\s*$/i, "").trim();
         options.push({
-          id: teo.id,
+          id: teoId,
           code: baseCode,
           name: `${baseName} (Curso Completo)`,
           isUnified: true,
@@ -72,8 +73,9 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
         });
       } else {
         const c = componentList[0];
+        const cId = c.id || (c as any)._id || c.code;
         options.push({
-          id: c.id,
+          id: cId,
           code: c.code,
           name: c.name,
           isUnified: false,
@@ -92,9 +94,9 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
     }
   }, [courseOptions, selectedCourseId]);
 
-  const selectedCourseOption = courseOptions.find((o) => o.id === selectedCourseId) || courseOptions[0] || null;
+  const selectedCourseOption = courseOptions.find((o) => o.id === selectedCourseId || o.code === selectedCourseId) || courseOptions[0] || null;
   const isUnified = selectedCourseOption?.isUnified ?? false;
-  const selectedCourse = courses.find((c) => c.id === selectedCourseId) || courses[0] || null;
+  const selectedCourse = courses.find((c) => (c.id && c.id === selectedCourseId) || ((c as any)._id && (c as any)._id === selectedCourseId) || c.code === selectedCourseId) || courses[0] || null;
   const isTheoryCourse = selectedCourse ? (/TEO/i.test(selectedCourse.code) || isUnified) : false;
   const formula = selectedCourse ? getCourseFormula(selectedCourse.code) : COURSE_FORMULAS["default"];
 
@@ -307,7 +309,7 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
       // Theory continuous
       let gradeTeo: number | null = null;
       if (npaNum !== null && pc1Num !== null && pc2Num !== null) {
-        gradeTeo = Number((0.30 * npaNum + 0.35 * pc1Num + 0.35 * pc2Num).toFixed(1));
+        gradeTeo = Number(((npaNum + pc1Num + pc2Num) / 3).toFixed(1));
       } else {
         const valid = [npaNum, pc1Num, pc2Num].filter((g): g is number => g !== null && !isNaN(g));
         if (valid.length > 0) gradeTeo = Number((valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1));
@@ -624,7 +626,7 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
       {selectedCourse ? (
         <div className="space-y-6">
           {/* Formula Display Summary Banner */}
-          <CourseFormulaCard selectedCourse={selectedCourse} formula={formula} />
+          <CourseFormulaCard selectedCourse={selectedCourse} formula={formula} isMultiComponent={isTheoryCourse && subComponents.length > 0} />
 
           {/* Interactive spreadsheet grid */}
           <GradeSheetTable

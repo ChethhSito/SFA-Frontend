@@ -59,12 +59,22 @@ export const GradesTab: React.FC<GradesTabProps> = ({
       ? (accumulatedPoints / evaluatedWeight) 
       : 0;
 
-    const breakdownText = weightedEvals.length > 0
-      ? weightedEvals.map((e: any) => {
-          const g = typeof e.grade === "number" ? e.grade : "NR";
-          return `${e.weightDecimal.toFixed(2)}×(${g})`;
-        }).join(" + ")
-      : "Sin componentes ponderados";
+    const isMultiComp = (course?.code || "").startsWith("EIND-101") || (course?.name || "").toLowerCase().includes("fundamentos de electricidad");
+    let breakdownText = "";
+    if (isMultiComp) {
+      const gTeo = weightedEvals.find((e: any) => e.prefix === "TEO")?.grade ?? "NR";
+      const gTal = weightedEvals.find((e: any) => e.prefix === "TAL")?.grade ?? "NR";
+      const gLab = weightedEvals.find((e: any) => e.prefix === "LAB")?.grade ?? "NR";
+      const gExFinal = weightedEvals.find((e: any) => e.prefix === "EX_FINAL")?.grade ?? "NR";
+      breakdownText = `0.60×[0.40×(${gTeo}) + 0.40×(${gTal}) + 0.20×(${gLab})] + 0.40×(${gExFinal})`;
+    } else {
+      breakdownText = weightedEvals.length > 0
+        ? weightedEvals.map((e: any) => {
+            const g = typeof e.grade === "number" ? e.grade : "NR";
+            return `${e.weightDecimal.toFixed(2)}×(${g})`;
+          }).join(" + ")
+        : "Sin componentes ponderados";
+    }
 
     return {
       accumulatedPoints: Math.round(accumulatedPoints * 10) / 10,

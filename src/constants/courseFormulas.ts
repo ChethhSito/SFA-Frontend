@@ -40,11 +40,11 @@ export const COURSE_FORMULAS: Record<string, CourseFormula> = {
   },
   "EIND-101": {
     courseCode: "EIND-101",
-    expression: "0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+    expression: "0.60*(0.40*TEO + 0.40*TAL + 0.20*LAB) + 0.40*EX_FINAL",
     variables: [
-      { id: "NPA", label: "Nota de Participación / Informes", weight: 0.20 },
-      { id: "PC1", label: "Práctica Calificada 1", weight: 0.20 },
-      { id: "PC2", label: "Práctica Calificada 2", weight: 0.20 },
+      { id: "TEO", label: "Parte 1: Teoría (40% Continua / 2 Créditos)", weight: 0.24 },
+      { id: "TAL", label: "Parte 2: Taller (40% Continua / 2 Créditos)", weight: 0.24 },
+      { id: "LAB", label: "Parte 3: Laboratorio (20% Continua / 1 Crédito)", weight: 0.12 },
       { id: "EX_FINAL", label: "Examen Final Integral del Curso", weight: 0.40 },
     ],
   },

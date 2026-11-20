@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Download, Printer, ChevronDown, ChevronUp, Lock } from "lucide-react";
+import { Download, Printer, ChevronDown, ChevronUp, Lock, Save, Check } from "lucide-react";
 import { StudentPersonalData } from "../../../types";
 import { CourseFormula } from "./CourseFormulaCard";
 
@@ -111,26 +111,24 @@ export const GradeSheetTable: React.FC<GradeSheetTableProps> = ({
               return (
                 <React.Fragment key={std.dni}>
                   <tr className="hover:bg-slate-50/50 transition-colors">
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <span className="font-extrabold text-slate-800 uppercase block leading-tight">
-                            {std.lastName}, {std.name}
-                          </span>
-                        </div>
+                    <td className="py-3 px-4">
+                      <div>
+                        <span className="font-extrabold text-slate-800 uppercase block leading-tight">
+                          {std.lastName}, {std.name}
+                        </span>
                         {hasSubcomponents && (
                           <button
                             type="button"
                             onClick={() => toggleExpand(std.dni)}
-                            className={`flex items-center gap-1 text-[9px] font-mono font-bold px-2 py-1 rounded border transition-all cursor-pointer ${
+                            className={`mt-1.5 inline-flex items-center gap-1.5 text-[9.5px] font-mono font-bold px-2 py-0.5 rounded border transition-all cursor-pointer ${
                               isExpanded
                                 ? "bg-[#800521] text-white border-[#800521] shadow-2xs"
-                                : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                                : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
                             }`}
                             title="Desplegar notas de Taller y Laboratorio"
                           >
                             {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                            <span>{isExpanded ? "Ocultar" : "Taller y Lab"}</span>
+                            <span>{isExpanded ? "Ocultar Áreas Prácticas" : "Desplegable Taller y Lab"}</span>
                           </button>
                         )}
                       </div>

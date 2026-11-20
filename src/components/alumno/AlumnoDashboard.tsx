@@ -646,6 +646,43 @@ export default function AlumnoDashboard({
         } else {
           subDesc = "Promedio acumulado de tareas de aula virtual";
         }
+      } else if (variable.id === "TEO") {
+        const pc1 = courseAssignments.find((a) => !a.title.startsWith("[Planilla] ") && /\[PC1\]|PC1/i.test(a.title))?.submissions.find((s) => s.studentDni === studentDni)?.grade;
+        const pc2 = courseAssignments.find((a) => !a.title.startsWith("[Planilla] ") && /\[PC2\]|PC2/i.test(a.title))?.submissions.find((s) => s.studentDni === studentDni)?.grade;
+        const npa = npaAverage !== null ? npaAverage : (typeof pc1 === "number" ? pc1 : null);
+        const valid = [npa, pc1, pc2].filter((v): v is number => typeof v === "number");
+        if (valid.length > 0) {
+          grade = Number((valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1));
+          subDesc = `NPA: ${npa ?? "NR"} • PC1: ${pc1 ?? "NR"} • PC2: ${pc2 ?? "NR"} (Evaluación Continua)`;
+        }
+      } else if (variable.id === "TAL") {
+        const talAsgs = assignments.filter((a) => !a.title.startsWith("[Planilla] ") && !/EX_FINAL|EXAMEN FINAL/i.test(a.title) && (a.courseId === "6afe1412016eccb3be7af0eb" || a.courseId?.toLowerCase().includes("tal")));
+        const talGrades = talAsgs.map((a) => {
+          const s = a.submissions?.find((item) => item.studentDni === studentDni && item.grade !== undefined);
+          return s ? { title: a.title, grade: Number(s.grade) } : null;
+        }).filter(Boolean) as Array<{ title: string; grade: number }>;
+        if (talGrades.length > 0) {
+          const sum = talGrades.reduce((a, b) => a + b.grade, 0);
+          grade = Number((sum / talGrades.length).toFixed(1));
+          subDesc = talGrades.map((g) => {
+            const shortName = g.title.replace(/\[Semana\s*\d+\]\s*/i, "").replace(/\[.*?\]\s*/i, "").trim().split(" ")[0];
+            return `${shortName}: ${g.grade}`;
+          }).join(" • ");
+        }
+      } else if (variable.id === "LAB") {
+        const labAsgs = assignments.filter((a) => !a.title.startsWith("[Planilla] ") && !/EX_FINAL|EXAMEN FINAL/i.test(a.title) && (a.courseId === "6afe141f016eccb3be7af0ec" || a.courseId?.toLowerCase().includes("lab")));
+        const labGrades = labAsgs.map((a) => {
+          const s = a.submissions?.find((item) => item.studentDni === studentDni && item.grade !== undefined);
+          return s ? { title: a.title, grade: Number(s.grade) } : null;
+        }).filter(Boolean) as Array<{ title: string; grade: number }>;
+        if (labGrades.length > 0) {
+          const sum = labGrades.reduce((a, b) => a + b.grade, 0);
+          grade = Number((sum / labGrades.length).toFixed(1));
+          subDesc = labGrades.map((g) => {
+            const shortName = g.title.replace(/\[Semana\s*\d+\]\s*/i, "").replace(/\[.*?\]\s*/i, "").trim().split(" ")[0];
+            return `${shortName}: ${g.grade}`;
+          }).join(" • ");
+        }
       } else if (assessmentSub?.grade !== undefined) {
         grade = assessmentSub.grade;
         subDesc = `${assessmentAssignment?.title}`;

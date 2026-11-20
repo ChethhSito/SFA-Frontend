@@ -843,7 +843,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     let gradeTeo: number | null = null;
     let summaryTeo = compTeo.summary;
     if (officialGradeData.npa !== null && officialGradeData.pc1 !== null && officialGradeData.pc2 !== null) {
-      gradeTeo = Number((0.30 * officialGradeData.npa + 0.35 * officialGradeData.pc1 + 0.35 * officialGradeData.pc2).toFixed(1));
+      gradeTeo = Number(((officialGradeData.npa + officialGradeData.pc1 + officialGradeData.pc2) / 3).toFixed(1));
       summaryTeo = `NPA: ${officialGradeData.npa} • PC1: ${officialGradeData.pc1} • PC2: ${officialGradeData.pc2}`;
     } else {
       gradeTeo = compTeo.avg;
