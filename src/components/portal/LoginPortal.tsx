@@ -135,6 +135,8 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
       "maf@iestpsfa.edu.pe": { role: "maf", id: "maf" },
       mge: { role: "mge", id: "mge" },
       "mge@iestpsfa.edu.pe": { role: "mge", id: "mge" },
+      secretaria: { role: "mge", id: "mge" },
+      "secretaria@iestpsfa.edu.pe": { role: "mge", id: "mge" },
     };
 
     if (adminRoleMap[uTrim]) {
