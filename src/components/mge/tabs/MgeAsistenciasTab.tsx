@@ -143,7 +143,11 @@ export default function MgeAsistenciasTab({
                       <td className="px-4 py-3 font-extrabold text-slate-900">{st.lastName}, {st.name}</td>
                       <td className="px-4 py-3 font-bold font-mono text-slate-700">{st.dni}</td>
                       <td className="px-4 py-3">
-                        {!currentStatus ? <span className="text-slate-500">Sin registrar</span> : null}
+                        {!currentStatus ? (
+                          <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-medium italic">
+                            Pendiente de registro
+                          </span>
+                        ) : null}
                         {currentStatus === "Presente" && (
                           <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-black uppercase text-[9.5px]">Presente</span>
                         )}

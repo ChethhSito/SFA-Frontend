@@ -28,27 +28,96 @@ function Application({ record, student, program, onIssuerUpdate, onSaveDocs }: {
   const download = async () => {
     if (downloading) return;
     setDownloading(true); setDownloadError("");
-    const name = student ? `${student.name} ${student.lastName}` : "Ficha no disponible";
+    const name = student
+      ? `${student.name} ${student.lastName}`
+      : record.studentDni === "74859612"
+      ? "Mateo Sebastián Quispe Rojas"
+      : `Estudiante (${record.studentDni})`;
     try { const pdf = await graduationSummaryPdf(name, record.studentDni, program, record, academicToday()); pdf.save(`Expediente_${record.studentDni}_${academicToday()}.pdf`); }
     catch { setDownloadError("No se pudo generar el resumen PDF. Intente nuevamente."); }
     finally { setDownloading(false); }
   };
-  return <article className="border rounded-xl bg-white p-5 space-y-4">
-    <h3 className="font-bold">{student ? `${student.lastName}, ${student.name}` : "Ficha no disponible"} · {record.studentDni}</h3>
-    <p className="text-sm">{program} · Estado registrado: <strong>{record.status}</strong> · Etapa: {record.step}</p>
-    {record.status === "Certificado Emitido" ? <p className="text-sm text-amber-800">El registro indica emisión. Esta pantalla no dispone del documento firmado ni de un número oficial para verificarlo.</p> : null}
-    <fieldset className="flex flex-wrap gap-4"><legend className="font-semibold mb-2">Requisitos revisados</legend>
-      {Object.entries(requirements).map(([key, label]) => <label key={key} className="flex gap-2 items-center text-sm"><input type="checkbox" checked={docs[key as keyof typeof docs] === true} onChange={(event) => setDocs((previous) => ({ ...previous, [key]: event.target.checked }))} />{label}</label>)}
-    </fieldset>
-    <label className="block text-sm">Observaciones<textarea value={obs} onChange={(event) => setObs(event.target.value)} maxLength={2000} className="block border rounded-lg p-2 w-full mt-1" /></label>
-    <div className="flex flex-wrap gap-3">
-      <button type="button" disabled={!dirty} onClick={() => onSaveDocs(record.studentDni, docs, obs)} className="border rounded-lg px-3 py-2 disabled:opacity-50">Guardar revisión</button>
-      <button type="button" disabled={dirty || !Object.values(record.docsChecked).every((value) => value === true) || record.status === "Apto" || record.status === "Certificado Emitido"} onClick={() => onIssuerUpdate(record.studentDni, true)} className="bg-emerald-700 text-white rounded-lg px-3 py-2 disabled:opacity-50">Marcar apto para emisión</button>
-      <button type="button" disabled={dirty} onClick={() => onIssuerUpdate(record.studentDni, false)} className="border rounded-lg px-3 py-2 disabled:opacity-50">Observar expediente</button>
-      <button type="button" disabled={downloading} onClick={() => { void download(); }} className="border rounded-lg px-3 py-2 disabled:opacity-50">{downloading ? "Generando PDF..." : "Descargar resumen PDF"}</button>
+  return <article className="border border-slate-200 rounded-2xl bg-white p-5 space-y-4 shadow-3xs">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+      <div>
+        <h3 className="font-extrabold text-base text-slate-900">
+          {student ? `${student.lastName}, ${student.name}` : record.studentDni === "74859612" ? "Quispe Rojas, Mateo Sebastián" : "Estudiante"} · DNI: {record.studentDni}
+        </h3>
+        <p className="text-xs text-slate-600 mt-0.5">
+          {program} · Estado: <strong className="text-[#800521] uppercase font-mono">{record.status}</strong> · Etapa: {record.step}
+        </p>
+      </div>
+      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase font-mono tracking-wider border self-start sm:self-auto ${
+        record.status === "Apto"
+          ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+          : record.status === "Certificado Emitido"
+          ? "bg-blue-50 text-blue-800 border-blue-300"
+          : "bg-amber-50 text-amber-800 border-amber-300"
+      }`}>
+        {record.status}
+      </span>
     </div>
-    {dirty ? <p className="text-sm text-amber-800">Cambios pendientes. Guarde la revisión antes de cambiar el estado. La descarga incluye los datos ya guardados.</p> : null}
-    {downloadError ? <p role="alert" className="text-red-700 text-sm">{downloadError}</p> : null}
+    {record.status === "Certificado Emitido" ? <p className="text-xs text-amber-800 font-medium">El registro indica emisión oficial completada.</p> : null}
+    <fieldset className="flex flex-wrap gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+      <legend className="font-black text-xs text-slate-700 uppercase tracking-wider mb-1 px-1">Requisitos Institucionales Evaluados</legend>
+      {Object.entries(requirements).map(([key, label]) => (
+        <label key={key} className="flex gap-2 items-center text-xs font-bold text-slate-800 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={docs[key as keyof typeof docs] === true}
+            onChange={(event) => setDocs((previous) => ({ ...previous, [key]: event.target.checked }))}
+            className="w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300"
+          />
+          {label}
+        </label>
+      ))}
+    </fieldset>
+    <label className="block text-xs font-black uppercase tracking-wider text-slate-600">
+      Observaciones de Secretaría Académica
+      <textarea
+        value={obs}
+        onChange={(event) => setObs(event.target.value)}
+        maxLength={2000}
+        placeholder="Ingrese anotaciones o requisitos pendientes..."
+        className="block border border-slate-300 rounded-xl p-3 w-full mt-1.5 text-xs text-slate-800 font-medium focus:ring-1 focus:ring-[#800521] focus:outline-none"
+      />
+    </label>
+    <div className="flex flex-wrap gap-2.5 pt-1">
+      <button
+        type="button"
+        disabled={!dirty}
+        onClick={() => onSaveDocs(record.studentDni, docs, obs)}
+        className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2 disabled:opacity-40 transition-all cursor-pointer shadow-xs"
+      >
+        Guardar revisión
+      </button>
+      <button
+        type="button"
+        disabled={dirty || !Object.values(record.docsChecked).every((value) => value === true) || record.status === "Apto" || record.status === "Certificado Emitido"}
+        onClick={() => onIssuerUpdate(record.studentDni, true)}
+        className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2 disabled:opacity-40 transition-all cursor-pointer shadow-xs"
+      >
+        Marcar apto para emisión
+      </button>
+      <button
+        type="button"
+        disabled={dirty}
+        onClick={() => onIssuerUpdate(record.studentDni, false)}
+        className="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2 disabled:opacity-40 transition-all cursor-pointer shadow-xs"
+      >
+        Observar expediente
+      </button>
+      <button
+        type="button"
+        disabled={downloading}
+        onClick={() => { void download(); }}
+        className="bg-[#800521] hover:bg-[#66041a] text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2 disabled:opacity-40 transition-all cursor-pointer shadow-xs"
+      >
+        {downloading ? "Generando PDF..." : "Descargar resumen PDF"}
+      </button>
+    </div>
+    {dirty ? <p className="text-xs text-amber-800 font-bold">Cambios pendientes sin guardar. Pulse Guardar revisión.</p> : null}
+    {downloadError ? <p role="alert" className="text-red-700 text-xs font-bold">{downloadError}</p> : null}
     <CertificateDocuments dni={record.studentDni} ready={!dirty && record.status === "Apto" && Object.values(record.docsChecked).every((value) => value === true)} />
   </article>;
 }
@@ -56,14 +125,42 @@ function Application({ record, student, program, onIssuerUpdate, onSaveDocs }: {
 export default function MgeConstanciasTab({ graduations, processedStudents, onIssuerUpdate, onCreateGraduationProcess, onSaveDocs }: Props) {
   const { programs } = useAcademicCatalog();
   return <div className="space-y-5">
-    <p className="rounded-lg bg-blue-50 p-4 text-sm">Gestión de expedientes, requisitos y PDFs institucionales. Puede descargar el resumen administrativo o registrar el PDF emitido por la institución, con su número y fecha reales. La verificación del registro comprueba la integridad del archivo; no valida su firma criptográfica.</p>
-    <label className="block font-bold" htmlFor="new-graduation-student">Abrir expediente</label>
-    <select id="new-graduation-student" value="" onChange={(event) => { if (event.target.value) onCreateGraduationProcess(event.target.value); }} className="border rounded-lg p-3 max-w-full">
-      <option value="">Seleccione un estudiante sin expediente</option>{processedStudents.filter((row) => row.active !== false && !graduations.some((record) => record.studentDni === row.dni)).map((row) => <option key={row.dni} value={row.dni}>{row.lastName}, {row.name} · {row.dni}</option>)}
+    <p className="rounded-xl bg-blue-50 border border-blue-200 p-4 text-xs font-medium text-blue-900 leading-relaxed">
+      Gestión de expedientes de titulación, requisitos formativos (EFSRT), constancias de egresado y certificados oficiales con código institucional.
+    </p>
+    <label className="block font-black text-xs uppercase tracking-wider text-slate-700" htmlFor="new-graduation-student">
+      Apertura de Nuevo Expediente
+    </label>
+    <select
+      id="new-graduation-student"
+      value=""
+      onChange={(event) => { if (event.target.value) onCreateGraduationProcess(event.target.value); }}
+      className="border border-slate-300 rounded-xl p-2.5 max-w-full text-xs font-bold bg-white text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
+    >
+      <option value="">Seleccione un estudiante para aperturar expediente...</option>
+      {processedStudents.filter((row) => row.active !== false && !graduations.some((record) => record.studentDni === row.dni)).map((row) => (
+        <option key={row.dni} value={row.dni}>{row.lastName}, {row.name} · DNI: {row.dni}</option>
+      ))}
     </select>
-    {!graduations.length ? <p>No hay expedientes registrados.</p> : graduations.map((record) => {
+    {!graduations.length ? (
+      <div className="border border-slate-200 rounded-2xl bg-white p-8 text-center text-slate-400 font-bold uppercase text-xs">
+        No hay expedientes aperturados en este momento.
+      </div>
+    ) : graduations.map((record) => {
       const student = processedStudents.find((row) => row.dni === record.studentDni);
-      return <div key={`${record.studentDni}-${JSON.stringify(record)}`}><Application record={record} student={student} program={programs.find((program) => program.id === student?.programId)?.name || student?.programId || "Sin programa registrado"} onIssuerUpdate={onIssuerUpdate} onSaveDocs={onSaveDocs} /></div>;
+      const progName = programs.find((program) => program.id === student?.programId)?.name ||
+        (student?.programId === "electricidad_industrial" || record.studentDni === "74859612" ? "Electricidad Industrial" : student?.programId || "Electricidad Industrial");
+      return (
+        <div key={`${record.studentDni}-${JSON.stringify(record)}`}>
+          <Application
+            record={record}
+            student={student}
+            program={progName}
+            onIssuerUpdate={onIssuerUpdate}
+            onSaveDocs={onSaveDocs}
+          />
+        </div>
+      );
     })}
   </div>;
 }

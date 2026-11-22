@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { BrainCircuit, RefreshCw, X } from "lucide-react";
+import { BrainCircuit, RefreshCw, X, Loader2 } from "lucide-react";
 import { fetchAttritionRiskReport, referStudentToTutoring } from "../../../services/api";
 import Toast, { ToastNotice } from "../../ui/Toast";
 import TutoringNotifications from "./TutoringNotifications";
@@ -109,7 +109,17 @@ export default function MgeRiesgoIaTab() {
       Las tareas vencidas se cuentan solo en cursos donde el alumno tiene asistencia registrada.
       Si falta algún indicador, el estudiante queda sin evaluación.
     </p>
-    {loading ? <p role="status">Consultando registros académicos...</p> : error ? <p role="alert" className="text-red-700">{error}</p> : report ? <>
+    {loading ? (
+      <div className="flex flex-col items-center justify-center py-16 gap-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-center p-6 my-2">
+        <Loader2 className="w-8 h-8 text-[#800521] animate-spin" />
+        <span className="text-xs font-black text-slate-800 uppercase tracking-widest font-mono">
+          Analizando Indicadores y Riesgo Académico IA...
+        </span>
+        <span className="text-[11px] text-slate-400 font-medium">
+          Procesando asistencia, evaluaciones, rendimiento y retención estudiantil
+        </span>
+      </div>
+    ) : error ? <p role="alert" className="text-red-700">{error}</p> : report ? <>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[["Evaluados", report.kpis.totalEvaluated], ["Riesgo crítico", report.kpis.criticalCount],
           ["Riesgo moderado", report.kpis.moderateCount], ["Riesgo bajo", report.kpis.lowRiskCount]].map(([label, value]) =>

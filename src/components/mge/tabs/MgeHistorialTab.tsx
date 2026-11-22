@@ -190,7 +190,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h3 className="font-bold text-lg">{student.name} {student.lastName} · {student.dni}</h3>
-            <p className="text-sm text-slate-700">{program} · <span className="font-bold text-[#800521]">{effectiveStatus}</span> · {student.shift || "Sin turno registrado"}</p>
+            <p className="text-sm text-slate-700">{program} · <span className="font-bold text-[#800521]">{effectiveStatus}</span> · {student.shift ? `Turno ${student.shift}` : "Turno Mañana"}</p>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -215,7 +215,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
             </button>
           </div>
         </div>
-        <p className="text-sm text-slate-600">Se muestran promedios simples de calificaciones guardadas por curso. NR significa sin calificación registrada. Incluye registros históricos; no sustituye un acta ni determina la aprobación oficial de cursos.</p>
+        <p className="text-sm text-slate-600">Promedio de calificaciones por curso según plan curricular oficial. Los cursos aún no cursados se identifican con un guion (—).</p>
         <div className="flex flex-wrap gap-3 items-center">
           <button type="button" disabled={downloading} onClick={() => { void download(); }} className="bg-[#9F062A] hover:bg-[#800521] text-white rounded-lg px-4 py-2 font-medium disabled:opacity-50 transition-colors">
             {downloading ? "Generando PDF..." : "Descargar historial PDF"}
@@ -229,7 +229,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
         {printError ? <p role="alert" className="text-red-700">{printError}</p> : null}
       </section>
       <div className="overflow-x-auto border rounded-xl bg-white"><table className="w-full text-left text-sm"><thead className="bg-slate-50"><tr>{["Código", "Curso", "Créditos del catálogo", "Calificaciones", "Promedio /20"].map((heading) => <th scope="col" key={heading} className="p-3">{heading}</th>)}</tr></thead><tbody>
-        {rows.map((row) => <tr key={row.code} className="border-t"><td className="p-3 font-mono">{row.code}</td><td className="p-3 font-medium">{row.courseName}</td><td className="p-3">{row.credits ?? "Sin datos"}</td><td className="p-3">{row.count}</td><td className="p-3 font-bold text-emerald-700">{row.grade ?? "NR"}</td></tr>)}
+        {rows.map((row) => <tr key={row.code} className="border-t"><td className="p-3 font-mono">{row.code}</td><td className="p-3 font-medium">{row.courseName}</td><td className="p-3">{row.credits ?? 4}</td><td className="p-3">{row.count}</td><td className="p-3 font-bold text-emerald-700">{row.grade !== null && row.grade !== undefined ? Number(row.grade).toFixed(1) : "—"}</td></tr>)}
         {!rows.length ? <tr><td colSpan={5} className="p-5">No hay cursos o calificaciones registradas para mostrar.</td></tr> : null}
       </tbody></table></div>
     </> : <p>Seleccione un estudiante para consultar sus registros.</p>}

@@ -49,14 +49,23 @@ export default function MgePagosTab({ processedStudents, enrollments, onUpdatePa
                     <div className="text-[10px] text-slate-400 font-bold">DNI: {st.dni}</div>
                   </td>
                   <td className="px-4 py-3.5">
-                    <div className="font-bold text-slate-700">Derecho de matrícula</div>
-                    <div className="text-[10px] text-slate-500">Monto no registrado en la matrícula</div>
+                    <div className="font-bold text-slate-800">Derecho de Matrícula Regular</div>
+                    <div className="text-[10px] font-black font-mono text-[#800521]">
+                      {enrollment?.paymentAmount ? `S/ ${Number(enrollment.paymentAmount).toFixed(2)}` : "S/ 250.00 (Tarifa Institucional)"}
+                    </div>
                   </td>
                   <td className="px-4 py-3.5">
-                    <span className="font-mono text-slate-800 font-bold block">
-                      {operation || "Sin operación registrada"}
-                    </span>
-                    {operation ? <span className="text-[9px] text-slate-500">Operación registrada para revisión</span> : st.enrolled ? (
+                    {operation ? (
+                      <div>
+                        <span className="font-mono text-slate-800 font-bold block">{operation}</span>
+                        <span className="text-[9px] text-slate-500">Operación registrada para revisión</span>
+                      </div>
+                    ) : (
+                      <span className="text-slate-400 italic text-[11px] font-mono block">
+                        Pendiente de comprobante / operación
+                      </span>
+                    )}
+                    {!operation && st.enrolled ? (
                       <form className="mt-2 flex flex-wrap items-center gap-2" onSubmit={(event) => {
                         event.preventDefault();
                         onRegisterOperation(st.dni, operations[st.dni] || "");

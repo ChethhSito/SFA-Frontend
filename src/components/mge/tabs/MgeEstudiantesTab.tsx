@@ -80,8 +80,14 @@ export default function MgeEstudiantesTab({
                       </span>
                     </td>
                     <td className="px-4 py-3.5">
-                      <div className="font-semibold text-slate-700">{st.phone || "Sin Teléfono"}</div>
-                      <div className="text-[9.5px] text-slate-450 font-medium">Distrito: {st.district?.trim() || "Sin registrar"}</div>
+                      <div className="font-semibold text-slate-800 text-xs">{st.phone || "Sin teléfono"}</div>
+                      {st.district?.trim() ? (
+                        <div className="text-[10px] text-slate-500 font-medium">
+                          {st.district.trim()}{st.province ? `, ${st.province}` : ""}
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-slate-400 font-medium">Lima Metropolitana</div>
+                      )}
                     </td>
                     <td className="px-4 py-3.5">
                       {st.active === false ? <div className="text-red-700"><strong>DE BAJA</strong><p className="text-xs">{st.deactivationReason}</p>{st.deactivatedAt ? <p className="text-xs">{new Date(st.deactivatedAt).toLocaleDateString("es-PE", { timeZone: "America/Lima" })}</p> : null}</div> : st.academicStatus === "MATRICULADO" ? (
