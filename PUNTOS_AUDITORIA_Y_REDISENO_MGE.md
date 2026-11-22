@@ -185,3 +185,19 @@
      - Si el curso activo es de **Electricidad Industrial** (`EIND-xxx`), Mateo Quispe aparece correctamente con su contador en `1`.
      - Se protegió `matchCourseIds` y `isFundamentos` para que los subcomponentes oficiales de evaluación apliquen única y exclusivamente a `Electricidad Industrial`.
 
+
+---
+
+### PUNTO 16: Selector Interactivo de Periodo en Cabecera de MGE con Nombres Compactos y Estados Breves
+- **Problema Detectado por Usuario:** En la cabecera de MGE, el indicador de ciclo mostraba textos excesivamente largos ("Ciclo Activo: Admisión Ordinaria 2027-I") y estáticos sin permitir a Secretaría Académica seleccionar periodos pasados o alternar entre convocatorias. Asimismo, se observó que frases como "Periodo Histórico - Solo Consulta" son redundantes y sobrecargan la interfaz innecesariamente.
+- **Causa Raíz:**
+  1. El componente `MgeDashboard` recibía `admissionPeriods` pero solo renderizaba un `<span>` estático sin interactividad.
+  2. Los nombres de los periodos en base de datos traen denominaciones extensas como "Admisión Ordinaria 2027-I" o "Periodo Académico 2026-I", que desentonan con la concisión de los otros módulos institucionales.
+- **Solución Implementada:**
+  1. **Nombres Compactos:** Normalización automática de los títulos de periodo a sus códigos estándar (`2027-I`, `2026-II`, `2026-I`, `Todos`).
+  2. **Estados Concisos:** Eliminación de frases largas; se usan distintivos breves:
+     - `Activo` (verde institucional) para periodos en vigencia.
+     - `Cerrado` (ámbar institucional) para periodos históricos culminados.
+     - `Todos` (pizarra institucional) para vista global consolidada.
+  3. **Selector Interactivo en Cabecera:** Implementación de un `<select>` estilizado en tono oscuro/ámbar dentro del encabezado de MGE que permite a Secretaría Académica cambiar el periodo de consulta.
+  4. **Filtrado Reactivo del Padrón de Estudiantes:** `processedStudents` filtra dinámicamente los registros de postulantes y matrículas según el periodo seleccionado, manteniendo la trazabilidad histórica de los estudiantes que cursaron en cada semestre.

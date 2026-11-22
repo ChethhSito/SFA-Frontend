@@ -67,6 +67,7 @@ interface MgeDashboardProps {
   onUpdateAttendance: (att: AttendanceRecord[]) => Promise<boolean>;
   onUpdateGraduations: (grads: Graduation[]) => void;
   selectedPeriodId?: string;
+  onSelectPeriodId?: (periodId: string) => void;
   onLogout?: () => void;
   onGoToPortal?: () => void;
 }
@@ -96,6 +97,7 @@ export default function MgeDashboard({
   onReloadAttendance,
   onUpdateGraduations,
   selectedPeriodId,
+  onSelectPeriodId,
   onLogout,
   onGoToPortal,
 }: MgeDashboardProps) {
@@ -143,20 +145,69 @@ export default function MgeDashboard({
     if (!courses.some((course) => course.id === selectedAttendanceCourseId)) setSelectedAttendanceCourseId(courses[0]?.id || "");
   }, [courses, selectedCourseId, selectedAttendanceCourseId]);
 
+  // ── Gestión y Formateo Breve de Periodos Institucionales ───────────────────
+  const [internalPeriodId, setInternalPeriodId] = useState<string>(() => {
+    if (selectedPeriodId) return selectedPeriodId;
+    const active = admissionPeriods.find((p) => p.status === "APERTURADO" || p.status === "MATRICULA" || p.isActive);
+    return active ? active.id : (admissionPeriods[0]?.id || "all");
+  });
+
+  const handlePeriodChange = (id: string) => {
+    setInternalPeriodId(id);
+    if (onSelectPeriodId) onSelectPeriodId(id);
+  };
+
+  const currentPeriod = useMemo(() => {
+    if (internalPeriodId === "all") return null;
+    return admissionPeriods.find((p) => p.id === internalPeriodId) || null;
+  }, [admissionPeriods, internalPeriodId]);
+
+  const isPeriodActive = useMemo(() => {
+    if (!currentPeriod) return true;
+    return Boolean(currentPeriod.isActive || currentPeriod.status === "APERTURADO" || currentPeriod.status === "MATRICULA");
+  }, [currentPeriod]);
+
+  const compactPeriodName = (rawName?: string) => {
+    if (!rawName) return "Periodo";
+    const clean = rawName
+      .replace(/\uFFFD/g, "é")
+      .replace(/Acad[\uFFFD\?a-zA-Z]*mico/gi, "Académico")
+      .replace(/Acadmico/gi, "Académico");
+    const match = clean.match(/\b(20\d{2}-[I|V|X|1-2]+)\b/i);
+    if (match) return match[1].toUpperCase();
+    return clean
+      .replace(/Admisi[oó]n\s+Ordinaria/gi, "")
+      .replace(/Periodo\s+Acad[eé]mico/gi, "")
+      .trim() || clean;
+  };
+
   // ── Derived data ──────────────────────────────────────────────────────────
   const processedStudents = useMemo(() => {
-    return Object.values(studentsList).map((student) => {
-      const enrollment = enrollments.find((e) => e.studentDni === student.dni);
-      return {
-        ...student,
-        enrolled: !!enrollment,
-        academicStatus: student.active === false ? "BAJA" : enrollment?.academicStatus || "Sin matrícula",
-        programId: enrollment?.programId || "",
-        shift: enrollment?.shift || "",
-        paymentStatus: enrollment?.paymentStatus || "Sin registro",
-      };
-    });
-  }, [studentsList, enrollments]);
+    return Object.values(studentsList)
+      .filter((student) => {
+        if (!internalPeriodId || internalPeriodId === "all" || admissionPeriods.length === 0) return true;
+        const applicant = applicants.find((a) => a.dni === student.dni);
+        const enrollment = enrollments.find((e) => e.studentDni === student.dni);
+        if (applicant?.periodId && applicant.periodId === internalPeriodId) return true;
+        if ((enrollment as any)?.periodId && (enrollment as any).periodId === internalPeriodId) return true;
+        if (!applicant?.periodId && !(enrollment as any)?.periodId) {
+          const activeP = admissionPeriods.find((p) => p.isActive || p.status === "APERTURADO" || p.status === "MATRICULA") || admissionPeriods[0];
+          return !activeP || activeP.id === internalPeriodId;
+        }
+        return false;
+      })
+      .map((student) => {
+        const enrollment = enrollments.find((e) => e.studentDni === student.dni);
+        return {
+          ...student,
+          enrolled: !!enrollment,
+          academicStatus: student.active === false ? "BAJA" : enrollment?.academicStatus || "Sin matrícula",
+          programId: enrollment?.programId || "",
+          shift: enrollment?.shift || "",
+          paymentStatus: enrollment?.paymentStatus || "Sin registro",
+        };
+      });
+  }, [studentsList, enrollments, applicants, internalPeriodId, admissionPeriods]);
 
   const filteredStudents = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -171,15 +222,12 @@ export default function MgeDashboard({
   }, [processedStudents, searchQuery]);
 
   const activePeriodName = useMemo(() => {
-    const found = admissionPeriods.find((p) => p.id === selectedPeriodId) ||
+    if (internalPeriodId === "all") return "Todos los Periodos";
+    const found = admissionPeriods.find((p) => p.id === internalPeriodId) ||
                   admissionPeriods.find((p) => p.status === "ACTIVO" || (p as any).active) ||
                   admissionPeriods[0];
-    const raw = found?.name || "Periodo Académico 2026-I";
-    return raw
-      .replace(/\uFFFD/g, "é")
-      .replace(/Acad[\uFFFD\?a-zA-Z]*mico/gi, "Académico")
-      .replace(/Acadmico/gi, "Académico");
-  }, [admissionPeriods, selectedPeriodId]);
+    return compactPeriodName(found?.name || "2026-I");
+  }, [admissionPeriods, internalPeriodId]);
 
   // ── Handlers: Students ───────────────────────────────────────────────────
   const handleCreateStudent = async (e: React.FormEvent) => {
@@ -697,12 +745,38 @@ export default function MgeDashboard({
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0">
-              <div className="flex items-center gap-2 bg-black/30 px-3.5 py-2 rounded-xl border border-white/20 shadow-inner">
-                <Calendar className="w-4 h-4 text-amber-400" />
-                <span className="text-[10.5px] font-bold text-white/80 uppercase tracking-wider">Ciclo Activo:</span>
-                <span className="text-xs font-black text-amber-300 font-mono">
-                  {activePeriodName}
+            <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+              <div className="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-xl border border-white/20 shadow-inner">
+                <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="text-[10px] font-extrabold text-white/70 uppercase tracking-wider">Periodo:</span>
+                <select
+                  value={internalPeriodId}
+                  onChange={(e) => handlePeriodChange(e.target.value)}
+                  className="bg-black/60 text-white font-mono font-bold text-xs rounded-lg px-2 py-1 border border-white/20 focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer"
+                  title="Filtrar por periodo académico"
+                >
+                  <option value="all" className="bg-slate-900 text-white">Todos</option>
+                  {admissionPeriods.map((p) => {
+                    const shortName = compactPeriodName(p.name);
+                    const isPActive = Boolean(p.isActive || p.status === "APERTURADO" || p.status === "MATRICULA");
+                    return (
+                      <option key={p.id} value={p.id} className="bg-slate-900 text-white">
+                        {shortName} • {isPActive ? "Activo" : "Cerrado"}
+                      </option>
+                    );
+                  })}
+                </select>
+
+                <span
+                  className={`text-[9.5px] font-black uppercase px-2 py-0.5 rounded-md font-mono ${
+                    internalPeriodId === "all"
+                      ? "bg-slate-500/30 text-slate-300 border border-slate-500/40"
+                      : isPeriodActive
+                      ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/40"
+                      : "bg-amber-500/25 text-amber-300 border border-amber-500/40"
+                  }`}
+                >
+                  {internalPeriodId === "all" ? "Todos" : isPeriodActive ? "Activo" : "Cerrado"}
                 </span>
               </div>
             </div>

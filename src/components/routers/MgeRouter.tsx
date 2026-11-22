@@ -109,6 +109,7 @@ export default function MgeRouter(props: MgeRouterProps) {
       graduations={props.graduations}
       admissionPeriods={props.admissionPeriods}
       selectedPeriodId={selectedPeriodId}
+      onSelectPeriodId={setSelectedPeriodId}
       onUpdateEnrollments={props.onUpdateEnrollments}
       onUpdateStudentsList={props.onUpdateStudentsList}
       onCreateEnrollment={props.onCreateEnrollment}
