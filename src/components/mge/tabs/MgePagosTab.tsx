@@ -298,46 +298,53 @@ export default function MgePagosTab({
                 </div>
               </div>
 
-              {/* Visor Simulado de Comprobante / Voucher Bancario */}
-              <div className="border border-slate-300 rounded-xl p-4 bg-slate-100/70 space-y-2">
+              {/* Visor Real del Comprobante / Voucher Bancario Subido por el Estudiante */}
+              <div className="border border-slate-300 rounded-xl p-4 bg-slate-100/70 space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-300 pb-2">
                   <div className="flex items-center gap-2">
                     <Building className="w-4 h-4 text-slate-700" />
-                    <span className="font-bold text-slate-800 text-xs">Banco de la Nación / BCP - Recaudación</span>
+                    <span className="font-bold text-slate-800 text-xs">
+                      Comprobante Bancario Adjunto por el Estudiante
+                    </span>
                   </div>
-                  <span className="font-mono text-[11px] font-bold text-slate-600">
-                    Archivo: {activeEnrollmentForAudit?.paymentOperation || "Voucher_Pago.png"}
+                  <span className="font-mono text-[11px] font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-300">
+                    {activeEnrollmentForAudit?.paymentVoucherFileName || activeEnrollmentForAudit?.paymentOperation || "VOUCHER DE PAGO.png"}
                   </span>
                 </div>
 
-                {/* Voucher renderizado con estilo bancario formal */}
-                <div className="bg-white border border-slate-300 rounded-lg p-4 font-mono text-xs space-y-1.5 shadow-inner">
-                  <div className="text-center pb-2 border-b border-dashed border-slate-300">
-                    <p className="font-black text-slate-900 text-sm uppercase">COMPROBANTE DE RECAUDACIÓN INSTITUCIONAL</p>
-                    <p className="text-[10px] text-slate-500">IESTP SAN FRANCISCO DE ASÍS • RUC: 20131365782</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
-                    <div>
-                      <span className="text-slate-500 block">N° Operación:</span>
-                      <span className="font-black text-slate-900">{activeEnrollmentForAudit?.paymentOperation || "OP-984210"}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block">Fecha y Hora:</span>
-                      <span className="font-black text-slate-900">21/11/2026 10:45:12</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block">Identificación:</span>
-                      <span className="font-black text-slate-900">{auditingStudent.dni}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block">Importe Acreditado:</span>
-                      <span className="font-black text-emerald-800 text-sm">S/ 250.00</span>
+                {activeEnrollmentForAudit?.paymentVoucherUrl ? (
+                  <div className="flex flex-col items-center justify-center bg-white p-3 rounded-xl border border-slate-300 shadow-inner">
+                    <img
+                      src={activeEnrollmentForAudit.paymentVoucherUrl}
+                      alt={`Comprobante de ${auditingStudent.name} ${auditingStudent.lastName}`}
+                      className="max-h-[380px] w-auto max-w-full object-contain rounded-lg shadow-md border border-slate-200"
+                    />
+                    <div className="flex items-center justify-between w-full mt-3 pt-2 border-t border-slate-200 text-[11px]">
+                      <span className="text-slate-600 font-mono">
+                        N° Operación: <strong className="text-slate-900">{activeEnrollmentForAudit.paymentOperation || "OP-984210"}</strong>
+                      </span>
+                      <a
+                        href={activeEnrollmentForAudit.paymentVoucherUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[#800521] hover:underline font-bold inline-flex items-center gap-1 font-mono text-[10.5px]"
+                      >
+                        Ver Imagen en Tamaño Completo
+                      </a>
                     </div>
                   </div>
-                  <div className="pt-2 border-t border-dashed border-slate-300 text-center text-[10px] text-emerald-700 font-bold uppercase">
-                    Transacción Bancaria Verificada en Sistema SFA
+                ) : (
+                  /* Fallback formal si solo registró código sin imagen adjunta */
+                  <div className="bg-white border border-slate-300 rounded-lg p-5 font-mono text-xs space-y-2 shadow-inner text-center">
+                    <p className="font-black text-slate-800 text-xs uppercase">
+                      COMPROBANTE REGISTRADO POR CÓDIGO BANCARIO
+                    </p>
+                    <p className="text-slate-600 font-bold">
+                      N° Operación: <span className="text-slate-900">{activeEnrollmentForAudit?.paymentOperation || "Sin código"}</span>
+                    </p>
+                    <p className="text-emerald-700 font-black">Importe Acreditado: S/ 250.00</p>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Selector de Observación (por si no procede) */}

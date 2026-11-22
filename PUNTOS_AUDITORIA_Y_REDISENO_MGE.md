@@ -28,17 +28,12 @@
 
 ---
 
-### Punto 3: Flujo de Pagos de Matrícula demasiado simple y sin visualización del comprobante
+### Punto 3: Flujo de Pagos de Matrícula y Visualización Real del Comprobante
 * **Problema:**
-  - El nombre del archivo (`VOUCHER DE PG0.png`) era solo texto plano sin posibilidad de ver o validar el documento.
-  - La validación u observación se hacía con un solo clic directo (`VALIDAR` / `OBSERVAR`), lo cual es poco serio para una auditoría financiera de matrícula.
-* **Solución Institucional:**
-  - **Modal de Auditoría y Verificación de Comprobante:** Al hacer clic en el comprobante o en "Auditar Pago", se abre una ventana formal de auditoría financiera con:
-    - Vista previa / visor del comprobante digital (voucher bancario oficial de BCP / Banco de la Nación).
-    - Datos de la transacción: N° de Operación, Importe oficial (S/ 250.00), Fecha, Banco y Estudiante.
-    - Opciones formales:
-      - **Validar Pago:** Confirma la acreditación bancaria con firma digital de auditoría.
-      - **Observar Pago:** Exige ingresar el motivo de observación (ej. Importe incompleto, voucher ilegible, número de operación duplicado).
+  - El modal inicial renderizaba un ticket de texto genérico en lugar de la imagen real del voucher que el estudiante Mateo Sebastián subió (`VOUCHER DE PGO.png`).
+* **Solución Institucional Aplicada:**
+  - **Renderizado Directo de la Imagen Real:** El modal ahora lee directamente la propiedad `activeEnrollmentForAudit.paymentVoucherUrl` (que contiene la imagen en Base64 real subida por el alumno desde la intranet) y la proyecta en pantalla con borde institucional, sombra y enlace para ver a pantalla completa.
+  - Si el alumno no adjuntó archivo y sólo ingresó un código de operación, se muestra la tarjeta de verificación bancaria con el número correspondiente.
 
 ---
 
