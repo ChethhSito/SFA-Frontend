@@ -5,20 +5,21 @@ import { ProcessedStudent } from "../mgeTypes";
 import { Course, CourseAssignment } from "../../../types";
 
 interface MgeSimularCicloModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
   student?: ProcessedStudent;
-  courses: Course[];
-  assignments: CourseAssignment[];
-  onSimulated: (studentDni: string) => void;
+  courses?: Course[];
+  assignments?: CourseAssignment[];
+  onSimulated?: (studentDni: string) => void;
+  activeCourse?: any;
 }
 
 export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
-  isOpen,
+  isOpen = true,
   onClose,
   student,
-  courses,
-  assignments,
+  courses = [],
+  assignments = [],
   onSimulated,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -69,9 +70,15 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
       localStorage.setItem("sfa_student_cycle_74859612", "2");
       localStorage.setItem("sfa_student_cycle", "2");
 
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("storage"));
+      }
+
       setTimeout(() => {
         setIsProcessing(false);
-        onSimulated(student.dni);
+        if (onSimulated) {
+          onSimulated(student.dni);
+        }
         onClose();
       }, 500);
     } catch (err) {

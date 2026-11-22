@@ -53,6 +53,16 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   cycleStatuses
 }) => {
   const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
+  const [, setStorageSync] = useState(0);
+  useEffect(() => {
+    const handleSync = () => setStorageSync((v) => v + 1);
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("focus", handleSync);
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("focus", handleSync);
+    };
+  }, []);
   const CORE_PLAN_COURSES: Record<string, Record<string, Array<{ code: string; name: string; type: string; credits: number; status: string; teo: number; pr: number }>>> = {
     "52": {
       "I": [
@@ -260,8 +270,8 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
               onClick={async () => {
                 await generateCurriculumPlanPdf(
                   currentProgram?.name || "Electricidad Industrial",
-                  `${personalData?.name || "Mateo Sebastián"} ${personalData?.lastName || "Quispe Rojas"}`,
-                  studentDni
+                  `${personalData.name} ${personalData.lastName}`,
+                  personalData.dni
                 );
               }}
               className="bg-white hover:bg-amber-50 text-slate-900 font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-2 select-none cursor-pointer transition-all shadow-md border border-white/30"
@@ -558,8 +568,8 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                 onClick={async () => {
                   await generateBoletaNotasPdf(
                     selectedQueryCycle,
-                    `${personalData?.name || "Mateo Sebastián"} ${personalData?.lastName || "Quispe Rojas"}`,
-                    studentDni,
+                    `${personalData.name} ${personalData.lastName}`,
+                    personalData.dni,
                     currentProgram?.name || "Electricidad Industrial",
                     activeCoursesList.map((c) => ({
                       code: c.code,

@@ -90,6 +90,17 @@ export default function AlumnoDashboard({
     }
   }, [enrollment]);
 
+  const [, setStorageSync] = useState(0);
+  useEffect(() => {
+    const handleSync = () => setStorageSync((v) => v + 1);
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("focus", handleSync);
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("focus", handleSync);
+    };
+  }, []);
+
   // Sub-tab selection inside Profile View (Carga de Documentos / Historial de Pagos / Datos Académicos)
   const [profileInnerTab, setProfileInnerTab] = useState<"docs" | "payments" | "academic">("docs");
 

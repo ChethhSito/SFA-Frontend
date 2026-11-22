@@ -325,15 +325,30 @@ export default function MgeNotasTab({
             </select>
           </div>
 
-          <button
-            type="button"
-            disabled={!selectedStudentDni}
-            onClick={() => setShowSimulateModal(true)}
-            className="bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-slate-950 font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
-          >
-            <CheckCircle2 className="w-4 h-4 text-slate-950" />
-            <span>Simular Cierre de Ciclo I</span>
-          </button>
+          {(() => {
+            const isCycle1Done = typeof window !== "undefined" && Boolean(
+              localStorage.getItem(`sfa_student_promoted_cycle2_${selectedStudentDni}`) === "true" ||
+              localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+              localStorage.getItem(`sfa_simulated_cycle1_${selectedStudentDni}`) ||
+              localStorage.getItem("sfa_simulated_cycle1_74859612") ||
+              localStorage.getItem("sfa_simulated_cycle1")
+            );
+            return (
+              <button
+                type="button"
+                disabled={!selectedStudentDni}
+                onClick={() => setShowSimulateModal(true)}
+                className={`font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer ${
+                  isCycle1Done
+                    ? "bg-emerald-700 hover:bg-emerald-600 text-white"
+                    : "bg-amber-400 hover:bg-amber-300 text-slate-950"
+                }`}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{isCycle1Done ? "Ciclo I Culminado (Re-simular)" : "Simular Cierre de Ciclo I"}</span>
+              </button>
+            );
+          })()}
         </div>
       </div>
 
@@ -689,9 +704,14 @@ export default function MgeNotasTab({
       {/* Modal de Simulación de Cierre de Ciclo */}
       {showSimulateModal && (
         <MgeSimularCicloModal
+          isOpen={showSimulateModal}
           student={selectedStudentObj}
-          activeCourse={activeCourseObj}
+          courses={courses}
+          assignments={assignments}
           onClose={() => setShowSimulateModal(false)}
+          onSimulated={() => {
+            setShowSimulateModal(false);
+          }}
         />
       )}
     </div>
