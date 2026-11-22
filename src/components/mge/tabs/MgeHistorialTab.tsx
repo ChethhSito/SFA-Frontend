@@ -201,13 +201,73 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
   }, [isStudentPromoted, realRows, student]);
 
   const sanitizedRows = useMemo(() => {
-    return rawRows.map((r) => ({
-      ...r,
-      cleanCode: cleanCode(r.code),
-      cleanName: cleanCourseName(r.courseName),
-      cycle: (r as any).cycle || inferCycleFromCode(r.code)
-    }));
-  }, [rawRows]);
+    // Agrupar filas por su código institucional unificado (ej. EIND-101 consolida TEO, TAL, LAB y base)
+    const grouped = new Map<string, typeof rawRows>();
+
+    rawRows.forEach((r) => {
+      const code = cleanCode(r.code);
+      if (!grouped.has(code)) {
+        grouped.set(code, []);
+      }
+      grouped.get(code)!.push(r);
+    });
+
+    const isElec = !student?.programId || student.programId === "electronica" || student.programId.toLowerCase().includes("elec");
+    const catalogCurriculum = isElec ? ACCREDITED_CURRICULUM_ELECTRICIDAD : ACCREDITED_CURRICULUM_CONTABILIDAD;
+
+    const consolidated: Array<{
+      code: string;
+      cleanCode: string;
+      courseName: string;
+      cleanName: string;
+      credits: number;
+      count: number;
+      grade: number | null;
+      cycle: number;
+    }> = [];
+
+    grouped.forEach((group, code) => {
+      const catalogEntry = catalogCurriculum.find((c) => cleanCode(c.code) === code);
+      const cycle = catalogEntry?.cycle || inferCycleFromCode(code);
+      const cleanName = catalogEntry?.courseName || cleanCourseName(group[0]?.courseName || code);
+      const officialCredits = catalogEntry?.credits || group.find((g) => g.credits && g.credits >= 3)?.credits || 4;
+
+      // Suma total de evaluaciones de todos los componentes asociados
+      const totalCount = group.reduce((sum, item) => sum + (item.count || 0), 0);
+
+      // Consolidar calificaciones: si hay subcomponentes con notas, computar promedio ponderado
+      const gradedItems = group.filter((item) => item.grade !== null && item.grade !== undefined && typeof item.grade === "number");
+
+      let finalGrade: number | null = null;
+      if (gradedItems.length > 0) {
+        let sumWeights = 0;
+        let weightedPoints = 0;
+        gradedItems.forEach((item) => {
+          const w = item.credits && item.credits > 0 ? item.credits : 1;
+          weightedPoints += Number(item.grade) * w;
+          sumWeights += w;
+        });
+        finalGrade = sumWeights > 0 ? Math.round((weightedPoints / sumWeights) * 10) / 10 : null;
+      }
+
+      consolidated.push({
+        code,
+        cleanCode: code,
+        courseName: cleanName,
+        cleanName,
+        credits: officialCredits,
+        count: totalCount,
+        grade: finalGrade,
+        cycle
+      });
+    });
+
+    // Ordenar formalmente por ciclo y código oficial
+    return consolidated.sort((a, b) => {
+      if (a.cycle !== b.cycle) return a.cycle - b.cycle;
+      return a.cleanCode.localeCompare(b.cleanCode);
+    });
+  }, [rawRows, student]);
 
   const filteredRows = useMemo(() => {
     if (cycleFilter === "ALL") return sanitizedRows;

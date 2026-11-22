@@ -109,6 +109,17 @@
 
 ---
 
+### Punto 11: Deduplicación y Consolidación Curricular de Subcomponentes en Historial (Tab 6)
+* **Problema:**
+  - Cursos multi-componente como `EIND-101` aparecían repetidos hasta 4 veces en la tabla (`EIND-101-TEO`, `EIND-101-TAL`, `EIND-101-LAB` y `EIND-101` base), confundiendo al usuario y desvirtuando el número real de créditos y cursos aprobados.
+* **Solución Institucional:**
+  - Se implementó un algoritmo de agregación y consolidación modular por código base unificado en `MgeHistorialTab.tsx`.
+  - Todos los subcomponentes de una asignatura se fusionan en **una única fila curricular oficial**.
+  - La calificación final consolidada se computa mediante el promedio ponderado de las actas de teoría, taller y laboratorio.
+  - La suma total de evaluaciones de todos los componentes se refleja en la columna de evaluaciones, y los créditos corresponden exactamente al plan formativo oficial (4 créditos para `EIND-101`), erradicando cualquier duplicidad en la tabla y en el PDF descargable.
+
+---
+
 ## 2. MATRIZ DE ARCHIVOS AFECTADOS
 
 1. `SFA-Frontend/src/components/mge/MgeDashboard.tsx`: Corrección de `activePeriodName` a `Periodo Académico 2026-I` y renderizado directo de expedientes.
@@ -116,7 +127,7 @@
 3. `SFA-Frontend/src/components/mge/tabs/MgePagosTab.tsx`: Implementación del visor de voucher y modal de auditoría de pago con comprobante real en Base64.
 4. `SFA-Frontend/src/components/mge/tabs/MgeNotasTab.tsx`: Depuración del selector de cursos con filtros de carrera/ciclo y bloqueo de input libre de notas mediante modal de Rectificación de Acta.
 5. `SFA-Frontend/src/components/mge/tabs/MgeAsistenciasTab.tsx`: Rediseño con métricas de asistencia y botones segmentados.
-6. `SFA-Frontend/src/components/mge/tabs/MgeHistorialTab.tsx`: Rediseño completo con 4 KPIs curriculares, filtros por ciclo (I a VI), selector estilizado y tabla institucional.
+6. `SFA-Frontend/src/components/mge/tabs/MgeHistorialTab.tsx`: Consolidación unificada de subcomponentes (cero duplicados), 4 KPIs curriculares, filtros por ciclo (I a VI), selector estilizado y tabla institucional.
 7. `SFA-Frontend/src/hooks/mge/useGraduationsManager.ts` y `CertificateDocuments.tsx`: Fallback resiliente y visor criptográfico SHA-256.
 8. `SFA-Frontend/src/components/mge/tabs/MgeReportesTab.tsx`: Consolidado institucional y exportación Excel/CSV.
 9. `SFA-Frontend/src/components/mge/tabs/MgeRiesgoIaTab.tsx`: Panel institucional de riesgo con auditoría y derivación a tutoría.
