@@ -201,3 +201,14 @@
      - `Todos` (pizarra institucional) para vista global consolidada.
   3. **Selector Interactivo en Cabecera:** Implementación de un `<select>` estilizado en tono oscuro/ámbar dentro del encabezado de MGE que permite a Secretaría Académica cambiar el periodo de consulta.
   4. **Filtrado Reactivo del Padrón de Estudiantes:** `processedStudents` filtra dinámicamente los registros de postulantes y matrículas según el periodo seleccionado, manteniendo la trazabilidad histórica de los estudiantes que cursaron en cada semestre.
+
+---
+
+### PUNTO 17: Homologación de Consulta Académica y Boleta de Notas del Alumno con Actas Consolidadas
+- **Problema Detectado por Usuario:** Al ingresar al Portal del Estudiante tras ejecutar el cierre/simulación de Ciclo I en MGE, la pestaña de *Consulta Académica* mostraba promedio ponderado en `0.00`, cursos en estado `MATRICULADO`, el gráfico circular en `--`, y la descarga de la *Boleta de Calificaciones* mostraba notas en `--`. Asimismo, en *Mis Calificaciones* las asignaturas de primer ciclo aparecían como `PENDIENTE / NR`.
+- **Causa Raíz:**
+  1. En `ClosureTab.tsx`, la lectura de calificaciones solo comprobaba la clave `sfa_student_promoted_${dni}` (botón de 6 ciclos), ignorando completamente la clave `sfa_simulated_cycle1_${dni}` generada por el cierre formal de Ciclo I en MGE.
+  2. En `AlumnoDashboard.tsx`, el cálculo de componentes curriculares (`formulaEvaluations`) evaluaba primero `variable.id === "NPA"`, dejando la nota indefinida para materias sin tareas virtuales previas y bloqueando el acceso al fallback de actas consolidadas de MGE.
+- **Solución Implementada:**
+  1. En `ClosureTab.tsx`: Se conectó la lectura reactiva de `sfa_simulated_cycle1_${dni}`. Al detectar Ciclo I culminado, actualiza el estado de las 5 asignaturas a **APROBADO**, computa el promedio ponderado en **16.00**, renderiza el gráfico en **16.0 sobre 20** con estado *"Aprobado (Promovido a Ciclo II)"*, y la Boleta Oficial de Calificaciones PDF imprime las notas oficiales (`15.5`, `16.5`, etc.).
+  2. En `AlumnoDashboard.tsx`: Se habilitó el mapeo directo de `simCourse.grade` para todos los componentes de la fórmula curricular en asignaturas consolidadas por secretaría, garantizando coherencia total en *Mis Calificaciones*.

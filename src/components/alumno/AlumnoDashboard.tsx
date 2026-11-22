@@ -618,6 +618,18 @@ export default function AlumnoDashboard({
       ? Math.round((gradedTasks.reduce((acc, t) => acc + (t.grade as number), 0) / gradedTasks.length) * 10) / 10
       : null;
 
+    // Check if student has simulated cycle 1 completion from MGE
+    const simCourse = (() => {
+      try {
+        const rawSim = typeof window !== "undefined" ? localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) : null;
+        if (rawSim) {
+          const simData = JSON.parse(rawSim);
+          return simData.courses?.find((sc: any) => sc.code === c.code || sc.name === c.name);
+        }
+      } catch {}
+      return null;
+    })();
+
     // 2. Curricular components from the official course formula (NPA, PC1, PC2, EX_FINAL)
     // Matches explicit planilla entries, NPA continuous average, or official scheduled assessments
     const formulaEvaluations = courseFormula.variables.map((variable) => {
@@ -639,10 +651,16 @@ export default function AlumnoDashboard({
       let subDesc = variable.label;
       if (planillaSub?.grade !== undefined) {
         grade = planillaSub.grade;
+      } else if (assessmentSub?.grade !== undefined) {
+        grade = assessmentSub.grade;
+        subDesc = `${assessmentAssignment?.title}`;
       } else if (variable.id === "NPA") {
         if (npaAverage !== null) {
           grade = npaAverage;
           subDesc = `Promedio continuo de tareas de aula virtual (${gradedTasks.length} calificada${gradedTasks.length > 1 ? "s" : ""})`;
+        } else if (simCourse && !simCourse.isManual && typeof simCourse.grade === "number") {
+          grade = simCourse.grade;
+          subDesc = "Acta Oficial de Calificaciones Consolidada (MGE)";
         } else {
           subDesc = "Promedio acumulado de tareas de aula virtual";
         }
@@ -654,6 +672,9 @@ export default function AlumnoDashboard({
         if (valid.length > 0) {
           grade = Number((valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1));
           subDesc = `NPA: ${npa ?? "NR"} • PC1: ${pc1 ?? "NR"} • PC2: ${pc2 ?? "NR"} (Evaluación Continua)`;
+        } else if (simCourse && !simCourse.isManual && typeof simCourse.grade === "number") {
+          grade = simCourse.grade;
+          subDesc = "Acta Oficial de Calificaciones Consolidada (MGE)";
         }
       } else if (variable.id === "TAL") {
         const talAsgs = assignments.filter((a) => !a.title.startsWith("[Planilla] ") && !/EX_FINAL|EXAMEN FINAL/i.test(a.title) && (a.courseId === "6afe1412016eccb3be7af0eb" || a.courseId?.toLowerCase().includes("tal")));
@@ -668,6 +689,9 @@ export default function AlumnoDashboard({
             const shortName = g.title.replace(/\[Semana\s*\d+\]\s*/i, "").replace(/\[.*?\]\s*/i, "").trim().split(" ")[0];
             return `${shortName}: ${g.grade}`;
           }).join(" • ");
+        } else if (simCourse && !simCourse.isManual && typeof simCourse.grade === "number") {
+          grade = simCourse.grade;
+          subDesc = "Acta Oficial de Calificaciones Consolidada (MGE)";
         }
       } else if (variable.id === "LAB") {
         const labAsgs = assignments.filter((a) => !a.title.startsWith("[Planilla] ") && !/EX_FINAL|EXAMEN FINAL/i.test(a.title) && (a.courseId === "6afe141f016eccb3be7af0ec" || a.courseId?.toLowerCase().includes("lab")));
@@ -682,25 +706,13 @@ export default function AlumnoDashboard({
             const shortName = g.title.replace(/\[Semana\s*\d+\]\s*/i, "").replace(/\[.*?\]\s*/i, "").trim().split(" ")[0];
             return `${shortName}: ${g.grade}`;
           }).join(" • ");
+        } else if (simCourse && !simCourse.isManual && typeof simCourse.grade === "number") {
+          grade = simCourse.grade;
+          subDesc = "Acta Oficial de Calificaciones Consolidada (MGE)";
         }
-      } else if (assessmentSub?.grade !== undefined) {
-        grade = assessmentSub.grade;
-        subDesc = `${assessmentAssignment?.title}`;
-      } else {
-        // Check if student has simulated cycle 1 completion
-        try {
-          const rawSim = typeof window !== "undefined" ? localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) : null;
-          if (rawSim) {
-            const simData = JSON.parse(rawSim);
-            const simCourse = simData.courses?.find((sc: any) => sc.code === c.code || sc.name === c.name);
-            if (simCourse && !simCourse.isManual && typeof simCourse.grade === "number") {
-              grade = simCourse.grade;
-              subDesc = "Acta Oficial de Calificaciones Consolidada (MGE)";
-            }
-          }
-        } catch {
-          // ignore
-        }
+      } else if (simCourse && !simCourse.isManual && typeof simCourse.grade === "number") {
+        grade = simCourse.grade;
+        subDesc = "Acta Oficial de Calificaciones Consolidada (MGE)";
       }
 
       return {

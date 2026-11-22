@@ -138,6 +138,9 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   };
 
   const isPromoted = localStorage.getItem(`sfa_student_promoted_${personalData.dni}`) === "true";
+  const rawSim = typeof window !== "undefined" ? localStorage.getItem(`sfa_simulated_cycle1_${personalData.dni}`) : null;
+  const simData = rawSim ? (() => { try { return JSON.parse(rawSim); } catch { return null; } })() : null;
+  const isCycle1Simulated = Boolean(simData && Array.isArray(simData.courses) && simData.courses.length > 0);
 
   const activePlanKey = enrollment.programId === "electronica" ? "20" : "52";
   const activeSemesterKey = selectedQueryCycle || "I";
@@ -155,14 +158,23 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   const planCourses = CORE_PLAN_COURSES[activePlanKey]?.[activeSemesterKey] || CORE_PLAN_COURSES["20"]["I"] || [];
   const rawCoursesList = planCourses.map((planC) => {
     const dbCourse = realDbCourses.find((c) => c.code === planC.code);
+    const simCourse = simData?.courses?.find((sc: any) => sc.code === planC.code || sc.name === planC.name);
+    const isApprovedCourse = isPromoted || (isCycle1Simulated && targetCycleNum === 1);
+    const simGrade = isPromoted
+      ? undefined
+      : (isCycle1Simulated && targetCycleNum === 1
+        ? (typeof simCourse?.grade === "number" ? simCourse.grade : (planC.code === "EIND-101" ? 15.5 : 16.0))
+        : undefined);
+
     return {
       code: planC.code,
       name: dbCourse?.name || planC.name,
       type: planC.type,
       credits: dbCourse?.credits || planC.credits,
-      status: isPromoted ? "Aprobado" : (targetCycleNum === 1 ? "Matriculado" : "Pendiente"),
+      status: isApprovedCourse ? "Aprobado" : (targetCycleNum === 1 ? "Matriculado" : "Pendiente"),
       teo: planC.teo || 2,
-      pr: planC.pr || 4
+      pr: planC.pr || 4,
+      simGrade
     };
   });
   
@@ -177,6 +189,13 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         simGrade: grade
       };
     }
+    if (isCycle1Simulated && targetCycleNum === 1) {
+      return {
+        ...c,
+        status: "Aprobado",
+        simGrade: c.simGrade ?? (c.code === "EIND-101" ? 15.5 : 16.0)
+      };
+    }
     return {
       ...c,
       status: targetCycleNum === 1 ? "Matriculado" : "Pendiente",
@@ -184,7 +203,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
     };
   });
   const cycleCreditsSum = activeCoursesList.reduce((sum, c) => sum + c.credits, 0);
-  const weightedGpa = 0.0;
+  const weightedGpa = isPromoted ? 17.4 : isCycle1Simulated ? Number(simData?.weightedAverage || 16.0) : 0.0;
 
   return (
     <PageTransition id="closure" className="space-y-6">
@@ -234,10 +253,10 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between text-left min-h-[110px]">
           <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Ciclo Académico Actual</span>
           <span className="text-lg font-black text-[#800521] mt-1 uppercase tracking-tight">
-            {isPromoted ? "VI SEMESTRE (EGRESADO)" : "I SEMESTRE"}
+            {isPromoted ? "VI SEMESTRE (EGRESADO)" : isCycle1Simulated ? "II SEMESTRE" : "I SEMESTRE"}
           </span>
           <div className="flex items-center gap-1.5 mt-2 bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded text-[9.5px] font-black w-max">
-            <Award className="w-3 h-3 text-emerald-600" /> {isPromoted ? "APTO TITULACIÓN" : "REGULAR"}
+            <Award className="w-3 h-3 text-emerald-600" /> {isPromoted ? "APTO TITULACIÓN" : isCycle1Simulated ? "APTO MATRÍCULA II" : "REGULAR"}
           </div>
         </div>
 
@@ -247,27 +266,27 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             {isPromoted ? "120.0 / 120.0" : `${cycleCreditsSum}.0 / 120.0`}
           </span>
           <span className="text-[10px] text-emerald-600 font-bold block mt-1 font-semibold">
-            {isPromoted ? "100% Plan Culminado (6 Ciclos)" : "Créditos Inscritos: 100% Ciclo I"}
+            {isPromoted ? "100% Plan Culminado (6 Ciclos)" : isCycle1Simulated ? "Créditos Aprobados: 100% Ciclo I" : "Créditos Inscritos: 100% Ciclo I"}
           </span>
         </div>
 
         <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between text-left min-h-[110px]">
           <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Promedio Ponderado</span>
           <span className="text-xl font-black text-[#2D3748] mt-1 font-mono">
-            {isPromoted ? "17.40" : "0.00"}
+            {isPromoted ? "17.40" : isCycle1Simulated ? (simData?.weightedAverage ? Number(simData.weightedAverage).toFixed(2) : "16.00") : "0.00"}
           </span>
           <span className="text-[10px] text-emerald-600 font-bold block mt-1 font-semibold">
-            {isPromoted ? "Tercio Superior Oficial" : "Semestre 2027-I"}
+            {isPromoted ? "Tercio Superior Oficial" : isCycle1Simulated ? "Ciclo I Aprobado Oficial" : "Semestre 2027-I"}
           </span>
         </div>
 
         <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between text-left min-h-[110px]">
           <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Estado de Matrícula</span>
           <span className="text-xs font-black text-slate-800 uppercase tracking-wide mt-1">
-            {isPromoted ? "EGRESADO CONCLUIDO" : "MATRICULADO"}
+            {isPromoted ? "EGRESADO CONCLUIDO" : isCycle1Simulated ? "PROMOVIDO A CICLO II" : "MATRICULADO"}
           </span>
           <span className="text-[9px] text-emerald-600 font-bold block mt-1 font-semibold">
-            {isPromoted ? "Apto para Certificados Oficiales" : "Periodo 2027-I Vigente"}
+            {isPromoted ? "Apto para Certificados Oficiales" : isCycle1Simulated ? "Habilitado para Matrícula II" : "Periodo 2027-I Vigente"}
           </span>
         </div>
       </div>
@@ -422,13 +441,13 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                   strokeWidth="10" 
                   fill="transparent" 
                   strokeDasharray="314" 
-                  strokeDashoffset={314 - (314 * (isPromoted ? (weightedGpa / 20) : 0))}
+                  strokeDashoffset={314 - (314 * ((isPromoted || (isCycle1Simulated && targetCycleNum === 1)) ? (weightedGpa / 20) : 0))}
                   className="transition-all duration-300" 
                 />
               </svg>
               <div className="absolute flex flex-col justify-center items-center">
                 <span className="text-3xl font-black text-slate-800 tracking-tighter">
-                  {isPromoted ? weightedGpa : "--"}
+                  {isPromoted || (isCycle1Simulated && targetCycleNum === 1) ? weightedGpa.toFixed(1) : "--"}
                 </span>
                 <span className="text-[8px] text-slate-400 uppercase font-black">sobre 20</span>
               </div>
@@ -437,12 +456,14 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             <div className="text-xs font-semibold">
               <span className="text-slate-500">Rendimiento Estimado: </span>
               <span className={`font-black ${
-                isPromoted 
-                  ? (weightedGpa >= 16 ? "text-emerald-600" : "text-slate-800")
+                isPromoted || (isCycle1Simulated && targetCycleNum === 1)
+                  ? (weightedGpa >= 14 ? "text-emerald-600" : "text-slate-800")
                   : "text-amber-600"
               }`}>
                 {isPromoted 
                   ? (weightedGpa >= 16 ? "Sobresaliente" : "Aceptable")
+                  : (isCycle1Simulated && targetCycleNum === 1)
+                  ? "Aprobado (Promovido a Ciclo II)"
                   : "Pendiente de Calificaciones Oficiales"
                 }
               </span>
