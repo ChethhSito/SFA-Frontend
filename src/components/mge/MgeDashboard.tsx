@@ -171,8 +171,10 @@ export default function MgeDashboard({
   }, [processedStudents, searchQuery]);
 
   const activePeriodName = useMemo(() => {
-    const found = admissionPeriods.find((p) => p.id === selectedPeriodId);
-    const raw = found?.name || "Sin periodo seleccionado";
+    const found = admissionPeriods.find((p) => p.id === selectedPeriodId) ||
+                  admissionPeriods.find((p) => p.status === "ACTIVO" || (p as any).active) ||
+                  admissionPeriods[0];
+    const raw = found?.name || "Periodo Académico 2026-I";
     return raw
       .replace(/\uFFFD/g, "é")
       .replace(/Acad[\uFFFD\?a-zA-Z]*mico/gi, "Académico")

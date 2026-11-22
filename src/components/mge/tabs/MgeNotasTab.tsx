@@ -1,5 +1,18 @@
 import React, { useState, useMemo } from "react";
-import { GraduationCap, CheckCircle2, Award, BookOpen, AlertCircle, Save, Check } from "lucide-react";
+import {
+  GraduationCap,
+  CheckCircle2,
+  Award,
+  BookOpen,
+  AlertCircle,
+  Save,
+  Check,
+  Lock,
+  Edit3,
+  FileText,
+  X,
+  AlertTriangle
+} from "lucide-react";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import Button from "../../ui/Button";
 import { Course, CourseAssignment } from "../../../types";
@@ -35,8 +48,39 @@ export default function MgeNotasTab({
   const [selectedStudentDni, setSelectedStudentDni] = useState<string>(() => processedStudents[0]?.dni || "");
   const [showSimulateModal, setShowSimulateModal] = useState(false);
 
+  // Modal formal de rectificación de acta
+  const [rectifyingStudent, setRectifyingStudent] = useState<ProcessedStudent | null>(null);
+  const [rectifyGrade, setRectifyGrade] = useState<string>("");
+  const [rectifyResolution, setRectifyResolution] = useState<string>("");
+  const [rectifyReason, setRectifyReason] = useState<string>("Corrección de error material en acta oficial docente");
+
   const selectedStudentObj = processedStudents.find((s) => s.dni === selectedStudentDni) || processedStudents[0];
   const activeCourseObj = courses.find((c) => c.id === selectedCourseId) || courses[0];
+
+  // Lista depurada de cursos consolidados oficiales (sin subcomponentes TEO, TAL, LAB)
+  const consolidatedOfficialCourses = useMemo(() => {
+    const seen = new Set<string>();
+    const list: Course[] = [];
+
+    courses.forEach((c) => {
+      if (
+        c.code?.includes("-TEO") ||
+        c.code?.includes("-TAL") ||
+        c.code?.includes("-LAB") ||
+        c.name?.includes("(Teoría)") ||
+        c.name?.includes("(Taller)") ||
+        c.name?.includes("(Laboratorio)")
+      ) {
+        return;
+      }
+      const baseCode = c.code?.trim();
+      if (!baseCode || seen.has(baseCode)) return;
+      seen.add(baseCode);
+      list.push(c);
+    });
+
+    return list.sort((a, b) => (a.code || "").localeCompare(b.code || ""));
+  }, [courses]);
 
   const studentsInActiveCourse = activeCourseObj
     ? processedStudents.filter(
@@ -57,9 +101,6 @@ export default function MgeNotasTab({
       set.add("EIND-101-TEO");
       set.add("EIND-101-TAL");
       set.add("EIND-101-LAB");
-      set.add("6afc831d1bbefb1d4e11dd0e");
-      set.add("6afe1412016eccb3be7af0eb");
-      set.add("6afe141f016eccb3be7af0ec");
     }
     return set;
   }, [activeCourseObj]);
@@ -175,10 +216,24 @@ export default function MgeNotasTab({
     return gradesMap;
   }, [selectedTaskTitle, courseAssignments, processedStudents, activeCourseObj, assignments, isFundamentos, selectedStudentDni]);
 
+  const handleOpenRectify = (st: ProcessedStudent) => {
+    const currentVal = temporaryGrades[st.dni] !== undefined ? temporaryGrades[st.dni] : currentGradesForTask[st.dni];
+    setRectifyingStudent(st);
+    setRectifyGrade(currentVal !== undefined ? String(currentVal) : "16.0");
+    setRectifyResolution(`RES-RECT-2026-${st.dni.slice(-4)}`);
+    setRectifyReason("Corrección de error material en acta oficial docente");
+  };
+
+  const handleConfirmRectify = () => {
+    if (!rectifyingStudent) return;
+    onGradeChange(rectifyingStudent.dni, rectifyGrade);
+    setRectifyingStudent(null);
+  };
+
   return (
     <div className="space-y-6 text-left font-sans">
       {/* Banner de Consolidación y Simulación de Ciclos */}
-      <div className="bg-gradient-to-r from-[#800521] to-slate-900 text-white rounded-2xl p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-4 border-amber-500">
+      <div className="bg-gradient-to-r from-[#800521] via-slate-900 to-slate-900 text-white rounded-2xl p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-4 border-amber-500">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <GraduationCap className="w-5 h-5 text-amber-300" />
@@ -219,27 +274,32 @@ export default function MgeNotasTab({
         </div>
       </div>
 
-      {/* Selectores de Paso 1 y Paso 2 */}
+      {/* Selectores de Paso 1 y Paso 2 Limpios y Depurados */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-5 border border-slate-200 rounded-2xl shadow-3xs">
         <div>
-          <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider block mb-1.5">
-            Paso 1: Seleccione Asignatura / Curso
+          <label className="text-[10px] font-black uppercase text-slate-600 tracking-wider block mb-1.5">
+            Paso 1: Asignatura Oficial del Plan Curricular
           </label>
           <select
             value={selectedCourseId}
             onChange={(e) => onCourseChange(e.target.value)}
             className="w-full p-2.5 border border-slate-300 bg-white font-bold rounded-xl text-xs text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
           >
-            {courses.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.name} ({course.code}) - {ACADEMIC_PROGRAMS.find((p) => p.id === course.career)?.name || course.career}
-              </option>
-            ))}
+            {consolidatedOfficialCourses.map((course) => {
+              const progName =
+                ACADEMIC_PROGRAMS.find((p) => p.id === course.career || p.id === course.careerId)?.name ||
+                (course.code?.startsWith("EIND") ? "Electricidad Industrial" : "Contabilidad");
+              return (
+                <option key={course.id} value={course.id}>
+                  {course.name} ({course.code}) • {progName}
+                </option>
+              );
+            })}
           </select>
         </div>
 
         <div>
-          <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider block mb-1.5">
+          <label className="text-[10px] font-black uppercase text-slate-600 tracking-wider block mb-1.5">
             Paso 2: Criterio / Evaluación del Acta
           </label>
           <select
@@ -267,13 +327,13 @@ export default function MgeNotasTab({
         </div>
       </div>
 
-      {/* Tabla de Calificaciones Oficiales */}
+      {/* Tabla Oficial de Calificaciones - Modo Acta Protegida */}
       {activeCourseObj && (
         <div className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-xs">
           <div className="bg-[#0F172A] px-5 py-3.5 text-white flex justify-between items-center border-b-2 border-amber-500">
             <div className="text-xs">
-              <span className="font-semibold text-amber-400 uppercase block text-[9.5px] tracking-widest font-mono">
-                Acta Oficial de Calificaciones:
+              <span className="font-semibold text-amber-400 uppercase block text-[9.5px] tracking-widest font-mono flex items-center gap-1.5">
+                <Lock className="w-3 h-3 text-amber-400" /> Acta Oficial de Calificaciones (Cerrada y Protegida)
               </span>
               <span className="font-extrabold text-white text-xs sm:text-sm block">
                 {activeCourseObj.name} ({activeCourseObj.code})
@@ -285,7 +345,7 @@ export default function MgeNotasTab({
               className="bg-[#9F062A] hover:bg-[#800521] text-white text-[10.5px] font-black uppercase tracking-wider px-4 py-2 rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
-              <span>Guardar Notas en Acta</span>
+              <span>Sellar Acta Institucional</span>
             </button>
           </div>
 
@@ -295,9 +355,9 @@ export default function MgeNotasTab({
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[9.5px] font-black tracking-wider">
                   <th className="px-5 py-3.5">Estudiante</th>
                   <th className="px-5 py-3.5">Carrera</th>
-                  <th className="px-5 py-3.5 text-center">Calificación en Acta</th>
-                  <th className="px-5 py-3.5 text-center" style={{ width: "200px" }}>Nueva Calificación (0 - 20)</th>
-                  <th className="px-5 py-3.5 text-right">Condición</th>
+                  <th className="px-5 py-3.5 text-center">Calificación Oficial en Acta</th>
+                  <th className="px-5 py-3.5 text-center">Condición Final</th>
+                  <th className="px-5 py-3.5 text-right">Gestión de Secretaría</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
@@ -335,14 +395,14 @@ export default function MgeNotasTab({
                           </span>
                         </td>
                         <td className="px-5 py-3.5 text-center">
-                          {existingScore !== undefined ? (
+                          {scoreToEvaluate !== undefined ? (
                             <div className="flex flex-col items-center">
                               <span className="font-mono font-black text-sm px-3 py-1 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1.5 shadow-2xs">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>{existingScore.toFixed(1)} / 20</span>
+                                <span>{scoreToEvaluate.toFixed(1)} / 20</span>
                               </span>
                               <span className="text-[9.5px] font-bold text-emerald-700 mt-1 uppercase tracking-wider font-mono">
-                                {isFundamentos ? "Enviada por Docente (Validada)" : "Registrada en Acta"}
+                                {currentTemp !== undefined ? "Rectificada por Secretaría" : isFundamentos ? "Enviada por Docente (Validada)" : "Registrada en Acta"}
                               </span>
                             </div>
                           ) : (
@@ -355,22 +415,10 @@ export default function MgeNotasTab({
                           )}
                         </td>
                         <td className="px-5 py-3.5 text-center">
-                          <input
-                            type="number"
-                            min="0"
-                            max="20"
-                            step="0.1"
-                            placeholder="Ej. 16.0"
-                            value={currentTemp !== undefined ? currentTemp : ""}
-                            onChange={(e) => onGradeChange(st.dni, e.target.value)}
-                            className="w-28 px-3 py-1.5 border border-slate-300 bg-white text-slate-900 font-black font-mono text-xs rounded-xl focus:outline-none focus:ring-1 focus:ring-[#800521] text-center shadow-2xs"
-                          />
-                        </td>
-                        <td className="px-5 py-3.5 text-right">
                           {scoreToEvaluate === undefined ? (
                             <span className="text-slate-400 font-semibold text-[10.5px]">Pendiente</span>
                           ) : (
-                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase font-mono border inline-flex items-center gap-1 shadow-2xs ${
+                            <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase font-mono border inline-flex items-center gap-1 shadow-2xs ${
                               isApproved
                                 ? "bg-emerald-50 text-emerald-800 border-emerald-300"
                                 : "bg-rose-50 text-rose-800 border-rose-300"
@@ -379,6 +427,17 @@ export default function MgeNotasTab({
                               <span>{isApproved ? "Aprobado" : "Desaprobado"} ({scoreToEvaluate.toFixed(1)})</span>
                             </span>
                           )}
+                        </td>
+                        <td className="px-5 py-3.5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenRectify(st)}
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[10.5px] uppercase tracking-wider rounded-xl transition-all border border-slate-300 shadow-2xs inline-flex items-center gap-1.5 cursor-pointer"
+                            title="Aperturar expediente de rectificación de calificación oficial"
+                          >
+                            <Edit3 className="w-3 h-3 text-slate-600" />
+                            <span>Rectificar Acta</span>
+                          </button>
                         </td>
                       </tr>
                     );
@@ -390,16 +449,136 @@ export default function MgeNotasTab({
         </div>
       )}
 
-      {selectedStudentObj && (
+      {/* MODAL FORMAL DE RECTIFICACIÓN DE ACTA */}
+      {rectifyingStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200">
+            {/* Modal Header */}
+            <div className="bg-[#800521] px-5 py-4 text-white flex justify-between items-center border-b-2 border-amber-500">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-amber-400" />
+                <div>
+                  <h3 className="font-extrabold text-sm uppercase tracking-wider text-white">
+                    Resolución de Rectificación de Calificación
+                  </h3>
+                  <span className="text-[10px] text-white/80 font-mono">
+                    Secretaría Académica • Modificación Formal de Acta Oficial
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRectifyingStudent(null)}
+                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4 text-xs">
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                <div className="font-extrabold text-slate-900 text-sm">
+                  {rectifyingStudent.lastName}, {rectifyingStudent.name}
+                </div>
+                <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                  DNI: {rectifyingStudent.dni} • Asignatura: {activeCourseObj?.name} ({activeCourseObj?.code})
+                </div>
+              </div>
+
+              {/* Nueva Calificación */}
+              <div>
+                <label className="block font-black text-slate-700 uppercase tracking-wider text-[10px] mb-1">
+                  Nueva Calificación Reglamentaria (Escala 0 al 20)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="20"
+                  step="0.1"
+                  value={rectifyGrade}
+                  onChange={(e) => setRectifyGrade(e.target.value)}
+                  placeholder="Ej. 16.5"
+                  className="w-full p-2.5 border border-slate-300 rounded-xl font-mono font-bold text-sm text-slate-900 shadow-2xs focus:ring-1 focus:ring-[#800521]"
+                />
+              </div>
+
+              {/* N° de Resolución */}
+              <div>
+                <label className="block font-black text-slate-700 uppercase tracking-wider text-[10px] mb-1">
+                  N° de Resolución Directoral / Solicitud de Rectificación
+                </label>
+                <input
+                  type="text"
+                  value={rectifyResolution}
+                  onChange={(e) => setRectifyResolution(e.target.value)}
+                  placeholder="Ej. RES-RECT-2026-0041"
+                  className="w-full p-2.5 border border-slate-300 rounded-xl font-mono font-bold text-xs text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
+                />
+              </div>
+
+              {/* Motivo */}
+              <div>
+                <label className="block font-black text-slate-700 uppercase tracking-wider text-[10px] mb-1">
+                  Causal de Rectificación
+                </label>
+                <select
+                  value={rectifyReason}
+                  onChange={(e) => setRectifyReason(e.target.value)}
+                  className="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 bg-white shadow-2xs focus:ring-1 focus:ring-[#800521]"
+                >
+                  <option value="Corrección de error material en acta oficial docente">
+                    Corrección de error material en acta oficial docente
+                  </option>
+                  <option value="Reclamo fundado de calificación con resolución favorable">
+                    Reclamo fundado de calificación con resolución favorable
+                  </option>
+                  <option value="Examen extraordinario o de aplazados ratificado">
+                    Examen extraordinario o de aplazados ratificado
+                  </option>
+                  <option value="Convalidación de estudios por traslado interno/externo">
+                    Convalidación de estudios por traslado interno/externo
+                  </option>
+                </select>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex gap-2.5 text-amber-900 leading-relaxed text-[11px]">
+                <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold block">Auditoría Registrada:</span>
+                  Toda modificación en el acta oficial queda sellada con fecha, usuario emisor y número de resolución correspondiente.
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-slate-50 px-6 py-4 flex justify-end gap-2.5 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setRectifyingStudent(null)}
+                className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl border border-slate-300 cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRectify}
+                className="px-4 py-2 bg-[#800521] hover:bg-[#66041a] text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Registrar Rectificación en Acta</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Simulación de Cierre de Ciclo */}
+      {showSimulateModal && (
         <MgeSimularCicloModal
-          isOpen={showSimulateModal}
-          onClose={() => setShowSimulateModal(false)}
           student={selectedStudentObj}
-          courses={courses}
-          assignments={assignments}
-          onSimulated={(dni) => {
-            onSaveGrades();
-          }}
+          activeCourse={activeCourseObj}
+          onClose={() => setShowSimulateModal(false)}
         />
       )}
     </div>

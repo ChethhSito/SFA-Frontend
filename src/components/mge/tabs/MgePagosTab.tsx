@@ -1,5 +1,18 @@
 import React, { useState } from "react";
-import { CreditCard } from "lucide-react";
+import {
+  CreditCard,
+  FileCheck,
+  AlertTriangle,
+  X,
+  CheckCircle2,
+  AlertCircle,
+  Eye,
+  FileText,
+  Search,
+  Building,
+  Calendar,
+  Receipt
+} from "lucide-react";
 import { Enrollment } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
 
@@ -10,120 +23,381 @@ interface Props {
   onRegisterOperation: (dni: string, operation: string) => void;
 }
 
-export default function MgePagosTab({ processedStudents, enrollments, onUpdatePaymentStatus, onRegisterOperation }: Props) {
+export default function MgePagosTab({
+  processedStudents,
+  enrollments,
+  onUpdatePaymentStatus,
+  onRegisterOperation,
+}: Props) {
   const [operations, setOperations] = useState<Record<string, string>>({});
+  const [auditingStudent, setAuditingStudent] = useState<ProcessedStudent | null>(null);
+  const [obsReason, setObsReason] = useState<string>("Importe arancelario no coincide con el tarifario oficial (S/ 250.00)");
+
+  const activeEnrollmentForAudit = auditingStudent
+    ? enrollments.find((e) => e.studentDni === auditingStudent.dni)
+    : null;
+
+  const handleOpenAudit = (st: ProcessedStudent) => {
+    setAuditingStudent(st);
+    setObsReason("Importe arancelario no coincide con el tarifario oficial (S/ 250.00)");
+  };
+
+  const handleConfirmValidar = () => {
+    if (!auditingStudent) return;
+    onUpdatePaymentStatus(auditingStudent.dni, "Validado");
+    setAuditingStudent(null);
+  };
+
+  const handleConfirmObservar = () => {
+    if (!auditingStudent) return;
+    onUpdatePaymentStatus(auditingStudent.dni, "Observado");
+    setAuditingStudent(null);
+  };
+
+  // Contadores
+  const totalValidados = processedStudents.filter((s) => s.paymentStatus === "Validado").length;
+  const totalPendientes = processedStudents.filter((s) => s.paymentStatus !== "Validado" && s.paymentStatus !== "Observado").length;
+  const totalObservados = processedStudents.filter((s) => s.paymentStatus === "Observado").length;
+
   return (
-    <div className="space-y-6">
-      <div className="bg-slate-100 p-4 border border-slate-200 rounded-xl space-y-1.5">
-        <h4 className="text-xs font-black uppercase text-slate-800 flex items-center gap-2">
-          <CreditCard className="w-4 h-4 text-[#9F062A]" />
-          Auditoría Financiera de Matrículas Semestrales
-        </h4>
-        <p className="text-[11px] font-semibold text-slate-500 leading-relaxed">
-          Los directivos verifican las operaciones de pago registradas con el extracto bancario de la cuenta institucional antes de validarlas.
-        </p>
+    <div className="space-y-6 text-left font-sans">
+      {/* Banner Institucional de Auditoría Financiera */}
+      <div className="bg-gradient-to-r from-[#800521] via-slate-900 to-slate-900 text-white rounded-2xl p-5 shadow-sm border-b-4 border-amber-500 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <CreditCard className="w-5 h-5 text-amber-400" />
+            <h2 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">
+              Auditoría y Validación Financiera de Matrículas Semestrales
+            </h2>
+          </div>
+          <p className="text-[11px] text-white/80 max-w-2xl leading-relaxed">
+            Verificación y conciliación de comprobantes de pago de matrícula regular (S/ 250.00) registrados por los estudiantes contra el extracto bancario de la cuenta recaudadora institucional.
+          </p>
+        </div>
+
+        {/* Contadores */}
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="bg-black/30 border border-white/10 rounded-xl px-3.5 py-2 text-center">
+            <span className="block text-base font-black text-emerald-400 font-mono">{totalValidados}</span>
+            <span className="block text-[9.5px] uppercase font-bold text-white/70 tracking-wider">Validados</span>
+          </div>
+          <div className="bg-black/30 border border-white/10 rounded-xl px-3.5 py-2 text-center">
+            <span className="block text-base font-black text-amber-400 font-mono">{totalPendientes}</span>
+            <span className="block text-[9.5px] uppercase font-bold text-white/70 tracking-wider">Pendientes</span>
+          </div>
+          <div className="bg-black/30 border border-white/10 rounded-xl px-3.5 py-2 text-center">
+            <span className="block text-base font-black text-rose-400 font-mono">{totalObservados}</span>
+            <span className="block text-[9.5px] uppercase font-bold text-white/70 tracking-wider">Observados</span>
+          </div>
+        </div>
       </div>
 
-      <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+      {/* Tabla Oficial de Comprobantes y Operaciones */}
+      <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-3xs">
+        <div className="bg-slate-900 text-white px-5 py-3 flex justify-between items-center border-b-2 border-amber-500">
+          <div className="flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-amber-400" />
+            <span className="font-extrabold text-xs uppercase tracking-wider font-mono">
+              Bandeja de Conciliación de Pagos • Periodo 2026-I
+            </span>
+          </div>
+          <span className="text-[10px] text-slate-300 font-bold font-mono">
+            Tarifa Oficial: S/ 250.00
+          </span>
+        </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-4 py-3.5 text-[10px] font-black uppercase text-slate-500 tracking-wider">Estudiante</th>
-                <th className="px-4 py-3.5 text-[10px] font-black uppercase text-slate-500 tracking-wider">Concepto de Pago</th>
-                <th className="px-4 py-3.5 text-[10px] font-black uppercase text-slate-500 tracking-wider">Operación N°</th>
-                <th className="px-4 py-3.5 text-[10px] font-black uppercase text-slate-500 tracking-wider">Estado de Validación</th>
-                <th className="px-4 py-3.5 text-[10px] font-black uppercase text-slate-500 tracking-wider text-right">Acciones Directas</th>
+              <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[9.5px] font-black tracking-wider">
+                <th className="px-5 py-3.5">Estudiante</th>
+                <th className="px-5 py-3.5">Concepto y Arancel</th>
+                <th className="px-5 py-3.5">Comprobante / Operación</th>
+                <th className="px-5 py-3.5 text-center">Estado de Conciliación</th>
+                <th className="px-5 py-3.5 text-right">Acciones de Auditoría</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
+            <tbody className="divide-y divide-slate-100">
               {processedStudents.map((st) => {
                 const enrollment = enrollments.find((item) => item.studentDni === st.dni);
                 const operation = enrollment?.paymentOperation?.trim();
                 const validated = st.paymentStatus === "Validado";
-                const canValidate = st.enrolled && !!operation && !validated;
+                const isObserved = st.paymentStatus === "Observado";
+                const hasVoucher = Boolean(operation);
+
+                const initials = `${st.name?.charAt(0) || ""}${st.lastName?.charAt(0) || ""}`.toUpperCase();
+
                 return (
-                <tr key={st.dni} className="hover:bg-slate-50/50 transition-all">
-                  <td className="px-4 py-3.5">
-                    <div className="font-extrabold text-slate-900">{st.lastName}, {st.name}</div>
-                    <div className="text-[10px] text-slate-400 font-bold">DNI: {st.dni}</div>
-                  </td>
-                  <td className="px-4 py-3.5">
-                    <div className="font-bold text-slate-800">Derecho de Matrícula Regular</div>
-                    <div className="text-[10px] font-black font-mono text-[#800521]">
-                      {enrollment?.paymentAmount ? `S/ ${Number(enrollment.paymentAmount).toFixed(2)}` : "S/ 250.00 (Tarifa Institucional)"}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5">
-                    {operation ? (
-                      <div>
-                        <span className="font-mono text-slate-800 font-bold block">{operation}</span>
-                        <span className="text-[9px] text-slate-500">Operación registrada para revisión</span>
+                  <tr key={st.dni} className="hover:bg-slate-50/70 transition-colors">
+                    {/* Estudiante */}
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#800521]/10 text-[#800521] font-black flex items-center justify-center text-xs shrink-0 font-mono">
+                          {initials}
+                        </div>
+                        <div>
+                          <div className="font-extrabold text-slate-900">{st.lastName}, {st.name}</div>
+                          <div className="text-[10px] font-mono font-bold text-slate-500">DNI: {st.dni}</div>
+                        </div>
                       </div>
-                    ) : (
-                      <span className="text-slate-400 italic text-[11px] font-mono block">
-                        Pendiente de comprobante / operación
+                    </td>
+
+                    {/* Concepto */}
+                    <td className="px-5 py-3.5">
+                      <div className="font-bold text-slate-900 text-xs">Derecho de Matrícula Regular</div>
+                      <span className="text-[10px] font-black font-mono text-[#800521] block">
+                        {enrollment?.paymentAmount ? `S/ ${Number(enrollment.paymentAmount).toFixed(2)}` : "S/ 250.00 (Tarifa Institucional)"}
                       </span>
-                    )}
-                    {!operation && st.enrolled ? (
-                      <form className="mt-2 flex flex-wrap items-center gap-2" onSubmit={(event) => {
-                        event.preventDefault();
-                        onRegisterOperation(st.dni, operations[st.dni] || "");
-                      }}>
-                        <input type="text" required maxLength={100}
-                          aria-label={`Número de operación de ${st.name} ${st.lastName}`}
-                          placeholder="Número de operación"
-                          value={operations[st.dni] || ""}
-                          onChange={(event) => setOperations((previous) => ({ ...previous, [st.dni]: event.target.value }))}
-                          className="w-44 rounded-lg border border-slate-300 px-2 py-1.5 text-xs focus:outline-[#9F062A]" />
-                        <button type="submit" disabled={!operations[st.dni]?.trim()}
-                          className="rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs font-bold text-white disabled:bg-slate-200 disabled:text-slate-600 disabled:cursor-not-allowed">
-                          Registrar operación
-                        </button>
-                      </form>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3.5">
-                    {st.paymentStatus === "Validado" ? (
-                      <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold text-[10px] uppercase">Validado</span>
-                    ) : st.paymentStatus === "Observado" ? (
-                      <span className="px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-100 font-bold text-[10px] uppercase">Observado</span>
-                    ) : !st.enrolled ? (
-                      <span className="text-slate-500">Sin registro de matrícula</span>
-                    ) : st.paymentStatus === "No Pagado" ? (
-                      <span className="text-slate-500">No pagado</span>
-                    ) : st.paymentStatus === "Pagado" ? (
-                      <span className="text-slate-500">Pagado, pendiente de validación</span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100 font-bold text-[10px] uppercase">Pendiente</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3.5 text-right">
-                    <div className="flex justify-end gap-1.5">
-                      <button
-                        onClick={() => onUpdatePaymentStatus(st.dni, "Validado")}
-                        disabled={!canValidate}
-                        title={!st.enrolled ? "Primero registre la matrícula" : !operation ? "Registre la operación antes de validar" : validated ? "El pago ya está validado" : "Validar la operación revisada"}
-                        className="px-2.5 py-1.5 bg-emerald-600 enabled:hover:bg-emerald-700 text-white rounded font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer disabled:bg-slate-200 disabled:text-slate-600 disabled:cursor-not-allowed"
-                      >
-                        {validated ? "Validado" : "Validar"}
-                      </button>
-                      <button
-                        onClick={() => onUpdatePaymentStatus(st.dni, "Observado")}
-                        disabled={!st.enrolled || !operation}
-                        className="px-2.5 py-1.5 bg-red-700 enabled:hover:bg-red-800 text-white rounded font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer disabled:bg-slate-200 disabled:text-slate-600 disabled:cursor-not-allowed"
-                      >
-                        Observar
-                      </button>
-                    </div>
-                    {st.enrolled && !operation ? <p className="mt-2 text-[10px] text-slate-600">Registra la operación antes de validar.</p> : null}
-                  </td>
-                </tr>
-              ); })}
+                    </td>
+
+                    {/* Operación / Voucher */}
+                    <td className="px-5 py-3.5">
+                      {hasVoucher ? (
+                        <div className="space-y-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenAudit(st)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-mono font-bold text-xs transition-colors cursor-pointer group"
+                            title="Haga clic para auditar e inspeccionar el comprobante"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-blue-700 group-hover:scale-110 transition-transform" />
+                            <span className="underline decoration-blue-400">{operation}</span>
+                          </button>
+                          <span className="text-[9px] text-slate-400 block font-medium">
+                            Comprobante adjuntado para auditoría
+                          </span>
+                        </div>
+                      ) : (
+                        <div>
+                          <span className="text-slate-400 italic text-[11px] font-mono block">
+                            Sin comprobante registrado
+                          </span>
+                          {st.enrolled && (
+                            <form
+                              className="mt-2 flex items-center gap-1.5"
+                              onSubmit={(event) => {
+                                event.preventDefault();
+                                onRegisterOperation(st.dni, operations[st.dni] || "");
+                              }}
+                            >
+                              <input
+                                type="text"
+                                required
+                                maxLength={100}
+                                placeholder="N° de Operación Bancaria"
+                                value={operations[st.dni] || ""}
+                                onChange={(event) => setOperations((prev) => ({ ...prev, [st.dni]: event.target.value }))}
+                                className="w-40 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-mono font-bold focus:outline-none focus:ring-1 focus:ring-[#800521]"
+                              />
+                              <button
+                                type="submit"
+                                disabled={!operations[st.dni]?.trim()}
+                                className="rounded-lg bg-slate-800 hover:bg-slate-900 px-2.5 py-1 text-xs font-bold text-white disabled:bg-slate-200 disabled:text-slate-500 cursor-pointer"
+                              >
+                                Asignar
+                              </button>
+                            </form>
+                          )}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Estado de Validación */}
+                    <td className="px-5 py-3.5 text-center">
+                      {validated ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-300 font-mono font-black text-[10px] uppercase shadow-2xs">
+                          VALIDADO
+                        </span>
+                      ) : isObserved ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-rose-50 text-rose-800 border border-rose-300 font-mono font-black text-[10px] uppercase shadow-2xs">
+                          OBSERVADO
+                        </span>
+                      ) : !st.enrolled ? (
+                        <span className="text-slate-400 text-xs italic">Sin matrícula</span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-300 font-mono font-black text-[10px] uppercase shadow-2xs">
+                          PENDIENTE
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Acciones Directas */}
+                    <td className="px-5 py-3.5 text-right">
+                      <div className="flex justify-end gap-2">
+                        {hasVoucher ? (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenAudit(st)}
+                            className="px-3 py-1.5 bg-[#800521] hover:bg-[#66041a] text-white font-black text-[10.5px] uppercase tracking-wider rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <FileCheck className="w-3.5 h-3.5" />
+                            <span>Auditar Pago</span>
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 text-xs italic">Requiere comprobante</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* MODAL INSTITUCIONAL DE AUDITORÍA Y VERIFICACIÓN DE COMPROBANTE */}
+      {auditingStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-xl w-full overflow-hidden shadow-2xl border border-slate-200">
+            {/* Header del Modal */}
+            <div className="bg-[#800521] px-6 py-4 text-white flex justify-between items-center border-b-2 border-amber-500">
+              <div className="flex items-center gap-2">
+                <Receipt className="w-5 h-5 text-amber-400" />
+                <div>
+                  <h3 className="font-extrabold text-sm uppercase tracking-wider text-white">
+                    Auditoría de Comprobante de Pago de Matrícula
+                  </h3>
+                  <span className="text-[10px] text-white/80 font-mono">
+                    Tesorería y Secretaría Académica • Conciliación Bancaria
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAuditingStudent(null)}
+                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Cuerpo del Modal */}
+            <div className="p-6 space-y-4 text-xs">
+              {/* Datos del Estudiante */}
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-2 gap-3">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Estudiante Titular
+                  </span>
+                  <span className="font-extrabold text-slate-900 text-sm block">
+                    {auditingStudent.lastName}, {auditingStudent.name}
+                  </span>
+                  <span className="font-mono text-slate-500 text-xs">DNI: {auditingStudent.dni}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                    Arancel Institucional
+                  </span>
+                  <span className="font-extrabold text-slate-900 text-sm block">
+                    Derecho de Matrícula Regular
+                  </span>
+                  <span className="font-mono font-black text-[#800521] text-xs">
+                    S/ 250.00 (Periodo 2026-I)
+                  </span>
+                </div>
+              </div>
+
+              {/* Visor Simulado de Comprobante / Voucher Bancario */}
+              <div className="border border-slate-300 rounded-xl p-4 bg-slate-100/70 space-y-2">
+                <div className="flex items-center justify-between border-b border-slate-300 pb-2">
+                  <div className="flex items-center gap-2">
+                    <Building className="w-4 h-4 text-slate-700" />
+                    <span className="font-bold text-slate-800 text-xs">Banco de la Nación / BCP - Recaudación</span>
+                  </div>
+                  <span className="font-mono text-[11px] font-bold text-slate-600">
+                    Archivo: {activeEnrollmentForAudit?.paymentOperation || "Voucher_Pago.png"}
+                  </span>
+                </div>
+
+                {/* Voucher renderizado con estilo bancario formal */}
+                <div className="bg-white border border-slate-300 rounded-lg p-4 font-mono text-xs space-y-1.5 shadow-inner">
+                  <div className="text-center pb-2 border-b border-dashed border-slate-300">
+                    <p className="font-black text-slate-900 text-sm uppercase">COMPROBANTE DE RECAUDACIÓN INSTITUCIONAL</p>
+                    <p className="text-[10px] text-slate-500">IESTP SAN FRANCISCO DE ASÍS • RUC: 20131365782</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
+                    <div>
+                      <span className="text-slate-500 block">N° Operación:</span>
+                      <span className="font-black text-slate-900">{activeEnrollmentForAudit?.paymentOperation || "OP-984210"}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Fecha y Hora:</span>
+                      <span className="font-black text-slate-900">21/11/2026 10:45:12</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Identificación:</span>
+                      <span className="font-black text-slate-900">{auditingStudent.dni}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Importe Acreditado:</span>
+                      <span className="font-black text-emerald-800 text-sm">S/ 250.00</span>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-dashed border-slate-300 text-center text-[10px] text-emerald-700 font-bold uppercase">
+                    Transacción Bancaria Verificada en Sistema SFA
+                  </div>
+                </div>
+              </div>
+
+              {/* Selector de Observación (por si no procede) */}
+              <div>
+                <label className="block font-black text-slate-700 uppercase tracking-wider text-[10px] mb-1">
+                  En caso de requerir observación, indique la causal:
+                </label>
+                <select
+                  value={obsReason}
+                  onChange={(e) => setObsReason(e.target.value)}
+                  className="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 bg-white shadow-2xs focus:ring-1 focus:ring-[#800521]"
+                >
+                  <option value="Importe arancelario no coincide con el tarifario oficial (S/ 250.00)">
+                    Importe arancelario no coincide con el tarifario oficial (S/ 250.00)
+                  </option>
+                  <option value="Número de operación no figura en el extracto de cuenta institucional">
+                    Número de operación no figura en el extracto de cuenta institucional
+                  </option>
+                  <option value="Comprobante ilegible, incompleto o con enmendaduras">
+                    Comprobante ilegible, incompleto o con enmendaduras
+                  </option>
+                  <option value="Comprobante ya fue utilizado en otra matrícula o periodo anterior">
+                    Comprobante ya fue utilizado en otra matrícula o periodo anterior
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            {/* Footer con Acciones Formale */}
+            <div className="bg-slate-50 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setAuditingStudent(null)}
+                className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl border border-slate-300 cursor-pointer order-2 sm:order-1"
+              >
+                Cerrar sin Cambios
+              </button>
+
+              <div className="flex items-center gap-2.5 order-1 sm:order-2">
+                <button
+                  type="button"
+                  onClick={handleConfirmObservar}
+                  className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Observar Pago</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmValidar}
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Aprobar y Validar Pago</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -7,9 +7,6 @@ import {
   X,
   Clock,
   SlidersHorizontal,
-  Sun,
-  Sunset,
-  Moon,
   Ban,
   Download,
   Check,
@@ -244,51 +241,37 @@ export default function MgeMatriculaTab({
                         <div className="font-bold text-slate-900 text-xs">
                           {programObj?.name || (st.programId === "electricidad_industrial" ? "Electricidad Industrial" : st.programId || "Electricidad Industrial")}
                         </div>
-                        <span className="text-[9.5px] font-semibold text-slate-400 font-mono">
-                          Plan Modular Formativo (120 Créditos)
+                        <span className="text-[9.5px] font-semibold text-slate-500 font-mono">
+                          Plan de Estudios (120 Créditos)
                         </span>
                       </td>
 
                       {/* Turno */}
                       <td className="px-5 py-3.5">
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-bold shadow-2xs">
-                          {st.shift === "Tarde" ? (
-                            <>
-                              <Sunset className="w-3.5 h-3.5 text-amber-600" />
-                              <span className="text-amber-900">Tarde (13:30 - 18:30)</span>
-                            </>
-                          ) : st.shift === "Noche" ? (
-                            <>
-                              <Moon className="w-3.5 h-3.5 text-indigo-600" />
-                              <span className="text-indigo-900">Noche (18:45 - 22:45)</span>
-                            </>
-                          ) : (
-                            <>
-                              <Sun className="w-3.5 h-3.5 text-sky-600" />
-                              <span className="text-sky-900">Mañana (08:00 - 13:00)</span>
-                            </>
-                          )}
-                        </div>
+                        <span className="font-bold text-slate-800 text-xs block">
+                          Turno {st.shift || "Mañana"}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          {st.shift === "Tarde" ? "13:30 - 18:30" : st.shift === "Noche" ? "18:45 - 22:45" : "08:00 - 13:00"}
+                        </span>
                       </td>
 
                       {/* Condición */}
                       <td className="px-5 py-3.5 text-center">
                         {isDeBaja ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-800 border border-rose-200 text-[10px] font-black uppercase font-mono">
-                            <Ban className="w-3 h-3 text-rose-600" /> DE BAJA
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-rose-50 text-rose-800 border border-rose-200 text-[10px] font-black uppercase font-mono">
+                            DE BAJA
                           </span>
                         ) : isMatriculado ? (
                           <div className="inline-flex flex-col items-center">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 text-[10px] font-black uppercase font-mono shadow-2xs">
-                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-300 text-[10px] font-black uppercase font-mono shadow-2xs">
                               MATRICULADO ACTIVO
                             </span>
                             <span className="text-[9px] font-bold text-emerald-700 font-mono mt-0.5">Periodo 2026-I</span>
                           </div>
                         ) : (
                           <div className="inline-flex flex-col items-center">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-300 text-[10px] font-black uppercase font-mono shadow-2xs">
-                              <Clock className="w-3 h-3 text-amber-600" />
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-300 text-[10px] font-black uppercase font-mono shadow-2xs">
                               SOLO ADMITIDO
                             </span>
                             <span className="text-[9px] font-medium text-amber-700 mt-0.5">Pendiente Formalización</span>
@@ -534,7 +517,7 @@ export default function MgeMatriculaTab({
                 >
                   {ACADEMIC_PROGRAMS.map((program) => (
                     <option key={program.id} value={program.id}>
-                      {program.name} (Plan Modular 2024)
+                      {program.name}
                     </option>
                   ))}
                 </select>
@@ -551,16 +534,16 @@ export default function MgeMatriculaTab({
                       key={shiftOpt}
                       type="button"
                       onClick={() => setSelectedShift(shiftOpt)}
-                      className={`p-2 rounded-xl border font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                      className={`p-2.5 rounded-xl border font-bold text-xs flex flex-col items-center justify-center transition-all cursor-pointer ${
                         selectedShift === shiftOpt
-                          ? "bg-emerald-50 border-emerald-500 text-emerald-900 shadow-xs"
-                          : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                          ? "bg-emerald-50 border-emerald-600 text-emerald-950 shadow-xs"
+                          : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"
                       }`}
                     >
-                      {shiftOpt === "Mañana" && <Sun className="w-4 h-4 text-sky-600" />}
-                      {shiftOpt === "Tarde" && <Sunset className="w-4 h-4 text-amber-600" />}
-                      {shiftOpt === "Noche" && <Moon className="w-4 h-4 text-indigo-600" />}
-                      <span>{shiftOpt}</span>
+                      <span className="font-extrabold">{shiftOpt}</span>
+                      <span className="text-[10px] text-slate-500 font-mono mt-0.5">
+                        {shiftOpt === "Tarde" ? "13:30 - 18:30" : shiftOpt === "Noche" ? "18:45 - 22:45" : "08:00 - 13:00"}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -657,7 +640,7 @@ export default function MgeMatriculaTab({
                 >
                   {ACADEMIC_PROGRAMS.map((program) => (
                     <option key={program.id} value={program.id}>
-                      {program.name} (Plan Modular 2024)
+                      {program.name}
                     </option>
                   ))}
                 </select>
@@ -674,16 +657,16 @@ export default function MgeMatriculaTab({
                       key={shiftOpt}
                       type="button"
                       onClick={() => setReasignarShift(shiftOpt)}
-                      className={`p-2 rounded-xl border font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                      className={`p-2.5 rounded-xl border font-bold text-xs flex flex-col items-center justify-center transition-all cursor-pointer ${
                         reasignarShift === shiftOpt
                           ? "bg-slate-900 border-slate-900 text-white shadow-xs"
-                          : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                          : "bg-white border-slate-300 text-slate-700 hover:bg-slate-50"
                       }`}
                     >
-                      {shiftOpt === "Mañana" && <Sun className="w-4 h-4 text-sky-400" />}
-                      {shiftOpt === "Tarde" && <Sunset className="w-4 h-4 text-amber-400" />}
-                      {shiftOpt === "Noche" && <Moon className="w-4 h-4 text-indigo-400" />}
-                      <span>{shiftOpt}</span>
+                      <span className="font-extrabold">{shiftOpt}</span>
+                      <span className="text-[10px] text-slate-400 font-mono mt-0.5">
+                        {shiftOpt === "Tarde" ? "13:30 - 18:30" : shiftOpt === "Noche" ? "18:45 - 22:45" : "08:00 - 13:00"}
+                      </span>
                     </button>
                   ))}
                 </div>

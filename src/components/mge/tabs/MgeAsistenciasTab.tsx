@@ -1,5 +1,6 @@
-import React from "react";
-import { CheckSquare, Loader2 } from "lucide-react";
+import React, { useMemo } from "react";
+import { CheckSquare, Loader2, Calendar, Users, Check, AlertCircle, Clock, FileText } from "lucide-react";
+import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { Course, AttendanceRecord } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
 import { academicToday } from "../../../utils/attendance";
@@ -33,16 +34,57 @@ export default function MgeAsistenciasTab({
   onUpdateStudentAttendance,
   onFillAttendanceAll,
 }: Props) {
+  const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
+
+  // Filtrar cursos oficiales consolidados
+  const consolidatedOfficialCourses = useMemo(() => {
+    const seen = new Set<string>();
+    const list: Course[] = [];
+
+    courses.forEach((c) => {
+      if (
+        c.code?.includes("-TEO") ||
+        c.code?.includes("-TAL") ||
+        c.code?.includes("-LAB") ||
+        c.name?.includes("(Teoría)") ||
+        c.name?.includes("(Taller)") ||
+        c.name?.includes("(Laboratorio)")
+      ) {
+        return;
+      }
+      const baseCode = c.code?.trim();
+      if (!baseCode || seen.has(baseCode)) return;
+      seen.add(baseCode);
+      list.push(c);
+    });
+
+    return list.sort((a, b) => (a.code || "").localeCompare(b.code || ""));
+  }, [courses]);
+
   const activeAttendanceRecord = attendance.find(
     (att) => att.courseId === selectedAttendanceCourseId && att.date === selectedAttendanceDate
   );
 
-  const course = courses.find((c) => c.id === selectedAttendanceCourseId);
+  const course = courses.find((c) => c.id === selectedAttendanceCourseId) || consolidatedOfficialCourses[0];
   const studentsInAttendanceCourse = course
     ? processedStudents.filter(
         (s) => s.enrolled && s.academicStatus === "MATRICULADO" && s.programId === (course.careerId || course.career)
       )
     : [];
+
+  // Métricas del día seleccionado
+  const statusCounts = useMemo(() => {
+    const counts = { Presente: 0, Tardanza: 0, Falta: 0, Justificado: 0, Pendiente: 0 };
+    studentsInAttendanceCourse.forEach((st) => {
+      const stStatus = activeAttendanceRecord?.statusMap[st.dni];
+      if (stStatus === "Presente") counts.Presente++;
+      else if (stStatus === "Tardanza") counts.Tardanza++;
+      else if (stStatus === "Falta") counts.Falta++;
+      else if (stStatus === "Justificado") counts.Justificado++;
+      else counts.Pendiente++;
+    });
+    return counts;
+  }, [studentsInAttendanceCourse, activeAttendanceRecord]);
 
   if (loading) {
     return (
@@ -57,61 +99,112 @@ export default function MgeAsistenciasTab({
       </div>
     );
   }
-  if (error) return <div role="alert" className="space-y-3 text-red-700"><p>{error}</p><button type="button" onClick={() => { void onReload(); }} className="rounded-lg border px-3 py-2">Reintentar carga</button></div>;
+
+  if (error) {
+    return (
+      <div role="alert" className="space-y-3 text-red-700 bg-red-50 p-6 rounded-2xl border border-red-200 text-xs">
+        <p className="font-bold">{error}</p>
+        <button
+          type="button"
+          onClick={() => { void onReload(); }}
+          className="rounded-xl bg-red-700 text-white font-bold px-4 py-2 uppercase tracking-wider text-xs"
+        >
+          Reintentar Carga
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 border border-slate-200 rounded-xl">
+    <div className="space-y-6 text-left font-sans">
+      {/* Selector de Asignatura y Fecha */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-5 border border-slate-200 rounded-2xl shadow-3xs">
         <div>
-          <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider block mb-1">
-            1. Curso / Turno Evaluado:
+          <label className="text-[10px] font-black uppercase text-slate-600 tracking-wider block mb-1.5">
+            1. Asignatura Curricular Evaluada
           </label>
           <select
-            aria-label="Curso de asistencia"
             value={selectedAttendanceCourseId}
             onChange={(e) => onCourseChange(e.target.value)}
-            className="w-full p-2 border border-slate-250 bg-white font-bold rounded-lg text-xs"
+            className="w-full p-2.5 border border-slate-300 bg-white font-bold rounded-xl text-xs text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
           >
-            {courses.map((c) => (
-              <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
-            ))}
+            {consolidatedOfficialCourses.map((c) => {
+              const progName =
+                ACADEMIC_PROGRAMS.find((p) => p.id === c.career || p.id === c.careerId)?.name ||
+                (c.code?.startsWith("EIND") ? "Electricidad Industrial" : "Contabilidad");
+              return (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.code}) • {progName}
+                </option>
+              );
+            })}
           </select>
         </div>
 
         <div>
-          <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider block mb-1">
-            2. Fecha Registrada:
+          <label className="text-[10px] font-black uppercase text-slate-600 tracking-wider block mb-1.5">
+            2. Fecha de la Sesión de Clases
           </label>
           <input
-            aria-label="Fecha de asistencia"
             type="date"
             value={selectedAttendanceDate}
             onChange={(e) => onDateChange(e.target.value)}
-            className="w-full p-2 border border-slate-250 bg-white font-bold rounded-lg text-xs"
+            className="w-full p-2.5 border border-slate-300 bg-white font-bold rounded-xl text-xs text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
           />
-          {selectedAttendanceDate > academicToday() ? <p role="status" className="mt-2 text-xs text-amber-800">
-            Fecha futura: estas marcas se guardan, pero se incluirán en los porcentajes de asistencia y riesgo académico cuando llegue esa fecha (hora de Lima).
-          </p> : null}
+          {selectedAttendanceDate > academicToday() ? (
+            <p role="status" className="mt-1.5 text-[10px] font-semibold text-amber-800">
+              Sesión programada a futuro. Las marcas registradas se computarán formalmente en la fecha indicada.
+            </p>
+          ) : null}
         </div>
       </div>
 
-      <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-        <div className="bg-slate-900 text-white px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <span className="text-xs font-black uppercase tracking-wider flex items-center gap-2">
-            <CheckSquare className="w-4 h-4 text-[#9F062A]" />
-            Control de Asistencia del {selectedAttendanceDate}
-          </span>
+      {/* Resumen Métrico de Asistencias del Día */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-3xs">
+          <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-wider block">Matriculados</span>
+          <span className="text-lg font-black text-slate-900 font-mono mt-0.5 block">{studentsInAttendanceCourse.length}</span>
+        </div>
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 shadow-3xs">
+          <span className="text-[9.5px] font-bold text-emerald-800 uppercase tracking-wider block">Presentes</span>
+          <span className="text-lg font-black text-emerald-900 font-mono mt-0.5 block">{statusCounts.Presente}</span>
+        </div>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 shadow-3xs">
+          <span className="text-[9.5px] font-bold text-amber-800 uppercase tracking-wider block">Tardanzas</span>
+          <span className="text-lg font-black text-amber-900 font-mono mt-0.5 block">{statusCounts.Tardanza}</span>
+        </div>
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 shadow-3xs">
+          <span className="text-[9.5px] font-bold text-rose-800 uppercase tracking-wider block">Inasistencias</span>
+          <span className="text-lg font-black text-rose-900 font-mono mt-0.5 block">{statusCounts.Falta}</span>
+        </div>
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 shadow-3xs">
+          <span className="text-[9.5px] font-bold text-blue-800 uppercase tracking-wider block">Justificados</span>
+          <span className="text-lg font-black text-blue-900 font-mono mt-0.5 block">{statusCounts.Justificado}</span>
+        </div>
+      </div>
 
-          <div className="flex gap-2">
+      {/* Tabla Oficial de Control de Asistencias */}
+      <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-3xs">
+        <div className="bg-slate-900 text-white px-5 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b-2 border-amber-500">
+          <div className="flex items-center gap-2">
+            <CheckSquare className="w-4 h-4 text-amber-400" />
+            <span className="font-extrabold text-xs uppercase tracking-wider font-mono">
+              Registro de Asistencia Diaria • Sesión: {selectedAttendanceDate}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => onFillAttendanceAll("Presente")}
-              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] uppercase font-bold cursor-pointer"
+              className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-[10.5px] uppercase font-black tracking-wider transition-all cursor-pointer shadow-xs"
             >
               Marcar Todos Presentes
             </button>
             <button
+              type="button"
               onClick={() => onFillAttendanceAll("Falta")}
-              className="px-2.5 py-1 bg-red-700 hover:bg-red-800 text-white rounded text-[10px] uppercase font-bold cursor-pointer"
+              className="px-3 py-1.5 bg-rose-700 hover:bg-rose-800 text-white rounded-xl text-[10.5px] uppercase font-black tracking-wider transition-all cursor-pointer shadow-xs"
             >
               Marcar Todos Faltas
             </button>
@@ -119,63 +212,101 @@ export default function MgeAsistenciasTab({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-wider">Estudiante</th>
-                <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-wider">DNI</th>
-                <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-wider">Estado de Asistencia</th>
-                <th className="px-4 py-3 text-[10px] font-black uppercase text-slate-500 tracking-wider text-right">Acción de Registro</th>
+              <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[9.5px] font-black tracking-wider">
+                <th className="px-5 py-3.5">Estudiante</th>
+                <th className="px-5 py-3.5">Carrera y Turno</th>
+                <th className="px-5 py-3.5 text-center">Estado Registrado</th>
+                <th className="px-5 py-3.5 text-right">Marcación Institucional</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
+            <tbody className="divide-y divide-slate-100">
               {studentsInAttendanceCourse.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-slate-400 font-extrabold uppercase">
-                    No hay alumnos asignados a la carrera vinculada a esta asignatura curricular.
+                  <td colSpan={4} className="px-5 py-12 text-center text-slate-400 font-extrabold uppercase tracking-wider">
+                    No hay alumnos matriculados en la carrera de esta asignatura ({course?.career || "Electricidad Industrial"}).
                   </td>
                 </tr>
               ) : (
                 studentsInAttendanceCourse.map((st) => {
                   const currentStatus = activeAttendanceRecord?.statusMap[st.dni] || "";
+                  const initials = `${st.name?.charAt(0) || ""}${st.lastName?.charAt(0) || ""}`.toUpperCase();
+
                   return (
-                    <tr key={st.dni} className="hover:bg-slate-50/50">
-                      <td className="px-4 py-3 font-extrabold text-slate-900">{st.lastName}, {st.name}</td>
-                      <td className="px-4 py-3 font-bold font-mono text-slate-700">{st.dni}</td>
-                      <td className="px-4 py-3">
+                    <tr key={st.dni} className="hover:bg-slate-50/60 transition-colors">
+                      {/* Estudiante */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-[#800521]/10 text-[#800521] font-black flex items-center justify-center text-xs shrink-0 font-mono">
+                            {initials}
+                          </div>
+                          <div>
+                            <div className="font-extrabold text-slate-900">{st.lastName}, {st.name}</div>
+                            <div className="text-[10px] font-mono font-bold text-slate-500">DNI: {st.dni}</div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Carrera y Turno */}
+                      <td className="px-5 py-3.5">
+                        <div className="font-bold text-slate-800 text-xs">
+                          {ACADEMIC_PROGRAMS.find((p) => p.id === st.programId)?.name || st.programId}
+                        </div>
+                        <span className="text-[10px] text-slate-500 font-mono">Turno {st.shift || "Mañana"}</span>
+                      </td>
+
+                      {/* Estado Registrado */}
+                      <td className="px-5 py-3.5 text-center">
                         {!currentStatus ? (
-                          <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-medium italic">
-                            Pendiente de registro
+                          <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-500 text-[10px] font-mono uppercase">
+                            Pendiente
                           </span>
-                        ) : null}
-                        {currentStatus === "Presente" && (
-                          <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-black uppercase text-[9.5px]">Presente</span>
-                        )}
-                        {currentStatus === "Tardanza" && (
-                          <span className="px-2 py-0.5 rounded bg-yellow-50 text-yellow-700 font-black uppercase text-[9.5px]">Tardanza</span>
-                        )}
-                        {currentStatus === "Falta" && (
-                          <span className="px-2 py-0.5 rounded bg-red-50 text-red-700 font-black uppercase text-[9.5px]">Falta de Asistencia</span>
-                        )}
-                        {currentStatus === "Justificado" && (
-                          <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-black uppercase text-[9.5px]">Justificado</span>
+                        ) : currentStatus === "Presente" ? (
+                          <span className="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-300 font-mono font-black text-[10px] uppercase shadow-2xs">
+                            Presente
+                          </span>
+                        ) : currentStatus === "Tardanza" ? (
+                          <span className="px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-300 font-mono font-black text-[10px] uppercase shadow-2xs">
+                            Tardanza
+                          </span>
+                        ) : currentStatus === "Falta" ? (
+                          <span className="px-2.5 py-1 rounded-md bg-rose-50 text-rose-800 border border-rose-300 font-mono font-black text-[10px] uppercase shadow-2xs">
+                            Inasistencia
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-800 border border-blue-300 font-mono font-black text-[10px] uppercase shadow-2xs">
+                            Justificado
+                          </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-1.5">
-                          {(["Presente", "Tardanza", "Falta", "Justificado"] as const).map((opt) => (
-                            <button
-                              key={opt}
-                              onClick={() => onUpdateStudentAttendance(st.dni, opt)}
-                              className={`px-2 py-1 text-[9px] font-black rounded uppercase transition-all cursor-pointer ${
-                                currentStatus === opt
-                                  ? "bg-slate-800 text-white"
-                                  : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-                              }`}
-                            >
-                              {opt}
-                            </button>
-                          ))}
+
+                      {/* Marcación Segmentada */}
+                      <td className="px-5 py-3.5 text-right">
+                        <div className="inline-flex rounded-xl p-1 bg-slate-100 border border-slate-200 gap-1">
+                          {(["Presente", "Tardanza", "Falta", "Justificado"] as const).map((opt) => {
+                            const isSelected = currentStatus === opt;
+                            return (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => onUpdateStudentAttendance(st.dni, opt)}
+                                className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                  isSelected
+                                    ? opt === "Presente"
+                                      ? "bg-emerald-700 text-white shadow-xs"
+                                      : opt === "Tardanza"
+                                      ? "bg-amber-600 text-white shadow-xs"
+                                      : opt === "Falta"
+                                      ? "bg-rose-700 text-white shadow-xs"
+                                      : "bg-blue-700 text-white shadow-xs"
+                                    : "text-slate-600 hover:bg-slate-200/80 hover:text-slate-900"
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            );
+                          })}
                         </div>
                       </td>
                     </tr>
