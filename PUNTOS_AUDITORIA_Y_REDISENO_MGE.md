@@ -120,6 +120,22 @@
 
 ---
 
+### Punto 12: Formato Oficial e Identidad Gráfica Institucional en el PDF de Historial Académico
+* **Problema:**
+  - El PDF de historial académico descargado era un documento plano en blanco y negro, sin logotipo institucional, sin franjas ni tipografía del IESTP SFA, y sin firmas ni sellos institucionales.
+* **Solución Institucional:**
+  - Rediseño completo de `historyPdf.ts` adoptando el estándar oficial de `matriculaPdf.ts`:
+    - **Cabecera Institucional:** Franja superior en borgoña institucional (`#800521`, 27mm) con línea de realce ámbar (`#D97706`), contenedor blanco y renderizado nítido del **Logotipo Oficial SFA** en Base64.
+    - **Membrete del Estado:** "REPÚBLICA DEL PERÚ • MINISTERIO DE EDUCACIÓN", denominación completa del "IESTP SAN FRANCISCO DE ASÍS" y resoluciones ministeriales oficiales.
+    - **Distintivo Lateral:** Badge oficial de Secretaría Académica con folio y validación.
+    - **Ficha del Titular:** Tarjeta estructurada con datos del alumno (DNI, código modular, carrera técnica oficial, plan formativo de 120 créditos y condición académica).
+    - **3 Tarjetas Mini-KPI:** Resumen de créditos acreditados (`X / 120 cr.`), promedio ponderado acumulado y asignaturas aprobadas.
+    - **Tabla Oficial:** Encabezados en *dark slate* (`#0F172A`), filas alternadas, códigos en negrita y columna de estado formal (`APROBADO`, `DESAPROBADO`, `PENDIENTE`).
+    - **Firmas y Sello Vectorial:** Firma digital de la Secretaria General Académica (Mg. Carmen R. Valdivia Morán), Directora General (Dra. Elizabeth Chávez Paredes) y el Sello Institucional Circular Oficial del IESTP San Francisco de Asís.
+    - **Pie de Página:** Barra ámbar, leyenda de validez oficial y paginado dinámico `Página X de Y`.
+
+---
+
 ## 2. MATRIZ DE ARCHIVOS AFECTADOS
 
 1. `SFA-Frontend/src/components/mge/MgeDashboard.tsx`: Corrección de `activePeriodName` a `Periodo Académico 2026-I` y renderizado directo de expedientes.
@@ -128,6 +144,7 @@
 4. `SFA-Frontend/src/components/mge/tabs/MgeNotasTab.tsx`: Depuración del selector de cursos con filtros de carrera/ciclo y bloqueo de input libre de notas mediante modal de Rectificación de Acta.
 5. `SFA-Frontend/src/components/mge/tabs/MgeAsistenciasTab.tsx`: Rediseño con métricas de asistencia y botones segmentados.
 6. `SFA-Frontend/src/components/mge/tabs/MgeHistorialTab.tsx`: Consolidación unificada de subcomponentes (cero duplicados), 4 KPIs curriculares, filtros por ciclo (I a VI), selector estilizado y tabla institucional.
-7. `SFA-Frontend/src/hooks/mge/useGraduationsManager.ts` y `CertificateDocuments.tsx`: Fallback resiliente y visor criptográfico SHA-256.
-8. `SFA-Frontend/src/components/mge/tabs/MgeReportesTab.tsx`: Consolidado institucional y exportación Excel/CSV.
-9. `SFA-Frontend/src/components/mge/tabs/MgeRiesgoIaTab.tsx`: Panel institucional de riesgo con auditoría y derivación a tutoría.
+7. `SFA-Frontend/src/utils/historyPdf.ts`: Generador oficial de PDF con membrete ministerial, logo SFA, firmas y sello circular oficial.
+8. `SFA-Frontend/src/hooks/mge/useGraduationsManager.ts` y `CertificateDocuments.tsx`: Fallback resiliente y visor criptográfico SHA-256.
+9. `SFA-Frontend/src/components/mge/tabs/MgeReportesTab.tsx`: Consolidado institucional y exportación Excel/CSV.
+10. `SFA-Frontend/src/components/mge/tabs/MgeRiesgoIaTab.tsx`: Panel institucional de riesgo con auditoría y derivación a tutoría.
