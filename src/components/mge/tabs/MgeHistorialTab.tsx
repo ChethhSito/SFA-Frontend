@@ -129,6 +129,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
   const [downloading, setDownloading] = useState(false);
   const [showSimulateCiclo1Modal, setShowSimulateCiclo1Modal] = useState(false);
   const [cycleFilter, setCycleFilter] = useState<number | "ALL">("ALL");
+  const [cycle1SimState, setCycle1SimState] = useState(0);
 
   const student = processedStudents.find((row) => row.dni === selectedHistoryDni);
 
@@ -403,15 +404,30 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
 
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setShowSimulateCiclo1Modal(true)}
-                  className="px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border bg-[#800521] hover:bg-[#9F062A] text-white border-red-700/60 cursor-pointer flex items-center gap-2"
-                  title="Consolidar y cerrar las actas del Ciclo I para promover al estudiante a Ciclo II"
-                >
-                  <Award className="w-4 h-4 text-amber-300" />
-                  Simular Cierre de Ciclo I
-                </button>
+                {(() => {
+                  const isCycle1Done = typeof window !== "undefined" && Boolean(
+                    localStorage.getItem(`sfa_student_promoted_cycle2_${student?.dni}`) === "true" ||
+                    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+                    localStorage.getItem(`sfa_simulated_cycle1_${student?.dni}`) ||
+                    localStorage.getItem("sfa_simulated_cycle1_74859612") ||
+                    localStorage.getItem("sfa_simulated_cycle1")
+                  );
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setShowSimulateCiclo1Modal(true)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border cursor-pointer flex items-center gap-2 ${
+                        isCycle1Done
+                          ? "bg-emerald-800 hover:bg-emerald-700 text-white border-emerald-600/70"
+                          : "bg-[#800521] hover:bg-[#9F062A] text-white border-red-700/60"
+                      }`}
+                      title="Consolidar y cerrar las actas del Ciclo I para promover al estudiante a Ciclo II"
+                    >
+                      {isCycle1Done ? <CheckCircle2 className="w-4 h-4 text-emerald-300" /> : <Award className="w-4 h-4 text-amber-300" />}
+                      {isCycle1Done ? "Ciclo I Culminado (Re-simular)" : "Simular Cierre de Ciclo I"}
+                    </button>
+                  );
+                })()}
                 <button
                   type="button"
                   onClick={toggleStudentPromotion}
@@ -693,6 +709,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
           assignments={assignments}
           onSimulated={() => {
             setPromotedState((prev) => ({ ...prev }));
+            setCycle1SimState((prev) => prev + 1);
           }}
         />
       )}

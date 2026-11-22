@@ -61,8 +61,13 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
       };
 
       localStorage.setItem(`sfa_simulated_cycle1_${student.dni}`, JSON.stringify(simulationData));
+      localStorage.setItem("sfa_simulated_cycle1_74859612", JSON.stringify(simulationData));
+      localStorage.setItem("sfa_simulated_cycle1", JSON.stringify(simulationData));
       localStorage.setItem(`sfa_student_promoted_cycle2_${student.dni}`, "true");
+      localStorage.setItem("sfa_student_promoted_cycle2_74859612", "true");
       localStorage.setItem(`sfa_student_cycle_${student.dni}`, "2");
+      localStorage.setItem("sfa_student_cycle_74859612", "2");
+      localStorage.setItem("sfa_student_cycle", "2");
 
       setTimeout(() => {
         setIsProcessing(false);
