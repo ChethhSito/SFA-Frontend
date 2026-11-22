@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import { CheckSquare, Loader2, Calendar, Users, Check, AlertCircle, Clock, FileText } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { CheckSquare, Loader2, Calendar, Users, Check, AlertCircle, Clock, FileText, Filter } from "lucide-react";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { Course, AttendanceRecord } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
@@ -36,6 +36,10 @@ export default function MgeAsistenciasTab({
 }: Props) {
   const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
 
+  // Filtros de Carrera y Ciclo
+  const [filterCareer, setFilterCareer] = useState<string>("electricidad_industrial");
+  const [filterCycle, setFilterCycle] = useState<string>("1");
+
   // Filtrar cursos oficiales consolidados
   const consolidatedOfficialCourses = useMemo(() => {
     const seen = new Set<string>();
@@ -58,14 +62,40 @@ export default function MgeAsistenciasTab({
       list.push(c);
     });
 
-    return list.sort((a, b) => (a.code || "").localeCompare(b.code || ""));
+    return list;
   }, [courses]);
+
+  // Cursos filtrados
+  const filteredCourses = useMemo(() => {
+    return consolidatedOfficialCourses.filter((c) => {
+      const isElectricidad =
+        c.code?.startsWith("EIND") ||
+        c.careerId === "electricidad_industrial" ||
+        c.career === "electricidad_industrial" ||
+        c.careerId === "electronica";
+      const isContabilidad =
+        c.code?.startsWith("CONT") ||
+        c.code?.startsWith("CNT") ||
+        c.careerId === "contabilidad" ||
+        c.career === "contabilidad";
+
+      if (filterCareer === "electricidad_industrial" && !isElectricidad) return false;
+      if (filterCareer === "contabilidad" && !isContabilidad) return false;
+
+      if (filterCycle !== "all") {
+        const codeNum = c.code?.split("-")[1] || "";
+        const cycleNum = codeNum.charAt(0);
+        if (cycleNum && cycleNum !== filterCycle) return false;
+      }
+      return true;
+    }).sort((a, b) => (a.code || "").localeCompare(b.code || ""));
+  }, [consolidatedOfficialCourses, filterCareer, filterCycle]);
 
   const activeAttendanceRecord = attendance.find(
     (att) => att.courseId === selectedAttendanceCourseId && att.date === selectedAttendanceDate
   );
 
-  const course = courses.find((c) => c.id === selectedAttendanceCourseId) || consolidatedOfficialCourses[0];
+  const course = courses.find((c) => c.id === selectedAttendanceCourseId) || filteredCourses[0];
   const studentsInAttendanceCourse = course
     ? processedStudents.filter(
         (s) => s.enrolled && s.academicStatus === "MATRICULADO" && s.programId === (course.careerId || course.career)
@@ -117,45 +147,94 @@ export default function MgeAsistenciasTab({
 
   return (
     <div className="space-y-6 text-left font-sans">
-      {/* Selector de Asignatura y Fecha */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-5 border border-slate-200 rounded-2xl shadow-3xs">
-        <div>
-          <label className="text-[10px] font-black uppercase text-slate-600 tracking-wider block mb-1.5">
-            1. Asignatura Curricular Evaluada
-          </label>
-          <select
-            value={selectedAttendanceCourseId}
-            onChange={(e) => onCourseChange(e.target.value)}
-            className="w-full p-2.5 border border-slate-300 bg-white font-bold rounded-xl text-xs text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
-          >
-            {consolidatedOfficialCourses.map((c) => {
-              const progName =
-                ACADEMIC_PROGRAMS.find((p) => p.id === c.career || p.id === c.careerId)?.name ||
-                (c.code?.startsWith("EIND") ? "Electricidad Industrial" : "Contabilidad");
-              return (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.code}) • {progName}
-                </option>
-              );
-            })}
-          </select>
+      {/* Selector de Asignatura y Fecha con Filtros */}
+      <div className="bg-white p-5 border border-slate-200 rounded-2xl shadow-3xs space-y-4">
+        {/* Barra de Filtros */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Carrera:</span>
+            <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setFilterCareer("electricidad_industrial")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  filterCareer === "electricidad_industrial"
+                    ? "bg-[#800521] text-white shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Electricidad Industrial
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterCareer("contabilidad")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  filterCareer === "contabilidad"
+                    ? "bg-[#800521] text-white shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Contabilidad
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Ciclo:</span>
+            <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+              {(["1", "2", "3", "4", "5", "6", "all"] as const).map((cyc) => (
+                <button
+                  key={cyc}
+                  type="button"
+                  onClick={() => setFilterCycle(cyc)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    filterCycle === cyc
+                      ? "bg-slate-900 text-white shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {cyc === "all" ? "Todos" : `Ciclo ${cyc}`}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div>
-          <label className="text-[10px] font-black uppercase text-slate-600 tracking-wider block mb-1.5">
-            2. Fecha de la Sesión de Clases
-          </label>
-          <input
-            type="date"
-            value={selectedAttendanceDate}
-            onChange={(e) => onDateChange(e.target.value)}
-            className="w-full p-2.5 border border-slate-300 bg-white font-bold rounded-xl text-xs text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
-          />
-          {selectedAttendanceDate > academicToday() ? (
-            <p role="status" className="mt-1.5 text-[10px] font-semibold text-amber-800">
-              Sesión programada a futuro. Las marcas registradas se computarán formalmente en la fecha indicada.
-            </p>
-          ) : null}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-[10px] font-black uppercase text-slate-600 tracking-wider block mb-1.5">
+              1. Asignatura Curricular ({filteredCourses.length} cursos disponibles)
+            </label>
+            <select
+              value={selectedAttendanceCourseId}
+              onChange={(e) => onCourseChange(e.target.value)}
+              className="w-full p-2.5 border border-slate-300 bg-white font-bold rounded-xl text-xs text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
+            >
+              {filteredCourses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.code})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-black uppercase text-slate-600 tracking-wider block mb-1.5">
+              2. Fecha de la Sesión de Clases
+            </label>
+            <input
+              type="date"
+              value={selectedAttendanceDate}
+              onChange={(e) => onDateChange(e.target.value)}
+              className="w-full p-2.5 border border-slate-300 bg-white font-bold rounded-xl text-xs text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
+            />
+            {selectedAttendanceDate > academicToday() ? (
+              <p role="status" className="mt-1.5 text-[10px] font-semibold text-amber-800">
+                Sesión programada a futuro. Las marcas registradas se computarán formalmente en la fecha indicada.
+              </p>
+            ) : null}
+          </div>
         </div>
       </div>
 

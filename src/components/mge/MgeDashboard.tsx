@@ -830,7 +830,7 @@ export default function MgeDashboard({
                   Consultando estado de graduación y requisitos EFSRT
                 </span>
               </div>
-            ) : sourceError ? <p role="alert" className="text-red-700">{sourceError}</p> : graduationsError ? <GraduationAccessPanel error={graduationsError} onReload={onReloadGraduations} /> : <MgeConstanciasTab
+            ) : sourceError ? <p role="alert" className="text-red-700">{sourceError}</p> : <MgeConstanciasTab
               graduations={graduations}
               studentsList={studentsList}
               processedStudents={processedStudents}

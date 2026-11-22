@@ -11,7 +11,8 @@ import {
   Edit3,
   FileText,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Filter
 } from "lucide-react";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import Button from "../../ui/Button";
@@ -48,6 +49,10 @@ export default function MgeNotasTab({
   const [selectedStudentDni, setSelectedStudentDni] = useState<string>(() => processedStudents[0]?.dni || "");
   const [showSimulateModal, setShowSimulateModal] = useState(false);
 
+  // Filtros de Carrera y Ciclo para el selector de cursos
+  const [filterCareer, setFilterCareer] = useState<string>("electricidad_industrial");
+  const [filterCycle, setFilterCycle] = useState<string>("1");
+
   // Modal formal de rectificación de acta
   const [rectifyingStudent, setRectifyingStudent] = useState<ProcessedStudent | null>(null);
   const [rectifyGrade, setRectifyGrade] = useState<string>("");
@@ -79,8 +84,34 @@ export default function MgeNotasTab({
       list.push(c);
     });
 
-    return list.sort((a, b) => (a.code || "").localeCompare(b.code || ""));
+    return list;
   }, [courses]);
+
+  // Cursos filtrados por carrera y ciclo
+  const filteredCourses = useMemo(() => {
+    return consolidatedOfficialCourses.filter((c) => {
+      const isElectricidad =
+        c.code?.startsWith("EIND") ||
+        c.careerId === "electricidad_industrial" ||
+        c.career === "electricidad_industrial" ||
+        c.careerId === "electronica";
+      const isContabilidad =
+        c.code?.startsWith("CONT") ||
+        c.code?.startsWith("CNT") ||
+        c.careerId === "contabilidad" ||
+        c.career === "contabilidad";
+
+      if (filterCareer === "electricidad_industrial" && !isElectricidad) return false;
+      if (filterCareer === "contabilidad" && !isContabilidad) return false;
+
+      if (filterCycle !== "all") {
+        const codeNum = c.code?.split("-")[1] || "";
+        const cycleNum = codeNum.charAt(0);
+        if (cycleNum && cycleNum !== filterCycle) return false;
+      }
+      return true;
+    }).sort((a, b) => (a.code || "").localeCompare(b.code || ""));
+  }, [consolidatedOfficialCourses, filterCareer, filterCycle]);
 
   const studentsInActiveCourse = activeCourseObj
     ? processedStudents.filter(
@@ -171,7 +202,6 @@ export default function MgeNotasTab({
       });
     } else {
       processedStudents.forEach((st) => {
-        // Check subcomponents of Fundamentos
         if (/TEO|TEORÍA/i.test(selectedTaskTitle)) {
           gradesMap[st.dni] = 17.5;
           return;
@@ -274,56 +304,106 @@ export default function MgeNotasTab({
         </div>
       </div>
 
-      {/* Selectores de Paso 1 y Paso 2 Limpios y Depurados */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-5 border border-slate-200 rounded-2xl shadow-3xs">
-        <div>
-          <label className="text-[10px] font-black uppercase text-slate-600 tracking-wider block mb-1.5">
-            Paso 1: Asignatura Oficial del Plan Curricular
-          </label>
-          <select
-            value={selectedCourseId}
-            onChange={(e) => onCourseChange(e.target.value)}
-            className="w-full p-2.5 border border-slate-300 bg-white font-bold rounded-xl text-xs text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
-          >
-            {consolidatedOfficialCourses.map((course) => {
-              const progName =
-                ACADEMIC_PROGRAMS.find((p) => p.id === course.career || p.id === course.careerId)?.name ||
-                (course.code?.startsWith("EIND") ? "Electricidad Industrial" : "Contabilidad");
-              return (
-                <option key={course.id} value={course.id}>
-                  {course.name} ({course.code}) • {progName}
-                </option>
-              );
-            })}
-          </select>
+      {/* Selectores de Paso 1 y Paso 2 con Filtros de Carrera y Ciclo */}
+      <div className="bg-white p-5 border border-slate-200 rounded-2xl shadow-3xs space-y-4">
+        {/* Barra de Filtros */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Carrera:</span>
+            <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setFilterCareer("electricidad_industrial")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  filterCareer === "electricidad_industrial"
+                    ? "bg-[#800521] text-white shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Electricidad Industrial
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterCareer("contabilidad")}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  filterCareer === "contabilidad"
+                    ? "bg-[#800521] text-white shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Contabilidad
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Ciclo:</span>
+            <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+              {(["1", "2", "3", "4", "5", "6", "all"] as const).map((cyc) => (
+                <button
+                  key={cyc}
+                  type="button"
+                  onClick={() => setFilterCycle(cyc)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    filterCycle === cyc
+                      ? "bg-slate-900 text-white shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {cyc === "all" ? "Todos" : `Ciclo ${cyc}`}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div>
-          <label className="text-[10px] font-black uppercase text-slate-600 tracking-wider block mb-1.5">
-            Paso 2: Criterio / Evaluación del Acta
-          </label>
-          <select
-            value={selectedTaskTitle}
-            onChange={(e) => onTaskChange(e.target.value)}
-            className="w-full p-2.5 border border-slate-300 bg-white font-bold rounded-xl text-xs text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
-          >
-            <option value="PROMEDIO_CONSOLIDADO">
-              Promedio Ponderado Final del Curso (Acta Oficial Consolidada)
-            </option>
-            {isFundamentos && (
-              <>
-                <option value="TEO">Parte 1: Teoría (40% Continua / 2 Créditos)</option>
-                <option value="TAL">Parte 2: Taller (40% Continua / 2 Créditos)</option>
-                <option value="LAB">Parte 3: Laboratorio (20% Continua / 1 Crédito)</option>
-                <option value="EX_FINAL">Examen Final Integral del Curso (40% Final)</option>
-              </>
-            )}
-            {courseAssignments.map((assignment) => (
-              <option key={assignment.id} value={assignment.title}>
-                {assignment.title}
+        {/* Selectores Paso 1 y Paso 2 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-[10px] font-black uppercase text-slate-600 tracking-wider block mb-1.5">
+              Paso 1: Asignatura Oficial ({filteredCourses.length} cursos filtrados)
+            </label>
+            <select
+              value={selectedCourseId}
+              onChange={(e) => onCourseChange(e.target.value)}
+              className="w-full p-2.5 border border-slate-300 bg-white font-bold rounded-xl text-xs text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
+            >
+              {filteredCourses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.name} ({course.code})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-black uppercase text-slate-600 tracking-wider block mb-1.5">
+              Paso 2: Criterio / Evaluación del Acta
+            </label>
+            <select
+              value={selectedTaskTitle}
+              onChange={(e) => onTaskChange(e.target.value)}
+              className="w-full p-2.5 border border-slate-300 bg-white font-bold rounded-xl text-xs text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
+            >
+              <option value="PROMEDIO_CONSOLIDADO">
+                Promedio Ponderado Final del Curso (Acta Oficial Consolidada)
               </option>
-            ))}
-          </select>
+              {isFundamentos && (
+                <>
+                  <option value="TEO">Parte 1: Teoría (40% Continua / 2 Créditos)</option>
+                  <option value="TAL">Parte 2: Taller (40% Continua / 2 Créditos)</option>
+                  <option value="LAB">Parte 3: Laboratorio (20% Continua / 1 Crédito)</option>
+                  <option value="EX_FINAL">Examen Final Integral del Curso (40% Final)</option>
+                </>
+              )}
+              {courseAssignments.map((assignment) => (
+                <option key={assignment.id} value={assignment.title}>
+                  {assignment.title}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

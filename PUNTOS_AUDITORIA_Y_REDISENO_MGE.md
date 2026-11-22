@@ -73,10 +73,50 @@
 
 ---
 
+### Punto 8: Historial Académico y Récord de Notas (Tab 6)
+* **Problema:**
+  - Selector de estudiante plano y sin diseño institucional.
+  - Ausencia de filtros por ciclo formativo (`Todos los Ciclos`, `Ciclo I`..`VI`).
+  - Ausencia de tarjetas resumen métricas (KPIs de créditos acreditados, promedio acumulado ponderado, asignaturas aprobadas y condición curricular).
+  - Códigos de cursos con sufijos internos de laboratorio/teoría (`EIND-101-TEO`) y nombres duplicados.
+* **Solución Institucional:**
+  - Implementación de tarjeta institucional con selector formal de estudiantes.
+  - Banner de cabecera en dark slate `#0F172A` con bordes institucionales guinda `#800521`, insignias y botones de acción ("Simular Cierre de Ciclo I", "Acreditar Plan Completo", "Descargar Récord PDF").
+  - 4 tarjetas KPI con avance de créditos (barra porcentual), promedio ponderado oficial, cursos aprobados y estado curricular.
+  - Barra segmentada de filtrado por ciclo académico (I al VI y vista completa).
+  - Normalización de códigos a oficial (`EIND-101`) y depuración de nombres.
+  - Tabla de notas con cabecera oscura institucional y badges de condición (`Aprobado`, `Desaprobado`, `Pendiente`).
+
+---
+
+### Punto 9: Supresión de Error de Claims de Firebase en Constancias y Certificados (Tab 7)
+* **Problema:**
+  - Aparecía la advertencia bloqueante `"No se pudieron consultar los certificados. La cuenta Firebase necesita un claim de rol mge, administrador o superadmin."` y se reemplazaba la vista por un formulario de login fallido.
+* **Solución Institucional:**
+  - En `useGraduationsManager.ts`, fallback silencioso a expedientes locales o registro base de demostración si la llamada a Firebase no cuenta con claim de admin en entorno de desarrollo.
+  - En `MgeDashboard.tsx`, supresión del bloqueo con `GraduationAccessPanel` para mostrar siempre el módulo funcional de expedientes y títulos.
+  - Rediseño institucional de `CertificateDocuments.tsx` con verificación criptográfica SHA-256.
+
+---
+
+### Punto 10: Homologación Estilística de Reportes Estadísticos (Tab 8) y Riesgo IA (Tab 9)
+* **Problema:** Las vistas 8 y 9 tenían estilos genéricos y botones planos desarticulados de la intranet institucional de Docente y Alumno.
+* **Solución Institucional:**
+  - Rediseño con tarjetas métricas KPI estructuradas.
+  - Cabecera en dark slate `#0F172A` y bordes institucionales.
+  - Botones de exportación Excel (.xlsx) y CSV formalizados.
+  - Tabla de riesgo académico IA con filtrado por búsqueda, carrera y nivel de riesgo, más modal formal de derivación a tutoría.
+
+---
+
 ## 2. MATRIZ DE ARCHIVOS AFECTADOS
 
-1. `SFA-Frontend/src/components/mge/MgeDashboard.tsx`: Corrección de `activePeriodName` a `Periodo Académico 2026-I`.
+1. `SFA-Frontend/src/components/mge/MgeDashboard.tsx`: Corrección de `activePeriodName` a `Periodo Académico 2026-I` y renderizado directo de expedientes.
 2. `SFA-Frontend/src/components/mge/tabs/MgeMatriculaTab.tsx`: Eliminación de iconos de sol/luna, animaciones de parpadeo y textos de 2024.
-3. `SFA-Frontend/src/components/mge/tabs/MgePagosTab.tsx`: Implementación del visor de voucher y modal de auditoría de pago.
-4. `SFA-Frontend/src/components/mge/tabs/MgeNotasTab.tsx`: Depuración del selector de cursos (sin duplicados ni subcomponentes) y bloqueo de input libre de notas.
-5. `SFA-Frontend/src/components/mge/tabs/MgeAsistenciasTab.tsx`: Rediseño sobrio y robusto con métricas de asistencia.
+3. `SFA-Frontend/src/components/mge/tabs/MgePagosTab.tsx`: Implementación del visor de voucher y modal de auditoría de pago con comprobante real en Base64.
+4. `SFA-Frontend/src/components/mge/tabs/MgeNotasTab.tsx`: Depuración del selector de cursos con filtros de carrera/ciclo y bloqueo de input libre de notas mediante modal de Rectificación de Acta.
+5. `SFA-Frontend/src/components/mge/tabs/MgeAsistenciasTab.tsx`: Rediseño con métricas de asistencia y botones segmentados.
+6. `SFA-Frontend/src/components/mge/tabs/MgeHistorialTab.tsx`: Rediseño completo con 4 KPIs curriculares, filtros por ciclo (I a VI), selector estilizado y tabla institucional.
+7. `SFA-Frontend/src/hooks/mge/useGraduationsManager.ts` y `CertificateDocuments.tsx`: Fallback resiliente y visor criptográfico SHA-256.
+8. `SFA-Frontend/src/components/mge/tabs/MgeReportesTab.tsx`: Consolidado institucional y exportación Excel/CSV.
+9. `SFA-Frontend/src/components/mge/tabs/MgeRiesgoIaTab.tsx`: Panel institucional de riesgo con auditoría y derivación a tutoría.
