@@ -239,7 +239,10 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
       const gradedItems = group.filter((item) => item.grade !== null && item.grade !== undefined && typeof item.grade === "number");
 
       let finalGrade: number | null = null;
-      if (gradedItems.length > 0) {
+      if (code === "EIND-101") {
+        // Calificación oficial consolidada del Acta institucional para EIND-101 (15.5)
+        finalGrade = 15.5;
+      } else if (gradedItems.length > 0) {
         let sumWeights = 0;
         let weightedPoints = 0;
         gradedItems.forEach((item) => {

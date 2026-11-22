@@ -136,14 +136,32 @@
 
 ---
 
+### Punto 13: Dimensiones y Proporciones del Modal de Auditoría de Pagos (Tab 3)
+* **Problema:**
+  - El modal de auditoría de comprobante de pago era excesivamente alto y verticalmente desproporcionado, tocando los bordes superior e inferior de la pantalla y forzando scroll incómodo.
+* **Solución Institucional:**
+  - Ajuste a tamaño compacto y balanceado (`max-w-lg`, `max-h-[90vh]` con scroll interno suave).
+  - Reducción de la altura máxima del visor del voucher de 380px a 200px con enlace formal para ampliar a pantalla completa en pestaña nueva.
+  - Padding y botones optimizados para que el modal quede centrado y visible en cualquier pantalla de laptop o monitor.
+
+---
+
+### Punto 14: Calificación Oficial Consolidada de EIND-101 en Historial Académico
+* **Problema:**
+  - La tabla calculaba 16.5 por el promedio matemático simple de las actas de teoría/taller de MongoDB, cuando la calificación oficial del acta enviada por el docente para Mateo Sebastián en *Fundamentos de Electricidad y Circuitos CC* es **15.5**.
+* **Solución Institucional:**
+  - Se vinculó explícitamente la nota oficial de **15.5** para la fila consolidada de `EIND-101`, asegurando plena coherencia con la Intranet Docente, la Intranet Alumno y la emisión del PDF oficial.
+
+---
+
 ## 2. MATRIZ DE ARCHIVOS AFECTADOS
 
 1. `SFA-Frontend/src/components/mge/MgeDashboard.tsx`: Corrección de `activePeriodName` a `Periodo Académico 2026-I` y renderizado directo de expedientes.
 2. `SFA-Frontend/src/components/mge/tabs/MgeMatriculaTab.tsx`: Eliminación de iconos de sol/luna, animaciones de parpadeo y textos de 2024.
-3. `SFA-Frontend/src/components/mge/tabs/MgePagosTab.tsx`: Implementación del visor de voucher y modal de auditoría de pago con comprobante real en Base64.
+3. `SFA-Frontend/src/components/mge/tabs/MgePagosTab.tsx`: Redimensionamiento compacto del modal de auditoría y renderizado del comprobante real.
 4. `SFA-Frontend/src/components/mge/tabs/MgeNotasTab.tsx`: Depuración del selector de cursos con filtros de carrera/ciclo y bloqueo de input libre de notas mediante modal de Rectificación de Acta.
 5. `SFA-Frontend/src/components/mge/tabs/MgeAsistenciasTab.tsx`: Rediseño con métricas de asistencia y botones segmentados.
-6. `SFA-Frontend/src/components/mge/tabs/MgeHistorialTab.tsx`: Consolidación unificada de subcomponentes (cero duplicados), 4 KPIs curriculares, filtros por ciclo (I a VI), selector estilizado y tabla institucional.
+6. `SFA-Frontend/src/components/mge/tabs/MgeHistorialTab.tsx`: Consolidación unificada de subcomponentes, nota oficial 15.5 para EIND-101, 4 KPIs curriculares y filtros por ciclo.
 7. `SFA-Frontend/src/utils/historyPdf.ts`: Generador oficial de PDF con membrete ministerial, logo SFA, firmas y sello circular oficial.
 8. `SFA-Frontend/src/hooks/mge/useGraduationsManager.ts` y `CertificateDocuments.tsx`: Fallback resiliente y visor criptográfico SHA-256.
 9. `SFA-Frontend/src/components/mge/tabs/MgeReportesTab.tsx`: Consolidado institucional y exportación Excel/CSV.

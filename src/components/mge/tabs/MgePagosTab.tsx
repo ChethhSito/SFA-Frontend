@@ -248,17 +248,17 @@ export default function MgePagosTab({
 
       {/* MODAL INSTITUCIONAL DE AUDITORÍA Y VERIFICACIÓN DE COMPROBANTE */}
       {auditingStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-xl w-full overflow-hidden shadow-2xl border border-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
             {/* Header del Modal */}
-            <div className="bg-[#800521] px-6 py-4 text-white flex justify-between items-center border-b-2 border-amber-500">
+            <div className="bg-[#800521] px-5 py-3 text-white flex justify-between items-center border-b-2 border-amber-500 shrink-0">
               <div className="flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-amber-400" />
+                <Receipt className="w-4 h-4 text-amber-400" />
                 <div>
-                  <h3 className="font-extrabold text-sm uppercase tracking-wider text-white">
-                    Auditoría de Comprobante de Pago de Matrícula
+                  <h3 className="font-extrabold text-xs sm:text-sm uppercase tracking-wider text-white">
+                    Auditoría de Comprobante de Pago
                   </h3>
-                  <span className="text-[10px] text-white/80 font-mono">
+                  <span className="text-[9.5px] text-white/80 font-mono">
                     Tesorería y Secretaría Académica • Conciliación Bancaria
                   </span>
                 </div>
@@ -266,31 +266,31 @@ export default function MgePagosTab({
               <button
                 type="button"
                 onClick={() => setAuditingStudent(null)}
-                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10"
+                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Cuerpo del Modal */}
-            <div className="p-6 space-y-4 text-xs">
+            {/* Cuerpo del Modal con scroll si es necesario */}
+            <div className="p-4 space-y-3 text-xs overflow-y-auto">
               {/* Datos del Estudiante */}
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-2 gap-3">
+              <div className="bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200 grid grid-cols-2 gap-2">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                  <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-wider block">
                     Estudiante Titular
                   </span>
-                  <span className="font-extrabold text-slate-900 text-sm block">
+                  <span className="font-extrabold text-slate-900 text-xs block truncate">
                     {auditingStudent.lastName}, {auditingStudent.name}
                   </span>
-                  <span className="font-mono text-slate-500 text-xs">DNI: {auditingStudent.dni}</span>
+                  <span className="font-mono text-slate-500 text-[11px]">DNI: {auditingStudent.dni}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                  <span className="text-[9.5px] font-bold text-slate-500 uppercase tracking-wider block">
                     Arancel Institucional
                   </span>
-                  <span className="font-extrabold text-slate-900 text-sm block">
-                    Derecho de Matrícula Regular
+                  <span className="font-extrabold text-slate-900 text-xs block">
+                    Matrícula Regular
                   </span>
                   <span className="font-mono font-black text-[#800521] text-xs">
                     S/ 250.00 (Periodo 2026-I)
@@ -299,63 +299,63 @@ export default function MgePagosTab({
               </div>
 
               {/* Visor Real del Comprobante / Voucher Bancario Subido por el Estudiante */}
-              <div className="border border-slate-300 rounded-xl p-4 bg-slate-100/70 space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-300 pb-2">
-                  <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4 text-slate-700" />
-                    <span className="font-bold text-slate-800 text-xs">
-                      Comprobante Bancario Adjunto por el Estudiante
+              <div className="border border-slate-300 rounded-xl p-3 bg-slate-100/70 space-y-2">
+                <div className="flex items-center justify-between border-b border-slate-300 pb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <Building className="w-3.5 h-3.5 text-slate-700" />
+                    <span className="font-bold text-slate-800 text-[11px]">
+                      Comprobante Bancario Adjunto
                     </span>
                   </div>
-                  <span className="font-mono text-[11px] font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-300">
+                  <span className="font-mono text-[10px] font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-300 truncate max-w-[180px]">
                     {activeEnrollmentForAudit?.paymentVoucherFileName || activeEnrollmentForAudit?.paymentOperation || "VOUCHER DE PAGO.png"}
                   </span>
                 </div>
 
                 {activeEnrollmentForAudit?.paymentVoucherUrl ? (
-                  <div className="flex flex-col items-center justify-center bg-white p-3 rounded-xl border border-slate-300 shadow-inner">
+                  <div className="flex flex-col items-center justify-center bg-white p-2.5 rounded-xl border border-slate-300 shadow-inner">
                     <img
                       src={activeEnrollmentForAudit.paymentVoucherUrl}
                       alt={`Comprobante de ${auditingStudent.name} ${auditingStudent.lastName}`}
-                      className="max-h-[380px] w-auto max-w-full object-contain rounded-lg shadow-md border border-slate-200"
+                      className="max-h-[190px] sm:max-h-[210px] w-auto max-w-full object-contain rounded-lg shadow-xs border border-slate-200"
                     />
-                    <div className="flex items-center justify-between w-full mt-3 pt-2 border-t border-slate-200 text-[11px]">
+                    <div className="flex items-center justify-between w-full mt-2 pt-1.5 border-t border-slate-200 text-[10.5px]">
                       <span className="text-slate-600 font-mono">
-                        N° Operación: <strong className="text-slate-900">{activeEnrollmentForAudit.paymentOperation || "OP-984210"}</strong>
+                        N° Op: <strong className="text-slate-900">{activeEnrollmentForAudit.paymentOperation || "OP-984210"}</strong>
                       </span>
                       <a
                         href={activeEnrollmentForAudit.paymentVoucherUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[#800521] hover:underline font-bold inline-flex items-center gap-1 font-mono text-[10.5px]"
+                        className="text-[#800521] hover:underline font-bold inline-flex items-center gap-1 font-mono text-[10px]"
                       >
-                        Ver Imagen en Tamaño Completo
+                        Ver en Tamaño Completo
                       </a>
                     </div>
                   </div>
                 ) : (
                   /* Fallback formal si solo registró código sin imagen adjunta */
-                  <div className="bg-white border border-slate-300 rounded-lg p-5 font-mono text-xs space-y-2 shadow-inner text-center">
-                    <p className="font-black text-slate-800 text-xs uppercase">
+                  <div className="bg-white border border-slate-300 rounded-lg p-4 font-mono text-xs space-y-1.5 shadow-inner text-center">
+                    <p className="font-black text-slate-800 text-[11px] uppercase">
                       COMPROBANTE REGISTRADO POR CÓDIGO BANCARIO
                     </p>
-                    <p className="text-slate-600 font-bold">
+                    <p className="text-slate-600 font-bold text-xs">
                       N° Operación: <span className="text-slate-900">{activeEnrollmentForAudit?.paymentOperation || "Sin código"}</span>
                     </p>
-                    <p className="text-emerald-700 font-black">Importe Acreditado: S/ 250.00</p>
+                    <p className="text-emerald-700 font-black text-xs">Importe Acreditado: S/ 250.00</p>
                   </div>
                 )}
               </div>
 
               {/* Selector de Observación (por si no procede) */}
               <div>
-                <label className="block font-black text-slate-700 uppercase tracking-wider text-[10px] mb-1">
+                <label className="block font-black text-slate-700 uppercase tracking-wider text-[9.5px] mb-1">
                   En caso de requerir observación, indique la causal:
                 </label>
                 <select
                   value={obsReason}
                   onChange={(e) => setObsReason(e.target.value)}
-                  className="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 bg-white shadow-2xs focus:ring-1 focus:ring-[#800521]"
+                  className="w-full p-2 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 bg-white shadow-2xs focus:ring-1 focus:ring-[#800521]"
                 >
                   <option value="Importe arancelario no coincide con el tarifario oficial (S/ 250.00)">
                     Importe arancelario no coincide con el tarifario oficial (S/ 250.00)
@@ -373,32 +373,32 @@ export default function MgePagosTab({
               </div>
             </div>
 
-            {/* Footer con Acciones Formale */}
-            <div className="bg-slate-50 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-200">
+            {/* Footer con Acciones Formales */}
+            <div className="bg-slate-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-slate-200 shrink-0">
               <button
                 type="button"
                 onClick={() => setAuditingStudent(null)}
-                className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl border border-slate-300 cursor-pointer order-2 sm:order-1"
+                className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl border border-slate-300 cursor-pointer order-2 sm:order-1"
               >
-                Cerrar sin Cambios
+                Cerrar
               </button>
 
-              <div className="flex items-center gap-2.5 order-1 sm:order-2">
+              <div className="flex items-center gap-2 order-1 sm:order-2">
                 <button
                   type="button"
                   onClick={handleConfirmObservar}
-                  className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 bg-rose-700 hover:bg-rose-800 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5"
                 >
                   <AlertTriangle className="w-3.5 h-3.5" />
-                  <span>Observar Pago</span>
+                  <span>Observar</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmValidar}
-                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Aprobar y Validar Pago</span>
+                  <span>Aprobar y Validar</span>
                 </button>
               </div>
             </div>
