@@ -166,3 +166,22 @@
 8. `SFA-Frontend/src/hooks/mge/useGraduationsManager.ts` y `CertificateDocuments.tsx`: Fallback resiliente y visor criptográfico SHA-256.
 9. `SFA-Frontend/src/components/mge/tabs/MgeReportesTab.tsx`: Consolidado institucional y exportación Excel/CSV.
 10. `SFA-Frontend/src/components/mge/tabs/MgeRiesgoIaTab.tsx`: Panel institucional de riesgo con auditoría y derivación a tutoría.
+
+---
+
+### PUNTO 15: Sincronización Automática de Filtros Curriculares y Aislamiento de Estudiantes por Carrera en Asistencias y Notas
+- **Problema Detectado por Usuario:** Al seleccionar en la pestaña de Asistencias Diarias la carrera "Contabilidad", el ciclo 1 y la asignatura `Fundamentos de Contabilidad y Doctrina Contable (CONT-101)`, en el padrón de asistencia aparecía listado el estudiante `Quispe Rojas, Mateo Sebastián` (DNI: `74859612`), a pesar de que su programa matriculado es `Electricidad Industrial`.
+- **Causa Raíz:**
+  1. Al cambiar el botón de carrera o ciclo en `MgeAsistenciasTab` y `MgeNotasTab`, la lista local `filteredCourses` cambiaba a los cursos de Contabilidad, pero el estado padre `selectedAttendanceCourseId` mantenía el id de `EIND-101`.
+  2. Debido a que el `<select>` no encontraba `EIND-101` entre las `<option>` de Contabilidad, el navegador mostraba visualmente la primera opción en pantalla (`CONT-101`), pero sin disparar un evento `onChange`.
+  3. En Javascript, la resolución del objeto `course` buscaba en `courses.find(...)` (la lista global), por lo que seguía evaluando `course` como `EIND-101` (Electricidad Industrial), emparejando al alumno de Electricidad.
+  4. Adicionalmente, `matchCourseIds` en `MgeNotasTab` usaba reglas con `includes("101")` y `includes("fundamentos")`, asociando subcomponentes de Electricidad a cursos de Contabilidad homónimos.
+- **Solución Implementada:**
+  1. **Sincronización Reactiva (`useEffect`):** Al detectar que `selectedAttendanceCourseId` (o `selectedCourseId`) no pertenece al subconjunto `filteredCourses`, se auto-sincroniza inmediatamente al primer curso del filtro (`filteredCourses[0].id`).
+  2. **Resolución Estricta de Curso:** `course` y `activeCourseObj` se resuelven exclusivamente dentro de `filteredCourses.find(...)`, garantizando que en ningún ciclo de render se mezcle un curso de otra carrera.
+  3. **Control Total del Selector:** El valor del `<select>` se enlaza a `course?.id || selectedAttendanceCourseId` (y `activeCourseObj?.id || selectedCourseId`), eliminando cualquier desajuste visual en el DOM.
+  4. **Aislamiento Estricto de Estudiantes por Carrera:**
+     - Si el curso activo es de **Contabilidad** (`CONT-xxx`), únicamente se filtran y muestran los alumnos cuya matrícula sea de Contabilidad. Para Mateo Quispe (Electricidad), la tabla muestra formalmente: *"No hay alumnos matriculados en la carrera de esta asignatura (Contabilidad)"* y el contador de Matriculados muestra `0`.
+     - Si el curso activo es de **Electricidad Industrial** (`EIND-xxx`), Mateo Quispe aparece correctamente con su contador en `1`.
+     - Se protegió `matchCourseIds` y `isFundamentos` para que los subcomponentes oficiales de evaluación apliquen única y exclusivamente a `Electricidad Industrial`.
+

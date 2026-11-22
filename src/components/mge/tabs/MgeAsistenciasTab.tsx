@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { CheckSquare, Loader2, Calendar, Users, Check, AlertCircle, Clock, FileText, Filter } from "lucide-react";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { Course, AttendanceRecord } from "../../../types";
@@ -91,16 +91,48 @@ export default function MgeAsistenciasTab({
     }).sort((a, b) => (a.code || "").localeCompare(b.code || ""));
   }, [consolidatedOfficialCourses, filterCareer, filterCycle]);
 
-  const activeAttendanceRecord = attendance.find(
-    (att) => att.courseId === selectedAttendanceCourseId && att.date === selectedAttendanceDate
+  // Auto-sincronizar el curso seleccionado cuando los filtros de carrera/ciclo cambian
+  useEffect(() => {
+    if (filteredCourses.length > 0 && !filteredCourses.some((c) => c.id === selectedAttendanceCourseId)) {
+      onCourseChange(filteredCourses[0].id);
+    }
+  }, [filteredCourses, selectedAttendanceCourseId, onCourseChange]);
+
+  const course = filteredCourses.find((c) => c.id === selectedAttendanceCourseId) || filteredCourses[0];
+
+  const isCourseContabilidad = Boolean(
+    course &&
+    (course.code?.startsWith("CONT") ||
+     course.code?.startsWith("CNT") ||
+     course.careerId === "contabilidad" ||
+     course.career === "contabilidad")
   );
 
-  const course = courses.find((c) => c.id === selectedAttendanceCourseId) || filteredCourses[0];
+  const isCourseElectricidad = Boolean(
+    course &&
+    (course.code?.startsWith("EIND") ||
+     course.careerId === "electricidad_industrial" ||
+     course.career === "electricidad_industrial" ||
+     course.careerId === "electronica")
+  );
+
   const studentsInAttendanceCourse = course
-    ? processedStudents.filter(
-        (s) => s.enrolled && s.academicStatus === "MATRICULADO" && s.programId === (course.careerId || course.career)
-      )
+    ? processedStudents.filter((s) => {
+        if (!s.enrolled || s.academicStatus !== "MATRICULADO") return false;
+        const sProg = (s.programId || "").toLowerCase();
+        if (isCourseContabilidad) {
+          return sProg.includes("cont") || s.programId === "contabilidad";
+        }
+        if (isCourseElectricidad) {
+          return sProg.includes("elec") || sProg === "electronica" || s.programId === "electricidad_industrial";
+        }
+        return s.programId === (course.careerId || course.career);
+      })
     : [];
+
+  const activeAttendanceRecord = attendance.find(
+    (att) => att.courseId === (course?.id || selectedAttendanceCourseId) && att.date === selectedAttendanceDate
+  );
 
   // Métricas del día seleccionado
   const statusCounts = useMemo(() => {
@@ -207,7 +239,7 @@ export default function MgeAsistenciasTab({
               1. Asignatura Curricular ({filteredCourses.length} cursos disponibles)
             </label>
             <select
-              value={selectedAttendanceCourseId}
+              value={course?.id || selectedAttendanceCourseId}
               onChange={(e) => onCourseChange(e.target.value)}
               className="w-full p-2.5 border border-slate-300 bg-white font-bold rounded-xl text-xs text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
             >
@@ -304,7 +336,7 @@ export default function MgeAsistenciasTab({
               {studentsInAttendanceCourse.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-5 py-12 text-center text-slate-400 font-extrabold uppercase tracking-wider">
-                    No hay alumnos matriculados en la carrera de esta asignatura ({course?.career || "Electricidad Industrial"}).
+                    No hay alumnos matriculados en la carrera de esta asignatura ({course?.career || (isCourseContabilidad ? "Contabilidad" : "Electricidad Industrial")}).
                   </td>
                 </tr>
               ) : (

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   GraduationCap,
   CheckCircle2,
@@ -60,7 +60,6 @@ export default function MgeNotasTab({
   const [rectifyReason, setRectifyReason] = useState<string>("Corrección de error material en acta oficial docente");
 
   const selectedStudentObj = processedStudents.find((s) => s.dni === selectedStudentDni) || processedStudents[0];
-  const activeCourseObj = courses.find((c) => c.id === selectedCourseId) || courses[0];
 
   // Lista depurada de cursos consolidados oficiales (sin subcomponentes TEO, TAL, LAB)
   const consolidatedOfficialCourses = useMemo(() => {
@@ -113,10 +112,43 @@ export default function MgeNotasTab({
     }).sort((a, b) => (a.code || "").localeCompare(b.code || ""));
   }, [consolidatedOfficialCourses, filterCareer, filterCycle]);
 
+  // Auto-sincronizar el curso seleccionado cuando los filtros de carrera/ciclo cambian
+  useEffect(() => {
+    if (filteredCourses.length > 0 && !filteredCourses.some((c) => c.id === selectedCourseId)) {
+      onCourseChange(filteredCourses[0].id);
+    }
+  }, [filteredCourses, selectedCourseId, onCourseChange]);
+
+  const activeCourseObj = filteredCourses.find((c) => c.id === selectedCourseId) || filteredCourses[0] || courses[0];
+
+  const isCourseContabilidad = Boolean(
+    activeCourseObj &&
+    (activeCourseObj.code?.startsWith("CONT") ||
+     activeCourseObj.code?.startsWith("CNT") ||
+     activeCourseObj.careerId === "contabilidad" ||
+     activeCourseObj.career === "contabilidad")
+  );
+
+  const isCourseElectricidad = Boolean(
+    activeCourseObj &&
+    (activeCourseObj.code?.startsWith("EIND") ||
+     activeCourseObj.careerId === "electricidad_industrial" ||
+     activeCourseObj.career === "electricidad_industrial" ||
+     activeCourseObj.careerId === "electronica")
+  );
+
   const studentsInActiveCourse = activeCourseObj
-    ? processedStudents.filter(
-        (s) => s.enrolled && s.academicStatus === "MATRICULADO" && s.programId === (activeCourseObj.careerId || activeCourseObj.career)
-      )
+    ? processedStudents.filter((s) => {
+        if (!s.enrolled || s.academicStatus !== "MATRICULADO") return false;
+        const sProg = (s.programId || "").toLowerCase();
+        if (isCourseContabilidad) {
+          return sProg.includes("cont") || s.programId === "contabilidad";
+        }
+        if (isCourseElectricidad) {
+          return sProg.includes("elec") || sProg === "electronica" || s.programId === "electricidad_industrial";
+        }
+        return s.programId === (activeCourseObj.careerId || activeCourseObj.career);
+      })
     : [];
 
   // Match assignments related to active course by id, code, or prefix
@@ -126,7 +158,7 @@ export default function MgeNotasTab({
     if ((activeCourseObj as any)._id) set.add((activeCourseObj as any)._id);
     const cleanPrefix = (activeCourseObj.code || "").split("-").slice(0, 2).join("-");
     if (cleanPrefix) set.add(cleanPrefix);
-    if (cleanPrefix.includes("101") || (activeCourseObj.name || "").toLowerCase().includes("fundamentos")) {
+    if (isCourseElectricidad && (cleanPrefix.includes("101") || (activeCourseObj.name || "").toLowerCase().includes("electricidad"))) {
       set.add("EIND-101");
       set.add("cur_ei_101");
       set.add("EIND-101-TEO");
@@ -134,7 +166,7 @@ export default function MgeNotasTab({
       set.add("EIND-101-LAB");
     }
     return set;
-  }, [activeCourseObj]);
+  }, [activeCourseObj, isCourseElectricidad]);
 
   const courseAssignments = useMemo(() => {
     return assignments.filter((a) => {
@@ -150,10 +182,11 @@ export default function MgeNotasTab({
 
   const isFundamentos = useMemo(() => {
     return Boolean(
+      isCourseElectricidad &&
       activeCourseObj &&
-      (activeCourseObj.code?.includes("101") || activeCourseObj.name?.toLowerCase().includes("fundamentos"))
+      (activeCourseObj.code?.includes("101") || activeCourseObj.name?.toLowerCase().includes("electricidad"))
     );
-  }, [activeCourseObj]);
+  }, [activeCourseObj, isCourseElectricidad]);
 
   // Compute existing grades for each student in the selected task or overall course
   const currentGradesForTask = useMemo(() => {
@@ -365,7 +398,7 @@ export default function MgeNotasTab({
               Paso 1: Asignatura Oficial ({filteredCourses.length} cursos filtrados)
             </label>
             <select
-              value={selectedCourseId}
+              value={activeCourseObj?.id || selectedCourseId}
               onChange={(e) => onCourseChange(e.target.value)}
               className="w-full p-2.5 border border-slate-300 bg-white font-bold rounded-xl text-xs text-slate-800 shadow-2xs focus:ring-1 focus:ring-[#800521]"
             >
@@ -444,7 +477,7 @@ export default function MgeNotasTab({
                 {studentsInActiveCourse.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-5 py-12 text-center text-slate-400 font-extrabold uppercase">
-                      No hay alumnos matriculados en la carrera de este curso ({activeCourseObj.career}) para calificar.
+                      No hay alumnos matriculados en la carrera de este curso ({activeCourseObj?.career || (isCourseContabilidad ? "Contabilidad" : "Electricidad Industrial")}) para calificar.
                     </td>
                   </tr>
                 ) : (
