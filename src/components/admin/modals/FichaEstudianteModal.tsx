@@ -31,23 +31,22 @@ export const FichaEstudianteModal: React.FC<FichaEstudianteModalProps> = ({
   const pId = enr.programId || "electronica";
 
   const getFichaCourses = (programId: string) => {
-    if (programId === "electronica") {
+    if (programId === "electronica" || programId.toLowerCase().includes("elec")) {
       return [
-        { code: "EE-101", name: "Introducción a la Automatización", credits: 4, type: "Específico" },
-        { code: "EE-102", name: "Dibujo e Instalaciones Eléctricas", credits: 4, type: "Específico" },
-        { code: "EE-103", name: "Seguridad e Higiene Industrial", credits: 3, type: "Específico" },
-        { code: "EE-104", name: "Matemática Aplicada a la Electricidad", credits: 4, type: "General" },
-        { code: "EE-105", name: "Circuitos Técnicos y Mediciones", credits: 4, type: "Específico" },
-        { code: "EE-106", name: "Ofimática e Investigación", credits: 3, type: "General" },
+        { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, type: "Específico" },
+        { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, type: "Específico" },
+        { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, type: "Específico" },
+        { code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, type: "General" },
+        { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2, type: "General" },
       ];
     } else {
       return [
-        { code: "CO-101", name: "Fundamentos de Contabilidad", credits: 4, type: "Específico" },
-        { code: "CO-102", name: "Técnicas de Documentación y Archivo", credits: 3, type: "Específico" },
-        { code: "CO-103", name: "Matemática para Negocios", credits: 4, type: "General" },
-        { code: "CO-104", name: "Informática Contable Básica", credits: 4, type: "Específico" },
-        { code: "CO-105", name: "Legislación Tributaria General", credits: 4, type: "Específico" },
-        { code: "CO-106", name: "Ofimática para la Gestión", credits: 3, type: "General" },
+        { code: "CNT-101", name: "Contabilidad General I", credits: 4, type: "Específico" },
+        { code: "CNT-102", name: "Plan Contable General Empresarial (PCGE)", credits: 3, type: "Específico" },
+        { code: "CNT-103", name: "Documentación Comercial y Tributaria", credits: 3, type: "Específico" },
+        { code: "CNT-104", name: "Administración Empresarial y Emprendimiento", credits: 3, type: "General" },
+        { code: "CNT-105", name: "Matemática Financiera I", credits: 3, type: "General" },
+        { code: "CNT-106", name: "Técnicas de Comunicación Oral y Escrita", credits: 2, type: "General" },
       ];
     }
   };

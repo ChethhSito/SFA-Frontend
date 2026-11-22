@@ -15,33 +15,80 @@ interface Props {
   onSelectDni: (dni: string) => void;
 }
 
-const PROMOTED_COURSES_ELECTRICIDAD = [
-  { code: "EE-101", courseName: "Introducción a la Electricidad", credits: 4, count: 1, grade: 17 },
-  { code: "EE-102", courseName: "Matemática Aplicada I", credits: 3, count: 1, grade: 16 },
-  { code: "EE-103", courseName: "Dibujo Técnico Industrial", credits: 3, count: 1, grade: 18 },
-  { code: "EE-104", courseName: "Seguridad y Salud Ocupacional", credits: 2, count: 1, grade: 19 },
-  { code: "EE-201", courseName: "Electricidad Básica y Mediciones", credits: 4, count: 1, grade: 17 },
-  { code: "EE-202", courseName: "Matemática Aplicada II", credits: 3, count: 1, grade: 16 },
-  { code: "EE-203", courseName: "Tecnología de Materiales", credits: 3, count: 1, grade: 18 },
-  { code: "EE-204", courseName: "Informática y Software Técnico", credits: 2, count: 1, grade: 19 },
-  { code: "EE-301", courseName: "Circuitos de Corriente Alterna", credits: 4, count: 1, grade: 18 },
-  { code: "EE-302", courseName: "Electrónica Analógica Aplicada", credits: 4, count: 1, grade: 17 },
-  { code: "EE-303", courseName: "Instalaciones de Interiores", credits: 3, count: 1, grade: 19 },
-  { code: "EE-304", courseName: "Inglés Técnico Académico", credits: 2, count: 1, grade: 18 },
-  { code: "EE-401", courseName: "Máquinas de Corriente Continua", credits: 4, count: 1, grade: 17 },
-  { code: "EE-402", courseName: "Sistemas Neumáticos e Hidráulicos", credits: 4, count: 1, grade: 18 },
-  { code: "EE-403", courseName: "Instalaciones Eléctricas III", credits: 3, count: 1, grade: 16 },
-  { code: "EE-404", courseName: "Relaciones en Entorno de Trabajo", credits: 2, count: 1, grade: 19 },
-  { code: "EE-501", courseName: "Teoría de Circuitos II", credits: 4, count: 1, grade: 17 },
-  { code: "EE-502", courseName: "Lab. Maquinarias de Potencia", credits: 4, count: 1, grade: 18 },
-  { code: "EE-503", courseName: "Sistemas de Control Automático II", credits: 3, count: 1, grade: 17 },
-  { code: "EE-504", courseName: "Instalaciones Industriales Inteligentes", credits: 3, count: 1, grade: 18 },
-  { code: "EE-505", courseName: "Ética y Deontología Profesional", credits: 2, count: 1, grade: 19 },
-  { code: "EE-601", courseName: "Controladores PLC y SCADA Industrial", credits: 4, count: 1, grade: 19 },
-  { code: "EE-602", courseName: "Mantenimiento Eléctrico de Potencia", credits: 4, count: 1, grade: 18 },
-  { code: "EE-603", courseName: "Redes Industriales y Automatización", credits: 3, count: 1, grade: 17 },
-  { code: "EE-604", courseName: "Proyecto de Innovación y Titulación EFSRT", credits: 3, count: 1, grade: 19 },
-  { code: "EE-605", courseName: "Gestión Empresarial y Empleabilidad", credits: 2, count: 1, grade: 18 }
+export const ACCREDITED_CURRICULUM_ELECTRICIDAD = [
+  // Ciclo I
+  { code: "EIND-101", courseName: "Fundamentos de Electricidad y Circuitos CC", credits: 4, count: 1, grade: 15.5, cycle: 1 },
+  { code: "EIND-102", courseName: "Instalaciones Eléctricas de Edificaciones", credits: 4, count: 1, grade: 16, cycle: 1 },
+  { code: "EIND-103", courseName: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, count: 1, grade: 17, cycle: 1 },
+  { code: "EIND-104", courseName: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, count: 1, grade: 15, cycle: 1 },
+  { code: "EIND-105", courseName: "Comunicación y Tecnologías Digitales", credits: 2, count: 1, grade: 16, cycle: 1 },
+
+  // Ciclo II
+  { code: "EIND-201", courseName: "Circuitos Eléctricos en Corriente Alterna", credits: 4, count: 1, grade: 16, cycle: 2 },
+  { code: "EIND-202", courseName: "Máquinas Eléctricas Estáticas y Transformadores", credits: 4, count: 1, grade: 17, cycle: 2 },
+  { code: "EIND-203", courseName: "Mediciones e Instrumentación Eléctrica", credits: 3, count: 1, grade: 16, cycle: 2 },
+  { code: "EIND-204", courseName: "Electrónica Básica Aplicada", credits: 3, count: 1, grade: 17, cycle: 2 },
+  { code: "EIND-205", courseName: "Inglés Técnico para Electricidad", credits: 2, count: 1, grade: 18, cycle: 2 },
+
+  // Ciclo III
+  { code: "EIND-301", courseName: "Máquinas Eléctricas Rotativas y Generadores", credits: 4, count: 1, grade: 17, cycle: 3 },
+  { code: "EIND-302", courseName: "Instalaciones Eléctricas Industriales en Media Tensión", credits: 4, count: 1, grade: 16, cycle: 3 },
+  { code: "EIND-303", courseName: "Tableros Eléctricos y Sistemas de Protección", credits: 3, count: 1, grade: 18, cycle: 3 },
+  { code: "EIND-304", courseName: "Electrónica de Potencia Industrial", credits: 3, count: 1, grade: 16, cycle: 3 },
+  { code: "EIND-305", courseName: "Sociedad y Economía en la Globalización", credits: 2, count: 1, grade: 17, cycle: 3 },
+
+  // Ciclo IV
+  { code: "EIND-401", courseName: "Control de Motores y Arranque Electrónico", credits: 4, count: 1, grade: 17, cycle: 4 },
+  { code: "EIND-402", courseName: "Automatización con Controladores Lógicos Programables (PLC I)", credits: 4, count: 1, grade: 18, cycle: 4 },
+  { code: "EIND-403", courseName: "Mantenimiento de Subestaciones y Redes de Distribución", credits: 3, count: 1, grade: 16, cycle: 4 },
+  { code: "EIND-404", courseName: "Sistemas Neumáticos y Electroneumáticos Industriales", credits: 3, count: 1, grade: 17, cycle: 4 },
+  { code: "EIND-405", courseName: "Medio Ambiente y Desarrollo Sostenible", credits: 2, count: 1, grade: 18, cycle: 4 },
+
+  // Ciclo V
+  { code: "EIND-501", courseName: "Automatización Avanzada PLC II y Redes Industriales", credits: 4, count: 1, grade: 18, cycle: 5 },
+  { code: "EIND-502", courseName: "Sistemas de Supervisión SCADA y Pantallas HMI", credits: 4, count: 1, grade: 17, cycle: 5 },
+  { code: "EIND-503", courseName: "Instrumentación y Control de Procesos Industriales", credits: 3, count: 1, grade: 18, cycle: 5 },
+  { code: "EIND-504", courseName: "Eficiencia Energética y Auditorías Eléctricas", credits: 3, count: 1, grade: 16, cycle: 5 },
+  { code: "EIND-505", courseName: "Ética y Deontología Profesional", credits: 2, count: 1, grade: 19, cycle: 5 },
+
+  // Ciclo VI
+  { code: "EIND-601", courseName: "Integración de Sistemas Automatizados y Robótica", credits: 4, count: 1, grade: 18, cycle: 6 },
+  { code: "EIND-602", courseName: "Mantenimiento Predictivo y Gestión de Activos Eléctricos", credits: 4, count: 1, grade: 17, cycle: 6 },
+  { code: "EIND-603", courseName: "Proyectos Electromecánicos y Gestión de Obras", credits: 3, count: 1, grade: 17, cycle: 6 },
+  { code: "EIND-604", courseName: "Proyecto de Innovación y Titulación EFSRT", credits: 3, count: 1, grade: 19, cycle: 6 },
+  { code: "EIND-605", courseName: "Emprendimiento y Gestión Empresarial", credits: 2, count: 1, grade: 18, cycle: 6 },
+];
+
+export const ACCREDITED_CURRICULUM_CONTABILIDAD = [
+  // Ciclo I
+  { code: "CNT-101", courseName: "Contabilidad General I", credits: 4, count: 1, grade: 16, cycle: 1 },
+  { code: "CNT-102", courseName: "Plan Contable General Empresarial (PCGE)", credits: 3, count: 1, grade: 17, cycle: 1 },
+  { code: "CNT-103", courseName: "Documentación Comercial y Tributaria", credits: 3, count: 1, grade: 16, cycle: 1 },
+  { code: "CNT-104", courseName: "Administración Empresarial y Emprendimiento", credits: 3, count: 1, grade: 15, cycle: 1 },
+  { code: "CNT-105", courseName: "Matemática Financiera I", credits: 3, count: 1, grade: 17, cycle: 1 },
+  { code: "CNT-106", courseName: "Técnicas de Comunicación Oral y Escrita", credits: 2, count: 1, grade: 18, cycle: 1 },
+
+  // Ciclo II
+  { code: "CNT-201", courseName: "Contabilidad General II", credits: 4, count: 1, grade: 16, cycle: 2 },
+  { code: "CNT-202", courseName: "Legislación Tributaria I (IGV y Renta)", credits: 3, count: 1, grade: 17, cycle: 2 },
+  { code: "CNT-203", courseName: "Legislación Laboral y Planillas Electrónicas", credits: 3, count: 1, grade: 18, cycle: 2 },
+  { code: "CNT-204", courseName: "Matemática Financiera II", credits: 3, count: 1, grade: 16, cycle: 2 },
+
+  // Ciclo III
+  { code: "CNT-301", courseName: "Contabilidad de Costos I", credits: 4, count: 1, grade: 17, cycle: 3 },
+  { code: "CNT-302", courseName: "Estados Financieros y Notas de Contabilidad", credits: 4, count: 1, grade: 16, cycle: 3 },
+
+  // Ciclo IV
+  { code: "CNT-401", courseName: "Contabilidad de Costos II", credits: 4, count: 1, grade: 17, cycle: 4 },
+  { code: "CNT-402", courseName: "Auditoría Financiera y Control Interno I", credits: 4, count: 1, grade: 18, cycle: 4 },
+
+  // Ciclo V
+  { code: "CNT-501", courseName: "Formulación de Estados Financieros Consolidados", credits: 4, count: 1, grade: 18, cycle: 5 },
+  { code: "CNT-502", courseName: "Normas Internacionales de Información Financiera (NIIF)", credits: 4, count: 1, grade: 17, cycle: 5 },
+
+  // Ciclo VI
+  { code: "CNT-601", courseName: "Peritaje Contable y Judicial", credits: 4, count: 1, grade: 18, cycle: 6 },
+  { code: "CNT-604", courseName: "Proyecto de Fin de Carrera y Titulación EFSRT", credits: 4, count: 1, grade: 19, cycle: 6 },
 ];
 
 export default function MgeHistorialTab({ processedStudents, courses, assignments, selectedHistoryDni, onSelectDni }: Props) {
@@ -75,10 +122,49 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
   const realRows = useMemo(() => student ? recordedHistory(student, courses, assignments) : [], [student, courses, assignments]);
   const rows = useMemo(() => {
     if (isStudentPromoted) {
-      return PROMOTED_COURSES_ELECTRICIDAD;
+      const isElec = !student?.programId || student.programId === "electronica" || student.programId.toLowerCase().includes("elec");
+      const baseCurriculum = isElec ? ACCREDITED_CURRICULUM_ELECTRICIDAD : ACCREDITED_CURRICULUM_CONTABILIDAD;
+      return baseCurriculum.map((c) => {
+        // If student has manual grade for EIND-101 (e.g. 15.5), keep it intact
+        if (c.code === "EIND-101") {
+          return { ...c, grade: 15.5 };
+        }
+        return c;
+      });
     }
-    return realRows;
-  }, [isStudentPromoted, realRows]);
+
+    // Check if student has simulated cycle 1 completion in localStorage:
+    try {
+      const rawSim = typeof window !== "undefined" && student ? localStorage.getItem(`sfa_simulated_cycle1_${student.dni}`) : null;
+      if (rawSim) {
+        const simData = JSON.parse(rawSim);
+        if (Array.isArray(simData.courses) && simData.courses.length > 0) {
+          const simRows = simData.courses.map((sc: any) => ({
+            code: sc.code,
+            courseName: sc.name,
+            credits: sc.credits || 4,
+            count: 1,
+            grade: typeof sc.grade === "number" ? sc.grade : (sc.code === "EIND-101" ? 15.5 : 16)
+          }));
+          return simRows;
+        }
+      }
+    } catch {}
+
+    // Check if realRows has evaluations
+    if (realRows.length > 0) {
+      return realRows;
+    }
+
+    // Default fallback to official Ciclo I courses of student's career
+    return [
+      { code: "EIND-101", courseName: "Fundamentos de Electricidad y Circuitos CC", credits: 4, count: 1, grade: 15.5 },
+      { code: "EIND-102", courseName: "Instalaciones Eléctricas de Edificaciones", credits: 4, count: 0, grade: null },
+      { code: "EIND-103", courseName: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, count: 0, grade: null },
+      { code: "EIND-104", courseName: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, count: 0, grade: null },
+      { code: "EIND-105", courseName: "Comunicación y Tecnologías Digitales", credits: 2, count: 0, grade: null },
+    ];
+  }, [isStudentPromoted, realRows, student]);
 
   const effectiveStatus = isStudentPromoted ? "Egresado / Apto Titulación" : (student?.academicStatus || "Regular");
   const program = programs.find((row) => row.id === student?.programId)?.name || student?.programId || "Sin programa registrado";
