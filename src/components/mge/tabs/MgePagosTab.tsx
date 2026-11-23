@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   CreditCard,
   FileCheck,
@@ -44,9 +44,32 @@ export default function MgePagosTab({
     };
   }, []);
 
-  const activeEnrollmentForAudit = auditingStudent
-    ? enrollments.find((e) => e.studentDni === auditingStudent.dni)
-    : null;
+  const activeEnrollmentForAudit = useMemo(() => {
+    if (!auditingStudent) return null;
+    const base = enrollments.find((e) => e.studentDni === auditingStudent.dni) || ({} as any);
+    const hasCycle2 = typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_cycle2_payment_${auditingStudent.dni}`) === "true" ||
+      (auditingStudent.dni === "74859612" && localStorage.getItem("sfa_cycle2_payment_74859612") === "true")
+    );
+    if (hasCycle2) {
+      const cycle2Op = localStorage.getItem(`sfa_cycle2_operation_${auditingStudent.dni}`) ||
+        (auditingStudent.dni === "74859612" ? localStorage.getItem("sfa_cycle2_operation_74859612") : null) ||
+        base.paymentOperation || "OP-2027-02-BCO-94812";
+      const cycle2File = localStorage.getItem(`sfa_cycle2_voucher_file_${auditingStudent.dni}`) ||
+        (auditingStudent.dni === "74859612" ? localStorage.getItem("sfa_cycle2_voucher_file_74859612") : null) ||
+        base.paymentVoucherFileName || "VOUCHER DE PGO.png";
+      const cycle2Url = localStorage.getItem(`sfa_cycle2_voucher_data_${auditingStudent.dni}`) ||
+        (auditingStudent.dni === "74859612" ? localStorage.getItem("sfa_cycle2_voucher_data_74859612") : null) ||
+        base.paymentVoucherUrl;
+      return {
+        ...base,
+        paymentOperation: cycle2Op,
+        paymentVoucherFileName: cycle2File,
+        paymentVoucherUrl: cycle2Url
+      };
+    }
+    return base;
+  }, [auditingStudent, enrollments]);
 
   const handleOpenAudit = (st: ProcessedStudent) => {
     setAuditingStudent(st);
