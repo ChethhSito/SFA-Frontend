@@ -646,12 +646,14 @@ export default function AlumnoDashboard({
           (typeof window !== "undefined") && (
             localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
             localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+            localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
             localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
-            localStorage.getItem("sfa_student_cycle_74859612") === "2"
+            localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+            localStorage.getItem("sfa_student_cycle") === "2"
           )
         ) {
           const defaults: Record<string, number> = {
-            "EIND-101": 15.5,
+            "EIND-101": 15.6,
             "EIND-102": 16.5,
             "EIND-103": 17.0,
             "EIND-104": 15.0,
