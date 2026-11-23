@@ -118,15 +118,10 @@ function drawOfficialSignaturesAndSeal(
   const stampY = sigY + 8;
 
   // 1. FIRMA: Secretaria General Académica (Izquierda)
-  pdf.setDrawColor(18, 65, 160); // Tinta azul institucional
-  pdf.setLineWidth(0.45);
-  pdf.lines([[4, -5], [6, 3], [5, -7], [7, 6], [10, -2], [12, 1]], sig1X + 8, sigY + 5);
-  pdf.lines([[-2, 3], [10, -2], [14, -3], [8, 2], [-18, 4], [26, -1]], sig1X + 12, sigY + 6);
-
   pdf.setFont("helvetica", "bolditalic");
-  pdf.setFontSize(7.5);
+  pdf.setFontSize(8.5);
   pdf.setTextColor(18, 65, 160);
-  pdf.text("Carmen Valdivia M.", sig1X + sigWidth / 2, sigY + 7, { align: "center" });
+  pdf.text("Carmen Valdivia M.", sig1X + sigWidth / 2, sigY + 7.5, { align: "center" });
 
   pdf.setDrawColor(148, 163, 184);
   pdf.setLineWidth(0.35);
@@ -167,15 +162,10 @@ function drawOfficialSignaturesAndSeal(
   pdf.text("LIMA - PERÚ", stampX, stampY + 7.5, { align: "center" });
 
   // 3. FIRMA: Director General (Derecha)
-  pdf.setDrawColor(18, 65, 160);
-  pdf.setLineWidth(0.5);
-  pdf.lines([[5, -7], [8, 5], [6, -8], [6, 6], [10, -3], [14, 2]], sig3X + 8, sigY + 4.5);
-  pdf.lines([[-3, 3], [12, -2], [16, 2], [-24, 4], [30, -2]], sig3X + 12, sigY + 6.5);
-
   pdf.setFont("helvetica", "bolditalic");
-  pdf.setFontSize(7.5);
+  pdf.setFontSize(8.5);
   pdf.setTextColor(18, 65, 160);
-  pdf.text("J. Morales Rojas", sig3X + sigWidth / 2, sigY + 7, { align: "center" });
+  pdf.text("J. Morales Rojas", sig3X + sigWidth / 2, sigY + 7.5, { align: "center" });
 
   pdf.setDrawColor(148, 163, 184);
   pdf.setLineWidth(0.35);
@@ -188,7 +178,7 @@ function drawOfficialSignaturesAndSeal(
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(5.8);
   pdf.setTextColor(100, 116, 139);
-  pdf.text("Director General - IESTP SFA", sig3X + sigWidth / 2, sigY + 18.2, { align: "center" });
+  pdf.text("Director General • IESTP SFA", sig3X + sigWidth / 2, sigY + 18.2, { align: "center" });
   pdf.text("R.D. N° 0458-2005-ED • MINEDU", sig3X + sigWidth / 2, sigY + 21, { align: "center" });
 }
 
@@ -786,7 +776,8 @@ export async function generateBoletaNotasPdf(
   pdf.text(`ESTUDIANTE: ${studentName.toUpperCase()}`, margin + 4, y + 5);
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(7.5);
-  pdf.text(`DNI: ${dni}   •   PROGRAMA: ${programName.toUpperCase()}   •   SEMESTRE: 2027-I`, margin + 4, y + 9.5);
+  const cleanSemester = (cycle === "2" || cycle === "II" || cycle === "Ciclo II") ? "2027-II" : "2027-I";
+  pdf.text(`DNI: ${dni}   •   PROGRAMA: ${programName.toUpperCase()}   •   SEMESTRE: ${cleanSemester}`, margin + 4, y + 9.5);
   pdf.setTextColor(5, 150, 105);
   pdf.setFont("helvetica", "bold");
   pdf.text("CONDICIÓN: ALUMNO REGULAR", margin + 4, y + 13.5);

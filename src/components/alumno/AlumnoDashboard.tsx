@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   User, FileText, Calendar, BookOpen, Clock, Award, HelpCircle, Building, ClipboardList, ArrowLeft,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, CreditCard, Briefcase
 } from "lucide-react";
 import { Enrollment, StudentPersonalData, Course, CourseMaterial, CourseAssignment, CycleStatus, AttendanceRecord, Graduation, CourseEvaluation } from "../../types";
 import { useAcademicCatalog } from "../../context/AcademicCatalogContext";
@@ -19,6 +19,8 @@ import { AttendanceTab } from "./tabs/AttendanceTab";
 import { ClosureTab } from "./tabs/ClosureTab";
 import { GradesTab } from "./tabs/GradesTab";
 import { ProceduresTab } from "./tabs/ProceduresTab";
+import { EconomicInfoTab } from "./tabs/EconomicInfoTab";
+import { PracticasPreprofesionalesTab } from "./tabs/PracticasPreprofesionalesTab";
 import GuidesLibrary from "../shared/GuidesLibrary";
 import AcademicCalendarBoard from "../shared/AcademicCalendarBoard";
 import { fetchMpaCollections } from "../../services/mpaApi";
@@ -66,7 +68,7 @@ export default function AlumnoDashboard({
   onGoToPortal
 }: AlumnoDashboardProps) {
   const { programs: ACADEMIC_PROGRAMS, courses: catalogCourses } = useAcademicCatalog();
-  const [activeTab, setActiveTab] = useState<"welcome" | "profile" | "classes" | "schedule" | "attendance" | "closure" | "notas" | "secretaria" | "guias" | "calendar" | "enrollment">(() => {
+  const [activeTab, setActiveTab] = useState<"welcome" | "profile" | "classes" | "schedule" | "attendance" | "closure" | "notas" | "secretaria" | "guias" | "calendar" | "enrollment" | "economic_info" | "practicas">(() => {
     if (typeof window !== "undefined") {
       const saved = sessionStorage.getItem("sfa_alumno_active_tab");
       if (saved) return saved as any;
@@ -1007,6 +1009,18 @@ export default function AlumnoDashboard({
             title: "SERVICIOS",
             items: [
               {
+                label: "Información Económica",
+                icon: <CreditCard className="w-4 h-4" />,
+                route: "economic_info",
+                active: activeTab === "economic_info"
+              },
+              {
+                label: "Práctica Preprofesional",
+                icon: <Briefcase className="w-4 h-4" />,
+                route: "practicas",
+                active: activeTab === "practicas"
+              },
+              {
                 label: "Trámites de Secretaría",
                 icon: <FileText className="w-4 h-4" />,
                 route: "secretaria",
@@ -1268,6 +1282,23 @@ export default function AlumnoDashboard({
                   enrichedCourses={enrichedCourses}
                   selectedCourseDetail={selectedCourseDetail}
                   setSelectedCourseDetail={setSelectedCourseDetail}
+                />
+              )}
+
+              {activeTab === "economic_info" && (
+                <EconomicInfoTab
+                  studentDni={studentDni}
+                  personalData={personalData}
+                  enrollment={enrollment}
+                  onNavigateToEnrollment={() => setActiveTab("enrollment")}
+                />
+              )}
+
+              {activeTab === "practicas" && (
+                <PracticasPreprofesionalesTab
+                  studentDni={studentDni}
+                  personalData={personalData}
+                  enrollment={enrollment}
                 />
               )}
 

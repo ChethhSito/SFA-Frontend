@@ -25,6 +25,29 @@ function Application({ record, student, program, onIssuerUpdate, onSaveDocs }: {
   const dirty = JSON.stringify(docs) !== JSON.stringify(record.docsChecked) || obs !== (record.obs || "");
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
+
+  const [efsrtData, setEfsrtData] = useState<any>(() => {
+    try {
+      const raw = localStorage.getItem(`sfa_efsrt_${record.studentDni}`) ||
+        (record.studentDni === "74859612" ? localStorage.getItem("sfa_efsrt_74859612") : null);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    const handleStorage = () => {
+      try {
+        const raw = localStorage.getItem(`sfa_efsrt_${record.studentDni}`) ||
+          (record.studentDni === "74859612" ? localStorage.getItem("sfa_efsrt_74859612") : null);
+        if (raw) setEfsrtData(JSON.parse(raw));
+      } catch { }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [record.studentDni]);
+
   const download = async () => {
     if (downloading) return;
     setDownloading(true); setDownloadError("");
@@ -58,6 +81,34 @@ function Application({ record, student, program, onIssuerUpdate, onSaveDocs }: {
       </span>
     </div>
     {record.status === "Certificado Emitido" ? <p className="text-xs text-amber-800 font-medium">El registro indica emisión oficial completada.</p> : null}
+    {efsrtData && (
+      <div className="bg-amber-50/80 border border-amber-300 rounded-xl p-3 text-xs text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-black text-amber-900 uppercase tracking-wider text-[10px] bg-amber-200/80 px-2 py-0.5 rounded">
+              Expediente EFSRT Registrado
+            </span>
+            <span className="font-semibold text-slate-700">
+              {efsrtData.companyName} ({efsrtData.totalHours} hrs)
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-600 mt-1">
+            Supervisado por: <span className="font-semibold text-slate-800">{efsrtData.supervisorName}</span> · Cargo: {efsrtData.supervisorRole} · Archivo: <span className="font-mono text-[#800521]">{efsrtData.certificateFileName || "Constancia_EFSRT.pdf"}</span>
+          </p>
+        </div>
+        {!docs.practicasPre && (
+          <button
+            type="button"
+            onClick={() => {
+              setDocs((prev) => ({ ...prev, practicasPre: true }));
+            }}
+            className="shrink-0 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase tracking-wider rounded-lg px-3 py-1.5 transition-all cursor-pointer shadow-xs"
+          >
+            Validar EFSRT
+          </button>
+        )}
+      </div>
+    )}
     <fieldset className="flex flex-wrap gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
       <legend className="font-black text-xs text-slate-700 uppercase tracking-wider mb-1 px-1">Requisitos Institucionales Evaluados</legend>
       {Object.entries(requirements).map(([key, label]) => (

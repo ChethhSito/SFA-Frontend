@@ -68,7 +68,46 @@ export const GradesTab: React.FC<GradesTabProps> = ({
   studentInfo
 }) => {
   const [showBoletaModal, setShowBoletaModal] = useState(false);
-  const activeCourse = enrichedCourses.find(c => c.name === selectedCourseDetail || c.id === selectedCourseDetail) || enrichedCourses[0];
+  const [selectedSemester, setSelectedSemester] = useState<"2027-I" | "2027-II">("2027-I");
+
+  const isPromotedCycle2 = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_student_promoted_cycle2_${studentInfo?.dni || "74859612"}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted_74859612") === "true"
+  );
+
+  const semesterCourses = React.useMemo(() => {
+    if (selectedSemester === "2027-I") {
+      return enrichedCourses.filter((c) => c.code.includes("-10") || c.cycle === "Ciclo I" || c.cycle === 1);
+    } else {
+      const c2 = enrichedCourses.filter((c) => c.code.includes("-20") || c.cycle === "Ciclo II" || c.cycle === 2);
+      if (c2.length === 0) {
+        return [
+          {
+            id: "cur_ei_201",
+            code: "EIND-201",
+            name: "Circuitos Eléctricos en Corriente Alterna",
+            credits: 4,
+            cycle: "Ciclo II",
+            classroom: "Aula 201 • Pabellón A",
+            iconType: "Zap",
+            formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+            evaluations: [
+              { id: "NPA", name: "Nota de Participación / Informes", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: "NR", isCurricular: true },
+              { id: "PC1", name: "Práctica Calificada 1 (CA)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: "NR", isCurricular: true },
+              { id: "PC2", name: "Práctica Calificada 2 (Mediciones)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: "NR", isCurricular: true },
+              { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: "NR", isCurricular: true }
+            ]
+          }
+        ];
+      }
+      return c2;
+    }
+  }, [enrichedCourses, selectedSemester]);
+
+  const activeCourse = semesterCourses.find(c => c.name === selectedCourseDetail || c.id === selectedCourseDetail || c.code === selectedCourseDetail) || semesterCourses[0];
 
   const renderCourseIcon = (iconName: string, className = "w-4 h-4") => {
     switch (iconName) {
@@ -84,7 +123,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
     }
   };
 
-  const totalCredits = enrichedCourses.reduce((acc, c) => acc + (Number(c.credits) || 0), 0) || 24;
+  const totalCredits = semesterCourses.reduce((acc, c) => acc + (Number(c.credits) || 0), 0) || (selectedSemester === "2027-I" ? 16 : 16);
 
   const activeStats = computeCourseStats(activeCourse);
 
@@ -99,13 +138,13 @@ export const GradesTab: React.FC<GradesTabProps> = ({
     : null;
 
   // Global cycle NPA across all courses
-  const allGradedWeeklyTasks = enrichedCourses.flatMap((c) => c.weeklyTasks || c.evaluations?.filter((e: any) => e.isCurricular === false) || []).filter((t: any) => typeof t.grade === "number");
+  const allGradedWeeklyTasks = semesterCourses.flatMap((c) => c.weeklyTasks || c.evaluations?.filter((e: any) => e.isCurricular === false) || []).filter((t: any) => typeof t.grade === "number");
   const cycleNpaAverage = allGradedWeeklyTasks.length > 0
     ? (allGradedWeeklyTasks.reduce((sum: number, t: any) => sum + (t.grade as number), 0) / allGradedWeeklyTasks.length).toFixed(1)
     : null;
 
   // Overall cycle calculation: weighted average of courses that have evaluations
-  const coursesWithEvaluations = enrichedCourses.map(c => ({
+  const coursesWithEvaluations = semesterCourses.map(c => ({
     course: c,
     stats: computeCourseStats(c)
   })).filter(item => item.stats.hasAnyGrade);
@@ -138,9 +177,21 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <div className="text-left bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
-              <span className="text-[9px] text-amber-400 font-extrabold block uppercase mb-0.5 tracking-wider">Período Académico</span>
-              <span className="text-xs font-black text-white font-mono">2027-I</span>
+            <div className="text-left bg-black/40 border border-white/20 px-3.5 py-1.5 rounded-xl select-none shadow-inner flex items-center gap-2">
+              <span className="text-[9px] text-amber-400 font-extrabold uppercase tracking-wider block">Periodo:</span>
+              <select
+                value={selectedSemester}
+                onChange={(e) => {
+                  setSelectedSemester(e.target.value as any);
+                  setSelectedCourseDetail("");
+                }}
+                className="bg-transparent text-xs font-black text-white font-mono outline-none cursor-pointer"
+              >
+                <option value="2027-I" className="text-slate-900 bg-white">Semestre 2027-I (Ciclo I)</option>
+                {isPromotedCycle2 && (
+                  <option value="2027-II" className="text-slate-900 bg-white">Semestre 2027-II (Ciclo II)</option>
+                )}
+              </select>
             </div>
             <button
               onClick={() => setShowBoletaModal(true)}
@@ -172,8 +223,8 @@ export const GradesTab: React.FC<GradesTabProps> = ({
             </p>
             <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">
               {hasAnyEvaluations 
-                ? `${coursesWithEvaluations.length} de ${enrichedCourses.length} curso${enrichedCourses.length === 1 ? "" : "s"} calificado${coursesWithEvaluations.length === 1 ? "" : "s"}`
-                : "Semestre Académico 2027-I"}
+                ? `${coursesWithEvaluations.length} de ${semesterCourses.length} curso${semesterCourses.length === 1 ? "" : "s"} calificado${coursesWithEvaluations.length === 1 ? "" : "s"}`
+                : `Semestre Académico ${selectedSemester}`}
             </span>
           </div>
           <div className="p-2.5 bg-[#800521]/10 text-[#800521] rounded-xl">
@@ -185,7 +236,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           <div>
             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Créditos Llevados</span>
             <p className="text-2xl font-black text-emerald-600 mt-1 font-mono">{totalCredits.toFixed(1)}</p>
-            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">Total matriculado Ciclo I</span>
+            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">Total matriculado {selectedSemester === "2027-I" ? "Ciclo I" : "Ciclo II"}</span>
           </div>
           <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
             <FileText className="w-5 h-5" />
@@ -195,8 +246,8 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-2xs border-l-4 border-l-purple-600 flex items-center justify-between text-left">
           <div>
             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Materias Matriculadas</span>
-            <p className="text-2xl font-black text-purple-600 mt-1 font-mono">{enrichedCourses.length}</p>
-            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">5 Unidades Didácticas</span>
+            <p className="text-2xl font-black text-purple-600 mt-1 font-mono">{semesterCourses.length}</p>
+            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">{semesterCourses.length} Unidades Didácticas</span>
           </div>
           <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
             <Sliders className="w-5 h-5" />
@@ -209,7 +260,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
             <p className="text-xl font-black text-emerald-600 mt-1 font-mono">
               {cycleNpaAverage !== null && Number(cycleNpaAverage) >= 12.5 ? "REGULAR" : "MATRICULADO"}
             </p>
-            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">Semestre Académico 2027-I</span>
+            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">Semestre Académico {selectedSemester}</span>
           </div>
           <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
             <CheckCircle2 className="w-5 h-5" />
@@ -507,7 +558,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
             <h3 className="text-[11.5px] font-black uppercase text-slate-500 tracking-wider">Cursos del Ciclo</h3>
             
             <div className="space-y-2.5">
-              {enrichedCourses.map((courseItem) => {
+              {semesterCourses.map((courseItem) => {
                 const isSelected = activeCourse?.id === courseItem.id;
                 const courseItemStats = computeCourseStats(courseItem);
                 return (
@@ -563,8 +614,8 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         studentDni={studentInfo?.dni || "74859612"}
         studentName={studentInfo?.name || "Mateo Sebastián Quispe Rojas"}
         careerName={studentInfo?.career || "Electricidad Industrial"}
-        cycleNumber={1}
-        courses={enrichedCourses.map((c) => {
+        cycleNumber={selectedSemester === "2027-I" ? 1 : 2}
+        courses={semesterCourses.map((c) => {
           const stats = computeCourseStats(c);
           return {
             code: c.code,
