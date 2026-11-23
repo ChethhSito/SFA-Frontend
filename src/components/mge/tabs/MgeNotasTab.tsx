@@ -534,19 +534,22 @@ export default function MgeNotasTab({
                     <span>Ciclo I: Aprobado</span>
                   </div>
 
-                  <button
-                    type="button"
-                    disabled={!selectedStudentDni || isCycle2Done}
-                    onClick={() => setShowSimulate2Modal(true)}
-                    className={`font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 flex-1 sm:flex-initial ${
-                      isCycle2Done
-                        ? "bg-emerald-800 text-white border border-emerald-600 cursor-default"
-                        : "bg-[#800521] hover:bg-[#9F062A] text-white border border-red-500/60 hover:shadow-md active:scale-95 cursor-pointer"
-                    }`}
-                  >
-                    <CheckCircle2 className="w-4 h-4 text-amber-300 shrink-0" />
-                    <span className="truncate">{isCycle2Done ? "Ciclo II Consolidado (Actas Listas)" : "Simular y Consolidar Ciclo II"}</span>
-                  </button>
+                  {isCycle2Done ? (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 rounded-xl text-xs font-bold font-mono shrink-0">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Ciclo II: Aprobado</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={!selectedStudentDni}
+                      onClick={() => setShowSimulate2Modal(true)}
+                      className="font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 flex-1 sm:flex-initial bg-[#800521] hover:bg-[#9F062A] text-white border border-red-500/60 hover:shadow-md active:scale-95 cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-amber-300 shrink-0" />
+                      <span className="truncate">Simular y Consolidar Ciclo II</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"

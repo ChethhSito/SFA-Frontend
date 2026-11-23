@@ -156,7 +156,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
           updated[s.dni] = localStorage.getItem(`sfa_student_promoted_${s.dni}`) === "true";
         });
         setPromotedState(updated);
-      } catch {}
+      } catch { }
     };
     window.addEventListener("storage", handleStorage);
     window.addEventListener("focus", handleStorage);
@@ -235,7 +235,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
           { code: "EIND-105", courseName: "Comunicación y Tecnologías Digitales", credits: 2, count: 1, grade: 16.0, cycle: 1 },
         ].forEach((c) => allCoursesList.push(c));
       }
-    } catch {}
+    } catch { }
 
     try {
       const isC2Done = typeof window !== "undefined" && Boolean(
@@ -278,7 +278,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
           { code: "EIND-205", courseName: "Inglés Técnico para Electricidad", credits: 2, count: 1, grade: 15.5, cycle: 2 },
         ].forEach((c) => allCoursesList.push(c));
       }
-    } catch {}
+    } catch { }
 
     if (allCoursesList.length > 0) {
       return allCoursesList;
@@ -491,11 +491,10 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
                     Turno {student.shift || "Mañana"}
                   </span>
                   <span className="text-slate-300">•</span>
-                  <span className={`px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider font-mono border ${
-                    isStudentPromoted
-                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
-                      : "bg-[#800521]/30 text-rose-300 border-[#800521]/60"
-                  }`}>
+                  <span className={`px-2.5 py-1 rounded-md text-[11px] font-black uppercase tracking-wider font-mono border ${isStudentPromoted
+                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+                    : "bg-[#800521]/30 text-rose-300 border-[#800521]/60"
+                    }`}>
                     {effectiveStatus}
                   </span>
                 </div>
@@ -538,20 +537,22 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
                       )}
 
                       {isCycle1Done && (
-                        <button
-                          type="button"
-                          disabled={isCycle2Done}
-                          onClick={() => setShowSimulateCiclo2Modal(true)}
-                          className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border flex items-center gap-2 ${
-                            isCycle2Done
-                              ? "bg-emerald-800 text-white border-emerald-600 cursor-default"
-                              : "bg-[#800521] hover:bg-[#9F062A] text-white border-red-700/60 hover:shadow-md cursor-pointer active:scale-95"
-                          }`}
-                          title="Consolidar Ciclo II, generar actas y habilitar Módulo Técnico I de EFSRT"
-                        >
-                          <CheckCircle2 className="w-4 h-4 text-amber-300" />
-                          <span>{isCycle2Done ? "Ciclo II Consolidado (Módulo I Listo)" : "Simular y Consolidar Ciclo II"}</span>
-                        </button>
+                        isCycle2Done ? (
+                          <div className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider font-mono bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 flex items-center gap-1.5 shadow-2xs">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span>Ciclo II: Aprobado</span>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setShowSimulateCiclo2Modal(true)}
+                            className="px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border flex items-center gap-2 bg-[#800521] hover:bg-[#9F062A] text-white border-red-700/60 hover:shadow-md cursor-pointer active:scale-95"
+                            title="Consolidar Ciclo II, generar actas y habilitar Módulo Técnico I de EFSRT"
+                          >
+                            <Award className="w-4 h-4 text-amber-300" />
+                            <span>Simular y Consolidar Ciclo II</span>
+                          </button>
+                        )
                       )}
                     </div>
                   );
@@ -559,11 +560,10 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
                 <button
                   type="button"
                   onClick={toggleStudentPromotion}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border cursor-pointer flex items-center gap-2 ${
-                    isStudentPromoted
-                      ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600"
-                      : "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-500/50"
-                  }`}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border cursor-pointer flex items-center gap-2 ${isStudentPromoted
+                    ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600"
+                    : "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-500/50"
+                    }`}
                   title="Acreditar los 6 semestres formativos para la emisión del certificado oficial"
                 >
                   <GraduationCap className="w-4 h-4 text-emerald-300" />
@@ -657,7 +657,13 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
                 </p>
               </div>
               <p className="text-[11px] font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded-md inline-block">
-                {isStudentPromoted ? "Plan formativo 100% aprobado" : "Ciclo I en curso oficial"}
+                {isStudentPromoted
+                  ? "Plan formativo 100% aprobado"
+                  : metrics.approvedCourses >= 10
+                  ? "Ciclos I y II Aprobados (Módulo I)"
+                  : metrics.approvedCourses >= 5
+                  ? "Ciclo I Aprobado"
+                  : "Ciclo I en curso oficial"}
               </p>
             </div>
 
@@ -676,11 +682,21 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
                   {isStudentPromoted ? "EGRESADO" : "REGULAR"}
                 </div>
                 <p className="text-[11px] font-medium text-slate-600 mt-2">
-                  {isStudentPromoted ? "Apto para emisión de Título Profesional" : "Habilitado en Ciclo I (2026-I)"}
+                  {isStudentPromoted
+                    ? "Apto para emisión de Título Profesional"
+                    : metrics.approvedCourses >= 10
+                    ? "Apto para Matrícula en Ciclo III (2028-I)"
+                    : metrics.approvedCourses >= 5
+                    ? "Habilitado en Ciclo II (2027-II)"
+                    : "Habilitado en Ciclo I (2027-I)"}
                 </p>
               </div>
               <p className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md inline-block font-mono">
-                {isStudentPromoted ? "EFSRT Concluida" : "Turno Mañana"}
+                {isStudentPromoted
+                  ? "EFSRT Concluida"
+                  : metrics.approvedCourses >= 10
+                  ? "Módulo Técnico I Acreditado"
+                  : "Turno Mañana"}
               </p>
             </div>
           </div>
@@ -710,11 +726,10 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
                       key={c.id}
                       type="button"
                       onClick={() => setCycleFilter(c.id as any)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        isActive
-                          ? "bg-[#800521] text-white shadow-xs font-black"
-                          : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                      }`}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${isActive
+                        ? "bg-[#800521] text-white shadow-xs font-black"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                        }`}
                     >
                       {c.label}
                     </button>
