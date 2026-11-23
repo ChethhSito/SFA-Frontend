@@ -81,10 +81,25 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
       }
     });
 
-    const attendanceRate = sesDictadas > 0 ? Math.round((asistencias / sesDictadas) * 100) : null;
-    const puntualidad = asistencias > 0
-      ? `${Math.round(((asistencias - tardanzas) / Math.max(asistencias, 1)) * 100)}%`
-      : "Sin datos";
+    const isCycle2Done = typeof window !== "undefined" && Boolean(
+      localStorage.getItem(`sfa_attendance_complete_cycle2_${activeDni}`) === "true" ||
+      localStorage.getItem("sfa_attendance_complete_cycle2_74859612") === "true" ||
+      localStorage.getItem(`sfa_simulated_cycle2_${activeDni}`) ||
+      localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+      localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true"
+    );
+
+    const isCourseC2 = c.code?.includes("-20") || c.code?.includes("201") || c.code?.includes("202") || c.code?.includes("203") || c.code?.includes("204") || c.code?.includes("205") || isCycle2;
+    const isSimulated16 = isCourseC2 && isCycle2Done && sesDictadas === 0;
+
+    const effectiveSesDictadas = isSimulated16 ? 16 : sesDictadas;
+    const effectiveAsistencias = isSimulated16 ? 16 : asistencias;
+    const effectiveFaltas = isSimulated16 ? 0 : faltas;
+
+    const attendanceRate = isSimulated16 ? 100 : (effectiveSesDictadas > 0 ? Math.round((effectiveAsistencias / effectiveSesDictadas) * 100) : null);
+    const puntualidad = isSimulated16 ? "100%" : (effectiveAsistencias > 0
+      ? `${Math.round(((effectiveAsistencias - tardanzas) / Math.max(effectiveAsistencias, 1)) * 100)}%`
+      : "Sin datos");
 
     return {
       id: c.id,
@@ -93,15 +108,15 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
       group: studentGroup?.name || (isCycle2 ? "EI-II-A" : "EI-I-A"),
       attendanceRate,
       statusText: attendanceRate === null ? "Sin datos" : `${attendanceRate}% Asistencia`,
-      statusDesc: sesDictadas === 0 ? "SIN REGISTROS" : (attendanceRate >= 70 ? "REGULAR • AL DÍA" : "EN RIESGO POR FALTAS"),
-      statusType: attendanceRate >= 70 ? "excellent" : "warning",
-      sesRealizadas: String(sesDictadas),
-      sesDictadas,
+      statusDesc: isSimulated16 ? "REGULAR • 16/16 SEMANAS" : (sesDictadas === 0 ? "SIN REGISTROS" : (attendanceRate >= 70 ? "REGULAR • AL DÍA" : "EN RIESGO POR FALTAS")),
+      statusType: (isSimulated16 || (attendanceRate !== null && attendanceRate >= 70)) ? "excellent" : "warning",
+      sesRealizadas: String(effectiveSesDictadas),
+      sesDictadas: effectiveSesDictadas,
       records: courseRecords,
       puntualidad,
-      faltas: faltas.toString().padStart(2, "0"),
-      faltasCount: faltas,
-      asistenciasCount: asistencias,
+      faltas: effectiveFaltas.toString().padStart(2, "0"),
+      faltasCount: effectiveFaltas,
+      asistenciasCount: effectiveAsistencias,
       creditos: (c.credits || 4).toString().padStart(2, "0"),
       schedule: c.schedule || "Horario Regular",
       classroom: c.classroom || "Aula Principal",

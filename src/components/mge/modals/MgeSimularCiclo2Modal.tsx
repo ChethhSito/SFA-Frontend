@@ -78,6 +78,17 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
       localStorage.setItem(`sfa_grades_EIND-205_${studentDni}`, "15.5");
       localStorage.setItem("sfa_grades_EIND-205_74859612", "15.5");
 
+      // 16-week attendance consolidation for all cycle 2 courses
+      localStorage.setItem(`sfa_attendance_complete_cycle2_${studentDni}`, "true");
+      localStorage.setItem("sfa_attendance_complete_cycle2_74859612", "true");
+      localStorage.setItem("sfa_attendance_complete_cycle2", "true");
+
+      ["EIND-201", "EIND-202", "EIND-203", "EIND-204", "EIND-205", "cur_ei_201", "cur_ei_202", "cur_ei_203", "cur_ei_204", "cur_ei_205"].forEach((cId) => {
+        localStorage.setItem(`sfa_attendance_complete_${cId}`, "true");
+        localStorage.setItem(`sfa_attendance_count_${cId}_${studentDni}`, "16");
+        localStorage.setItem(`sfa_attendance_count_${cId}_74859612`, "16");
+      });
+
       // Mark cycle 2 closed and promote student to Ciclo III
       localStorage.setItem(`sfa_student_promoted_cycle3_${studentDni}`, "true");
       localStorage.setItem("sfa_student_promoted_cycle3_74859612", "true");
@@ -152,12 +163,21 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
                 DNI: {student.dni} • Programa: Electricidad Industrial • Período 2027-II
               </p>
             </div>
-            <div className="text-right">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Promedio Ponderado Proyectado
-              </span>
-              <span className="text-xl font-black text-emerald-700">{weightedAverage}</span>
-              <span className="text-[10px] text-emerald-700 font-bold block uppercase">Aprobado</span>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Asistencia Reglamentaria
+                </span>
+                <span className="text-lg font-black text-slate-800 font-mono">100%</span>
+                <span className="text-[9.5px] text-emerald-700 font-bold block uppercase">16/16 Semanas</span>
+              </div>
+              <div className="text-right border-l border-slate-200 pl-4">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Promedio Ponderado
+                </span>
+                <span className="text-xl font-black text-emerald-700 font-mono">{weightedAverage}</span>
+                <span className="text-[10px] text-emerald-700 font-bold block uppercase">Aprobado</span>
+              </div>
             </div>
           </div>
 
@@ -167,20 +187,21 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
             <div className="leading-snug">
               <p className="font-bold text-[11px]">Consolidación Automática para Demostración</p>
               <p className="text-[10px] text-amber-800 mt-0.5">
-                Al confirmar, se registrarán las calificaciones formativas y finales de las 5 asignaturas de Segundo Ciclo, se cerrarán las actas y se habilitará la certificación del <strong>Módulo Técnico I (EFSRT)</strong> para su visualización en el portal del estudiante y secretaría.
+                Al confirmar, se registrarán las calificaciones formativas y finales, así como las <strong>16 semanas de asistencia reglamentaria (100% de asistencia presencial, sin faltas ni inhabilitación por DPI)</strong> de las 5 asignaturas de Segundo Ciclo, se cerrarán las actas y se habilitará la certificación del <strong>Módulo Técnico I (EFSRT)</strong> para su visualización en el portal del estudiante y secretaría.
               </p>
             </div>
           </div>
 
           {/* Courses Table */}
           <div className="border border-slate-200 rounded-xl overflow-x-auto shadow-3xs">
-            <table className="w-full min-w-[500px] text-left border-collapse">
+            <table className="w-full min-w-[580px] text-left border-collapse">
               <thead>
                 <tr className="bg-slate-100 text-slate-600 font-black text-[10px] uppercase tracking-wider border-b border-slate-200">
                   <th className="py-2 px-3">Código</th>
                   <th className="py-2 px-3">Asignatura</th>
                   <th className="py-2 px-3">Docente</th>
                   <th className="py-2 px-3 text-center">Créd.</th>
+                  <th className="py-2 px-3 text-center">Asistencia</th>
                   <th className="py-2 px-3 text-center">Nota Final</th>
                   <th className="py-2 px-3 text-center">Condición</th>
                 </tr>
@@ -192,7 +213,12 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
                     <td className="py-2 px-3 font-semibold text-slate-800">{c.name}</td>
                     <td className="py-2 px-3 text-[10px] text-slate-500 font-medium">{c.doc}</td>
                     <td className="py-2 px-3 text-center font-bold text-slate-600">{c.credits}</td>
-                    <td className="py-2 px-3 text-center font-black text-emerald-700">{c.simulatedGrade.toFixed(1)}</td>
+                    <td className="py-2 px-3 text-center">
+                      <span className="font-mono text-emerald-800 font-bold text-[10px] bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        16/16 (100%)
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 text-center font-black text-emerald-700 font-mono">{c.simulatedGrade.toFixed(1)}</td>
                     <td className="py-2 px-3 text-center">
                       <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
                         Aprobado
@@ -207,7 +233,7 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2 text-blue-900 text-[10px]">
             <ShieldCheck className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
             <p>
-              Esta acción genera el acta con validez institucional, permitiendo al jurado comprobar de inmediato el ciclo de vida académico continuo, la transición al Módulo EFSRT y la emisión de constancias sin demoras.
+              Esta acción genera el acta con validez institucional y el registro de 16 semanas de asistencia presencial cumplidas, permitiendo al jurado comprobar de inmediato el ciclo de vida académico continuo, la transición al Módulo EFSRT y la emisión de constancias sin demoras.
             </p>
           </div>
         </div>
