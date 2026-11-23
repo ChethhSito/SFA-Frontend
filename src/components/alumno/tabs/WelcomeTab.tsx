@@ -1,5 +1,5 @@
-import React from "react";
-import { Flame, Clock, FileText, CreditCard, BookOpen, CheckCircle2, Calendar, MapPin } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Flame, Clock, FileText, CreditCard, BookOpen, CheckCircle2, Calendar, MapPin, Award, GraduationCap } from "lucide-react";
 import { StudentPersonalData, Enrollment, AcademicProgram } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
 
@@ -26,7 +26,32 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
   studentGroup,
   studentCourses = []
 }) => {
+  const [, setSyncTick] = useState(0);
+
+  useEffect(() => {
+    const handleSync = () => setSyncTick((t) => t + 1);
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("focus", handleSync);
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("focus", handleSync);
+    };
+  }, []);
+
   const studentDni = personalData?.dni || enrollment?.studentDni || "74859612";
+
+  const isGraduated = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted") === "true" ||
+    localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+    localStorage.getItem("sfa_student_graduated_all") === "true" ||
+    localStorage.getItem(`sfa_titulacion_enabled_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_titulacion_enabled_74859612") === "true" ||
+    localStorage.getItem(`sfa_student_status_${studentDni}`) === "Egresado"
+  );
+
   const isPromotedCycle2 = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
     localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
@@ -49,15 +74,19 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
   );
 
   const rawPeriodName = mpaPlanningData?.periods?.find((period: any) => period.id === studentGroup?.periodId)?.name;
-  const currentPeriod = isPromotedCycle2 
-    ? "Periodo 2027-II" 
-    : (rawPeriodName && rawPeriodName !== "Periodo académico" ? rawPeriodName : "Periodo 2027-I");
+  const currentPeriod = isGraduated
+    ? "Periodo 2029-II (Plan Culminado)"
+    : isPromotedCycle2 
+      ? "Periodo 2027-II" 
+      : (rawPeriodName && rawPeriodName !== "Periodo académico" ? rawPeriodName : "Periodo 2027-I");
 
-  const currentCycleRoman = isPromotedCycle2 ? "Ciclo II" : "Ciclo I";
-  const progressBadge = isPromotedCycle2 
-    ? "Formación Continua • Ciclo II (16.7% Concluido • Ciclo I Aprobado)" 
-    : "Inicio de Formación • Ciclo I (0% Concluido)";
-  const progressMeterWidth = isPromotedCycle2 ? "16.7%" : "3%";
+  const currentCycleRoman = isGraduated ? "Ciclo VI (Egresado)" : isPromotedCycle2 ? "Ciclo II" : "Ciclo I";
+  const progressBadge = isGraduated
+    ? "Plan Curricular Culminado • 100% Concluido (120 Créditos Acreditados)"
+    : isPromotedCycle2 
+      ? "Formación Continua • Ciclo II (16.7% Concluido • Ciclo I Aprobado)" 
+      : "Inicio de Formación • Ciclo I (0% Concluido)";
+  const progressMeterWidth = isGraduated ? "100%" : isPromotedCycle2 ? "16.7%" : "3%";
 
   const scheduledGroups = [...new Set(studentTasks.map((task: any) =>
     mpaPlanningData?.groups?.find((group: any) => group.id === task.groupId)?.name || task.groupId,
@@ -86,13 +115,15 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
         <div className="absolute top-0 right-0 w-64 h-full bg-linear-gradient(135deg,transparent,rgba(255,255,255,0.05)) transform skew-x-12" />
         <div className="relative z-10 space-y-2 max-w-2xl">
           <span className="text-[10px] bg-red-900/60 text-amber-300 font-extrabold px-3 py-1 rounded-full uppercase tracking-widest inline-block border border-red-700/50">
-            Portal del Estudiante • {currentPeriod}
+            {isGraduated ? "Expediente de Egresado • Apto Titulación" : `Portal del Estudiante • ${currentPeriod}`}
           </span>
           <h2 className="text-2xl md:text-3.5xl font-black font-display tracking-tight leading-none pt-1">
             ¡Bienvenido de vuelta, {personalData.name}!
           </h2>
           <p className="text-xs text-slate-100 font-medium tracking-wide">
-            Estamos contentos de tenerte en el IESTP San Francisco de Asís. Revisa tus asignaturas inscritas de {currentCycleRoman}, tu horario de clases oficial y tus estados administrativos de un vistazo.
+            {isGraduated
+              ? "Felicitaciones, ha completado satisfactoriamente los 6 ciclos formativos (120 créditos) y los 3 módulos de EFSRT. Su expediente se encuentra expedito para el trámite de Título Profesional en Secretaría Académica."
+              : `Estamos contentos de tenerte en el IESTP San Francisco de Asís. Revisa tus asignaturas inscritas de ${currentCycleRoman}, tu horario de clases oficial y tus estados administrativos de un vistazo.`}
           </p>
         </div>
         <Flame className="absolute right-6 bottom-4 w-28 h-28 text-red-900/30 font-black pointer-events-none stroke-[0.5]" />
@@ -125,27 +156,32 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
             </div>
             <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-100 flex flex-col justify-center">
               <span className="text-[9px] text-slate-400 uppercase block font-bold tracking-wider">Grupos / Secciones</span>
-              <span className="text-slate-800 block font-extrabold text-sm mt-0.5 truncate" title={scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || (isPromotedCycle2 ? "EI-II-A" : "EI-I-A")}>
-                {scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || (isPromotedCycle2 ? "EI-II-A" : "EI-I-A")}
+              <span className="text-slate-800 block font-extrabold text-sm mt-0.5 truncate" title={isGraduated ? "EI-VI-A (Egresado)" : scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || (isPromotedCycle2 ? "EI-II-A" : "EI-I-A")}>
+                {isGraduated ? "EI-VI-A (Egresado)" : (scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || (isPromotedCycle2 ? "EI-II-A" : "EI-I-A"))}
               </span>
             </div>
             <div className="col-span-1 sm:col-span-2 xl:col-span-1 bg-gradient-to-br from-amber-50 to-amber-100/60 rounded-xl p-3 flex items-start gap-2.5 border border-amber-200/90 shadow-2xs">
               <div className="p-1.5 rounded-lg bg-amber-500/15 text-amber-800 shrink-0 mt-0.5 border border-amber-300/50">
-                <Clock className="w-4 h-4 text-amber-700" />
+                {isGraduated ? <CheckCircle2 className="w-4 h-4 text-emerald-700" /> : <Clock className="w-4 h-4 text-amber-700" />}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[8.5px] bg-amber-200/80 text-amber-900 font-black px-1.5 py-0.5 rounded tracking-wide uppercase">
-                    Próxima Sesión
+                  <span className={`text-[8.5px] font-black px-1.5 py-0.5 rounded tracking-wide uppercase ${isGraduated ? "bg-emerald-200/80 text-emerald-900" : "bg-amber-200/80 text-amber-900"}`}>
+                    {isGraduated ? "Condición Académica" : "Próxima Sesión"}
                   </span>
-                  <span className="text-[10px] text-amber-800 font-bold">
-                    {nextClassTime}
+                  <span className={`text-[10px] font-bold ${isGraduated ? "text-emerald-800" : "text-amber-800"}`}>
+                    {isGraduated ? "120 Créditos Acreditados" : nextClassTime}
                   </span>
                 </div>
                 <div className="text-xs text-slate-900 font-extrabold block mt-1 leading-snug break-words">
-                  {nextCourse?.name || (nextTask ? 'Unidad Didáctica' : 'Programación oficial en curso por MPA')}
+                  {isGraduated ? "Egresado Regular • Malla Completa" : (nextCourse?.name || (nextTask ? 'Unidad Didáctica' : 'Programación oficial en curso por MPA'))}
                 </div>
-                {nextClassroom?.name && (
+                {isGraduated ? (
+                  <span className="text-[10px] text-emerald-900/80 font-medium flex items-center gap-1 mt-0.5 truncate">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-700 shrink-0" />
+                    Apto para Emisión de Título Profesional
+                  </span>
+                ) : nextClassroom?.name && (
                   <span className="text-[10px] text-amber-900/80 font-medium flex items-center gap-1 mt-0.5 truncate">
                     <MapPin className="w-3 h-3 text-amber-700 shrink-0" />
                     {nextClassroom.name}
@@ -171,7 +207,9 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
               <span className="text-xs text-emerald-600 font-bold">Tasa Única Cancelada</span>
             </div>
             <p className="text-[11px] text-slate-500 font-medium mt-2 leading-relaxed">
-              Como institución pública de educación superior, el IESTP San Francisco de Asís no cobra pensiones ni mensualidades. Su derecho de matrícula para {currentPeriod} se encuentra 100% cancelado en Caja Central.
+              {isGraduated
+                ? "Como institución pública de educación superior, el IESTP San Francisco de Asís no cobra pensiones. Su récord de pagos por semestres académicos está regularizado al 100%."
+                : `Como institución pública de educación superior, el IESTP San Francisco de Asís no cobra pensiones ni mensualidades. Su derecho de matrícula para ${currentPeriod} se encuentra 100% cancelado en Caja Central.`}
             </p>
           </div>
 
@@ -219,22 +257,26 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
             </div>
 
             <div 
-              onClick={() => { setActiveTab("classes"); }}
+              onClick={() => { setActiveTab(isGraduated ? "closure" : "classes"); }}
               className="bg-white hover:bg-slate-50/50 p-5 rounded-xl border border-slate-100 shadow-xs cursor-pointer transition-all hover:scale-[1.02] flex items-center gap-4 group"
             >
               <div className="h-10 w-10 rounded-full bg-red-50 text-[#800521] flex items-center justify-center shrink-0 font-bold group-hover:bg-[#800521] group-hover:text-white transition-all">
-                <BookOpen className="w-5 h-5" />
+                {isGraduated ? <Award className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
               </div>
               <div>
-                <h4 className="text-xs font-bold text-slate-800 uppercase block">Mis Asignaturas</h4>
-                <p className="text-[10px] text-slate-500 font-semibold mt-0.5">{studentCourses.length} cursos en {currentCycleRoman}</p>
+                <h4 className="text-xs font-bold text-slate-800 uppercase block">{isGraduated ? "Plan de Estudios" : "Mis Asignaturas"}</h4>
+                <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                  {isGraduated ? "30 asignaturas acreditadas" : `${studentCourses.length} cursos en ${currentCycleRoman}`}
+                </p>
               </div>
             </div>
           </div>
 
           {/* TAREAS PRÓXIMAS List */}
           <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-xs">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-4">Actividades Académicas del {currentCycleRoman}</span>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-4">
+              {isGraduated ? "Estado de Culminación de Plan de Estudios" : `Actividades Académicas del ${currentCycleRoman}`}
+            </span>
             
             <div className="space-y-3">
               <div className="p-4 border border-emerald-100 bg-emerald-50/40 rounded-xl flex items-center justify-between gap-4">
@@ -243,17 +285,21 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800">Semana Inaugural de Clases • {currentPeriod}</h4>
+                    <h4 className="text-xs font-bold text-slate-800">
+                      {isGraduated ? "Malla Curricular Culminada • 6 Ciclos Formativos Aprobados" : `Semana Inaugural de Clases • ${currentPeriod}`}
+                    </h4>
                     <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
-                      No registra tareas pendientes de entrega. Asista puntualmente a sus talleres según su horario semanal asignado.
+                      {isGraduated
+                        ? "Todas las asignaturas y las 3 etapas de EFSRT han sido aprobadas y consolidadas en actas oficiales. Puede tramitar su carpeta de titulación."
+                        : "No registra tareas pendientes de entrega. Asista puntualmente a sus talleres según su horario semanal asignado."}
                     </p>
                   </div>
                 </div>
                 <button 
-                  onClick={() => setActiveTab("classes")}
+                  onClick={() => setActiveTab(isGraduated ? "closure" : "classes")}
                   className="bg-[#800521] hover:bg-[#9F062A] text-white font-bold text-[10px] px-3.5 py-2 rounded-lg uppercase tracking-wider transition-all select-none cursor-pointer shrink-0"
                 >
-                  Ver Cursos
+                  {isGraduated ? "Ver Récord" : "Ver Cursos"}
                 </button>
               </div>
             </div>
@@ -273,10 +319,14 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
             <div className="pt-2">
               <div className="flex items-center gap-2 mb-1">
                 <div className="h-2 w-2 rounded-full bg-emerald-600 shrink-0" />
-                <h4 className="text-xs font-bold text-slate-800 leading-tight">Matrícula Oficial {currentPeriod} Regularizada</h4>
+                <h4 className="text-xs font-bold text-slate-800 leading-tight">
+                  {isGraduated ? "Egreso Curricular y Certificación Aprobada" : `Matrícula Oficial ${currentPeriod} Regularizada`}
+                </h4>
               </div>
               <p className="text-[10px] text-slate-500 leading-normal font-semibold pl-4">
-                Su matrícula académica en {currentCycleRoman} y asignación de sección han sido completadas con conformidad de Secretaría General.
+                {isGraduated
+                  ? "El estudiante ha alcanzado la condición de EGRESADO con 120 créditos acreditados. Registro de EFSRT y actas archivadas en Secretaría General."
+                  : `Su matrícula académica en ${currentCycleRoman} y asignación de sección han sido completadas con conformidad de Secretaría General.`}
               </p>
               <span className="text-[9px] text-slate-400 font-bold block mt-1 pl-4">{currentPeriod}</span>
             </div>

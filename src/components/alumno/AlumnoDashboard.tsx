@@ -118,6 +118,18 @@ export default function AlumnoDashboard({
     localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
     localStorage.getItem("sfa_student_cycle") === "2"
   );
+
+  const isGraduated = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted") === "true" ||
+    localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+    localStorage.getItem("sfa_student_graduated_all") === "true" ||
+    localStorage.getItem(`sfa_titulacion_enabled_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_titulacion_enabled_74859612") === "true" ||
+    localStorage.getItem(`sfa_student_status_${studentDni}`) === "Egresado"
+  );
   useEffect(() => {
     const handleSync = () => setStorageSync((v) => v + 1);
     window.addEventListener("storage", handleSync);
@@ -1195,7 +1207,7 @@ export default function AlumnoDashboard({
         user={{
           name: `${personalData.name} ${personalData.lastName}`,
           role: currentProgram?.name || "Estudiante",
-          status: enrollment.academicStatus,
+          status: isGraduated ? "EGRESADO" : enrollment.academicStatus,
         }}
         sections={[
           {

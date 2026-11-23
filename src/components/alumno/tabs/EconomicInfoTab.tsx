@@ -59,8 +59,13 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
   const isGraduated = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_student_promoted_${currentDni}`) === "true" ||
     localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted") === "true" ||
     localStorage.getItem(`sfa_student_graduated_all_${currentDni}`) === "true" ||
-    localStorage.getItem("sfa_titulacion_enabled_74859612") === "true"
+    localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+    localStorage.getItem("sfa_student_graduated_all") === "true" ||
+    localStorage.getItem(`sfa_titulacion_enabled_${currentDni}`) === "true" ||
+    localStorage.getItem("sfa_titulacion_enabled_74859612") === "true" ||
+    localStorage.getItem(`sfa_student_status_${currentDni}`) === "Egresado"
   );
 
   const cycle2Op = typeof window !== "undefined" ? (

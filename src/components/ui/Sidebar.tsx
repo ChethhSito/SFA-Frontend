@@ -137,7 +137,7 @@ export default function Sidebar({
   // Helper to render Status Badge colors dynamically
   const getStatusVariant = (status: string) => {
     const s = (status || "").toUpperCase();
-    if (s.includes("ADMITIDO") || s.includes("MATRICULADO") || s.includes("VALIDADO") || s.includes("APROBADO") || s.includes("APTO")) return "success";
+    if (s.includes("ADMITIDO") || s.includes("MATRICULADO") || s.includes("VALIDADO") || s.includes("APROBADO") || s.includes("APTO") || s.includes("EGRESADO")) return "success";
     if (s.includes("OBSERVADO") || s.includes("RECHAZADO") || s.includes("FALTA") || s.includes("NO APTO")) return "danger";
     if (s.includes("TARDANZA") || s.includes("PENDIENTE") || s.includes("EN PROCESO")) return "warning";
     return "brand";

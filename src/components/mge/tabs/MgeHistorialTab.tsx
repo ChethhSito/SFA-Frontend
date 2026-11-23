@@ -142,7 +142,16 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
     try {
       const initial: Record<string, boolean> = {};
       processedStudents.forEach((s) => {
-        initial[s.dni] = localStorage.getItem(`sfa_student_promoted_${s.dni}`) === "true";
+        initial[s.dni] = Boolean(
+          localStorage.getItem(`sfa_student_promoted_${s.dni}`) === "true" ||
+          localStorage.getItem(`sfa_student_graduated_all_${s.dni}`) === "true" ||
+          (s.dni === "74859612" && (
+            localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+            localStorage.getItem("sfa_student_promoted") === "true" ||
+            localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+            localStorage.getItem("sfa_student_graduated_all") === "true"
+          ))
+        );
       });
       return initial;
     } catch {
@@ -156,7 +165,16 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
       try {
         const updated: Record<string, boolean> = {};
         processedStudents.forEach((s) => {
-          updated[s.dni] = localStorage.getItem(`sfa_student_promoted_${s.dni}`) === "true";
+          updated[s.dni] = Boolean(
+            localStorage.getItem(`sfa_student_promoted_${s.dni}`) === "true" ||
+            localStorage.getItem(`sfa_student_graduated_all_${s.dni}`) === "true" ||
+            (s.dni === "74859612" && (
+              localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+              localStorage.getItem("sfa_student_promoted") === "true" ||
+              localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+              localStorage.getItem("sfa_student_graduated_all") === "true"
+            ))
+          );
         });
         setPromotedState(updated);
       } catch { }
@@ -183,6 +201,8 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
       localStorage.removeItem(`sfa_student_graduated_all_${student.dni}`);
       localStorage.removeItem("sfa_student_graduated_all_74859612");
       localStorage.removeItem("sfa_student_graduated_all");
+      localStorage.removeItem(`sfa_titulacion_enabled_${student.dni}`);
+      localStorage.removeItem("sfa_titulacion_enabled_74859612");
       localStorage.setItem(`sfa_student_cycle_${student.dni}`, "2");
       localStorage.setItem("sfa_student_cycle_74859612", "2");
       localStorage.setItem("sfa_student_cycle", "2");
@@ -414,16 +434,17 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
     });
 
     const weightedAvg = gradedCredits > 0 ? totalGradePoints / gradedCredits : 0;
-    const progressPercent = Math.min(100, Math.round((approvedCredits / 120) * 100));
+    const finalApprovedCredits = isStudentPromoted ? 120 : approvedCredits;
+    const progressPercent = Math.min(100, Math.round((finalApprovedCredits / 120) * 100));
 
     return {
-      totalCourses,
-      approvedCourses,
-      approvedCredits,
+      totalCourses: isStudentPromoted ? 30 : totalCourses,
+      approvedCourses: isStudentPromoted ? 30 : approvedCourses,
+      approvedCredits: finalApprovedCredits,
       weightedAvg,
       progressPercent
     };
-  }, [sanitizedRows]);
+  }, [sanitizedRows, isStudentPromoted]);
 
   const effectiveStatus = isStudentPromoted ? "Egresado / Apto Titulación" : (student?.academicStatus || "Regular");
   const program = programs.find((row) => row.id === student?.programId)?.name || (student?.programId === "electricidad_industrial" ? "Electricidad Industrial" : student?.programId || "Electricidad Industrial");
