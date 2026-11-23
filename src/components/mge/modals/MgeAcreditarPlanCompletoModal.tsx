@@ -118,22 +118,17 @@ export const MgeAcreditarPlanCompletoModal: React.FC<Props> = ({
       localStorage.setItem("sfa_student_cycle_74859612", "6");
       localStorage.setItem("sfa_student_cycle", "6");
 
-      localStorage.setItem(`sfa_student_status_${studentDni}`, "Egresado");
-      localStorage.setItem("sfa_student_status_74859612", "Egresado");
+      localStorage.setItem(`sfa_student_status_${studentDni}`, "Egresado Lectivo");
+      localStorage.setItem("sfa_student_status_74859612", "Egresado Lectivo");
 
-      // 2. Acreditación de los 3 Módulos Formativos (EFSRT)
-      localStorage.setItem(`sfa_efsrt_modulo1_approved_${studentDni}`, "true");
-      localStorage.setItem("sfa_efsrt_modulo1_approved_74859612", "true");
-      localStorage.setItem(`sfa_efsrt_modulo2_approved_${studentDni}`, "true");
-      localStorage.setItem("sfa_efsrt_modulo2_approved_74859612", "true");
-      localStorage.setItem(`sfa_efsrt_modulo3_approved_${studentDni}`, "true");
-      localStorage.setItem("sfa_efsrt_modulo3_approved_74859612", "true");
-      localStorage.setItem(`sfa_efsrt_all_approved_${studentDni}`, "true");
-      localStorage.setItem("sfa_efsrt_all_approved_74859612", "true");
-
-      // Habilitar pago y apertura de expediente de titulación
-      localStorage.setItem(`sfa_titulacion_enabled_${studentDni}`, "true");
-      localStorage.setItem("sfa_titulacion_enabled_74859612", "true");
+      // Las Prácticas Preprofesionales (EFSRT) quedan PENDIENTES de trámite y validación por Secretaría
+      // NO se auto-acreditan aquí para respetar el flujo ministerial estricto
+      localStorage.removeItem(`sfa_efsrt_validated_${studentDni}`);
+      localStorage.removeItem("sfa_efsrt_validated_74859612");
+      localStorage.removeItem(`sfa_efsrt_all_approved_${studentDni}`);
+      localStorage.removeItem("sfa_efsrt_all_approved_74859612");
+      localStorage.removeItem(`sfa_titulacion_enabled_${studentDni}`);
+      localStorage.removeItem("sfa_titulacion_enabled_74859612");
 
       // 3. Registrar notas oficiales y 16 semanas de asistencia para cada asignatura de Ciclos III, IV, V y VI
       [3, 4, 5, 6].forEach((cycNum) => {
@@ -318,13 +313,13 @@ export const MgeAcreditarPlanCompletoModal: React.FC<Props> = ({
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-black uppercase text-amber-300 font-mono">EGRESO TOTAL</span>
+                  <span className="text-[9px] font-black uppercase text-amber-300 font-mono">EGRESO LECTIVO</span>
                   <Award className="w-4 h-4 text-amber-300" />
                 </div>
-                <p className="text-xs font-black leading-tight text-white">120 Créditos</p>
-                <p className="text-[10px] text-emerald-200 font-medium">100% Malla Culminada</p>
+                <p className="text-xs font-black leading-tight text-white">96 Créditos</p>
+                <p className="text-[10px] text-emerald-200 font-medium">100% Cursos Aprobados</p>
                 <span className="inline-block text-[9px] font-black uppercase text-slate-950 bg-amber-400 px-1.5 py-0.5 rounded font-mono">
-                  Apto Titulación
+                  EFSRT Pendiente
                 </span>
               </div>
             </div>
@@ -500,7 +495,7 @@ export const MgeAcreditarPlanCompletoModal: React.FC<Props> = ({
               className="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider font-mono bg-emerald-700 hover:bg-emerald-600 text-white shadow-md border border-emerald-600 transition-all cursor-pointer flex items-center gap-2 hover:shadow-lg active:scale-95 disabled:opacity-50"
             >
               <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-              <span>{isProcessing ? "Consolidando 6 Ciclos..." : "Confirmar Egreso Curricular (120 Créditos)"}</span>
+              <span>{isProcessing ? "Consolidando 6 Ciclos..." : "Confirmar Egreso Curricular Lectivo (96 Créditos)"}</span>
             </button>
           </div>
         </div>

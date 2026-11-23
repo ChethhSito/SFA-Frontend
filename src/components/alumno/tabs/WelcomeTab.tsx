@@ -80,13 +80,26 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
       ? "Periodo 2027-II" 
       : (rawPeriodName && rawPeriodName !== "Periodo académico" ? rawPeriodName : "Periodo 2027-I");
 
-  const currentCycleRoman = isGraduated ? "Ciclo VI (Egresado)" : isPromotedCycle2 ? "Ciclo II" : "Ciclo I";
+  const hasPracticesValidated = Boolean(
+    typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_efsrt_validated_${studentDni}`) === "true" ||
+      localStorage.getItem("sfa_efsrt_validated_74859612") === "true" ||
+      localStorage.getItem(`sfa_efsrt_all_approved_${studentDni}`) === "true" ||
+      localStorage.getItem("sfa_efsrt_all_approved_74859612") === "true"
+    )
+  );
+
+  const currentCycleRoman = isGraduated 
+    ? (hasPracticesValidated ? "Ciclo VI (Egresado Pleno)" : "Ciclo VI (Egresado Lectivo)") 
+    : isPromotedCycle2 ? "Ciclo II" : "Ciclo I";
   const progressBadge = isGraduated
-    ? "Plan Curricular Culminado • 100% Concluido (120 Créditos Acreditados)"
+    ? (hasPracticesValidated 
+        ? "Plan Curricular Culminado • 100% Concluido (120 Créditos Acreditados)" 
+        : "Plan Curricular Lectivo Concluido • 80% (96 / 120 Créditos • EFSRT Pendiente)")
     : isPromotedCycle2 
       ? "Formación Continua • Ciclo II (16.7% Concluido • Ciclo I Aprobado)" 
       : "Inicio de Formación • Ciclo I (0% Concluido)";
-  const progressMeterWidth = isGraduated ? "100%" : isPromotedCycle2 ? "16.7%" : "3%";
+  const progressMeterWidth = isGraduated ? (hasPracticesValidated ? "100%" : "80%") : isPromotedCycle2 ? "16.7%" : "3%";
 
   const scheduledGroups = [...new Set(studentTasks.map((task: any) =>
     mpaPlanningData?.groups?.find((group: any) => group.id === task.groupId)?.name || task.groupId,
@@ -115,14 +128,18 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
         <div className="absolute top-0 right-0 w-64 h-full bg-linear-gradient(135deg,transparent,rgba(255,255,255,0.05)) transform skew-x-12" />
         <div className="relative z-10 space-y-2 max-w-2xl">
           <span className="text-[10px] bg-red-900/60 text-amber-300 font-extrabold px-3 py-1 rounded-full uppercase tracking-widest inline-block border border-red-700/50">
-            {isGraduated ? "Expediente de Egresado • Apto Titulación" : `Portal del Estudiante • ${currentPeriod}`}
+            {isGraduated 
+              ? (hasPracticesValidated ? "Expediente de Egresado Pleno • Apto Titulación" : "Expediente de Egresado Lectivo • EFSRT Pendiente") 
+              : `Portal del Estudiante • ${currentPeriod}`}
           </span>
           <h2 className="text-2xl md:text-3.5xl font-black font-display tracking-tight leading-none pt-1">
             ¡Bienvenido de vuelta, {personalData.name}!
           </h2>
           <p className="text-xs text-slate-100 font-medium tracking-wide">
             {isGraduated
-              ? "Felicitaciones, ha completado satisfactoriamente los 6 ciclos formativos (120 créditos) y los 3 módulos de EFSRT. Su expediente se encuentra expedito para el trámite de Título Profesional en Secretaría Académica."
+              ? (hasPracticesValidated 
+                  ? "Felicitaciones, ha completado satisfactoriamente los 6 ciclos formativos (96 créditos) y los 3 módulos de EFSRT (24 créditos). Su expediente se encuentra expedito para el trámite de Título Profesional en Secretaría Académica."
+                  : "Ha culminado satisfactoriamente los 6 ciclos lectivos con 96 créditos aprobados. Puede tramitar su Constancia de Egreso en Secretaría Académica y registrar sus Prácticas Preprofesionales (EFSRT) para alcanzar los 120 créditos y carpeta de titulación.")
               : `Estamos contentos de tenerte en el IESTP San Francisco de Asís. Revisa tus asignaturas inscritas de ${currentCycleRoman}, tu horario de clases oficial y tus estados administrativos de un vistazo.`}
           </p>
         </div>
@@ -170,11 +187,11 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
                     {isGraduated ? "Condición Académica" : "Próxima Sesión"}
                   </span>
                   <span className={`text-[10px] font-bold ${isGraduated ? "text-emerald-800" : "text-amber-800"}`}>
-                    {isGraduated ? "120 Créditos Acreditados" : nextClassTime}
+                    {isGraduated ? (hasPracticesValidated ? "120 Créditos • Egresado Pleno" : "96 Créditos • Egresado Lectivo") : nextClassTime}
                   </span>
                 </div>
                 <div className="text-xs text-slate-900 font-extrabold block mt-1 leading-snug break-words">
-                  {isGraduated ? "Egresado Regular • Malla Completa" : (nextCourse?.name || (nextTask ? 'Unidad Didáctica' : 'Programación oficial en curso por MPA'))}
+                  {isGraduated ? (hasPracticesValidated ? "Egresado Pleno • Apto Titulación" : "Plan Curricular Lectivo Concluido (80%)") : (nextCourse?.name || (nextTask ? 'Unidad Didáctica' : 'Programación oficial en curso por MPA'))}
                 </div>
                 {isGraduated ? (
                   <span className="text-[10px] text-emerald-900/80 font-medium flex items-center gap-1 mt-0.5 truncate">

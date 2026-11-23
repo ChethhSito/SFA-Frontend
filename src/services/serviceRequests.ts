@@ -1,6 +1,6 @@
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://127.0.0.1:3001';
 
-export type StudentProcedureCode = 'CER01' | 'CON01';
+export type StudentProcedureCode = 'CER01' | 'CON01' | 'EGR01' | 'PRA01' | 'BAC01' | 'TIT01';
 export type ServiceConceptCode = StudentProcedureCode | 'ADM01' | 'MAT01' | 'SUB01' | 'CAR01' | 'DOC01' | 'DOC02';
 
 export interface ServiceRequest {

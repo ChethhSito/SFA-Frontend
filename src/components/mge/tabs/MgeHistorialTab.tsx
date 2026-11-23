@@ -434,7 +434,17 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
     });
 
     const weightedAvg = gradedCredits > 0 ? totalGradePoints / gradedCredits : 0;
-    const finalApprovedCredits = isStudentPromoted ? 120 : approvedCredits;
+    const hasPracticesValidated = Boolean(
+      typeof window !== "undefined" && (
+        localStorage.getItem(`sfa_efsrt_validated_${student?.dni}`) === "true" ||
+        localStorage.getItem("sfa_efsrt_validated_74859612") === "true" ||
+        localStorage.getItem(`sfa_efsrt_all_approved_${student?.dni}`) === "true" ||
+        localStorage.getItem("sfa_efsrt_all_approved_74859612") === "true"
+      )
+    );
+    const finalApprovedCredits = isStudentPromoted
+      ? (hasPracticesValidated ? 120 : 96)
+      : approvedCredits;
     const progressPercent = Math.min(100, Math.round((finalApprovedCredits / 120) * 100));
 
     return {
@@ -444,9 +454,19 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
       weightedAvg,
       progressPercent
     };
-  }, [sanitizedRows, isStudentPromoted]);
+  }, [sanitizedRows, isStudentPromoted, student]);
 
-  const effectiveStatus = isStudentPromoted ? "Egresado / Apto Titulación" : (student?.academicStatus || "Regular");
+  const hasPracticesValidatedGlobal = Boolean(
+    typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_efsrt_validated_${student?.dni}`) === "true" ||
+      localStorage.getItem("sfa_efsrt_validated_74859612") === "true" ||
+      localStorage.getItem(`sfa_efsrt_all_approved_${student?.dni}`) === "true" ||
+      localStorage.getItem("sfa_efsrt_all_approved_74859612") === "true"
+    )
+  );
+  const effectiveStatus = isStudentPromoted
+    ? (hasPracticesValidatedGlobal ? "Egresado Pleno / Apto Titulación" : "Egresado Lectivo (96 cr) • EFSRT Pendiente")
+    : (student?.academicStatus || "Regular");
   const program = programs.find((row) => row.id === student?.programId)?.name || (student?.programId === "electricidad_industrial" ? "Electricidad Industrial" : student?.programId || "Electricidad Industrial");
 
   const download = async () => {

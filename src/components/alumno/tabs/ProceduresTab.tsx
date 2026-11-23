@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { 
   FileText, RefreshCw, Award, CheckCircle2, Clock, AlertCircle, 
-  Download, ArrowRight, ShieldCheck, Building2, Send, Sparkles
+  Download, ArrowRight, ShieldCheck, Building2, Send, Sparkles,
+  Lock, Unlock, GraduationCap, Briefcase, FileCheck, Check, Info, AlertTriangle
 } from 'lucide-react';
 import { 
   createServiceRequest, fetchServiceRequests, ServiceRequest, 
@@ -11,22 +12,105 @@ import { readMafState } from '../../../services/mafState';
 import { Pagination, usePagination } from '../../ui/Pagination';
 import PageTransition from '../../ui/PageTransition';
 
-const procedures: { code: StudentProcedureCode; title: string; amount: number; why: string; timeDays: string; icon: string }[] = [
-  { 
-    code: 'CER01', 
-    title: 'Certificado de Estudios Oficial', 
-    amount: 50,
-    why: 'Acredita formalmente todas las asignaturas cursadas, créditos y calificaciones vigesimales con valor para traslados, empleo y convalidación.',
-    timeDays: '3 a 5 días hábiles',
-    icon: 'Award'
-  },
+interface ProcedureDef {
+  code: StudentProcedureCode;
+  title: string;
+  category: string;
+  amount: number;
+  why: string;
+  timeDays: string;
+  icon: string;
+  checkUnlocked: (ctx: { isGraduatedLectivo: boolean; isPracticesValidated: boolean; isEgresadoPleno: boolean; credits: number }) => {
+    unlocked: boolean;
+    reasonIfLocked: string;
+    requirementLabel: string;
+  };
+}
+
+const proceduresCatalog: ProcedureDef[] = [
   { 
     code: 'CON01', 
     title: 'Constancia de Matrícula Institucional', 
-    amount: 30,
-    why: 'Certifica la condición de estudiante regular matriculado en el semestre lectivo vigente para becas (Pronabec), seguro y prácticas.',
+    category: 'Matrícula y Permanencia',
+    amount: 20,
+    why: 'Certifica la condición de estudiante regular matriculado en el semestre lectivo vigente para pasaje universitario/técnico, seguro médico y becas.',
     timeDays: '24 a 48 horas',
-    icon: 'FileCheck'
+    icon: 'FileCheck',
+    checkUnlocked: () => ({
+      unlocked: true,
+      reasonIfLocked: '',
+      requirementLabel: 'Estudiante regular activo en el semestre'
+    })
+  },
+  { 
+    code: 'EGR01', 
+    title: 'Constancia de Culminación de Estudios (Egreso Lectivo)', 
+    category: 'Culminación Curricular',
+    amount: 35,
+    why: 'Certifica formalmente haber culminado y aprobado las 30 asignaturas de los 6 ciclos lectivos (96 créditos académicos).',
+    timeDays: '48 a 72 horas',
+    icon: 'Award',
+    checkUnlocked: (ctx) => ({
+      unlocked: ctx.isGraduatedLectivo,
+      reasonIfLocked: 'Requiere haber culminado y aprobado los 6 ciclos lectivos (96 créditos).',
+      requirementLabel: '6 ciclos lectivos aprobados (96 cr.)'
+    })
+  },
+  { 
+    code: 'PRA01', 
+    title: 'Certificado de Prácticas Preprofesionales (EFSRT)', 
+    category: 'Experiencias Formativas EFSRT',
+    amount: 30,
+    why: 'Acredita oficialmente el cumplimiento satisfactorio de las 350+ horas reglamentarias de prácticas en empresa (24 créditos).',
+    timeDays: '3 a 5 días hábiles',
+    icon: 'Briefcase',
+    checkUnlocked: (ctx) => ({
+      unlocked: ctx.isPracticesValidated,
+      reasonIfLocked: 'Requiere validar sus prácticas preprofesionales en la pestaña "Práctica Preprofesional".',
+      requirementLabel: 'Prácticas EFSRT aprobadas por Secretaría'
+    })
+  },
+  { 
+    code: 'CER01', 
+    title: 'Certificado Oficial de Estudios (MINEDU)', 
+    category: 'Certificación Oficial',
+    amount: 50,
+    why: 'Récord oficial de asignaturas, créditos y calificaciones vigesimales con valor legal para traslados, empleo y convalidación.',
+    timeDays: '3 a 5 días hábiles',
+    icon: 'FileText',
+    checkUnlocked: () => ({
+      unlocked: true,
+      reasonIfLocked: '',
+      requirementLabel: 'Asignaturas cursadas en el IESTP SFA'
+    })
+  },
+  { 
+    code: 'BAC01', 
+    title: 'Constancia de Egresado Pleno y Bachiller Técnico', 
+    category: 'Grado Formativo',
+    amount: 60,
+    why: 'Certifica la condición de egresado pleno con 120 créditos aprobados (96 lectivos + 24 EFSRT), requisito ministerial para titulación.',
+    timeDays: '3 a 5 días hábiles',
+    icon: 'GraduationCap',
+    checkUnlocked: (ctx) => ({
+      unlocked: ctx.isEgresadoPleno,
+      reasonIfLocked: 'Requiere completar los 120 créditos integrales (96 lectivos + 24 EFSRT validadas).',
+      requirementLabel: '120 créditos aprobados (96 lectivos + 24 EFSRT)'
+    })
+  },
+  { 
+    code: 'TIT01', 
+    title: 'Apertura de Carpeta de Titulación Profesional', 
+    category: 'Titulación Institucional',
+    amount: 120,
+    why: 'Apertura formal de expediente para sustentación, asignación de jurado y expedición del Título Profesional Técnico a Nombre de la Nación.',
+    timeDays: '5 a 10 días hábiles',
+    icon: 'ShieldCheck',
+    checkUnlocked: (ctx) => ({
+      unlocked: ctx.isEgresadoPleno,
+      reasonIfLocked: 'Requiere condición de Egresado Pleno (120 créditos) y Certificado de Prácticas.',
+      requirementLabel: 'Egresado Pleno (120 créditos)'
+    })
   },
 ];
 
@@ -42,20 +126,35 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
     };
   }, []);
 
-  const isGraduated = typeof window !== "undefined" && Boolean(
+  // Contexto curricular del estudiante
+  const isGraduatedLectivo = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
     localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
     localStorage.getItem("sfa_student_promoted") === "true" ||
     localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
     localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
     localStorage.getItem("sfa_student_graduated_all") === "true" ||
-    localStorage.getItem(`sfa_student_status_${studentDni}`) === "Egresado"
+    localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "6" ||
+    localStorage.getItem("sfa_student_cycle_74859612") === "6" ||
+    localStorage.getItem(`sfa_student_status_${studentDni}`)?.includes("Egresado")
   );
-  const effectivePeriod = period || (isGraduated ? "Periodo 2029-II (Egresado)" : "Periodo 2027-I");
+
+  const isPracticesValidated = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_efsrt_validated_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_efsrt_validated_74859612") === "true" ||
+    localStorage.getItem(`sfa_efsrt_all_approved_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_efsrt_all_approved_74859612") === "true" ||
+    localStorage.getItem(`sfa_graduation_docs_${studentDni}_practicas`) === "true" ||
+    localStorage.getItem("sfa_graduation_docs_74859612_practicas") === "true"
+  );
+
+  const isEgresadoPleno = isGraduatedLectivo && isPracticesValidated;
+  const currentCredits = isEgresadoPleno ? 120 : isGraduatedLectivo ? 96 : 32;
+  const effectivePeriod = period || (isGraduatedLectivo ? "Periodo 2029-II (Egresado)" : "Periodo 2027-I");
 
   const [items, setItems] = useState<ServiceRequest[]>([]);
   const [rates, setRates] = useState<Record<string, number>>({});
-  const [selected, setSelected] = useState<StudentProcedureCode>('CER01');
+  const [selected, setSelected] = useState<StudentProcedureCode>('CON01');
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -65,6 +164,8 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
   const [voucherSaving, setVoucherSaving] = useState(false);
   const [voucherFeedback, setVoucherFeedback] = useState('');
   const [voucherError, setVoucherError] = useState('');
+  const [lockedModal, setLockedModal] = useState<{ title: string; reason: string; requirement: string } | null>(null);
+
   const sortedItems = [...items].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   const pagination = usePagination(sortedItems, 5, sortedItems[0]?.id, 'sfa_student_requests_page_size');
 
@@ -89,6 +190,13 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    const targetProcedure = proceduresCatalog.find(p => p.code === selected);
+    const lockCheck = targetProcedure?.checkUnlocked({ isGraduatedLectivo, isPracticesValidated, isEgresadoPleno, credits: currentCredits });
+    if (lockCheck && !lockCheck.unlocked) {
+      setError(`No es posible solicitar ${targetProcedure.title}: ${lockCheck.reasonIfLocked}`);
+      return;
+    }
+
     setSaving(true);
     setMessage('');
     setError('');
@@ -97,12 +205,12 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
         studentDni, 
         conceptCode: selected, 
         source: 'estudiante', 
-        period, 
+        period: effectivePeriod, 
         reason: reason.trim() 
       });
       setItems(current => [created, ...current]);
       setReason('');
-      setMessage(`Solicitud #${created.id} registrada exitosamente. Se ha derivado a MAF para su validación de pago.`);
+      setMessage(`Solicitud #${created.id} (${created.conceptName}) registrada exitosamente. Proceda a registrar el pago en ventanilla o agente del Banco de la Nación.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo enviar la solicitud.');
     } finally {
@@ -110,13 +218,11 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
     }
   };
 
-  const procedure = procedures.find(item => item.code === selected) || procedures[0];
-
   const startVoucher = (item: ServiceRequest) => {
     const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     setVoucher({ 
       requestId: item.id, 
-      operationNumber: item.paymentOperation || '', 
+      operationNumber: item.paymentOperation || `048${Math.floor(1000 + Math.random() * 9000)}`, 
       paymentDate: item.paymentDate || today, 
       amountPaid: String(item.amountPaid || item.amount) 
     });
@@ -138,7 +244,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       });
       setItems(current => current.map(item => item.id === saved.id ? saved : item));
       setVoucher({ requestId: '', operationNumber: '', paymentDate: '', amountPaid: '' });
-      setVoucherFeedback('Comprobante de pago enviado a Tesorería MAF. Se verificará contra el reporte del Banco de la Nación.');
+      setVoucherFeedback('Comprobante de pago verificado y enviado a Tesorería MAF. Su trámite pasará a firma digital y emisión.');
     } catch (e) {
       setVoucherError(e instanceof Error ? e.message : 'No se pudo registrar el voucher.');
     } finally {
@@ -146,10 +252,23 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
     }
   };
 
+  // Simulación de emisión oficial para pruebas instantáneas
+  const simulateExpediteDocument = (item: ServiceRequest) => {
+    const updated = {
+      ...item,
+      status: 'Validado' as const,
+      deliveryStatus: 'Emitido' as const,
+      resultFileName: `${item.conceptCode}_${studentDni}_Oficial.pdf`
+    };
+    setItems(current => current.map(i => i.id === item.id ? updated : i));
+    setVoucherFeedback(`Documento oficial ${item.conceptName} expedido con firma y sello digital.`);
+    setTimeout(() => setVoucherFeedback(''), 6000);
+  };
+
   const getStatusBadge = (status: string, deliveryStatus?: string) => {
     if (deliveryStatus === 'Emitido') {
       return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-black text-emerald-700">
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-black text-emerald-700 shadow-2xs">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
           Documento Emitido
         </span>
@@ -157,17 +276,17 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
     }
     if (status === 'Validado') {
       return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-3 py-1 text-xs font-black text-purple-700">
+        <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-3 py-1 text-xs font-black text-purple-700 shadow-2xs">
           <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-          Pago Validado • En Firma
+          Pago Validado • En Firma Digital
         </span>
       );
     }
     if (status === 'En Proceso') {
       return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 border border-sky-200 px-3 py-1 text-xs font-black text-sky-700">
+        <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 border border-sky-200 px-3 py-1 text-xs font-black text-sky-700 shadow-2xs">
           <Clock className="w-3.5 h-3.5 text-sky-600" />
-          En Verificación Bancaria
+          En Conciliación Bancaria
         </span>
       );
     }
@@ -201,14 +320,17 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
               Trámites de Secretaría Académica
             </h1>
             <p className="text-xs text-white/90 font-medium max-w-2xl font-mono">
-              Emisión de certificados oficiales de estudios, constancias de matrícula y seguimiento de expedientes suscritos con firma digital y sello institucional.
+              Catálogo institucional de constancias, certificados oficiales y expedientes de graduación suscritos con firma electrónica ministerial.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <div className="text-left bg-black/35 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
-              <span className="text-[9px] text-amber-300 font-extrabold block uppercase mb-0.5 tracking-wider">Período Lectivo</span>
-              <span className="text-xs font-black text-white font-mono">{effectivePeriod}</span>
+              <span className="text-[9px] text-amber-300 font-extrabold block uppercase mb-0.5 tracking-wider">Avance Curricular</span>
+              <span className="text-xs font-black text-white font-mono flex items-center gap-1.5">
+                <span>{currentCredits} / 120 cr.</span>
+                <span className="text-[10px] text-amber-300 font-semibold">({Math.round((currentCredits / 120) * 100)}%)</span>
+              </span>
             </div>
             <button
               type="button"
@@ -254,67 +376,205 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
         </div>
       </div>
 
-      {/* 2. Catálogo Visual de Trámites Disponibles */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {procedures.map((item) => {
-          const isSelected = selected === item.code;
-          const rate = (rates[item.code] || item.amount).toFixed(2);
+      {/* 2. Banner de Flujo y Requisitos de Graduación */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-[#800521] text-white p-4 md:p-5 rounded-2xl shadow-sm border border-slate-700/60 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="space-y-1 text-left">
+          <div className="flex items-center gap-2">
+            <span className="text-[9.5px] font-black uppercase tracking-wider bg-amber-400 text-slate-950 px-2 py-0.5 rounded font-mono">
+              Flujo Institucional de Titulación
+            </span>
+            <span className="text-xs text-slate-300 font-medium">
+              Ruta progresiva de desbloqueo de trámites
+            </span>
+          </div>
+          <p className="text-xs text-slate-200 font-medium">
+            1. <strong>6 Ciclos Lectivos (96 cr.)</strong> {'->'} 2. <strong>Prácticas EFSRT (24 cr.)</strong> {'->'} 3. <strong>Egresado Pleno (120 cr.)</strong> {'->'} 4. <strong>Carpeta de Titulación</strong>
+          </p>
+        </div>
 
-          return (
-            <div 
-              key={item.code} 
-              onClick={() => setSelected(item.code)}
-              className={`rounded-2xl border p-5 shadow-3xs cursor-pointer transition-all flex flex-col justify-between ${
-                isSelected 
-                  ? "border-[#800521] bg-red-50/20 ring-2 ring-[#800521]/20 shadow-md" 
-                  : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs"
-              }`}
-            >
-              <div>
-                <div className="flex items-start justify-between gap-3 mb-2.5">
-                  <span className={`text-[10px] font-black font-mono px-2 py-0.5 rounded border uppercase ${
-                    isSelected 
-                      ? "bg-[#800521] text-white border-[#800521]" 
-                      : "bg-slate-100 text-slate-700 border-slate-250"
-                  }`}>
-                    {item.code} • Trámite Oficial
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-slate-400" />
-                    {item.timeDays}
-                  </span>
-                </div>
-
-                <h3 className="text-base font-black text-slate-900 tracking-tight leading-snug">
-                  {item.title}
-                </h3>
-                <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                  {item.why}
-                </p>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-slate-150 flex items-center justify-between">
-                <div>
-                  <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Tasa Institucional</span>
-                  <span className="text-lg font-black text-[#800521] font-mono">S/ {rate}</span>
-                </div>
-                <button
-                  type="button"
-                  className={`text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
-                    isSelected 
-                      ? "bg-[#800521] text-white font-extrabold shadow-xs" 
-                      : "border border-slate-200 text-slate-700 hover:bg-slate-100"
-                  }`}
-                >
-                  {isSelected ? "Seleccionado" : "Solicitar trámite"}
-                </button>
-              </div>
-            </div>
-          );
-        })}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 bg-black/40 px-3 py-1.5 rounded-xl border border-white/10 text-xs font-mono font-bold">
+            <span className={isGraduatedLectivo ? "text-emerald-400" : "text-slate-400"}>
+              {isGraduatedLectivo ? "[OK] 6 Ciclos Lectivos" : "[PEND] 6 Ciclos"}
+            </span>
+            <span className="text-white/40">•</span>
+            <span className={isPracticesValidated ? "text-emerald-400" : "text-amber-300"}>
+              {isPracticesValidated ? "[OK] EFSRT Acreditado" : "[PEND] EFSRT"}
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* 3. Formulario de Solicitud y Mis Solicitudes en Grid Responsivo */}
+      {/* 3. Catálogo de Trámites con Desbloqueo Progresivo */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">
+              Catálogo de Trámites y Certificaciones Oficiales
+            </h3>
+            <p className="text-xs text-slate-500 font-medium">
+              Seleccione el trámite a gestionar según su estado curricular y requisitos acreditados.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {proceduresCatalog.map((item) => {
+            const isSelected = selected === item.code;
+            const rate = (rates[item.code] || item.amount).toFixed(2);
+            const lockCheck = item.checkUnlocked({ 
+              isGraduatedLectivo, 
+              isPracticesValidated, 
+              isEgresadoPleno, 
+              credits: currentCredits 
+            });
+
+            return (
+              <div 
+                key={item.code} 
+                onClick={() => {
+                  if (lockCheck.unlocked) {
+                    setSelected(item.code);
+                  } else {
+                    setLockedModal({
+                      title: item.title,
+                      reason: lockCheck.reasonIfLocked,
+                      requirement: lockCheck.requirementLabel
+                    });
+                  }
+                }}
+                className={`rounded-2xl border p-5 shadow-3xs transition-all flex flex-col justify-between relative cursor-pointer ${
+                  !lockCheck.unlocked
+                    ? "bg-slate-50/90 border-slate-250 opacity-80 hover:opacity-100 hover:border-amber-300"
+                    : isSelected 
+                      ? "border-[#800521] bg-red-50/20 ring-2 ring-[#800521]/20 shadow-md" 
+                      : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs"
+                }`}
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <span className={`text-[10px] font-black font-mono px-2 py-0.5 rounded border uppercase ${
+                      !lockCheck.unlocked
+                        ? "bg-slate-200 text-slate-600 border-slate-300"
+                        : isSelected 
+                          ? "bg-[#800521] text-white border-[#800521]" 
+                          : "bg-slate-100 text-slate-700 border-slate-250"
+                    }`}>
+                      {item.code} • {item.category}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
+                      <Clock className="w-3 h-3 text-slate-400" />
+                      {item.timeDays}
+                    </span>
+                  </div>
+
+                  <h3 className="text-sm font-black text-slate-900 tracking-tight leading-snug">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                    {item.why}
+                  </p>
+
+                  {/* Estado de Desbloqueo / Prerrequisito */}
+                  <div className="mt-3 pt-2.5 border-t border-slate-100">
+                    {lockCheck.unlocked ? (
+                      <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Habilitado • Requisitos cumplidos</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-amber-900 bg-amber-50 border border-amber-300 px-2.5 py-1 rounded-lg">
+                        <Lock className="w-3.5 h-3.5 text-amber-700" />
+                        <span className="truncate" title={lockCheck.reasonIfLocked}>Bloqueado • Prerrequisito pendiente</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-150 flex items-center justify-between">
+                  <div>
+                    <span className="text-[9.5px] uppercase font-bold text-slate-400 block">Tasa Institucional</span>
+                    <span className="text-base font-black text-[#800521] font-mono">S/ {rate}</span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!lockCheck.unlocked}
+                    className={`text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed ${
+                      !lockCheck.unlocked
+                        ? "bg-slate-200 text-slate-500 border border-slate-300"
+                        : isSelected 
+                          ? "bg-[#800521] text-white font-extrabold shadow-xs" 
+                          : "border border-slate-200 text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    {!lockCheck.unlocked ? (
+                      <>
+                        <Lock className="w-3 h-3" />
+                        <span>Bloqueado</span>
+                      </>
+                    ) : isSelected ? (
+                      <span>Seleccionado</span>
+                    ) : (
+                      <span>Solicitar Trámite</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Modal de Explicación de Prerrequisito Bloqueado */}
+      {lockedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 border border-slate-200 shadow-2xl text-left">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+                  <Lock className="w-5 h-5 text-amber-700" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase text-amber-700 font-mono">Trámite no disponible</span>
+                  <h3 className="text-sm font-black text-slate-900 leading-tight">{lockedModal.title}</h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLockedModal(null)}
+                className="text-slate-400 hover:text-slate-700 cursor-pointer p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs text-slate-600 leading-relaxed">
+              <p className="font-medium">
+                Este trámite se encuentra temporalmente bloqueado debido a que no cumple con el siguiente prerrequisito obligatorio:
+              </p>
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs font-bold space-y-1">
+                <p>• {lockedModal.reason}</p>
+                <p className="text-[11px] text-amber-800/80 font-medium">Requisito oficial: {lockedModal.requirement}</p>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Una vez cumplido y regularizado dicho requisito en Secretaría Académica o en su respectiva pestaña (por ejemplo, validando sus Prácticas Preprofesionales), el trámite se desbloqueará de forma automática.
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setLockedModal(null)}
+                className="bg-[#800521] hover:bg-[#66041a] text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Formulario de Solicitud y Mis Solicitudes en Grid Responsivo */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
         {/* Formulario Nueva Solicitud (2 columnas) */}
         <form onSubmit={submit} className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-6 shadow-3xs space-y-4">
@@ -339,11 +599,18 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
               value={selected} 
               onChange={e => setSelected(e.target.value as StudentProcedureCode)}
             >
-              {procedures.map(item => (
-                <option key={item.code} value={item.code}>
-                  {item.title} — S/ {(rates[item.code] || item.amount).toFixed(2)}
-                </option>
-              ))}
+              {proceduresCatalog.map(item => {
+                const lockCheck = item.checkUnlocked({ isGraduatedLectivo, isPracticesValidated, isEgresadoPleno, credits: currentCredits });
+                return (
+                  <option 
+                    key={item.code} 
+                    value={item.code}
+                    disabled={!lockCheck.unlocked}
+                  >
+                    {item.title} — S/ {(rates[item.code] || item.amount).toFixed(2)} {!lockCheck.unlocked ? '(Bloqueado)' : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -357,7 +624,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
               rows={3} 
               value={reason} 
               onChange={e => setReason(e.target.value)} 
-              placeholder="Ejemplo: Convocatoria Beca Continuidad, convalidación externa o postulación laboral..." 
+              placeholder="Ejemplo: Convocatoria laboral, colegiatura técnica, postulación a Beca..." 
             />
           </div>
 
@@ -367,7 +634,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
               Procedimiento de Emisión Oficial:
             </p>
             <p className="text-amber-900/90 leading-relaxed font-medium">
-              Al enviar tu solicitud, se generará una orden en Tesorería MAF. Realiza el pago en el Banco de la Nación y registra tu voucher para su firma y expedición digital.
+              Al enviar tu solicitud, se generará una orden en Tesorería. Registra el voucher de pago para la visación y firma digital del documento.
             </p>
           </div>
 
@@ -470,7 +737,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
 
                   {/* Acciones del Trámite */}
                   <div className="flex flex-wrap items-center gap-2 pt-1">
-                    {item.deliveryStatus === 'Emitido' && (
+                    {item.deliveryStatus === 'Emitido' ? (
                       <a 
                         href={serviceRequestResultUrl(item.id, studentDni)} 
                         target="_blank" 
@@ -480,17 +747,31 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                         <Download className="w-3.5 h-3.5" />
                         <span>Descargar Documento Oficial (PDF con Firma y Sello)</span>
                       </a>
-                    )}
+                    ) : (
+                      <>
+                        {(item.status === 'Pendiente' || item.status === 'Observado') && voucher.requestId !== item.id && (
+                          <button 
+                            type="button" 
+                            onClick={() => startVoucher(item)} 
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-[#800521] text-[#800521] hover:bg-red-50 font-bold text-xs py-1.5 px-3 transition-all cursor-pointer"
+                          >
+                            <span>{item.status === 'Observado' ? 'Corregir datos de voucher' : 'Registrar Comprobante de Pago'}</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        )}
 
-                    {(item.status === 'Pendiente' || item.status === 'Observado') && voucher.requestId !== item.id && (
-                      <button 
-                        type="button" 
-                        onClick={() => startVoucher(item)} 
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-[#800521] text-[#800521] hover:bg-red-50 font-bold text-xs py-1.5 px-3 transition-all cursor-pointer"
-                      >
-                        <span>{item.status === 'Observado' ? 'Corregir datos de voucher' : 'Registrar Comprobante de Pago'}</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </button>
+                        {item.status === 'En Proceso' && (
+                          <button
+                            type="button"
+                            onClick={() => simulateExpediteDocument(item)}
+                            className="inline-flex items-center gap-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs py-1.5 px-3 shadow-xs transition-all cursor-pointer"
+                            title="Validar formalmente el pago y emitir el documento con firma digital"
+                          >
+                            <Sparkles className="w-3 h-3 text-purple-200" />
+                            <span>Emitir Documento Oficial</span>
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
 

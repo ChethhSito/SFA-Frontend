@@ -703,13 +703,16 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
               <tr className="hover:bg-slate-50/50">
                 <td className="py-3 px-4 font-bold text-slate-800">
-                  Constancia de Matrícula Digital Oficial
+                  <div>
+                    <span className="text-[10px] font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded mr-2 border border-slate-200">CON01</span>
+                    Constancia de Matrícula Institucional
+                  </div>
                 </td>
                 <td className="py-3 px-3 text-slate-500 text-[11px]">
-                  Emisión inmediata vía SFA Cloud
+                  Emisión en 24h a 48h con firma digital
                 </td>
-                <td className="py-3 px-3 text-right font-mono font-black text-emerald-700">
-                  S/ 0.00 (Gratuito)
+                <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
+                  S/ 20.00
                 </td>
                 <td className="py-3 px-4 text-center">
                   <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -719,13 +722,64 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
               </tr>
               <tr className="hover:bg-slate-50/50">
                 <td className="py-3 px-4 font-bold text-slate-800">
-                  Boleta Oficial de Notas y Récord de Calificaciones
+                  <div>
+                    <span className="text-[10px] font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded mr-2 border border-slate-200">EGR01</span>
+                    Constancia de Culminación de Estudios (Egreso Lectivo)
+                  </div>
                 </td>
                 <td className="py-3 px-3 text-slate-500 text-[11px]">
-                  Descarga en PDF con firma digital
+                  Requiere 6 ciclos lectivos aprobados (96 cr.)
                 </td>
-                <td className="py-3 px-3 text-right font-mono font-black text-emerald-700">
-                  S/ 0.00 (Gratuito)
+                <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
+                  S/ 35.00
+                </td>
+                <td className="py-3 px-4 text-center">
+                  <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border ${
+                    isGraduated
+                      ? "text-emerald-800 bg-emerald-50 border-emerald-200"
+                      : "text-amber-800 bg-amber-50 border-amber-200"
+                  }`}>
+                    {isGraduated ? "Habilitado" : "Bloqueado"}
+                  </span>
+                </td>
+              </tr>
+              <tr className="hover:bg-slate-50/50">
+                <td className="py-3 px-4 font-bold text-slate-800">
+                  <div>
+                    <span className="text-[10px] font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded mr-2 border border-slate-200">PRA01</span>
+                    Certificado de Prácticas Preprofesionales (EFSRT)
+                  </div>
+                </td>
+                <td className="py-3 px-3 text-slate-500 text-[11px]">
+                  Requiere 350+ horas validadas en Secretaría
+                </td>
+                <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
+                  S/ 30.00
+                </td>
+                <td className="py-3 px-4 text-center">
+                  <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border ${
+                    Boolean(typeof window !== "undefined" && (localStorage.getItem(`sfa_efsrt_validated_${studentDni}`) === "true" || localStorage.getItem("sfa_efsrt_validated_74859612") === "true"))
+                      ? "text-emerald-800 bg-emerald-50 border-emerald-200"
+                      : "text-amber-800 bg-amber-50 border-amber-200"
+                  }`}>
+                    {Boolean(typeof window !== "undefined" && (localStorage.getItem(`sfa_efsrt_validated_${studentDni}`) === "true" || localStorage.getItem("sfa_efsrt_validated_74859612") === "true"))
+                      ? "Habilitado"
+                      : "Bloqueado"}
+                  </span>
+                </td>
+              </tr>
+              <tr className="hover:bg-slate-50/50">
+                <td className="py-3 px-4 font-bold text-slate-800">
+                  <div>
+                    <span className="text-[10px] font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded mr-2 border border-slate-200">CER01</span>
+                    Certificado Oficial de Estudios (MINEDU)
+                  </div>
+                </td>
+                <td className="py-3 px-3 text-slate-500 text-[11px]">
+                  Récord oficial de calificaciones y créditos vigesimales
+                </td>
+                <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
+                  S/ 50.00
                 </td>
                 <td className="py-3 px-4 text-center">
                   <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -735,21 +789,51 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
               </tr>
               <tr className="hover:bg-slate-50/50">
                 <td className="py-3 px-4 font-bold text-slate-800">
-                  Apertura de Expediente de Titulación y Constancia de Egresado (EFSRT)
+                  <div>
+                    <span className="text-[10px] font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded mr-2 border border-slate-200">BAC01</span>
+                    Constancia de Egresado Pleno y Bachiller Técnico
+                  </div>
                 </td>
                 <td className="py-3 px-3 text-slate-500 text-[11px]">
-                  Validación de Malla Completa (120 créditos)
+                  Requiere 120 créditos (96 lectivos + 24 EFSRT)
+                </td>
+                <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
+                  S/ 60.00
+                </td>
+                <td className="py-3 px-4 text-center">
+                  <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border ${
+                    Boolean(isGraduated && typeof window !== "undefined" && (localStorage.getItem(`sfa_efsrt_validated_${studentDni}`) === "true" || localStorage.getItem("sfa_efsrt_validated_74859612") === "true"))
+                      ? "text-emerald-800 bg-emerald-50 border-emerald-200"
+                      : "text-amber-800 bg-amber-50 border-amber-200"
+                  }`}>
+                    {Boolean(isGraduated && typeof window !== "undefined" && (localStorage.getItem(`sfa_efsrt_validated_${studentDni}`) === "true" || localStorage.getItem("sfa_efsrt_validated_74859612") === "true"))
+                      ? "Habilitado"
+                      : "Bloqueado"}
+                  </span>
+                </td>
+              </tr>
+              <tr className="hover:bg-slate-50/50">
+                <td className="py-3 px-4 font-bold text-slate-800">
+                  <div>
+                    <span className="text-[10px] font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded mr-2 border border-slate-200">TIT01</span>
+                    Apertura de Carpeta de Titulación Profesional
+                  </div>
+                </td>
+                <td className="py-3 px-3 text-slate-500 text-[11px]">
+                  Requiere condición de Egresado Pleno (120 cr.)
                 </td>
                 <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
                   S/ 120.00
                 </td>
                 <td className="py-3 px-4 text-center">
                   <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border ${
-                    isGraduated
-                      ? "text-emerald-800 bg-emerald-100/90 border-emerald-300"
-                      : "text-slate-600 bg-slate-100 border-slate-200"
+                    Boolean(isGraduated && typeof window !== "undefined" && (localStorage.getItem(`sfa_efsrt_validated_${studentDni}`) === "true" || localStorage.getItem("sfa_efsrt_validated_74859612") === "true"))
+                      ? "text-emerald-800 bg-emerald-50 border-emerald-200"
+                      : "text-amber-800 bg-amber-50 border-amber-200"
                   }`}>
-                    {isGraduated ? "Habilitado" : "Fase VI Semestre"}
+                    {Boolean(isGraduated && typeof window !== "undefined" && (localStorage.getItem(`sfa_efsrt_validated_${studentDni}`) === "true" || localStorage.getItem("sfa_efsrt_validated_74859612") === "true"))
+                      ? "Habilitado"
+                      : "Bloqueado"}
                   </span>
                 </td>
               </tr>

@@ -85,17 +85,40 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
     setSync((v) => v + 1);
   };
 
+  const handleValidateBySecretaria = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`sfa_efsrt_validated_${currentDni}`, "true");
+      localStorage.setItem("sfa_efsrt_validated_74859612", "true");
+      localStorage.setItem(`sfa_efsrt_all_approved_${currentDni}`, "true");
+      localStorage.setItem("sfa_efsrt_all_approved_74859612", "true");
+      localStorage.setItem(`sfa_graduation_docs_${currentDni}_practicas`, "true");
+      localStorage.setItem("sfa_graduation_docs_74859612_practicas", "true");
+      localStorage.setItem(`sfa_titulacion_enabled_${currentDni}`, "true");
+      localStorage.setItem("sfa_titulacion_enabled_74859612", "true");
+      window.dispatchEvent(new Event("storage"));
+    }
+    setNotice("Prácticas Preprofesionales (EFSRT) validadas y acreditadas por Secretaría General. Se han sumado los 24 créditos (120/120 cr). Certificado de Prácticas, Bachiller Técnico y Carpeta de Titulación han sido DESBLOQUEADOS en Trámites de Secretaría.");
+    setTimeout(() => setNotice(""), 10000);
+    setSync((v) => v + 1);
+  };
+
   const handleReset = () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem(`sfa_efsrt_${currentDni}`);
       localStorage.removeItem("sfa_efsrt_74859612");
       localStorage.removeItem(`sfa_efsrt_validated_${currentDni}`);
       localStorage.removeItem("sfa_efsrt_validated_74859612");
+      localStorage.removeItem(`sfa_efsrt_all_approved_${currentDni}`);
+      localStorage.removeItem("sfa_efsrt_all_approved_74859612");
+      localStorage.removeItem(`sfa_graduation_docs_${currentDni}_practicas`);
+      localStorage.removeItem("sfa_graduation_docs_74859612_practicas");
+      localStorage.removeItem(`sfa_titulacion_enabled_${currentDni}`);
+      localStorage.removeItem("sfa_titulacion_enabled_74859612");
       localStorage.removeItem(`sfa_efsrt_pending_review_${currentDni}`);
       localStorage.removeItem("sfa_efsrt_pending_review_74859612");
       window.dispatchEvent(new Event("storage"));
     }
-    setNotice("Registro de prácticas restablecido.");
+    setNotice("Registro de prácticas restablecido a estado pendiente.");
     setTimeout(() => setNotice(""), 4000);
     setSync((v) => v + 1);
   };
@@ -230,15 +253,33 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
             </p>
           </div>
 
-          {efsrtRecord && (
-            <button
-              type="button"
-              onClick={handleReset}
-              className="text-slate-500 hover:text-slate-800 text-xs font-bold underline cursor-pointer"
-            >
-              Reiniciar Registro
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {!isValidatedBySecretaria ? (
+              <button
+                type="button"
+                onClick={handleValidateBySecretaria}
+                className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                title="Acreditar formalmente las prácticas para sumar 24 créditos y desbloquear trámites de egreso pleno"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-200" />
+                <span>Acreditar Prácticas (Secretaría)</span>
+              </button>
+            ) : (
+              <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-2xs">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>24 Créditos EFSRT Acreditados</span>
+              </span>
+            )}
+            {(efsrtRecord || isValidatedBySecretaria) && (
+              <button
+                type="button"
+                onClick={handleReset}
+                className="text-slate-500 hover:text-slate-800 text-xs font-bold underline cursor-pointer ml-1"
+              >
+                Restablecer a Pendiente
+              </button>
+            )}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
