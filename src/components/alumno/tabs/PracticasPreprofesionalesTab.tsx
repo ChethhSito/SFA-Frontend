@@ -6,7 +6,6 @@ import {
 } from "lucide-react";
 import PageTransition from "../../ui/PageTransition";
 import { StudentPersonalData, Enrollment } from "../../../types";
-import { generateEfsrtCertificateSvgDataUrl } from "../../../utils/efsrtCertificateGenerator";
 
 interface PracticasPreprofesionalesTabProps {
   personalData?: StudentPersonalData;
@@ -22,11 +21,11 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
   const currentDni = enrollment?.studentDni || personalData?.dni || studentDni;
   const [, setSync] = useState(0);
 
-  const [companyName, setCompanyName] = useState("ABB Perú S.A.");
-  const [ruc, setRuc] = useState("20100123456");
-  const [department, setDepartment] = useState("Mantenimiento Eléctrico y Automatización Industrial");
-  const [supervisor, setSupervisor] = useState("Ing. Roberto Chang Silva — Jefe de Planta");
-  const [hours, setHours] = useState<number>(360);
+  const [companyName, setCompanyName] = useState("LA EMPRESA INDUSTRIAL CONSTRUCTORA Y DE SERVICIOS S.A.C.");
+  const [ruc, setRuc] = useState("20458963211");
+  const [department, setDepartment] = useState("Montaje, Conexionado de Tableros y Mantenimiento de Fuerza y Control");
+  const [supervisor, setSupervisor] = useState("Ing. Carlos Mendoza Quispe — Jefe de Operaciones y Mantenimiento");
+  const [hours, setHours] = useState<number>(480);
   const [startDate, setStartDate] = useState("2027-02-01");
   const [endDate, setEndDate] = useState("2027-04-30");
   const [fileAttachment, setFileAttachment] = useState<File | null>(null);
@@ -34,6 +33,9 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [fileObjectUrl, setFileObjectUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const officialPdfUrl = "/documentos/Constancia_EFSRT_Practicas_Preprofesionales.pdf";
+  const previewSource = fileObjectUrl || officialPdfUrl;
 
   useEffect(() => {
     if (!fileAttachment) {
@@ -540,41 +542,19 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
 
               <div className="flex items-center gap-2">
                 <a
-                  href={fileObjectUrl || generateEfsrtCertificateSvgDataUrl({
-                    studentName: personalData ? `${personalData.name} ${personalData.lastName}` : "Mateo Sebastián Quispe Rojas",
-                    studentDni: currentDni,
-                    program: "Electricidad Industrial",
-                    companyName,
-                    ruc,
-                    department,
-                    supervisor,
-                    hours: Number(hours) || 360,
-                    startDate,
-                    endDate,
-                  })}
+                  href={previewSource}
                   download={fileAttachment ? fileAttachment.name : (efsrtRecord?.fileName || "Constancia_EFSRT_Practicas_Preprofesionales.pdf")}
                   className="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold"
-                  title="Descargar documento"
+                  title="Descargar documento PDF"
                 >
                   <Download className="w-4 h-4 text-amber-300" />
-                  <span className="hidden sm:inline">Descargar</span>
+                  <span className="hidden sm:inline">Descargar PDF</span>
                 </a>
                 <button
                   type="button"
                   onClick={() => {
-                    const src = fileObjectUrl || generateEfsrtCertificateSvgDataUrl({
-                      studentName: personalData ? `${personalData.name} ${personalData.lastName}` : "Mateo Sebastián Quispe Rojas",
-                      studentDni: currentDni,
-                      program: "Electricidad Industrial",
-                      companyName,
-                      ruc,
-                      department,
-                      supervisor,
-                      hours: Number(hours) || 360,
-                      startDate,
-                      endDate,
-                    });
-                    const printWin = window.open(src, '_blank');
+                    const printWin = window.open(previewSource, '_blank');
+                    printWin?.focus();
                     printWin?.print();
                   }}
                   className="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-bold"
@@ -594,36 +574,19 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
               </div>
             </div>
 
-            {/* Cuerpo del Visor */}
-            <div className="flex-1 p-4 md:p-6 overflow-y-auto bg-slate-100 flex items-center justify-center custom-scrollbar">
-              {fileAttachment && fileAttachment.type === "application/pdf" ? (
-                <iframe 
-                  src={fileObjectUrl || undefined} 
-                  className="w-full h-[70vh] rounded-xl border border-slate-300 shadow-lg bg-white"
-                  title="Vista previa del PDF adjunto"
-                />
-              ) : fileAttachment && fileAttachment.type.startsWith("image/") ? (
+            {/* Cuerpo del Visor con el PDF Real */}
+            <div className="flex-1 p-2 md:p-4 overflow-hidden bg-slate-900/10 flex items-center justify-center">
+              {fileAttachment && fileAttachment.type.startsWith("image/") ? (
                 <img 
-                  src={fileObjectUrl || undefined} 
+                  src={previewSource} 
                   alt="Constancia de Prácticas" 
                   className="max-w-full max-h-[75vh] object-contain rounded-xl shadow-lg border border-slate-300 bg-white"
                 />
               ) : (
-                <img 
-                  src={generateEfsrtCertificateSvgDataUrl({
-                    studentName: personalData ? `${personalData.name} ${personalData.lastName}` : "Mateo Sebastián Quispe Rojas",
-                    studentDni: currentDni,
-                    program: "Electricidad Industrial",
-                    companyName,
-                    ruc,
-                    department,
-                    supervisor,
-                    hours: Number(hours) || 360,
-                    startDate,
-                    endDate,
-                  })} 
-                  alt="Constancia Oficial EFSRT" 
-                  className="w-full max-w-2xl object-contain rounded-xl shadow-xl border border-slate-300 bg-white"
+                <iframe 
+                  src={`${previewSource}#toolbar=1&navpanes=0`} 
+                  className="w-full h-[75vh] rounded-xl border border-slate-300 shadow-xl bg-white"
+                  title="Vista previa del PDF oficial de Prácticas EFSRT"
                 />
               )}
             </div>
