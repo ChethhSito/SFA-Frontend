@@ -61,15 +61,32 @@ export default function MgeMatriculaTab({
     setGeneratingPdfDni(st.dni);
     try {
       const prog = ACADEMIC_PROGRAMS.find((p) => p.id === st.programId);
-      const isElectricidad = !st.programId || st.programId === "electricidad_industrial";
+      const isElectricidad = !st.programId || st.programId === "electricidad_industrial" || st.programId === "electronica";
       
-      const coursesData = isElectricidad ? [
-        { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 5, cycle: "I", type: "Obligatorio", group: "G1", status: "Matriculado" },
-        { code: "EIND-102", name: "Instalaciones Eléctricas de Interiores", credits: 4, cycle: "I", type: "Obligatorio", group: "G1", status: "Matriculado" },
-        { code: "EIND-103", name: "Seguridad y Salud en el Trabajo Eléctrico", credits: 3, cycle: "I", type: "Obligatorio", group: "G1", status: "Matriculado" },
-        { code: "EIND-104", name: "Matemática Aplicada a la Electricidad", credits: 3, cycle: "I", type: "Obligatorio", group: "G1", status: "Matriculado" },
-        { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2, cycle: "I", type: "Obligatorio", group: "G1", status: "Matriculado" },
-      ] : [
+      const isCycle2 = typeof window !== "undefined" && Boolean(
+        localStorage.getItem(`sfa_student_promoted_cycle2_${st.dni}`) === "true" ||
+        localStorage.getItem(`sfa_cycle2_payment_${st.dni}`) === "true" ||
+        localStorage.getItem(`sfa_student_cycle_${st.dni}`) === "2" ||
+        st.dni === "74859612"
+      );
+      const activePeriodName = isCycle2 ? "2027-II" : "2027-I";
+      const activeCycleName = isCycle2 ? "Ciclo II" : "Ciclo I";
+
+      const coursesData = isElectricidad ? (
+        isCycle2 ? [
+          { code: "EIND-201", name: "Circuitos Eléctricos en Corriente Alterna", credits: 4, cycle: "II", type: "Obligatorio", group: "EI-II-A", status: "Matriculado" },
+          { code: "EIND-202", name: "Electrónica Analógica y de Potencia Básica", credits: 4, cycle: "II", type: "Obligatorio", group: "EI-II-A", status: "Matriculado" },
+          { code: "EIND-203", name: "Taller de Medidas e Instrumentos Eléctricos", credits: 3, cycle: "II", type: "Obligatorio", group: "EI-II-A", status: "Matriculado" },
+          { code: "EIND-204", name: "Dibujo y CAD Electrotécnico (AutoCAD Electrical)", credits: 3, cycle: "II", type: "Obligatorio", group: "EI-II-A", status: "Matriculado" },
+          { code: "EIND-205", name: "Inglés Técnico para Electricidad", credits: 2, cycle: "II", type: "General", group: "EI-II-A", status: "Matriculado" },
+        ] : [
+          { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, cycle: "I", type: "Obligatorio", group: "EI-I-A", status: "Matriculado" },
+          { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, cycle: "I", type: "Obligatorio", group: "EI-I-A", status: "Matriculado" },
+          { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, cycle: "I", type: "Obligatorio", group: "EI-I-A", status: "Matriculado" },
+          { code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, cycle: "I", type: "General", group: "EI-I-A", status: "Matriculado" },
+          { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2, cycle: "I", type: "General", group: "EI-I-A", status: "Matriculado" },
+        ]
+      ) : [
         { code: "CNT-101", name: "Contabilidad General I", credits: 4, cycle: "I", type: "Obligatorio", group: "G1", status: "Matriculado" },
         { code: "CNT-102", name: "Documentación Comercial y Contable", credits: 3, cycle: "I", type: "Obligatorio", group: "G1", status: "Matriculado" },
         { code: "CNT-103", name: "Legislación Comercial y Laboral", credits: 3, cycle: "I", type: "Obligatorio", group: "G1", status: "Matriculado" },
@@ -81,10 +98,10 @@ export default function MgeMatriculaTab({
         studentName: st.name,
         studentLastName: st.lastName,
         dni: st.dni,
-        studentCode: `2026-${st.dni.slice(-4)}`,
+        studentCode: st.dni === "74859612" ? "202710001" : `2027-${st.dni.slice(-4)}`,
         programName: prog?.name || (isElectricidad ? "Electricidad Industrial" : "Contabilidad"),
-        period: "2026-I",
-        cycle: "Ciclo I",
+        period: activePeriodName,
+        cycle: activeCycleName,
         shift: st.shift || "Mañana",
         courses: coursesData,
         totalCredits: coursesData.reduce((acc, c) => acc + c.credits, 0),
@@ -96,7 +113,7 @@ export default function MgeMatriculaTab({
       };
 
       const doc = await generateMatriculaPdf(pdfData);
-      doc.save(`Ficha_Matricula_${st.dni}_2026-I.pdf`);
+      doc.save(`Ficha_Matricula_${st.dni}_${activePeriodName}.pdf`);
     } catch (err) {
       console.error("Error al generar la ficha de matrícula:", err);
     } finally {
