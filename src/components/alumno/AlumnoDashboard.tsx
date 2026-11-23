@@ -1576,7 +1576,12 @@ export default function AlumnoDashboard({
                 />
               )}
 
-              {activeTab === "secretaria" && <ProceduresTab studentDni={studentDni} period="" />}
+              {activeTab === "secretaria" && (
+                <ProceduresTab
+                  studentDni={studentDni}
+                  period={isGraduated ? "Periodo 2029-II (Egresado)" : isPromotedCycle2 ? "Periodo 2027-II" : "Periodo 2027-I"}
+                />
+              )}
               {activeTab === "guias" && <GuidesLibrary audience="student" />}
               {activeTab === "calendar" && <AcademicCalendarBoard preferredPeriodId={studentGroup?.periodId} />}
             </motion.div>

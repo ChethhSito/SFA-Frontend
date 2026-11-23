@@ -67,8 +67,22 @@ export const GradesTab: React.FC<GradesTabProps> = ({
   setSelectedCourseDetail,
   studentInfo
 }) => {
+  const studentDni = studentInfo?.dni || "74859612";
+
+  const isGraduated = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted") === "true" ||
+    localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+    localStorage.getItem("sfa_student_graduated_all") === "true" ||
+    localStorage.getItem(`sfa_titulacion_enabled_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_titulacion_enabled_74859612") === "true" ||
+    localStorage.getItem(`sfa_student_status_${studentDni}`) === "Egresado"
+  );
+
   const isPromotedCycle2 = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_student_promoted_cycle2_${studentInfo?.dni || "74859612"}`) === "true" ||
+    localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
     localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
     localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
     localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
@@ -88,8 +102,8 @@ export const GradesTab: React.FC<GradesTabProps> = ({
   }, []);
 
   const [showBoletaModal, setShowBoletaModal] = useState(false);
-  const [selectedSemester, setSelectedSemester] = useState<"2027-I" | "2027-II">(() => {
-    return isPromotedCycle2 ? "2027-II" : "2027-I";
+  const [selectedSemester, setSelectedSemester] = useState<"2027-I" | "2027-II" | "2028-I" | "2028-II" | "2029-I" | "2029-II">(() => {
+    return isGraduated ? "2027-II" : isPromotedCycle2 ? "2027-II" : "2027-I";
   });
 
   const semesterCourses = React.useMemo(() => {
@@ -277,7 +291,81 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         }
       ];
     }
-  }, [selectedSemester, studentInfo?.dni, storageSyncKey]);
+
+    const buildCourse = (
+      id: string,
+      code: string,
+      name: string,
+      credits: number,
+      cycleName: string,
+      classroom: string,
+      iconType: string,
+      baseGrade: number
+    ) => {
+      let finalGrade = baseGrade;
+      try {
+        const stored = localStorage.getItem(`sfa_grades_${code}_${studentDni}`) ||
+          localStorage.getItem(`sfa_grades_${code}_74859612`);
+        if (stored) finalGrade = Number(stored);
+      } catch {}
+
+      return {
+        id,
+        code,
+        name,
+        credits,
+        cycle: cycleName,
+        classroom,
+        iconType,
+        formula: "NF = 0.20*EC1 + 0.30*EP + 0.20*EC2 + 0.30*EF",
+        evaluations: [
+          { id: "EC1", name: "Evaluación Continua 1", prefix: "EC1", weight: "20%", weightDecimal: 0.2, grade: finalGrade, isCurricular: true },
+          { id: "EP", name: "Evaluación Parcial Práctica", prefix: "EP", weight: "30%", weightDecimal: 0.3, grade: finalGrade, isCurricular: true },
+          { id: "EC2", name: "Evaluación Continua 2 / Talleres", prefix: "EC2", weight: "20%", weightDecimal: 0.2, grade: finalGrade, isCurricular: true },
+          { id: "EF", name: "Evaluación Modular Final", prefix: "EF", weight: "30%", weightDecimal: 0.3, grade: finalGrade, isCurricular: true }
+        ]
+      };
+    };
+
+    if (selectedSemester === "2028-I") {
+      return [
+        buildCourse("cur_ei_301", "EIND-301", "Máquinas Eléctricas Rotativas y Generadores", 4, "Ciclo III", "Lab. Máquinas Eléctricas", "Zap", 17.0),
+        buildCourse("cur_ei_302", "EIND-302", "Instalaciones Eléctricas Industriales en Media Tensión", 4, "Ciclo III", "Taller de MT 302", "Cpu", 16.5),
+        buildCourse("cur_ei_303", "EIND-303", "Tableros Eléctricos y Sistemas de Protección", 3, "Ciclo III", "Lab. Tableros 301", "Sliders", 17.5),
+        buildCourse("cur_ei_304", "EIND-304", "Electrónica de Potencia Industrial", 3, "Ciclo III", "Lab. Potencia 2", "Zap", 16.0),
+        buildCourse("cur_ei_305", "EIND-305", "Sociedad y Economía en la Globalización", 2, "Ciclo III", "Aula 305", "Award", 17.0)
+      ];
+    }
+
+    if (selectedSemester === "2028-II") {
+      return [
+        buildCourse("cur_ei_401", "EIND-401", "Control de Motores y Arranque Electrónico", 4, "Ciclo IV", "Taller Motores 401", "Zap", 17.5),
+        buildCourse("cur_ei_402", "EIND-402", "Automatización con Controladores Lógicos Programables (PLC I)", 4, "Ciclo IV", "Lab. Automatización PLC", "Cpu", 18.0),
+        buildCourse("cur_ei_403", "EIND-403", "Mantenimiento de Subestaciones y Redes de Distribución", 3, "Ciclo IV", "Campo de Subestaciones", "Sliders", 16.5),
+        buildCourse("cur_ei_404", "EIND-404", "Sistemas Neumáticos y Electroneumáticos Industriales", 3, "Ciclo IV", "Lab. Neumática 402", "Zap", 17.0),
+        buildCourse("cur_ei_405", "EIND-405", "Medio Ambiente y Desarrollo Sostenible", 2, "Ciclo IV", "Aula 405", "Award", 18.0)
+      ];
+    }
+
+    if (selectedSemester === "2029-I") {
+      return [
+        buildCourse("cur_ei_501", "EIND-501", "Automatización Avanzada PLC II y Redes Industriales", 4, "Ciclo V", "Lab. Redes Industriales", "Cpu", 18.0),
+        buildCourse("cur_ei_502", "EIND-502", "Sistemas de Supervisión SCADA y Pantallas HMI", 4, "Ciclo V", "Centro de Cómputo SCADA", "Sliders", 17.5),
+        buildCourse("cur_ei_503", "EIND-503", "Instrumentación y Control de Procesos Industriales", 3, "Ciclo V", "Lab. Instrumentación", "Zap", 18.0),
+        buildCourse("cur_ei_504", "EIND-504", "Eficiencia Energética y Auditorías Eléctricas", 3, "Ciclo V", "Aula 504", "Sliders", 16.5),
+        buildCourse("cur_ei_505", "EIND-505", "Ética y Deontología Profesional", 2, "Ciclo V", "Aula 505", "Award", 19.0)
+      ];
+    }
+
+    // Default: 2029-II (Ciclo VI)
+    return [
+      buildCourse("cur_ei_601", "EIND-601", "Integración de Sistemas Automatizados y Robótica", 4, "Ciclo VI", "Taller Robótica Industrial", "Cpu", 18.5),
+      buildCourse("cur_ei_602", "EIND-602", "Mantenimiento Predictivo y Gestión de Activos Eléctricos", 4, "Ciclo VI", "Lab. Predictivo 602", "Sliders", 17.0),
+      buildCourse("cur_ei_603", "EIND-603", "Proyectos Electromecánicos y Gestión de Obras", 3, "Ciclo VI", "Aula de Proyectos 603", "Sliders", 17.5),
+      buildCourse("cur_ei_604", "EIND-604", "Proyecto de Innovación y Titulación EFSRT", 3, "Ciclo VI", "Taller de Titulación", "Award", 19.0),
+      buildCourse("cur_ei_605", "EIND-605", "Emprendimiento y Gestión Empresarial", 2, "Ciclo VI", "Aula 605", "Award", 18.0)
+    ];
+  }, [selectedSemester, studentDni, storageSyncKey]);
 
   const activeCourse = semesterCourses.find(c => c.name === selectedCourseDetail || c.id === selectedCourseDetail || c.code === selectedCourseDetail) || semesterCourses[0];
 
@@ -360,7 +448,17 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                 className="bg-transparent text-xs font-black text-white font-mono outline-none cursor-pointer"
               >
                 <option value="2027-I" className="text-slate-900 bg-white">Semestre 2027-I (Ciclo I)</option>
-                <option value="2027-II" className="text-slate-900 bg-white">Semestre 2027-II (Ciclo II)</option>
+                {(isPromotedCycle2 || isGraduated) && (
+                  <option value="2027-II" className="text-slate-900 bg-white">Semestre 2027-II (Ciclo II)</option>
+                )}
+                {isGraduated && (
+                  <>
+                    <option value="2028-I" className="text-slate-900 bg-white">Semestre 2028-I (Ciclo III)</option>
+                    <option value="2028-II" className="text-slate-900 bg-white">Semestre 2028-II (Ciclo IV)</option>
+                    <option value="2029-I" className="text-slate-900 bg-white">Semestre 2029-I (Ciclo V)</option>
+                    <option value="2029-II" className="text-slate-900 bg-white">Semestre 2029-II (Ciclo VI)</option>
+                  </>
+                )}
               </select>
             </div>
             <button
@@ -406,7 +504,15 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           <div>
             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Créditos Llevados</span>
             <p className="text-2xl font-black text-emerald-600 mt-1 font-mono">{totalCredits.toFixed(1)}</p>
-            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">Total matriculado {selectedSemester === "2027-I" ? "Ciclo I" : "Ciclo II"}</span>
+            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">
+              Total matriculado {
+                selectedSemester === "2029-II" ? "Ciclo VI" :
+                selectedSemester === "2029-I" ? "Ciclo V" :
+                selectedSemester === "2028-II" ? "Ciclo IV" :
+                selectedSemester === "2028-I" ? "Ciclo III" :
+                selectedSemester === "2027-II" ? "Ciclo II" : "Ciclo I"
+              }
+            </span>
           </div>
           <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
             <FileText className="w-5 h-5" />
@@ -431,7 +537,15 @@ export const GradesTab: React.FC<GradesTabProps> = ({
               {hasAnyEvaluations && Number(cycleProgressiveAverage) >= 12.5 ? "APROBADO" : "MATRICULADO"}
             </p>
             <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">
-              {selectedSemester === "2027-II"
+              {selectedSemester === "2029-II"
+                ? "Egresado Regular • Apto Titulación"
+                : selectedSemester === "2029-I"
+                ? "Promovido a Ciclo VI"
+                : selectedSemester === "2028-II"
+                ? "Promovido a Ciclo V • Módulo EFSRT II"
+                : selectedSemester === "2028-I"
+                ? "Promovido a Ciclo IV"
+                : selectedSemester === "2027-II"
                 ? (hasAnyEvaluations && Number(cycleProgressiveAverage) >= 12.5 ? "Promovido a Ciclo III • Módulo EFSRT I" : "Semestre Académico 2027-II")
                 : (hasAnyEvaluations && Number(cycleProgressiveAverage) >= 12.5 ? "Promovido a Ciclo II" : "Semestre Académico 2027-I")}
             </span>

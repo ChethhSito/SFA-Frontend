@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { CreditCard, CheckCircle2, AlertCircle, Clock, FileText, Download, Building, ShieldCheck, ArrowRight, Printer, Eye, Receipt, X } from "lucide-react";
 import PageTransition from "../../ui/PageTransition";
 import { StudentPersonalData, Enrollment } from "../../../types";
+import { generateVoucherSvgDataUrl } from "../../../utils/voucherGenerator";
 
 interface EconomicInfoTabProps {
   personalData?: StudentPersonalData;
@@ -202,7 +203,7 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
               <span className="text-[11px] font-black uppercase tracking-wider text-slate-800">Semestre en Curso</span>
             </div>
             <span className="text-[9.5px] font-black uppercase font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200">
-              {isPromotedCycle2 ? "Periodo 2027-II" : "Periodo 2027-I"}
+              {isGraduated ? "Periodo 2029-II (Egresado)" : isPromotedCycle2 ? "Periodo 2027-II" : "Periodo 2027-I"}
             </span>
           </div>
           <div className="space-y-1 text-xs">
@@ -213,15 +214,15 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
             <div className="flex justify-between py-1 border-b border-slate-50">
               <span className="text-slate-400 font-semibold">Estado de Pago:</span>
               <span className={`font-mono font-black ${
-                currentDebt > 0 ? "text-amber-700" : isCycle2Paid && !isCycle2Validated ? "text-blue-700" : "text-emerald-700"
+                isGraduated ? "text-emerald-700" : currentDebt > 0 ? "text-amber-700" : isCycle2Paid && !isCycle2Validated ? "text-blue-700" : "text-emerald-700"
               }`}>
-                {currentDebt > 0 ? "Pendiente" : isCycle2Paid && !isCycle2Validated ? "En Auditoría" : "Cancelado"}
+                {isGraduated ? "Cancelado" : currentDebt > 0 ? "Pendiente" : isCycle2Paid && !isCycle2Validated ? "En Auditoría" : "Cancelado"}
               </span>
             </div>
             <div className="flex justify-between py-1">
               <span className="text-slate-400 font-semibold">Deuda Semestre:</span>
-              <span className={`font-mono font-black text-sm ${currentDebt > 0 ? "text-rose-700" : "text-emerald-700"}`}>
-                S/ {currentDebt.toFixed(2)}
+              <span className={`font-mono font-black text-sm ${isGraduated ? "text-emerald-700" : currentDebt > 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                S/ {isGraduated ? "0.00" : currentDebt.toFixed(2)}
               </span>
             </div>
           </div>
@@ -366,7 +367,7 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
               </tr>
 
               {/* Semestre 2027-II (Dinámico según estado del estudiante) */}
-              {isPromotedCycle2 && (
+              {(isPromotedCycle2 || isGraduated) && (
                 <tr className="hover:bg-slate-50/80 transition-colors">
                   <td className="py-3 px-4">
                     <span className="font-black text-slate-900 block">Derecho de Matrícula Regular</span>
@@ -379,16 +380,16 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                     S/ 250.00
                   </td>
                   <td className="py-3 px-3 text-slate-600 text-[11px]">
-                    {isCycle2Paid ? cycle2Bank : "Banco de la Nación / Transferencia"}
+                    {isCycle2Paid || isGraduated ? cycle2Bank : "Banco de la Nación / Transferencia"}
                   </td>
                   <td className="py-3 px-3 font-mono font-extrabold text-[#800521]">
-                    {isCycle2Paid ? cycle2Op : "—"}
+                    {isCycle2Paid || isGraduated ? cycle2Op : "—"}
                   </td>
                   <td className="py-3 px-3 text-center font-mono text-slate-600 text-[11px]">
-                    {isCycle2Paid ? cycle2Date : "Pendiente"}
+                    {isCycle2Paid || isGraduated ? cycle2Date : "Pendiente"}
                   </td>
                   <td className="py-3 px-4 text-center">
-                    {isCycle2Validated ? (
+                    {isCycle2Validated || isGraduated ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9.5px] font-black uppercase font-mono bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs">
                         <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                         Validado por Caja
@@ -406,7 +407,7 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                     )}
                   </td>
                   <td className="py-3 px-4 text-center">
-                    {isCycle2Paid ? (
+                    {isCycle2Paid || isGraduated ? (
                       <button
                         type="button"
                         onClick={() => setViewingVoucher({
@@ -417,7 +418,7 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                           bank: cycle2Bank,
                           operation: cycle2Op,
                           date: cycle2Date,
-                          status: isCycle2Validated ? "Validado por Caja" : "En Auditoría de Caja",
+                          status: "Validado por Caja",
                           dataUrl: cycle2DataUrl || "/voucher_ciclo2.png",
                           fileName: cycle2FileName
                         })}
@@ -432,6 +433,243 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                     )}
                   </td>
                 </tr>
+              )}
+
+              {/* Semestres III a VI (Acreditados al completar plan de estudios / egresado) */}
+              {isGraduated && (
+                <>
+                  {/* Semestre 2028-I (Ciclo III) */}
+                  <tr className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4">
+                      <span className="font-black text-slate-900 block">Derecho de Matrícula Regular</span>
+                      <span className="text-[10px] text-slate-400 font-semibold block">Periodo Lectivo 2028-I</span>
+                    </td>
+                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-700">
+                      Ciclo III
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
+                      S/ 250.00
+                    </td>
+                    <td className="py-3 px-3 text-slate-600 text-[11px]">
+                      Banco de la Nación (Cta. Recaudadora)
+                    </td>
+                    <td className="py-3 px-3 font-mono font-extrabold text-[#800521]">
+                      OP-2028-01-BCO-38291
+                    </td>
+                    <td className="py-3 px-3 text-center font-mono text-slate-600 text-[11px]">
+                      14/03/2028
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9.5px] font-black uppercase font-mono bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        Validado por Caja
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setViewingVoucher({
+                          period: "2028-I",
+                          cycle: "Ciclo III",
+                          concept: "Derecho de Matrícula Regular",
+                          amount: "S/ 250.00",
+                          bank: "Banco de la Nación (Cta. Recaudadora)",
+                          operation: "OP-2028-01-BCO-38291",
+                          date: "14/03/2028",
+                          status: "Validado por Caja",
+                          dataUrl: generateVoucherSvgDataUrl({
+                            cycle: "Ciclo III",
+                            period: "2028-I",
+                            op: "OP-2028-01-BCO-38291",
+                            date: "14/03/2028",
+                            studentName: personalData?.name ? `${personalData.lastName}, ${personalData.name}` : "QUISPE ROJAS, MATEO SEBASTIÁN",
+                            dni: currentDni
+                          }),
+                          fileName: "Voucher_Matricula_2028_I.png"
+                        })}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-bold text-[10.5px] transition-colors cursor-pointer shadow-3xs"
+                        title="Ver comprobante oficial de pago"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-blue-700" />
+                        <span>Ver Voucher</span>
+                      </button>
+                    </td>
+                  </tr>
+
+                  {/* Semestre 2028-II (Ciclo IV) */}
+                  <tr className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4">
+                      <span className="font-black text-slate-900 block">Derecho de Matrícula Regular</span>
+                      <span className="text-[10px] text-slate-400 font-semibold block">Periodo Lectivo 2028-II</span>
+                    </td>
+                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-700">
+                      Ciclo IV
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
+                      S/ 250.00
+                    </td>
+                    <td className="py-3 px-3 text-slate-600 text-[11px]">
+                      Banco de la Nación (Cta. Recaudadora)
+                    </td>
+                    <td className="py-3 px-3 font-mono font-extrabold text-[#800521]">
+                      OP-2028-02-BCO-47209
+                    </td>
+                    <td className="py-3 px-3 text-center font-mono text-slate-600 text-[11px]">
+                      18/08/2028
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9.5px] font-black uppercase font-mono bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        Validado por Caja
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setViewingVoucher({
+                          period: "2028-II",
+                          cycle: "Ciclo IV",
+                          concept: "Derecho de Matrícula Regular",
+                          amount: "S/ 250.00",
+                          bank: "Banco de la Nación (Cta. Recaudadora)",
+                          operation: "OP-2028-02-BCO-47209",
+                          date: "18/08/2028",
+                          status: "Validado por Caja",
+                          dataUrl: generateVoucherSvgDataUrl({
+                            cycle: "Ciclo IV",
+                            period: "2028-II",
+                            op: "OP-2028-02-BCO-47209",
+                            date: "18/08/2028",
+                            studentName: personalData?.name ? `${personalData.lastName}, ${personalData.name}` : "QUISPE ROJAS, MATEO SEBASTIÁN",
+                            dni: currentDni
+                          }),
+                          fileName: "Voucher_Matricula_2028_II.png"
+                        })}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-bold text-[10.5px] transition-colors cursor-pointer shadow-3xs"
+                        title="Ver comprobante oficial de pago"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-blue-700" />
+                        <span>Ver Voucher</span>
+                      </button>
+                    </td>
+                  </tr>
+
+                  {/* Semestre 2029-I (Ciclo V) */}
+                  <tr className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4">
+                      <span className="font-black text-slate-900 block">Derecho de Matrícula Regular</span>
+                      <span className="text-[10px] text-slate-400 font-semibold block">Periodo Lectivo 2029-I</span>
+                    </td>
+                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-700">
+                      Ciclo V
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
+                      S/ 250.00
+                    </td>
+                    <td className="py-3 px-3 text-slate-600 text-[11px]">
+                      Banco de la Nación (Cta. Recaudadora)
+                    </td>
+                    <td className="py-3 px-3 font-mono font-extrabold text-[#800521]">
+                      OP-2029-01-BCO-59182
+                    </td>
+                    <td className="py-3 px-3 text-center font-mono text-slate-600 text-[11px]">
+                      16/03/2029
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9.5px] font-black uppercase font-mono bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        Validado por Caja
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setViewingVoucher({
+                          period: "2029-I",
+                          cycle: "Ciclo V",
+                          concept: "Derecho de Matrícula Regular",
+                          amount: "S/ 250.00",
+                          bank: "Banco de la Nación (Cta. Recaudadora)",
+                          operation: "OP-2029-01-BCO-59182",
+                          date: "16/03/2029",
+                          status: "Validado por Caja",
+                          dataUrl: generateVoucherSvgDataUrl({
+                            cycle: "Ciclo V",
+                            period: "2029-I",
+                            op: "OP-2029-01-BCO-59182",
+                            date: "16/03/2029",
+                            studentName: personalData?.name ? `${personalData.lastName}, ${personalData.name}` : "QUISPE ROJAS, MATEO SEBASTIÁN",
+                            dni: currentDni
+                          }),
+                          fileName: "Voucher_Matricula_2029_I.png"
+                        })}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-bold text-[10.5px] transition-colors cursor-pointer shadow-3xs"
+                        title="Ver comprobante oficial de pago"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-blue-700" />
+                        <span>Ver Voucher</span>
+                      </button>
+                    </td>
+                  </tr>
+
+                  {/* Semestre 2029-II (Ciclo VI) */}
+                  <tr className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4">
+                      <span className="font-black text-slate-900 block">Derecho de Matrícula Regular</span>
+                      <span className="text-[10px] text-slate-400 font-semibold block">Periodo Lectivo 2029-II</span>
+                    </td>
+                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-700">
+                      Ciclo VI
+                    </td>
+                    <td className="py-3 px-3 text-right font-mono font-black text-slate-900">
+                      S/ 250.00
+                    </td>
+                    <td className="py-3 px-3 text-slate-600 text-[11px]">
+                      Banco de la Nación (Cta. Recaudadora)
+                    </td>
+                    <td className="py-3 px-3 font-mono font-extrabold text-[#800521]">
+                      OP-2029-02-BCO-68403
+                    </td>
+                    <td className="py-3 px-3 text-center font-mono text-slate-600 text-[11px]">
+                      17/08/2029
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9.5px] font-black uppercase font-mono bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        Validado por Caja
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setViewingVoucher({
+                          period: "2029-II",
+                          cycle: "Ciclo VI",
+                          concept: "Derecho de Matrícula Regular",
+                          amount: "S/ 250.00",
+                          bank: "Banco de la Nación (Cta. Recaudadora)",
+                          operation: "OP-2029-02-BCO-68403",
+                          date: "17/08/2029",
+                          status: "Validado por Caja",
+                          dataUrl: generateVoucherSvgDataUrl({
+                            cycle: "Ciclo VI",
+                            period: "2029-II",
+                            op: "OP-2029-02-BCO-68403",
+                            date: "17/08/2029",
+                            studentName: personalData?.name ? `${personalData.lastName}, ${personalData.name}` : "QUISPE ROJAS, MATEO SEBASTIÁN",
+                            dni: currentDni
+                          }),
+                          fileName: "Voucher_Matricula_2029_II.png"
+                        })}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-bold text-[10.5px] transition-colors cursor-pointer shadow-3xs"
+                        title="Ver comprobante oficial de pago"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-blue-700" />
+                        <span>Ver Voucher</span>
+                      </button>
+                    </td>
+                  </tr>
+                </>
               )}
             </tbody>
           </table>

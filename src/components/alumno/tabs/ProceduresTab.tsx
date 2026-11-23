@@ -31,6 +31,28 @@ const procedures: { code: StudentProcedureCode; title: string; amount: number; w
 ];
 
 export function ProceduresTab({ studentDni, period }: { studentDni: string; period: string }) {
+  const [, setSync] = useState(0);
+  useEffect(() => {
+    const handleSync = () => setSync((v) => v + 1);
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("focus", handleSync);
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("focus", handleSync);
+    };
+  }, []);
+
+  const isGraduated = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted") === "true" ||
+    localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+    localStorage.getItem("sfa_student_graduated_all") === "true" ||
+    localStorage.getItem(`sfa_student_status_${studentDni}`) === "Egresado"
+  );
+  const effectivePeriod = period || (isGraduated ? "Periodo 2029-II (Egresado)" : "Periodo 2027-I");
+
   const [items, setItems] = useState<ServiceRequest[]>([]);
   const [rates, setRates] = useState<Record<string, number>>({});
   const [selected, setSelected] = useState<StudentProcedureCode>('CER01');
@@ -186,7 +208,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <div className="text-left bg-black/35 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
               <span className="text-[9px] text-amber-300 font-extrabold block uppercase mb-0.5 tracking-wider">Período Lectivo</span>
-              <span className="text-xs font-black text-white font-mono">{period || "2027-I"}</span>
+              <span className="text-xs font-black text-white font-mono">{effectivePeriod}</span>
             </div>
             <button
               type="button"

@@ -132,6 +132,222 @@ const CICLO_2_COURSES = [
   }
 ];
 
+// 5 Cursos Oficiales Ciclo III (Electricidad Industrial)
+const CICLO_3_COURSES = [
+  {
+    id: "cur_ei_301",
+    code: "EIND-301",
+    name: "Máquinas Eléctricas Rotativas y Generadores",
+    credits: 4,
+    group: "EI-III-A",
+    teacherName: "Ing. Walter Fernández",
+    classroom: "Lab. Máquinas Eléctricas",
+    schedule: "Lun - Mie 08:00 - 10:15"
+  },
+  {
+    id: "cur_ei_302",
+    code: "EIND-302",
+    name: "Instalaciones Eléctricas Industriales en Media Tensión",
+    credits: 4,
+    group: "EI-III-A",
+    teacherName: "Ing. Manuel Ramos Salazar",
+    classroom: "Taller de MT 302",
+    schedule: "Mar - Jue 08:00 - 10:15"
+  },
+  {
+    id: "cur_ei_303",
+    code: "EIND-303",
+    name: "Tableros Eléctricos y Sistemas de Protección",
+    credits: 3,
+    group: "EI-III-A",
+    teacherName: "Ing. Roberto Chávez Peña",
+    classroom: "Lab. Tableros 301",
+    schedule: "Vie 08:00 - 11:00"
+  },
+  {
+    id: "cur_ei_304",
+    code: "EIND-304",
+    name: "Electrónica de Potencia Industrial",
+    credits: 3,
+    group: "EI-III-A",
+    teacherName: "Ing. Walter Fernández",
+    classroom: "Lab. Potencia 2",
+    schedule: "Lun 10:30 - 12:45"
+  },
+  {
+    id: "cur_ei_305",
+    code: "EIND-305",
+    name: "Sociedad y Economía en la Globalización",
+    credits: 2,
+    group: "EI-III-A",
+    teacherName: "Lic. Carmen Luzardo",
+    classroom: "Aula 305",
+    schedule: "Mie 10:30 - 12:00"
+  }
+];
+
+// 5 Cursos Oficiales Ciclo IV (Electricidad Industrial)
+const CICLO_4_COURSES = [
+  {
+    id: "cur_ei_401",
+    code: "EIND-401",
+    name: "Control de Motores y Arranque Electrónico",
+    credits: 4,
+    group: "EI-IV-A",
+    teacherName: "Ing. Manuel Ramos Salazar",
+    classroom: "Taller Motores 401",
+    schedule: "Lun - Mie 08:00 - 10:15"
+  },
+  {
+    id: "cur_ei_402",
+    code: "EIND-402",
+    name: "Automatización con Controladores Lógicos Programables (PLC I)",
+    credits: 4,
+    group: "EI-IV-A",
+    teacherName: "Ing. Roberto Chávez Peña",
+    classroom: "Lab. Automatización PLC",
+    schedule: "Mar - Jue 08:00 - 10:15"
+  },
+  {
+    id: "cur_ei_403",
+    code: "EIND-403",
+    name: "Mantenimiento de Subestaciones y Redes de Distribución",
+    credits: 3,
+    group: "EI-IV-A",
+    teacherName: "Ing. Walter Fernández",
+    classroom: "Campo de Subestaciones",
+    schedule: "Vie 08:00 - 11:00"
+  },
+  {
+    id: "cur_ei_404",
+    code: "EIND-404",
+    name: "Sistemas Neumáticos y Electroneumáticos Industriales",
+    credits: 3,
+    group: "EI-IV-A",
+    teacherName: "Ing. Carlos Morales",
+    classroom: "Lab. Neumática 402",
+    schedule: "Lun 10:30 - 12:45"
+  },
+  {
+    id: "cur_ei_405",
+    code: "EIND-405",
+    name: "Medio Ambiente y Desarrollo Sostenible",
+    credits: 2,
+    group: "EI-IV-A",
+    teacherName: "Lic. Elena Gómez",
+    classroom: "Aula 405",
+    schedule: "Mie 10:30 - 12:00"
+  }
+];
+
+// 5 Cursos Oficiales Ciclo V (Electricidad Industrial)
+const CICLO_5_COURSES = [
+  {
+    id: "cur_ei_501",
+    code: "EIND-501",
+    name: "Automatización Avanzada PLC II y Redes Industriales",
+    credits: 4,
+    group: "EI-V-A",
+    teacherName: "Ing. Roberto Chávez Peña",
+    classroom: "Lab. Redes Industriales",
+    schedule: "Lun - Mie 08:00 - 10:15"
+  },
+  {
+    id: "cur_ei_502",
+    code: "EIND-502",
+    name: "Sistemas de Supervisión SCADA y Pantallas HMI",
+    credits: 4,
+    group: "EI-V-A",
+    teacherName: "Ing. Manuel Ramos Salazar",
+    classroom: "Centro de Cómputo SCADA",
+    schedule: "Mar - Jue 08:00 - 10:15"
+  },
+  {
+    id: "cur_ei_503",
+    code: "EIND-503",
+    name: "Instrumentación y Control de Procesos Industriales",
+    credits: 3,
+    group: "EI-V-A",
+    teacherName: "Ing. Walter Fernández",
+    classroom: "Lab. Instrumentación",
+    schedule: "Vie 08:00 - 11:00"
+  },
+  {
+    id: "cur_ei_504",
+    code: "EIND-504",
+    name: "Eficiencia Energética y Auditorías Eléctricas",
+    credits: 3,
+    group: "EI-V-A",
+    teacherName: "Ing. Carlos Morales",
+    classroom: "Aula 504",
+    schedule: "Lun 10:30 - 12:45"
+  },
+  {
+    id: "cur_ei_505",
+    code: "EIND-505",
+    name: "Ética y Deontología Profesional",
+    credits: 2,
+    group: "EI-V-A",
+    teacherName: "Lic. Carmen Luzardo",
+    classroom: "Aula 505",
+    schedule: "Mie 10:30 - 12:00"
+  }
+];
+
+// 5 Cursos Oficiales Ciclo VI (Electricidad Industrial)
+const CICLO_6_COURSES = [
+  {
+    id: "cur_ei_601",
+    code: "EIND-601",
+    name: "Integración de Sistemas Automatizados y Robótica",
+    credits: 4,
+    group: "EI-VI-A",
+    teacherName: "Ing. Roberto Chávez Peña",
+    classroom: "Taller Robótica Industrial",
+    schedule: "Lun - Mie 08:00 - 10:15"
+  },
+  {
+    id: "cur_ei_602",
+    code: "EIND-602",
+    name: "Mantenimiento Predictivo y Gestión de Activos Eléctricos",
+    credits: 4,
+    group: "EI-VI-A",
+    teacherName: "Ing. Manuel Ramos Salazar",
+    classroom: "Lab. Predictivo 602",
+    schedule: "Mar - Jue 08:00 - 10:15"
+  },
+  {
+    id: "cur_ei_603",
+    code: "EIND-603",
+    name: "Proyectos Electromecánicos y Gestión de Obras",
+    credits: 3,
+    group: "EI-VI-A",
+    teacherName: "Ing. Walter Fernández",
+    classroom: "Aula de Proyectos 603",
+    schedule: "Vie 08:00 - 11:00"
+  },
+  {
+    id: "cur_ei_604",
+    code: "EIND-604",
+    name: "Proyecto de Innovación y Titulación EFSRT",
+    credits: 3,
+    group: "EI-VI-A",
+    teacherName: "Ing. Manuel Ramos Salazar",
+    classroom: "Taller de Titulación",
+    schedule: "Lun 10:30 - 12:45"
+  },
+  {
+    id: "cur_ei_605",
+    code: "EIND-605",
+    name: "Emprendimiento y Gestión Empresarial",
+    credits: 2,
+    group: "EI-VI-A",
+    teacherName: "Lic. Elena Gómez",
+    classroom: "Aula 605",
+    schedule: "Mie 10:30 - 12:00"
+  }
+];
+
 // 16 Fechas semanales para Ciclo I (Marzo a Junio 2027)
 const DATES_2027_I = [
   "2027-03-15", "2027-03-22", "2027-03-29", "2027-04-05",
@@ -146,6 +362,38 @@ const DATES_2027_II = [
   "2027-09-13", "2027-09-20", "2027-09-27", "2027-10-04",
   "2027-10-11", "2027-10-18", "2027-10-25", "2027-11-01",
   "2027-11-08", "2027-11-15", "2027-11-22", "2027-11-29"
+];
+
+// 16 Fechas semanales para Ciclo III (Marzo a Junio 2028)
+const DATES_2028_I = [
+  "2028-03-13", "2028-03-20", "2028-03-27", "2028-04-03",
+  "2028-04-10", "2028-04-17", "2028-04-24", "2028-05-01",
+  "2028-05-08", "2028-05-15", "2028-05-22", "2028-05-29",
+  "2028-06-05", "2028-06-12", "2028-06-19", "2028-06-26"
+];
+
+// 16 Fechas semanales para Ciclo IV (Agosto a Noviembre 2028)
+const DATES_2028_II = [
+  "2028-08-14", "2028-08-21", "2028-08-28", "2028-09-04",
+  "2028-09-11", "2028-09-18", "2028-09-25", "2028-10-02",
+  "2028-10-09", "2028-10-16", "2028-10-23", "2028-10-30",
+  "2028-11-06", "2028-11-13", "2028-11-20", "2028-11-27"
+];
+
+// 16 Fechas semanales para Ciclo V (Marzo a Junio 2029)
+const DATES_2029_I = [
+  "2029-03-12", "2029-03-19", "2029-03-26", "2029-04-02",
+  "2029-04-09", "2029-04-16", "2029-04-23", "2029-04-30",
+  "2029-05-07", "2029-05-14", "2029-05-21", "2029-05-28",
+  "2029-06-04", "2029-06-11", "2029-06-18", "2029-06-25"
+];
+
+// 16 Fechas semanales para Ciclo VI (Agosto a Noviembre 2029)
+const DATES_2029_II = [
+  "2029-08-13", "2029-08-20", "2029-08-27", "2029-09-03",
+  "2029-09-10", "2029-09-17", "2029-09-24", "2029-10-01",
+  "2029-10-08", "2029-10-15", "2029-10-22", "2029-10-29",
+  "2029-11-05", "2029-11-12", "2029-11-19", "2029-11-26"
 ];
 
 export const AttendanceTab: React.FC<AttendanceTabProps> = ({
@@ -196,34 +444,63 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
     studentCourses.some((c) => c.code?.includes("-20") || c.code?.includes("201"))
   );
 
+  const isGraduated = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_student_promoted_${activeDni}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted") === "true" ||
+    localStorage.getItem(`sfa_student_graduated_all_${activeDni}`) === "true" ||
+    localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+    localStorage.getItem("sfa_student_graduated_all") === "true" ||
+    localStorage.getItem(`sfa_titulacion_enabled_${activeDni}`) === "true" ||
+    localStorage.getItem("sfa_titulacion_enabled_74859612") === "true" ||
+    localStorage.getItem(`sfa_student_status_${activeDni}`) === "Egresado"
+  );
+
+  type SemesterKey = "2027-I" | "2027-II" | "2028-I" | "2028-II" | "2029-I" | "2029-II";
+
   // Estado del periodo seleccionado (interactivo y sincronizado)
-  const [selectedSemester, setSelectedSemester] = useState<"2027-I" | "2027-II">(() => {
-    if (selectedAttendanceSemester === "2027-I" || selectedAttendanceSemester === "2027-II") {
-      return selectedAttendanceSemester;
+  const [selectedSemester, setSelectedSemester] = useState<SemesterKey>(() => {
+    if (selectedAttendanceSemester) {
+      return selectedAttendanceSemester as SemesterKey;
     }
-    return isCycle2 ? "2027-II" : "2027-I";
+    return isGraduated ? "2027-II" : isCycle2 ? "2027-II" : "2027-I";
   });
 
   useEffect(() => {
-    if (selectedAttendanceSemester === "2027-I" || selectedAttendanceSemester === "2027-II") {
-      setSelectedSemester(selectedAttendanceSemester);
+    if (selectedAttendanceSemester) {
+      setSelectedSemester(selectedAttendanceSemester as SemesterKey);
     }
   }, [selectedAttendanceSemester]);
 
-  const handleSemesterChange = (newSemester: "2027-I" | "2027-II") => {
+  const handleSemesterChange = (newSemester: SemesterKey) => {
     setSelectedSemester(newSemester);
     if (setSelectedAttendanceSemester) {
       setSelectedAttendanceSemester(newSemester);
     }
   };
 
-  const currentCycleRoman = selectedSemester === "2027-II" ? "Ciclo II" : "Ciclo I";
-  const currentPeriod = selectedSemester === "2027-II" ? "Periodo 2027-II" : "Periodo 2027-I";
+  const currentCycleRoman = 
+    selectedSemester === "2029-II" ? "Ciclo VI" :
+    selectedSemester === "2029-I" ? "Ciclo V" :
+    selectedSemester === "2028-II" ? "Ciclo IV" :
+    selectedSemester === "2028-I" ? "Ciclo III" :
+    selectedSemester === "2027-II" ? "Ciclo II" : "Ciclo I";
+
+  const currentPeriod = 
+    selectedSemester === "2029-II" ? "Periodo 2029-II" :
+    selectedSemester === "2029-I" ? "Periodo 2029-I" :
+    selectedSemester === "2028-II" ? "Periodo 2028-II" :
+    selectedSemester === "2028-I" ? "Periodo 2028-I" :
+    selectedSemester === "2027-II" ? "Periodo 2027-II" : "Periodo 2027-I";
 
   // Determinar la lista de cursos del ciclo seleccionado
   const displayCourses = useMemo(() => {
-    const isC1 = selectedSemester === "2027-I";
-    const templateCourses = isC1 ? CICLO_1_COURSES : CICLO_2_COURSES;
+    const templateCourses = 
+      selectedSemester === "2029-II" ? CICLO_6_COURSES :
+      selectedSemester === "2029-I" ? CICLO_5_COURSES :
+      selectedSemester === "2028-II" ? CICLO_4_COURSES :
+      selectedSemester === "2028-I" ? CICLO_3_COURSES :
+      selectedSemester === "2027-II" ? CICLO_2_COURSES : CICLO_1_COURSES;
 
     return templateCourses.map((tpl) => {
       // Buscar si el curso viene en studentCourses con detalles dinámicos
@@ -239,7 +516,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
         code: tpl.code,
         name: tpl.name,
         credits: matched?.credits || tpl.credits,
-        group: matched?.group || (isC1 ? "EI-I-A" : "EI-II-A"),
+        group: matched?.group || tpl.group || (selectedSemester === "2027-I" ? "EI-I-A" : "EI-II-A"),
         teacherName: matched?.teacherName || tpl.teacherName,
         classroom: matched?.classroom || tpl.classroom,
         schedule: matched?.schedule || tpl.schedule,
@@ -250,7 +527,12 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
 
   // Cálculo de asistencia con 16 semanas garantizadas para el récord consolidado
   const currentAttendanceCourses = useMemo(() => {
-    const semesterDates = selectedSemester === "2027-I" ? DATES_2027_I : DATES_2027_II;
+    const semesterDates = 
+      selectedSemester === "2029-II" ? DATES_2029_II :
+      selectedSemester === "2029-I" ? DATES_2029_I :
+      selectedSemester === "2028-II" ? DATES_2028_II :
+      selectedSemester === "2028-I" ? DATES_2028_I :
+      selectedSemester === "2027-II" ? DATES_2027_II : DATES_2027_I;
 
     return displayCourses.map((c) => {
       const rawRecords = studentAttendanceRecords(
@@ -353,15 +635,33 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                 <select
                   id="select-periodo-asistencia"
                   value={selectedSemester}
-                  onChange={(e) => handleSemesterChange(e.target.value as "2027-I" | "2027-II")}
+                  onChange={(e) => handleSemesterChange(e.target.value as any)}
                   className="bg-transparent text-xs font-black text-white font-mono outline-none cursor-pointer pr-4 py-0.5 focus:ring-0"
                 >
                   <option value="2027-I" className="text-slate-900 bg-white font-sans font-bold">
                     Periodo 2027-I • Ciclo I
                   </option>
-                  <option value="2027-II" className="text-slate-900 bg-white font-sans font-bold">
-                    Periodo 2027-II • Ciclo II
-                  </option>
+                  {(isCycle2 || isGraduated) && (
+                    <option value="2027-II" className="text-slate-900 bg-white font-sans font-bold">
+                      Periodo 2027-II • Ciclo II
+                    </option>
+                  )}
+                  {isGraduated && (
+                    <>
+                      <option value="2028-I" className="text-slate-900 bg-white font-sans font-bold">
+                        Periodo 2028-I • Ciclo III
+                      </option>
+                      <option value="2028-II" className="text-slate-900 bg-white font-sans font-bold">
+                        Periodo 2028-II • Ciclo IV
+                      </option>
+                      <option value="2029-I" className="text-slate-900 bg-white font-sans font-bold">
+                        Periodo 2029-I • Ciclo V
+                      </option>
+                      <option value="2029-II" className="text-slate-900 bg-white font-sans font-bold">
+                        Periodo 2029-II • Ciclo VI
+                      </option>
+                    </>
+                  )}
                 </select>
               </div>
             </div>
