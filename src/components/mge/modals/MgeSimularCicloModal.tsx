@@ -153,8 +153,8 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
           </div>
 
           {/* Preview Table of Ciclo I courses */}
-          <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
-            <div className="bg-slate-100 px-3.5 py-2 border-b border-slate-200 flex items-center justify-between">
+          <div className="border border-slate-200 rounded-xl overflow-x-auto bg-white shadow-2xs">
+            <div className="bg-slate-100 px-3.5 py-2 border-b border-slate-200 flex items-center justify-between min-w-[480px]">
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-700">
                 Asignaturas del Ciclo I a Consolidar
               </span>
@@ -163,7 +163,7 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
               </span>
             </div>
 
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[480px] text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-slate-600 uppercase text-[9px] font-black border-b border-slate-200">
                   <th className="p-2.5">Código</th>

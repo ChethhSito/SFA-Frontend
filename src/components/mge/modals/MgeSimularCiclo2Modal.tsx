@@ -173,8 +173,8 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
           </div>
 
           {/* Courses Table */}
-          <div className="border border-slate-200 rounded-xl overflow-hidden shadow-3xs">
-            <table className="w-full text-left border-collapse">
+          <div className="border border-slate-200 rounded-xl overflow-x-auto shadow-3xs">
+            <table className="w-full min-w-[500px] text-left border-collapse">
               <thead>
                 <tr className="bg-slate-100 text-slate-600 font-black text-[10px] uppercase tracking-wider border-b border-slate-200">
                   <th className="py-2 px-3">Código</th>

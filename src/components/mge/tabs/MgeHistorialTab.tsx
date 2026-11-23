@@ -432,33 +432,39 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
                   );
                   return (
                     <div className="flex items-center gap-2 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => setShowSimulateCiclo1Modal(true)}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border cursor-pointer flex items-center gap-2 ${
-                          isCycle1Done
-                            ? "bg-emerald-800 hover:bg-emerald-700 text-white border-emerald-600/70"
-                            : "bg-[#800521] hover:bg-[#9F062A] text-white border-red-700/60"
-                        }`}
-                        title="Consolidar y cerrar las actas del Ciclo I para promover al estudiante a Ciclo II"
-                      >
-                        {isCycle1Done ? <CheckCircle2 className="w-4 h-4 text-emerald-300" /> : <Award className="w-4 h-4 text-amber-300" />}
-                        {isCycle1Done ? "Ciclo I Culminado" : "Simular Cierre Ciclo I"}
-                      </button>
+                      {isCycle1Done ? (
+                        <div className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider font-mono bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 flex items-center gap-1.5 shadow-2xs">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          <span>Ciclo I: Aprobado</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowSimulateCiclo1Modal(true)}
+                          className="px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border cursor-pointer flex items-center gap-2 bg-[#800521] hover:bg-[#9F062A] text-white border-red-700/60"
+                          title="Consolidar y cerrar las actas del Ciclo I para promover al estudiante a Ciclo II"
+                        >
+                          <Award className="w-4 h-4 text-amber-300" />
+                          <span>Simular Cierre Ciclo I</span>
+                        </button>
+                      )}
 
-                      <button
-                        type="button"
-                        onClick={() => setShowSimulateCiclo2Modal(true)}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border cursor-pointer flex items-center gap-2 ${
-                          isCycle2Done
-                            ? "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-500/70"
-                            : "bg-[#800521] hover:bg-[#9F062A] text-white border-red-700/60"
-                        }`}
-                        title="Consolidar Ciclo II, generar actas y habilitar Módulo Técnico I de EFSRT"
-                      >
-                        {isCycle2Done ? <CheckCircle2 className="w-4 h-4 text-emerald-300" /> : <Award className="w-4 h-4 text-amber-300" />}
-                        {isCycle2Done ? "Ciclo II Culminado" : "Simular y Consolidar Ciclo II (Presentación)"}
-                      </button>
+                      {isCycle1Done && (
+                        <button
+                          type="button"
+                          disabled={isCycle2Done}
+                          onClick={() => setShowSimulateCiclo2Modal(true)}
+                          className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border flex items-center gap-2 ${
+                            isCycle2Done
+                              ? "bg-emerald-800 text-white border-emerald-600 cursor-default"
+                              : "bg-[#800521] hover:bg-[#9F062A] text-white border-red-700/60 hover:shadow-md cursor-pointer active:scale-95"
+                          }`}
+                          title="Consolidar Ciclo II, generar actas y habilitar Módulo Técnico I de EFSRT"
+                        >
+                          <CheckCircle2 className="w-4 h-4 text-amber-300" />
+                          <span>{isCycle2Done ? "Ciclo II Consolidado (Módulo I Listo)" : "Simular y Consolidar Ciclo II"}</span>
+                        </button>
+                      )}
                     </div>
                   );
                 })()}

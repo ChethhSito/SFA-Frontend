@@ -302,84 +302,99 @@ export default function MgeNotasTab({
   return (
     <div className="space-y-6 text-left font-sans">
       {/* Banner de Consolidación y Simulación de Ciclos */}
-      <div className="bg-gradient-to-r from-[#800521] via-slate-900 to-slate-900 text-white rounded-2xl p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b-4 border-amber-500">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <GraduationCap className="w-5 h-5 text-amber-300" />
-            <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">
-              Cierre y Promoción de Ciclo Académico (Simulación Oficial)
-            </h3>
-          </div>
-          <p className="text-[11px] text-white/80 max-w-xl">
-            Permite consolidar las actas del Ciclo I para el estudiante seleccionado. La asignatura evaluada previamente en el portal docente mantiene su nota real intacta, y se completan las actas restantes para promoverlo formalmente al Ciclo II.
-          </p>
-        </div>
+      {(() => {
+        const isCycle1Done = typeof window !== "undefined" && Boolean(
+          localStorage.getItem(`sfa_student_promoted_cycle2_${selectedStudentDni}`) === "true" ||
+          localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+          localStorage.getItem(`sfa_simulated_cycle1_${selectedStudentDni}`) ||
+          localStorage.getItem("sfa_simulated_cycle1_74859612") ||
+          localStorage.getItem("sfa_simulated_cycle1")
+        );
+        const isCycle2Done = typeof window !== "undefined" && Boolean(
+          localStorage.getItem(`sfa_student_promoted_cycle3_${selectedStudentDni}`) === "true" ||
+          localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
+          localStorage.getItem(`sfa_simulated_cycle2_${selectedStudentDni}`) ||
+          localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+          localStorage.getItem("sfa_simulated_cycle2")
+        );
 
-        <div className="flex flex-wrap items-center gap-3 shrink-0">
-          <div className="min-w-[220px]">
-            <select
-              value={selectedStudentDni}
-              onChange={(e) => setSelectedStudentDni(e.target.value)}
-              className="w-full p-2.5 bg-white text-slate-800 border border-slate-300 rounded-xl text-xs font-bold focus:outline-none shadow-xs"
-            >
-              <option value="">Seleccione Estudiante...</option>
-              {processedStudents.map((st) => (
-                <option key={st.dni} value={st.dni}>
-                  {st.lastName}, {st.name} ({st.dni})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {(() => {
-            const isCycle1Done = typeof window !== "undefined" && Boolean(
-              localStorage.getItem(`sfa_student_promoted_cycle2_${selectedStudentDni}`) === "true" ||
-              localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-              localStorage.getItem(`sfa_simulated_cycle1_${selectedStudentDni}`) ||
-              localStorage.getItem("sfa_simulated_cycle1_74859612") ||
-              localStorage.getItem("sfa_simulated_cycle1")
-            );
-            const isCycle2Done = typeof window !== "undefined" && Boolean(
-              localStorage.getItem(`sfa_student_promoted_cycle3_${selectedStudentDni}`) === "true" ||
-              localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
-              localStorage.getItem(`sfa_simulated_cycle2_${selectedStudentDni}`) ||
-              localStorage.getItem("sfa_simulated_cycle2_74859612") ||
-              localStorage.getItem("sfa_simulated_cycle2")
-            );
-            return (
+        return (
+          <div className="bg-gradient-to-r from-[#800521] via-slate-900 to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-4 border-b-4 border-amber-500 w-full overflow-hidden">
+            <div className="space-y-1.5 min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  type="button"
-                  disabled={!selectedStudentDni}
-                  onClick={() => setShowSimulateModal(true)}
-                  className={`font-black text-xs uppercase tracking-wider px-3.5 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer ${
-                    isCycle1Done
-                      ? "bg-slate-700 hover:bg-slate-600 text-white"
-                      : "bg-amber-400 hover:bg-amber-300 text-slate-950"
-                  }`}
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{isCycle1Done ? "Ciclo I Culminado (Re-simular)" : "Simular Cierre Ciclo I"}</span>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={!selectedStudentDni}
-                  onClick={() => setShowSimulate2Modal(true)}
-                  className={`font-black text-xs uppercase tracking-wider px-3.5 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer ${
-                    isCycle2Done
-                      ? "bg-emerald-700 hover:bg-emerald-600 text-white"
-                      : "bg-[#800521] hover:bg-[#66041a] text-white"
-                  }`}
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{isCycle2Done ? "Ciclo II Consolidado (Re-simular)" : "Simular y Consolidar Ciclo II (Presentación)"}</span>
-                </button>
+                <GraduationCap className="w-5 h-5 text-amber-300 shrink-0" />
+                <h3 className="text-xs sm:text-sm font-black uppercase tracking-wider text-white">
+                  {isCycle1Done ? "Consolidación de Calificaciones y Actas • Ciclo II" : "Cierre y Promoción de Ciclo Académico"}
+                </h3>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-red-950/80 border border-red-700/60 text-amber-300 uppercase shrink-0">
+                  {isCycle1Done ? "Período 2027-II • Activo" : "Período 2027-I"}
+                </span>
               </div>
-            );
-          })()}
-        </div>
-      </div>
+              <p className="text-[11px] text-slate-200 leading-relaxed max-w-2xl">
+                {isCycle1Done
+                  ? "Estudiante regular en Ciclo II. Permite consolidar las 5 asignaturas de Segundo Ciclo en actas oficiales y acreditar el Módulo Técnico I de Experiencias Formativas (EFSRT)."
+                  : "Permite consolidar las actas del Ciclo I para el estudiante seleccionado y promoverlo formalmente al Ciclo II."}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 w-full 2xl:w-auto shrink-0">
+              <div className="w-full sm:w-auto min-w-[220px] max-w-full flex-1 sm:flex-initial">
+                <select
+                  value={selectedStudentDni}
+                  onChange={(e) => setSelectedStudentDni(e.target.value)}
+                  className="w-full p-2.5 bg-white text-slate-800 border border-slate-300 rounded-xl text-xs font-bold focus:outline-none shadow-xs truncate"
+                >
+                  <option value="">Seleccione Estudiante...</option>
+                  {processedStudents.map((st) => (
+                    <option key={st.dni} value={st.dni}>
+                      {st.lastName}, {st.name} ({st.dni})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {isCycle1Done ? (
+                <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 rounded-xl text-xs font-bold font-mono shrink-0">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Ciclo I: Aprobado</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={!selectedStudentDni || isCycle2Done}
+                    onClick={() => setShowSimulate2Modal(true)}
+                    className={`font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 flex-1 sm:flex-initial ${
+                      isCycle2Done
+                        ? "bg-emerald-800 text-white border border-emerald-600 cursor-default"
+                        : "bg-[#800521] hover:bg-[#9F062A] text-white border border-red-500/60 hover:shadow-md active:scale-95 cursor-pointer"
+                    }`}
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-amber-300 shrink-0" />
+                    <span className="truncate">{isCycle2Done ? "Ciclo II Consolidado (Actas Listas)" : "Simular y Consolidar Ciclo II"}</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                  <button
+                    type="button"
+                    disabled={!selectedStudentDni}
+                    onClick={() => setShowSimulateModal(true)}
+                    className="font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer bg-amber-400 hover:bg-amber-300 text-slate-950 active:scale-95 flex-1 sm:flex-initial"
+                  >
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span className="truncate">Simular Cierre Ciclo I</span>
+                  </button>
+
+                  <div className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800/80 border border-slate-700 text-slate-400 rounded-xl text-xs font-medium font-mono shrink-0">
+                    <span>Ciclo II: Requiere Ciclo I</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Selectores de Paso 1 y Paso 2 con Filtros de Carrera y Ciclo */}
       <div className="bg-white p-5 border border-slate-200 rounded-2xl shadow-3xs space-y-4">
@@ -414,9 +429,9 @@ export default function MgeNotasTab({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Ciclo:</span>
-            <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200">
+            <div className="flex flex-wrap rounded-xl bg-slate-100 p-1 border border-slate-200 gap-1">
               {(["1", "2", "3", "4", "5", "6", "all"] as const).map((cyc) => (
                 <button
                   key={cyc}
