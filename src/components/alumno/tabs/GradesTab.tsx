@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Zap, Cpu, Sliders, Award, Printer, Info, ChevronRight, FileText, CheckCircle2 } from "lucide-react";
 import PageTransition from "../../ui/PageTransition";
 import { BoletaNotasModal } from "../modals/BoletaNotasModal";
@@ -75,19 +75,27 @@ export const GradesTab: React.FC<GradesTabProps> = ({
     localStorage.getItem("sfa_student_promoted_74859612") === "true"
   );
 
+  const [storageSyncKey, setStorageSyncKey] = useState(0);
+
+  useEffect(() => {
+    const handleSync = () => setStorageSyncKey((k) => k + 1);
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("focus", handleSync);
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("focus", handleSync);
+    };
+  }, []);
+
   const [showBoletaModal, setShowBoletaModal] = useState(false);
   const [selectedSemester, setSelectedSemester] = useState<"2027-I" | "2027-II">(() => {
     return isPromotedCycle2 ? "2027-II" : "2027-I";
   });
 
   const semesterCourses = React.useMemo(() => {
+    // 1. Ciclo I oficial
     if (selectedSemester === "2027-I") {
-      const c1 = enrichedCourses.filter((c) => {
-        const isCycle2 = c.code?.includes("-20") || c.cycle === "Ciclo II" || c.cycle === 2;
-        if (isCycle2) return false;
-        return c.code?.includes("-10") || c.cycle === "Ciclo I" || c.cycle === 1;
-      });
-      const defaultCycle1 = [
+      return [
         {
           id: "cur_ei_101",
           code: "EIND-101",
@@ -166,132 +174,120 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           ]
         }
       ];
-      if (c1.length < 5) {
-        return defaultCycle1;
-      }
-      return c1;
     } else {
+      // 2. Ciclo II oficial
+      const studentDni = studentInfo?.dni || "74859612";
       const isCiclo2AllSimulated = typeof window !== "undefined" && Boolean(
-        localStorage.getItem(`sfa_simulated_cycle2_${studentInfo?.dni || "74859612"}`) ||
+        localStorage.getItem(`sfa_simulated_cycle2_${studentDni}`) ||
         localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+        localStorage.getItem("sfa_simulated_cycle2") ||
+        localStorage.getItem(`sfa_student_promoted_cycle3_${studentDni}`) === "true" ||
         localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
-        localStorage.getItem(`sfa_student_promoted_cycle3_${studentInfo?.dni || "74859612"}`) === "true"
+        localStorage.getItem("sfa_student_promoted_cycle3") === "true" ||
+        localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
+        localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true"
       );
 
-      let gNpa: any = isCiclo2AllSimulated ? 16.0 : "NR";
-      let gPc1: any = isCiclo2AllSimulated ? 16.0 : "NR";
-      let gPc2: any = isCiclo2AllSimulated ? 17.0 : "NR";
-      let gEx: any = isCiclo2AllSimulated ? 17.0 : "NR";
+      let g201Npa: any = isCiclo2AllSimulated ? 16.0 : "NR";
+      let g201Pc1: any = isCiclo2AllSimulated ? 16.0 : "NR";
+      let g201Pc2: any = isCiclo2AllSimulated ? 17.0 : "NR";
+      let g201Ex: any = isCiclo2AllSimulated ? 17.0 : "NR";
 
       try {
-        const raw = localStorage.getItem("sfa_grades_EIND-201_74859612") || localStorage.getItem("sfa_grades_cur_ei_201_74859612");
+        const raw = localStorage.getItem(`sfa_grades_EIND-201_${studentDni}`) ||
+          localStorage.getItem("sfa_grades_EIND-201_74859612") ||
+          localStorage.getItem(`sfa_grades_cur_ei_201_${studentDni}`) ||
+          localStorage.getItem("sfa_grades_cur_ei_201_74859612");
         if (raw) {
           const p = JSON.parse(raw);
-          if (p.NPA !== undefined) gNpa = p.NPA;
-          if (p.PC1 !== undefined) gPc1 = p.PC1;
-          if (p.PC2 !== undefined) gPc2 = p.PC2;
-          if (p.EX_FINAL !== undefined) gEx = p.EX_FINAL;
+          if (p.NPA !== undefined) g201Npa = p.NPA;
+          if (p.PC1 !== undefined) g201Pc1 = p.PC1;
+          if (p.PC2 !== undefined) g201Pc2 = p.PC2;
+          if (p.EX_FINAL !== undefined) g201Ex = p.EX_FINAL;
         }
       } catch {}
 
-      const c2 = enrichedCourses.filter((c) => c.code?.includes("-20") || c.cycle === "Ciclo II" || c.cycle === 2);
-      if (c2.length < 5) {
-        return [
-          {
-            id: "cur_ei_201",
-            code: "EIND-201",
-            name: "Circuitos Eléctricos en Corriente Alterna",
-            credits: 4,
-            cycle: "Ciclo II",
-            classroom: "Aula 201 • Pabellón A",
-            iconType: "Zap",
-            formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
-            evaluations: [
-              { id: "NPA", name: "Nota de Participación / Informes", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: gNpa, isCurricular: true },
-              { id: "PC1", name: "Práctica Calificada 1 (CA)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: gPc1, isCurricular: true },
-              { id: "PC2", name: "Práctica Calificada 2 (Mediciones)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: gPc2, isCurricular: true },
-              { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: gEx, isCurricular: true }
-            ]
-          },
-          {
-            id: "cur_ei_202",
-            code: "EIND-202",
-            name: "Electrónica Analógica y de Potencia Básica",
-            credits: 4,
-            cycle: "Ciclo II",
-            classroom: "Taller de Potencia",
-            iconType: "Sliders",
-            formula: "NF = 0.20*NPA + 0.20*LAB1 + 0.20*LAB2 + 0.40*EX_FINAL",
-            evaluations: [
-              { id: "NPA", name: "Nota de Participación", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true },
-              { id: "LAB1", name: "Laboratorio Diodos y Tiristores", prefix: "LAB1", weight: "20%", weightDecimal: 0.2, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true },
-              { id: "LAB2", name: "Laboratorio Circuitos Rectificadores", prefix: "LAB2", weight: "20%", weightDecimal: 0.2, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true },
-              { id: "EX_FINAL", name: "Evaluación Modular", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true }
-            ]
-          },
-          {
-            id: "cur_ei_203",
-            code: "EIND-203",
-            name: "Taller de Medidas e Instrumentos Eléctricos",
-            credits: 3,
-            cycle: "Ciclo II",
-            classroom: "Laboratorio de Mediciones",
-            iconType: "Cpu",
-            formula: "NF = 0.20*NPA + 0.30*PC1 + 0.50*PROY",
-            evaluations: [
-              { id: "NPA", name: "Participación y Seguridad", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true },
-              { id: "PC1", name: "Práctica de Osciloscopio y Fasores", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true },
-              { id: "PROY", name: "Proyecto de Calibración", prefix: "PROY", weight: "50%", weightDecimal: 0.5, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true }
-            ]
-          },
-          {
-            id: "cur_ei_204",
-            code: "EIND-204",
-            name: "Dibujo y CAD Electrotécnico (AutoCAD Electrical)",
-            credits: 3,
-            cycle: "Ciclo II",
-            classroom: "Cómputo 2 • Pabellón A",
-            iconType: "Sliders",
-            formula: "NF = 0.30*PL1 + 0.30*PL2 + 0.40*PROY_CAD",
-            evaluations: [
-              { id: "PL1", name: "Plano Unifilar en CAD", prefix: "PL1", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true },
-              { id: "PL2", name: "Plano Multifilar de Tableros", prefix: "PL2", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true },
-              { id: "PROY_CAD", name: "Proyecto Final Planimetría", prefix: "PROY_CAD", weight: "40%", weightDecimal: 0.4, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true }
-            ]
-          },
-          {
-            id: "cur_ei_205",
-            code: "EIND-205",
-            name: "Inglés Técnico para Electricidad",
-            credits: 2,
-            cycle: "Ciclo II",
-            classroom: "Aula 201 • Pabellón A",
-            iconType: "Award",
-            formula: "NF = 0.30*ACT + 0.30*ORAL + 0.40*EX_FINAL",
-            evaluations: [
-              { id: "ACT", name: "Technical Vocabulary", prefix: "ACT", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 15.0 : "NR", isCurricular: true },
-              { id: "ORAL", name: "Oral Presentation (Diagrams)", prefix: "ORAL", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 15.0 : "NR", isCurricular: true },
-              { id: "EX_FINAL", name: "Final Technical Test", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true }
-            ]
-          }
-        ];
-      }
-      return c2.map((c) => {
-        if (c.code === "EIND-201" || c.id === "cur_ei_201") {
-          return {
-            ...c,
-            evaluations: [
-              { id: "NPA", name: "Nota de Participación / Informes", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: gNpa, isCurricular: true },
-              { id: "PC1", name: "Práctica Calificada 1 (CA)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: gPc1, isCurricular: true },
-              { id: "PC2", name: "Práctica Calificada 2 (Mediciones)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: gPc2, isCurricular: true },
-              { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: gEx, isCurricular: true }
-            ]
-          };
+      return [
+        {
+          id: "cur_ei_201",
+          code: "EIND-201",
+          name: "Circuitos Eléctricos en Corriente Alterna",
+          credits: 4,
+          cycle: "Ciclo II",
+          classroom: "Aula 201 • Pabellón A",
+          iconType: "Zap",
+          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+          evaluations: [
+            { id: "NPA", name: "Nota de Participación / Informes", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: g201Npa, isCurricular: true },
+            { id: "PC1", name: "Práctica Calificada 1 (CA)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: g201Pc1, isCurricular: true },
+            { id: "PC2", name: "Práctica Calificada 2 (Mediciones)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: g201Pc2, isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: g201Ex, isCurricular: true }
+          ]
+        },
+        {
+          id: "cur_ei_202",
+          code: "EIND-202",
+          name: "Electrónica Analógica y de Potencia Básica",
+          credits: 4,
+          cycle: "Ciclo II",
+          classroom: "Taller de Potencia",
+          iconType: "Sliders",
+          formula: "NF = 0.20*NPA + 0.20*LAB1 + 0.20*LAB2 + 0.40*EX_FINAL",
+          evaluations: [
+            { id: "NPA", name: "Nota de Participación", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true },
+            { id: "LAB1", name: "Laboratorio Diodos y Tiristores", prefix: "LAB1", weight: "20%", weightDecimal: 0.2, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true },
+            { id: "LAB2", name: "Laboratorio Circuitos Rectificadores", prefix: "LAB2", weight: "20%", weightDecimal: 0.2, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true }
+          ]
+        },
+        {
+          id: "cur_ei_203",
+          code: "EIND-203",
+          name: "Taller de Medidas e Instrumentos Eléctricos",
+          credits: 3,
+          cycle: "Ciclo II",
+          classroom: "Laboratorio de Mediciones",
+          iconType: "Cpu",
+          formula: "NF = 0.20*NPA + 0.30*PC1 + 0.50*PROY",
+          evaluations: [
+            { id: "NPA", name: "Participación y Seguridad", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true },
+            { id: "PC1", name: "Práctica de Osciloscopio y Fasores", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true },
+            { id: "PROY", name: "Proyecto de Calibración", prefix: "PROY", weight: "50%", weightDecimal: 0.5, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true }
+          ]
+        },
+        {
+          id: "cur_ei_204",
+          code: "EIND-204",
+          name: "Dibujo y CAD Electrotécnico (AutoCAD Electrical)",
+          credits: 3,
+          cycle: "Ciclo II",
+          classroom: "Cómputo 2 • Pabellón A",
+          iconType: "Sliders",
+          formula: "NF = 0.30*PL1 + 0.30*PL2 + 0.40*PROY_CAD",
+          evaluations: [
+            { id: "PL1", name: "Plano Unifilar en CAD", prefix: "PL1", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true },
+            { id: "PL2", name: "Plano Multifilar de Tableros", prefix: "PL2", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true },
+            { id: "PROY_CAD", name: "Proyecto Final Planimetría", prefix: "PROY_CAD", weight: "40%", weightDecimal: 0.4, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true }
+          ]
+        },
+        {
+          id: "cur_ei_205",
+          code: "EIND-205",
+          name: "Inglés Técnico para Electricidad",
+          credits: 2,
+          cycle: "Ciclo II",
+          classroom: "Aula 201 • Pabellón A",
+          iconType: "Award",
+          formula: "NF = 0.30*ACT + 0.30*ORAL + 0.40*EX_FINAL",
+          evaluations: [
+            { id: "ACT", name: "Technical Vocabulary", prefix: "ACT", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 15.0 : "NR", isCurricular: true },
+            { id: "ORAL", name: "Oral Presentation (Diagrams)", prefix: "ORAL", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 15.0 : "NR", isCurricular: true },
+            { id: "EX_FINAL", name: "Final Technical Test", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true }
+          ]
         }
-        return c;
-      });
+      ];
     }
-  }, [enrichedCourses, selectedSemester]);
+  }, [selectedSemester, studentInfo?.dni, storageSyncKey]);
 
   const activeCourse = semesterCourses.find(c => c.name === selectedCourseDetail || c.id === selectedCourseDetail || c.code === selectedCourseDetail) || semesterCourses[0];
 
@@ -444,9 +440,13 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           <div>
             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Condición Académica</span>
             <p className="text-xl font-black text-emerald-600 mt-1 font-mono">
-              {cycleNpaAverage !== null && Number(cycleNpaAverage) >= 12.5 ? "REGULAR" : "MATRICULADO"}
+              {hasAnyEvaluations && Number(cycleProgressiveAverage) >= 12.5 ? "APROBADO" : "MATRICULADO"}
             </p>
-            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">Semestre Académico {selectedSemester}</span>
+            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">
+              {selectedSemester === "2027-II"
+                ? (hasAnyEvaluations && Number(cycleProgressiveAverage) >= 12.5 ? "Promovido a Ciclo III • Módulo EFSRT I" : "Semestre Académico 2027-II")
+                : (hasAnyEvaluations && Number(cycleProgressiveAverage) >= 12.5 ? "Promovido a Ciclo II" : "Semestre Académico 2027-I")}
+            </span>
           </div>
           <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
             <CheckCircle2 className="w-5 h-5" />

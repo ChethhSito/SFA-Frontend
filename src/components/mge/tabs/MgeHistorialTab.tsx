@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   GraduationCap,
   Award,
@@ -147,6 +147,25 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
     }
   });
 
+  useEffect(() => {
+    const handleStorage = () => {
+      setCycle1SimState((prev) => prev + 1);
+      try {
+        const updated: Record<string, boolean> = {};
+        processedStudents.forEach((s) => {
+          updated[s.dni] = localStorage.getItem(`sfa_student_promoted_${s.dni}`) === "true";
+        });
+        setPromotedState(updated);
+      } catch {}
+    };
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("focus", handleStorage);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("focus", handleStorage);
+    };
+  }, [processedStudents]);
+
   const isStudentPromoted = student ? !!promotedState[student.dni] : false;
 
   const toggleStudentPromotion = () => {
@@ -178,11 +197,21 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
     const allCoursesList: any[] = [];
 
     try {
+      const isC1Done = typeof window !== "undefined" && Boolean(
+        localStorage.getItem(`sfa_simulated_cycle1_${student?.dni}`) ||
+        localStorage.getItem("sfa_simulated_cycle1_74859612") ||
+        localStorage.getItem("sfa_simulated_cycle1") ||
+        localStorage.getItem(`sfa_student_promoted_cycle2_${student?.dni}`) === "true" ||
+        localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+        localStorage.getItem("sfa_student_promoted_cycle2") === "true"
+      );
+
       const rawSim = typeof window !== "undefined" && student ? (
         localStorage.getItem(`sfa_simulated_cycle1_${student.dni}`) ||
         localStorage.getItem("sfa_simulated_cycle1_74859612") ||
         localStorage.getItem("sfa_simulated_cycle1")
       ) : null;
+
       if (rawSim) {
         const simData = JSON.parse(rawSim);
         if (Array.isArray(simData.courses) && simData.courses.length > 0) {
@@ -197,15 +226,35 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
             });
           });
         }
+      } else if (isC1Done) {
+        [
+          { code: "EIND-101", courseName: "Fundamentos de Electricidad y Circuitos CC", credits: 4, count: 1, grade: 16.4, cycle: 1 },
+          { code: "EIND-102", courseName: "Instalaciones Eléctricas de Edificaciones", credits: 4, count: 1, grade: 16.5, cycle: 1 },
+          { code: "EIND-103", courseName: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, count: 1, grade: 17.0, cycle: 1 },
+          { code: "EIND-104", courseName: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, count: 1, grade: 15.0, cycle: 1 },
+          { code: "EIND-105", courseName: "Comunicación y Tecnologías Digitales", credits: 2, count: 1, grade: 16.0, cycle: 1 },
+        ].forEach((c) => allCoursesList.push(c));
       }
     } catch {}
 
     try {
+      const isC2Done = typeof window !== "undefined" && Boolean(
+        localStorage.getItem(`sfa_simulated_cycle2_${student?.dni}`) ||
+        localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+        localStorage.getItem("sfa_simulated_cycle2") ||
+        localStorage.getItem(`sfa_student_promoted_cycle3_${student?.dni}`) === "true" ||
+        localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
+        localStorage.getItem("sfa_student_promoted_cycle3") === "true" ||
+        localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
+        localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true"
+      );
+
       const rawSim2 = typeof window !== "undefined" && student ? (
         localStorage.getItem(`sfa_simulated_cycle2_${student.dni}`) ||
         localStorage.getItem("sfa_simulated_cycle2_74859612") ||
         localStorage.getItem("sfa_simulated_cycle2")
       ) : null;
+
       if (rawSim2) {
         const simData2 = JSON.parse(rawSim2);
         if (Array.isArray(simData2.courses) && simData2.courses.length > 0) {
@@ -220,6 +269,14 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
             });
           });
         }
+      } else if (isC2Done) {
+        [
+          { code: "EIND-201", courseName: "Circuitos Eléctricos en Corriente Alterna", credits: 4, count: 1, grade: 16.5, cycle: 2 },
+          { code: "EIND-202", courseName: "Electrónica Analógica y de Potencia Básica", credits: 4, count: 1, grade: 17.0, cycle: 2 },
+          { code: "EIND-203", courseName: "Taller de Medidas e Instrumentos Eléctricos", credits: 3, count: 1, grade: 16.0, cycle: 2 },
+          { code: "EIND-204", courseName: "Dibujo y CAD Electrotécnico (AutoCAD Electrical)", credits: 3, count: 1, grade: 16.5, cycle: 2 },
+          { code: "EIND-205", courseName: "Inglés Técnico para Electricidad", credits: 2, count: 1, grade: 15.5, cycle: 2 },
+        ].forEach((c) => allCoursesList.push(c));
       }
     } catch {}
 
@@ -241,7 +298,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
       { code: "EIND-104", courseName: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, count: 0, grade: null, cycle: 1 },
       { code: "EIND-105", courseName: "Comunicación y Tecnologías Digitales", credits: 2, count: 0, grade: null, cycle: 1 },
     ];
-  }, [isStudentPromoted, realRows, student]);
+  }, [isStudentPromoted, realRows, student, cycle1SimState]);
 
   const sanitizedRows = useMemo(() => {
     // Agrupar filas por su código institucional unificado (ej. EIND-101 consolida TEO, TAL, LAB y base)
