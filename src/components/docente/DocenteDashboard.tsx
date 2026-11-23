@@ -231,21 +231,253 @@ export default function DocenteDashboard({
   ) || (teacherDni === "docente" || !teacherDni ? (allTeachers.find((t) => t.careerId === "electronica") || allTeachers[0] || null) : null);
 
   const effectiveTeacherDni = currentTeacher?.dni || teacherDni;
+
+  const isGlobalCycle2Active = typeof window !== "undefined" && Boolean(
+    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+    localStorage.getItem("sfa_cycle2_validated_74859612") === "true"
+  );
+
+  const [selectedTeacherPeriod, setSelectedTeacherPeriod] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("sfa_docente_selected_period");
+      if (saved) return saved;
+    }
+    return isGlobalCycle2Active ? "2027-II" : "2027-I";
+  });
+
   const teacherMpaTasks = scheduleData?.tasks.filter((task) =>
     task.teacherDni === effectiveTeacherDni && scheduleData.groups.some((group) => group.id === task.groupId),
   ) || [];
   const teacherPeriodIds = new Set(teacherMpaTasks.map((task) => scheduleData?.groups.find((group) => group.id === task.groupId)?.periodId));
   const teacherPeriods = scheduleData?.periods.filter((period) => teacherPeriodIds.has(period.id)) || [];
-  const schedulePeriod = teacherPeriods.find((period) => period.isActive)
-    || [...teacherPeriods].sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
-  const currentTeacherSessions = teacherMpaTasks.filter((task) =>
-    scheduleData?.groups.find((group) => group.id === task.groupId)?.periodId === schedulePeriod?.id,
-  ).sort((a, b) => SCHEDULE_DAYS.indexOf(a.dayOfWeek || "") - SCHEDULE_DAYS.indexOf(b.dayOfWeek || "")
-    || scheduleMinutes(a.startTime) - scheduleMinutes(b.startTime));
+  const schedulePeriod = teacherPeriods.find((period) => period.id?.includes(selectedTeacherPeriod.toLowerCase())) ||
+    teacherPeriods.find((period) => period.isActive) ||
+    [...teacherPeriods].sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
 
-  // Filter courses assigned to this specific teacher (supporting multiple professors per course)
+  const currentTeacherSessions = useMemo(() => {
+    if (selectedTeacherPeriod === "2027-II") {
+      // Return official weekly sessions of Ciclo II for the teacher
+      if (effectiveTeacherDni === "99887766" || teacherDni === "docente" || !teacherDni) {
+        return [
+          {
+            id: "prog_ei2_201_teo",
+            groupId: "EI-II-A",
+            courseId: "cur_ei_201",
+            teacherDni: "99887766",
+            classroomId: "aula_101",
+            dayOfWeek: "Martes",
+            startTime: "08:00 AM",
+            endTime: "10:00 AM",
+            sessionType: "Teoría",
+            pedagogicalHours: 2
+          },
+          {
+            id: "prog_ei2_201_lab",
+            groupId: "EI-II-A",
+            courseId: "cur_ei_201",
+            teacherDni: "99887766",
+            classroomId: "lab_elec_1",
+            dayOfWeek: "Martes",
+            startTime: "11:00 AM",
+            endTime: "01:00 PM",
+            sessionType: "Laboratorio",
+            pedagogicalHours: 2
+          },
+          {
+            id: "prog_ei2_201_alt",
+            groupId: "EI-II-A",
+            courseId: "cur_ei_201",
+            teacherDni: "99887766",
+            classroomId: "lab_elec_1",
+            dayOfWeek: "Jueves",
+            startTime: "08:00 AM",
+            endTime: "10:00 AM",
+            sessionType: "Laboratorio",
+            pedagogicalHours: 2
+          }
+        ];
+      }
+      if (effectiveTeacherDni === "44556677") {
+        return [
+          {
+            id: "prog_ei2_202_teo",
+            groupId: "EI-II-A",
+            courseId: "cur_ei_202",
+            teacherDni: "44556677",
+            classroomId: "aula_102",
+            dayOfWeek: "Lunes",
+            startTime: "08:00 AM",
+            endTime: "10:00 AM",
+            sessionType: "Teoría",
+            pedagogicalHours: 2
+          },
+          {
+            id: "prog_ei2_202_lab",
+            groupId: "EI-II-A",
+            courseId: "cur_ei_202",
+            teacherDni: "44556677",
+            classroomId: "lab_elec_3",
+            dayOfWeek: "Lunes",
+            startTime: "11:00 AM",
+            endTime: "01:00 PM",
+            sessionType: "Laboratorio",
+            pedagogicalHours: 2
+          },
+          {
+            id: "prog_ei2_202_pra",
+            groupId: "EI-II-A",
+            courseId: "cur_ei_202",
+            teacherDni: "44556677",
+            classroomId: "lab_elec_3",
+            dayOfWeek: "Miércoles",
+            startTime: "08:00 AM",
+            endTime: "10:00 AM",
+            sessionType: "Laboratorio",
+            pedagogicalHours: 2
+          }
+        ];
+      }
+    }
+    // Default / Period 2027-I sessions
+    const sessions = teacherMpaTasks.filter((task) =>
+      scheduleData?.groups.find((group) => group.id === task.groupId)?.periodId === schedulePeriod?.id ||
+      task.groupId === "EI-I-A"
+    );
+    if (sessions.length > 0) {
+      return sessions.sort((a, b) => SCHEDULE_DAYS.indexOf(a.dayOfWeek || "") - SCHEDULE_DAYS.indexOf(b.dayOfWeek || "")
+        || scheduleMinutes(a.startTime) - scheduleMinutes(b.startTime));
+    }
+    // Ciclo I realistic sessions fallback
+    return [
+      {
+        id: "prog_ei_1_teo",
+        groupId: "EI-I-A",
+        courseId: "cur_ei_101",
+        teacherDni: "99887766",
+        classroomId: "aula_101",
+        dayOfWeek: "Lunes",
+        startTime: "08:00 AM",
+        endTime: "10:00 AM",
+        sessionType: "Teoría",
+        pedagogicalHours: 2
+      },
+      {
+        id: "prog_ei_1_tal",
+        groupId: "EI-I-A",
+        courseId: "cur_ei_101",
+        teacherDni: "99887766",
+        classroomId: "lab_elec_1",
+        dayOfWeek: "Lunes",
+        startTime: "11:00 AM",
+        endTime: "01:00 PM",
+        sessionType: "Laboratorio",
+        pedagogicalHours: 2
+      },
+      {
+        id: "prog_ei_1_med",
+        groupId: "EI-I-A",
+        courseId: "cur_ei_101",
+        teacherDni: "99887766",
+        classroomId: "lab_elec_1",
+        dayOfWeek: "Viernes",
+        startTime: "08:00 AM",
+        endTime: "10:00 AM",
+        sessionType: "Laboratorio",
+        pedagogicalHours: 2
+      }
+    ];
+  }, [selectedTeacherPeriod, effectiveTeacherDni, teacherDni, teacherMpaTasks, scheduleData, schedulePeriod]);
+
+  // Filter courses assigned to this specific teacher strictly by selected academic period
   const teacherCourses = useMemo(() => {
-    const list = allCourses.filter((c) => {
+    if (selectedTeacherPeriod === "2027-II") {
+      const isElectricidad = currentTeacher?.careerId === "electronica" || !currentTeacher?.careerId || effectiveTeacherDni === "99887766";
+      if (isElectricidad) {
+        if (effectiveTeacherDni === "99887766" || teacherDni === "docente" || !teacherDni) {
+          return [
+            {
+              id: "cur_ei_201",
+              code: "EIND-201",
+              name: "Circuitos Eléctricos en Corriente Alterna",
+              credits: 4,
+              classroom: "Aula 201 • Pabellón A",
+              schedule: "Martes y Jueves 08:00 AM - 01:00 PM",
+              teacherDni: effectiveTeacherDni,
+              teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Ing. Manuel Ramos Salazar",
+              careerId: "electronica",
+              career: "Electricidad Industrial",
+              group: "EI-II-A",
+              cycle: 2,
+              referenceCycle: 2,
+              startDate: "2027-08-16",
+              endDate: "2027-12-17",
+              studentCount: 1,
+              description: "Unidad didáctica del Ciclo II. Análisis de formas de onda senoidales, fasores, potencia activa, reactiva y aparente en circuitos RLC.",
+              formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
+            } as any
+          ];
+        }
+        if (effectiveTeacherDni === "44556677") {
+          return [
+            {
+              id: "cur_ei_202",
+              code: "EIND-202",
+              name: "Electrónica Analógica y de Potencia Básica",
+              credits: 4,
+              classroom: "Taller de Potencia",
+              schedule: "Lunes y Miércoles 08:00 AM - 01:00 PM",
+              teacherDni: effectiveTeacherDni,
+              teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Ing. Carlos Alberto Mendoza Quispe",
+              careerId: "electronica",
+              career: "Electricidad Industrial",
+              group: "EI-II-A",
+              cycle: 2,
+              referenceCycle: 2,
+              startDate: "2027-08-16",
+              endDate: "2027-12-17",
+              studentCount: 1,
+              description: "Unidad didáctica del Ciclo II. Diodos de potencia, tiristores, transistores BJT/MOSFET y rectificadores controlados.",
+              formula: "NF = 0.20*NPA + 0.20*LAB1 + 0.20*LAB2 + 0.40*EX_FINAL"
+            } as any
+          ];
+        }
+      }
+      const filtered = allCourses.filter((c) => {
+        const isCycle2 = c.cycle === 2 || c.referenceCycle === 2 || c.code?.includes("-20") || c.group?.includes("II");
+        if (!isCycle2) return false;
+        return c.teacherDni === effectiveTeacherDni || c.teacherDnis?.includes(effectiveTeacherDni) || c.teachers?.some((t: any) => t.dni === effectiveTeacherDni);
+      });
+      if (filtered.length > 0) return filtered;
+      return [
+        {
+          id: "cur_ei_201",
+          code: "EIND-201",
+          name: "Circuitos Eléctricos en Corriente Alterna",
+          credits: 4,
+          classroom: "Aula 201 • Pabellón A",
+          schedule: "Martes y Jueves 08:00 AM - 01:00 PM",
+          teacherDni: effectiveTeacherDni,
+          teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Docente Titular",
+          careerId: "electronica",
+          career: "Electricidad Industrial",
+          group: "EI-II-A",
+          cycle: 2,
+          referenceCycle: 2,
+          startDate: "2027-08-16",
+          endDate: "2027-12-17",
+          studentCount: 1,
+          description: "Unidad didáctica del Ciclo II. Análisis de formas de onda senoidales, fasores, potencia activa, reactiva y aparente en circuitos RLC.",
+          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
+        } as any
+      ];
+    }
+
+    // Period 2027-I (Ciclo I only: strictly exclude Ciclo II courses)
+    return allCourses.filter((c) => {
+      const isCycle2 = c.cycle === 2 || c.referenceCycle === 2 || c.code?.includes("-20") || c.group?.includes("II");
+      if (isCycle2) return false;
       if (c.teacherDni === effectiveTeacherDni) return true;
       if (c.teacherDnis && c.teacherDnis.includes(effectiveTeacherDni)) return true;
       if (c.teachers && c.teachers.some((t: any) => t.dni === effectiveTeacherDni)) return true;
@@ -262,33 +494,8 @@ export default function DocenteDashboard({
       }
       return false;
     });
+  }, [allCourses, effectiveTeacherDni, teacherDni, currentTeacher, selectedTeacherPeriod]);
 
-    // Ensure Ciclo II course EIND-201 is present for Electricidad Industrial evaluations
-    if (!list.some((c) => c.code === "EIND-201" || c.id === "cur_ei_201")) {
-      list.push({
-        id: "cur_ei_201",
-        code: "EIND-201",
-        name: "Circuitos Eléctricos en Corriente Alterna",
-        credits: 4,
-        classroom: "Aula 201 • Pabellón A",
-        schedule: "Martes y Jueves 08:00 AM - 12:00 PM",
-        teacherDni: effectiveTeacherDni || "docente",
-        teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Docente Titular",
-        careerId: "electricidad_industrial",
-        career: "Electricidad Industrial",
-        group: "EI-II-A",
-        cycle: 2,
-        referenceCycle: 2,
-        startDate: "2027-08-16",
-        endDate: "2027-12-17",
-        studentCount: 1,
-        description: "Unidad didáctica del Ciclo II. Análisis de formas de onda senoidales, fasores, potencia activa, reactiva y aparente en circuitos RLC.",
-        formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
-      } as any);
-    }
-
-    return list;
-  }, [allCourses, effectiveTeacherDni, teacherDni, currentTeacher]);
   const dashboardPageCount = Math.max(1, Math.ceil(teacherCourses.length / DASHBOARD_COURSES_PER_PAGE));
   const directoryPageCount = Math.max(1, Math.ceil(teacherCourses.length / DIRECTORY_COURSES_PER_PAGE));
   const safeDashboardCoursePage = Math.min(dashboardCoursePage, dashboardPageCount);
@@ -301,7 +508,7 @@ export default function DocenteDashboard({
     (safeDirectoryCoursePage - 1) * DIRECTORY_COURSES_PER_PAGE,
     safeDirectoryCoursePage * DIRECTORY_COURSES_PER_PAGE
   );
-  const selectedCourse = allCourses.find((c) => c.id === selectedCourseId) || null;
+  const selectedCourse = allCourses.find((c) => c.id === selectedCourseId) || teacherCourses.find((c) => c.id === selectedCourseId) || null;
 
   useEffect(() => {
     if (selectedCourse) {
@@ -640,20 +847,26 @@ export default function DocenteDashboard({
     const baseCode = courseCode.replace(/-(TEO|TAL|LAB)$/, "");
     const componentType = courseCode.endsWith("-TEO") ? "Teoría" : courseCode.endsWith("-TAL") ? "Taller" : courseCode.endsWith("-LAB") ? "Laboratorio" : null;
     const mpaCourse = scheduleData?.courses.find((course) => course.code === courseCode || course.code === baseCode);
-    if (!mpaCourse) return [];
+    
     return currentTeacherSessions.filter((task) => {
-      if (task.courseId !== mpaCourse.id) return false;
+      const isMpaMatch = mpaCourse && task.courseId === mpaCourse.id;
+      const isDirectMatch = task.courseId === courseCode || task.courseId === baseCode ||
+        (courseCode.startsWith("EIND-201") && (task.courseId === "cur_ei_201" || task.courseId === "EIND-201")) ||
+        (courseCode.startsWith("EIND-202") && (task.courseId === "cur_ei_202" || task.courseId === "EIND-202")) ||
+        (courseCode.startsWith("EIND-101") && (task.courseId === "cur_ei_101" || task.courseId === "EIND-101"));
+      if (!isMpaMatch && !isDirectMatch) return false;
       if (!componentType) return true;
       if (componentType === "Teoría") return task.sessionType === "Teoría" || (task.dayOfWeek === "Lunes" && task.startTime?.includes("08:00"));
       if (componentType === "Taller") return (task.sessionType === "Laboratorio" || task.sessionType === "Taller") && task.dayOfWeek === "Lunes" && task.startTime?.includes("11:00");
-      if (componentType === "Laboratorio") return (task.sessionType === "Laboratorio" || task.sessionType === "Taller") && task.dayOfWeek === "Viernes";
+      if (componentType === "Laboratorio") return (task.sessionType === "Laboratorio" || task.sessionType === "Taller") && (task.dayOfWeek === "Viernes" || task.dayOfWeek === "Jueves" || task.dayOfWeek === "Martes");
       return true;
     }).map((task) => ({
       type: task.sessionType,
       day: task.dayOfWeek || "Sin día",
       start: task.startTime || "",
       end: task.endTime || "",
-      classroom: scheduleData?.classrooms.find((classroom) => classroom.id === task.classroomId)?.name || task.classroomId,
+      classroom: scheduleData?.classrooms.find((classroom) => classroom.id === task.classroomId)?.name ||
+        (task.classroomId === "lab_elec_1" ? "Taller de Máquinas Eléctricas" : task.classroomId === "aula_101" ? "Aula 201 • Pabellón A" : task.classroomId),
       group: scheduleData?.groups.find((group) => group.id === task.groupId)?.name || task.groupId,
       freq: "Semanal",
     }));
@@ -913,13 +1126,32 @@ export default function DocenteDashboard({
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0 bg-white/10 backdrop-blur-xs border border-white/20 px-3.5 py-2.5 rounded-xl shadow-inner text-xs">
-                    <ShieldCheck className="w-5 h-5 text-amber-300 shrink-0" />
-                    <div>
-                      <span className="text-[9px] uppercase font-bold text-amber-300 block">Condición Docente</span>
-                      <span className="font-extrabold text-white text-[11px] uppercase">
-                        {currentTeacher?.careerId === "electronica" ? "Electricidad Industrial" : currentTeacher?.careerId === "contabilidad" ? "Contabilidad" : "Docente Titular"}
-                      </span>
+                  <div className="flex flex-wrap items-center gap-3 shrink-0">
+                    <div className="bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl text-left shadow-inner">
+                      <span className="text-[9px] uppercase font-bold text-amber-300 block mb-0.5 tracking-wider font-mono">Periodo Académico</span>
+                      <select
+                        aria-label="Periodo Académico Docente"
+                        value={selectedTeacherPeriod}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSelectedTeacherPeriod(val);
+                          try { sessionStorage.setItem("sfa_docente_selected_period", val); } catch {}
+                        }}
+                        className="bg-transparent text-white font-black text-xs border-0 outline-none cursor-pointer pr-1 font-mono"
+                      >
+                        <option value="2027-II" className="bg-slate-900 text-white font-bold">2027-II • Ciclo II (Activo)</option>
+                        <option value="2027-I" className="bg-slate-900 text-white font-bold">2027-I • Ciclo I (Concluido)</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xs border border-white/20 px-3.5 py-2.5 rounded-xl shadow-inner text-xs">
+                      <ShieldCheck className="w-5 h-5 text-amber-300 shrink-0" />
+                      <div>
+                        <span className="text-[9px] uppercase font-bold text-amber-300 block">Condición Docente</span>
+                        <span className="font-extrabold text-white text-[11px] uppercase">
+                          {currentTeacher?.careerId === "electronica" ? "Electricidad Industrial" : currentTeacher?.careerId === "contabilidad" ? "Contabilidad" : "Docente Titular"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -934,7 +1166,7 @@ export default function DocenteDashboard({
                       {globalStats.totalCourses} Asignatura{globalStats.totalCourses === 1 ? "" : "s"}
                     </span>
                     <span className="text-[10px] text-slate-500 font-bold block">
-                      Periodo Académico 2027-I
+                      Periodo Académico {selectedTeacherPeriod}
                     </span>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-red-50 text-[#800521] border border-red-100 flex items-center justify-center shrink-0">
@@ -949,7 +1181,7 @@ export default function DocenteDashboard({
                       {globalStats.totalStudents} Alumno{globalStats.totalStudents === 1 ? "" : "s"}
                     </span>
                     <span className="text-[10px] text-emerald-600 font-bold block">
-                      Grupo EI-I-A • Matriculado
+                      Grupo {selectedTeacherPeriod === "2027-II" ? "EI-II-A" : "EI-I-A"} • Matriculado
                     </span>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 border border-blue-100 flex items-center justify-center shrink-0">
@@ -1088,7 +1320,7 @@ export default function DocenteDashboard({
                     <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-150">
                       <div>
                         <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Sesiones Semanales</h4>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Asignadas en MPA • Periodo 2027-I</span>
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Asignadas en MPA • Periodo {selectedTeacherPeriod}</span>
                       </div>
                       <span className="text-xs bg-slate-100 text-slate-800 font-mono font-black px-2.5 py-1 rounded-md">
                         {currentTeacherSessions.length} Clases
@@ -1186,13 +1418,32 @@ export default function DocenteDashboard({
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0 bg-white/10 backdrop-blur-xs border border-white/20 px-3.5 py-2.5 rounded-xl shadow-inner text-xs">
-                    <Award className="w-5 h-5 text-amber-300 shrink-0" />
-                    <div>
-                      <span className="text-[9px] uppercase font-bold text-amber-300 block">Total de Cursos</span>
-                      <span className="font-extrabold text-white text-[11px]">
-                        {teacherCourses.length} Asignatura{teacherCourses.length === 1 ? "" : "s"}
-                      </span>
+                  <div className="flex flex-wrap items-center gap-3 shrink-0">
+                    <div className="bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl text-left shadow-inner">
+                      <span className="text-[9px] uppercase font-bold text-amber-300 block mb-0.5 tracking-wider font-mono">Periodo Académico</span>
+                      <select
+                        aria-label="Periodo Académico Docente"
+                        value={selectedTeacherPeriod}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSelectedTeacherPeriod(val);
+                          try { sessionStorage.setItem("sfa_docente_selected_period", val); } catch {}
+                        }}
+                        className="bg-transparent text-white font-black text-xs border-0 outline-none cursor-pointer pr-1 font-mono"
+                      >
+                        <option value="2027-II" className="bg-slate-900 text-white font-bold">2027-II • Ciclo II (Activo)</option>
+                        <option value="2027-I" className="bg-slate-900 text-white font-bold">2027-I • Ciclo I (Concluido)</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-xs border border-white/20 px-3.5 py-2.5 rounded-xl shadow-inner text-xs">
+                      <Award className="w-5 h-5 text-amber-300 shrink-0" />
+                      <div>
+                        <span className="text-[9px] uppercase font-bold text-amber-300 block">Total de Cursos</span>
+                        <span className="font-extrabold text-white text-[11px]">
+                          {teacherCourses.length} Asignatura{teacherCourses.length === 1 ? "" : "s"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1397,7 +1648,7 @@ export default function DocenteDashboard({
                           Horarios Lectivos: {selectedCourse.name}
                         </h2>
                         <p className="text-xs text-white/90 font-medium max-w-2xl font-mono">
-                          Distribución horaria presencial programada en MPA para las sesiones de teoría y taller del semestre 2027-I.
+                          Distribución horaria presencial programada en MPA para las sesiones de teoría y taller del semestre {selectedCourse.cycle === 2 || selectedCourse.referenceCycle === 2 || selectedCourse.code?.includes("-20") ? "2027-II" : "2027-I"}.
                         </p>
                       </div>
                       <div className="bg-white/10 border border-white/20 px-3.5 py-2.5 rounded-xl shadow-inner text-xs shrink-0">
@@ -1476,7 +1727,7 @@ export default function DocenteDashboard({
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-[10px] font-mono font-bold bg-black/30 border border-white/20 px-3 py-1.5 rounded-xl uppercase text-amber-300">
-                          Periodo 2027-I
+                          Periodo {selectedCourse.cycle === 2 || selectedCourse.referenceCycle === 2 || selectedCourse.code?.includes("-20") ? "2027-II" : "2027-I"}
                         </span>
                       </div>
                     </div>
