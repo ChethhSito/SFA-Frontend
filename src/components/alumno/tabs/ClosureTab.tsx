@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Printer, Download, Award, CheckCircle2, Mail, FileText, ClipboardList } from "lucide-react";
 import { StudentPersonalData, Enrollment, AcademicProgram, CycleStatus, Course } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
@@ -212,7 +212,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
       simGrade
     };
   });
-  
+
   // Real academic progress status: If promoted to VI, all cycles show Aprobado
   const activeCoursesList = rawCoursesList.map((c, index) => {
     if (isPromoted) {
@@ -334,11 +334,10 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
               <button
                 key={cycle}
                 onClick={() => setSelectedQueryCycle(cycle)}
-                className={`flex-1 py-1.5 px-4 rounded-lg text-xs font-black uppercase tracking-tight whitespace-nowrap transition-all cursor-pointer text-center ${
-                  selectedQueryCycle === cycle 
-                    ? "bg-[#800521] text-white shadow-sm" 
-                    : "text-slate-600 hover:bg-slate-50"
-                }`}
+                className={`flex-1 py-1.5 px-4 rounded-lg text-xs font-black uppercase tracking-tight whitespace-nowrap transition-all cursor-pointer text-center ${selectedQueryCycle === cycle
+                  ? "bg-[#800521] text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-50"
+                  }`}
               >
                 {cycle} Ciclo
               </button>
@@ -432,7 +431,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
 
           <div className="bg-white rounded-xl border border-slate-100 shadow-xs p-6 text-left font-sans">
             <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block mb-4">Requisitos Oficiales para Certificación y Egreso</span>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className={`p-3.5 border rounded-xl flex items-center gap-3 ${isPromoted ? "bg-slate-50/50 border-slate-200" : "bg-emerald-50/40 border-emerald-200"}`}>
                 <CheckCircle2 className={`w-5 h-5 shrink-0 ${isPromoted ? "text-emerald-600" : "text-emerald-600"}`} />
@@ -445,9 +444,8 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
               </div>
 
               <div className={`p-3.5 border rounded-xl flex items-center gap-3 ${isPromoted ? "bg-slate-50/50 border-slate-200" : "bg-slate-50/50 border-slate-200"}`}>
-                <div className={`h-5 w-5 rounded-full flex items-center justify-center font-black text-[10px] shrink-0 ${
-                  isPromoted ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-                }`}>
+                <div className={`h-5 w-5 rounded-full flex items-center justify-center font-black text-[10px] shrink-0 ${isPromoted ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                  }`}>
                   {isPromoted ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : "!"}
                 </div>
                 <div>
@@ -464,20 +462,20 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         <aside className="xl:col-span-4 space-y-6">
           <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-xs text-center space-y-4">
             <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block">Promedio de Ciclo</span>
-            
+
             <div className="relative inline-flex items-center justify-center">
               <svg className="w-32 h-32 transform -rotate-90">
                 <circle cx="64" cy="64" r="50" stroke="#F1F5F9" strokeWidth="10" fill="transparent" />
-                <circle 
-                  cx="64" 
-                  cy="64" 
-                  r="50" 
-                  stroke="#800521" 
-                  strokeWidth="10" 
-                  fill="transparent" 
-                  strokeDasharray="314" 
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="50"
+                  stroke="#800521"
+                  strokeWidth="10"
+                  fill="transparent"
+                  strokeDasharray="314"
                   strokeDashoffset={314 - (314 * ((isPromoted || (isCycle1Simulated && targetCycleNum === 1)) ? (weightedGpa / 20) : 0))}
-                  className="transition-all duration-300" 
+                  className="transition-all duration-300"
                 />
               </svg>
               <div className="absolute flex flex-col justify-center items-center">
@@ -490,16 +488,15 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
 
             <div className="text-xs font-semibold">
               <span className="text-slate-500">Rendimiento Estimado: </span>
-              <span className={`font-black ${
-                isPromoted || (isCycle1Simulated && targetCycleNum === 1)
-                  ? (weightedGpa >= 14 ? "text-emerald-600" : "text-slate-800")
-                  : "text-amber-600"
-              }`}>
-                {isPromoted 
+              <span className={`font-black ${isPromoted || (isCycle1Simulated && targetCycleNum === 1)
+                ? (weightedGpa >= 14 ? "text-emerald-600" : "text-slate-800")
+                : "text-amber-600"
+                }`}>
+                {isPromoted
                   ? (weightedGpa >= 16 ? "Sobresaliente" : "Aceptable")
                   : (isCycle1Simulated && targetCycleNum === 1)
-                  ? "Aprobado (Promovido a Ciclo II)"
-                  : "Pendiente de Calificaciones Oficiales"
+                    ? "Aprobado (Promovido a Ciclo II)"
+                    : "Pendiente de Calificaciones Oficiales"
                 }
               </span>
             </div>
@@ -550,7 +547,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
               >
                 Enviar Mensaje
               </button>
-              
+
               {advisorConsultSuccess && (
                 <div className="bg-emerald-50 text-emerald-800 border border-emerald-100 p-2 rounded text-[10px] font-semibold">
                   ¡Su consulta académica ha sido enviada al coordinador de carrera! Se responderá en un plazo máximo de 24 horas hábiles.
@@ -561,9 +558,9 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
 
           <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-xs space-y-4">
             <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Descarga de Documentación Oficial</span>
-            
+
             <div className="space-y-2">
-              <button 
+              <button
                 type="button"
                 onClick={async () => {
                   await generateBoletaNotasPdf(
@@ -585,7 +582,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                 <Download className="w-3.5 h-3.5 text-[#800521]" />
               </button>
 
-              <button 
+              <button
                 type="button"
                 onClick={async () => {
                   await generateCurriculumPlanPdf(
@@ -600,7 +597,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                 <Download className="w-3.5 h-3.5 text-[#800521]" />
               </button>
 
-              <button 
+              <button
                 type="button"
                 onClick={async () => {
                   await generateMatriculaPdf({
