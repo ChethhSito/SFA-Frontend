@@ -48,11 +48,21 @@ const COURSE_CATALOG: Record<string, { code: string; name: string; credits: numb
   "cur_ei_103": { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3 },
   "cur_ei_104": { code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3 },
   "cur_ei_105": { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2 },
+  "cur_ei_201": { code: "EIND-201", name: "Circuitos Eléctricos en Corriente Alterna", credits: 4 },
+  "cur_ei_202": { code: "EIND-202", name: "Electrónica Analógica y de Potencia Básica", credits: 4 },
+  "cur_ei_203": { code: "EIND-203", name: "Taller de Medidas e Instrumentos Eléctricos", credits: 3 },
+  "cur_ei_204": { code: "EIND-204", name: "Dibujo y CAD Electrotécnico (AutoCAD Electrical)", credits: 3 },
+  "cur_ei_205": { code: "EIND-205", name: "Inglés Técnico para Electricidad", credits: 2 },
   "EIND-101": { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4 },
   "EIND-102": { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4 },
   "EIND-103": { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3 },
   "EIND-104": { code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3 },
   "EIND-105": { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2 },
+  "EIND-201": { code: "EIND-201", name: "Circuitos Eléctricos en Corriente Alterna", credits: 4 },
+  "EIND-202": { code: "EIND-202", name: "Electrónica Analógica y de Potencia Básica", credits: 4 },
+  "EIND-203": { code: "EIND-203", name: "Taller de Medidas e Instrumentos Eléctricos", credits: 3 },
+  "EIND-204": { code: "EIND-204", name: "Dibujo y CAD Electrotécnico (AutoCAD Electrical)", credits: 3 },
+  "EIND-205": { code: "EIND-205", name: "Inglés Técnico para Electricidad", credits: 2 },
 };
 
 const TEACHER_CATALOG: Record<string, string> = {
@@ -116,6 +126,41 @@ const THEMES: Record<string, { bg: string; border: string; text: string; sub: st
     sub: "text-purple-800", 
     badge: "bg-purple-100 text-purple-900 border-purple-300" 
   },
+  "EIND-201": { 
+    bg: "bg-teal-50/95 hover:bg-teal-100/95", 
+    border: "border-teal-300", 
+    text: "text-teal-950", 
+    sub: "text-teal-800", 
+    badge: "bg-teal-100 text-teal-900 border-teal-300" 
+  },
+  "EIND-202": { 
+    bg: "bg-rose-50/95 hover:bg-rose-100/95", 
+    border: "border-rose-300", 
+    text: "text-rose-950", 
+    sub: "text-rose-800", 
+    badge: "bg-rose-100 text-rose-900 border-rose-300" 
+  },
+  "EIND-203": { 
+    bg: "bg-sky-50/95 hover:bg-sky-100/95", 
+    border: "border-sky-300", 
+    text: "text-sky-950", 
+    sub: "text-sky-800", 
+    badge: "bg-sky-100 text-sky-900 border-sky-300" 
+  },
+  "EIND-204": { 
+    bg: "bg-amber-50/95 hover:bg-amber-100/95", 
+    border: "border-amber-300", 
+    text: "text-amber-950", 
+    sub: "text-amber-800", 
+    badge: "bg-amber-100 text-amber-900 border-amber-300" 
+  },
+  "EIND-205": { 
+    bg: "bg-purple-50/95 hover:bg-purple-100/95", 
+    border: "border-purple-300", 
+    text: "text-purple-950", 
+    sub: "text-purple-800", 
+    badge: "bg-purple-100 text-purple-900 border-purple-300" 
+  },
 };
 
 const FALLBACK_THEME = { 
@@ -134,12 +179,24 @@ function parseTimeToMinutes(value?: string): number {
   return hour * 60 + Number(match[2]);
 }
 
-export function ScheduleTab({ currentProgram, studentTasks = [], mpaPlanningData, studentGroup }: ScheduleTabProps) {
+export function ScheduleTab({ personalData, currentProgram, studentTasks = [], mpaPlanningData, studentGroup }: ScheduleTabProps) {
   const [viewMode, setViewMode] = useState<"matrix" | "cards">("matrix");
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<MpaProgramTask | null>(null);
 
   const activeSessions = studentTasks;
-  const groupName = studentGroup?.name || "EI-I-A";
+  const isCycle2 = typeof window !== "undefined" && Boolean(
+    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+    localStorage.getItem(`sfa_student_cycle_${personalData?.dni || "74859612"}`) === "2" ||
+    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+    studentGroup?.cycle === 2 ||
+    studentGroup?.name?.includes("II") ||
+    activeSessions.some((s) => s.courseId?.includes("-20") || s.courseId?.includes("_20") || s.groupId === "EI-II-A")
+  );
+
+  const groupName = isCycle2 ? "EI-II-A" : (studentGroup?.name || "EI-I-A");
+  const periodName = isCycle2 ? "Periodo 2027-II" : "Periodo 2027-I";
 
   const getCourseData = (task: MpaProgramTask) => {
     const course = mpaPlanningData.courses.find((item) => item.id === task.courseId || item.code === task.courseId);
@@ -234,7 +291,7 @@ export function ScheduleTab({ currentProgram, studentTasks = [], mpaPlanningData
               Mi Horario Académico
             </h2>
             <p className="text-xs text-white/90 font-medium max-w-2xl font-mono">
-              {currentProgram?.name || "Electricidad Industrial"} • Grupo {groupName} • Periodo 2027-I
+              {currentProgram?.name || "Electricidad Industrial"} • Grupo {groupName} • {periodName}
             </p>
           </div>
 

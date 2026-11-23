@@ -118,10 +118,11 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", type: "General", credits: 2, status: "Matriculado", teo: 1, pr: 2 }
       ],
       "II": [
-        { code: "EIND-201", name: "Electricidad Básica y Mediciones", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "EIND-202", name: "Matemática Aplicada II", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 2, pr: 2 },
-        { code: "EIND-203", name: "Tecnología de Materiales", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "EIND-204", name: "Informática y Software Técnico", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
+        { code: "EIND-201", name: "Circuitos Eléctricos en Corriente Alterna", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "EIND-202", name: "Electrónica Analógica y de Potencia Básica", type: "Obligatorio", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "EIND-203", name: "Taller de Medidas e Instrumentos Eléctricos", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
+        { code: "EIND-204", name: "Dibujo y CAD Electrotécnico (AutoCAD Electrical)", type: "Obligatorio", credits: 3, status: "Matriculado", teo: 1, pr: 4 },
+        { code: "EIND-205", name: "Inglés Técnico para Electricidad", type: "General", credits: 2, status: "Matriculado", teo: 1, pr: 2 }
       ],
       "III": [
         { code: "EIND-301", name: "Circuitos de Corriente Alterna", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },

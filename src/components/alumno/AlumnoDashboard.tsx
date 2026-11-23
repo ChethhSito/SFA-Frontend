@@ -437,8 +437,143 @@ export default function AlumnoDashboard({
     }
   ], []);
 
+  // Realistic full morning shift schedule (Turno Mañana 08:00 AM - 01:00 PM) for Ciclo II Electricidad Industrial (Grupo EI-II-A)
+  const DEFAULT_ELECTRICIDAD_CICLO2_TASKS = useMemo(() => [
+    {
+      id: "prog_ei2_202_teo",
+      groupId: "EI-II-A",
+      courseId: "cur_ei_202",
+      teacherDni: "44556677",
+      classroomId: "aula_102",
+      dayOfWeek: "Lunes",
+      startTime: "08:00 AM",
+      endTime: "10:00 AM",
+      sessionType: "Teoría",
+      pedagogicalHours: 2
+    },
+    {
+      id: "prog_ei2_202_lab",
+      groupId: "EI-II-A",
+      courseId: "cur_ei_202",
+      teacherDni: "44556677",
+      classroomId: "lab_elec_3",
+      dayOfWeek: "Lunes",
+      startTime: "11:00 AM",
+      endTime: "01:00 PM",
+      sessionType: "Laboratorio",
+      pedagogicalHours: 2
+    },
+    {
+      id: "prog_ei2_201_teo",
+      groupId: "EI-II-A",
+      courseId: "cur_ei_201",
+      teacherDni: "99887766",
+      classroomId: "aula_101",
+      dayOfWeek: "Martes",
+      startTime: "08:00 AM",
+      endTime: "10:00 AM",
+      sessionType: "Teoría",
+      pedagogicalHours: 2
+    },
+    {
+      id: "prog_ei2_201_lab",
+      groupId: "EI-II-A",
+      courseId: "cur_ei_201",
+      teacherDni: "99887766",
+      classroomId: "lab_elec_1",
+      dayOfWeek: "Martes",
+      startTime: "11:00 AM",
+      endTime: "01:00 PM",
+      sessionType: "Laboratorio",
+      pedagogicalHours: 2
+    },
+    {
+      id: "prog_ei2_202_pra",
+      groupId: "EI-II-A",
+      courseId: "cur_ei_202",
+      teacherDni: "44556677",
+      classroomId: "lab_elec_3",
+      dayOfWeek: "Miércoles",
+      startTime: "08:00 AM",
+      endTime: "10:00 AM",
+      sessionType: "Laboratorio",
+      pedagogicalHours: 2
+    },
+    {
+      id: "prog_ei2_204_cad",
+      groupId: "EI-II-A",
+      courseId: "cur_ei_204",
+      teacherDni: "88990011",
+      classroomId: "lab_elec_2",
+      dayOfWeek: "Miércoles",
+      startTime: "11:00 AM",
+      endTime: "01:00 PM",
+      sessionType: "Laboratorio",
+      pedagogicalHours: 2
+    },
+    {
+      id: "prog_ei2_201_alt",
+      groupId: "EI-II-A",
+      courseId: "cur_ei_201",
+      teacherDni: "99887766",
+      classroomId: "lab_elec_1",
+      dayOfWeek: "Jueves",
+      startTime: "08:00 AM",
+      endTime: "10:00 AM",
+      sessionType: "Laboratorio",
+      pedagogicalHours: 2
+    },
+    {
+      id: "prog_ei2_205_ing",
+      groupId: "EI-II-A",
+      courseId: "cur_ei_205",
+      teacherDni: "77889900",
+      classroomId: "aula_101",
+      dayOfWeek: "Jueves",
+      startTime: "11:00 AM",
+      endTime: "01:00 PM",
+      sessionType: "Teoría",
+      pedagogicalHours: 2
+    },
+    {
+      id: "prog_ei2_203_med1",
+      groupId: "EI-II-A",
+      courseId: "cur_ei_203",
+      teacherDni: "66778899",
+      classroomId: "lab_elec_1",
+      dayOfWeek: "Viernes",
+      startTime: "08:00 AM",
+      endTime: "10:00 AM",
+      sessionType: "Laboratorio",
+      pedagogicalHours: 2
+    },
+    {
+      id: "prog_ei2_203_med2",
+      groupId: "EI-II-A",
+      courseId: "cur_ei_203",
+      teacherDni: "66778899",
+      classroomId: "lab_elec_1",
+      dayOfWeek: "Viernes",
+      startTime: "11:00 AM",
+      endTime: "01:00 PM",
+      sessionType: "Laboratorio",
+      pedagogicalHours: 2
+    }
+  ], []);
+
   // Map student shift and career to find their registered group in MPA
   const studentGroup = useMemo(() => {
+    if (isCycle2Paid || isPromotedCycle2) {
+      return {
+        id: "EI-II-A",
+        name: "EI-II-A",
+        careerId: enrollment.programId,
+        shiftId: "sh_m",
+        cycle: 2,
+        capacity: 35,
+        periodId: "admision-2027-ii"
+      } as any;
+    }
     if (enrollment.groupId) {
       const found = mpaPlanningData.groups.find((g: any) =>
         g.id === enrollment.groupId ||
@@ -451,10 +586,13 @@ export default function AlumnoDashboard({
     return mpaPlanningData.groups.find(
       (g: any) => g.careerId === enrollment.programId && g.shiftId === shiftMapped && g.cycle === 1
     ) || mpaPlanningData.groups.find((g: any) => g.careerId === enrollment.programId && g.cycle === 1) || mpaPlanningData.groups[0];
-  }, [enrollment, mpaPlanningData]);
+  }, [enrollment, mpaPlanningData, isCycle2Paid, isPromotedCycle2]);
 
   // The main group supplies regular courses; individual course assignments may use another shift.
   const studentTasks = useMemo(() => {
+    if (isCycle2Paid || isPromotedCycle2) {
+      return DEFAULT_ELECTRICIDAD_CICLO2_TASKS;
+    }
     let tasks: any[] = [];
     if (studentGroup) {
       if (enrollment.registeredCourses) {
@@ -474,7 +612,7 @@ export default function AlumnoDashboard({
       return DEFAULT_ELECTRICIDAD_TASKS;
     }
     return tasks;
-  }, [studentGroup, mpaPlanningData, enrollment.courseGroupAssignments, enrollment.registeredCourses, DEFAULT_ELECTRICIDAD_TASKS]);
+  }, [studentGroup, mpaPlanningData, enrollment.courseGroupAssignments, enrollment.registeredCourses, DEFAULT_ELECTRICIDAD_TASKS, DEFAULT_ELECTRICIDAD_CICLO2_TASKS, isCycle2Paid, isPromotedCycle2]);
 
   // Build dynamic courses list combining MAMC/MPA Malla and Programación
   const dynamicMpaCourses = useMemo(() => {
