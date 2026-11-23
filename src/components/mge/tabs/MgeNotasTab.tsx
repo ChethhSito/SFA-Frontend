@@ -77,6 +77,22 @@ export default function MgeNotasTab({
 
   const selectedStudentObj = processedStudents.find((s) => s.dni === selectedStudentDni) || processedStudents[0];
 
+  const isCycle1Done = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_student_promoted_cycle2_${selectedStudentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+    localStorage.getItem(`sfa_simulated_cycle1_${selectedStudentDni}`) ||
+    localStorage.getItem("sfa_simulated_cycle1_74859612") ||
+    localStorage.getItem("sfa_simulated_cycle1")
+  );
+
+  const isCycle2Done = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_student_promoted_cycle3_${selectedStudentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
+    localStorage.getItem(`sfa_simulated_cycle2_${selectedStudentDni}`) ||
+    localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+    localStorage.getItem("sfa_simulated_cycle2")
+  );
+
   // Lista depurada de cursos consolidados oficiales (sin subcomponentes TEO, TAL, LAB)
   const consolidatedOfficialCourses = useMemo(() => {
     const seen = new Set<string>();
@@ -476,21 +492,6 @@ export default function MgeNotasTab({
     <div className="space-y-6 text-left font-sans">
       {/* Banner de Consolidación y Simulación de Ciclos */}
       {(() => {
-        const isCycle1Done = typeof window !== "undefined" && Boolean(
-          localStorage.getItem(`sfa_student_promoted_cycle2_${selectedStudentDni}`) === "true" ||
-          localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-          localStorage.getItem(`sfa_simulated_cycle1_${selectedStudentDni}`) ||
-          localStorage.getItem("sfa_simulated_cycle1_74859612") ||
-          localStorage.getItem("sfa_simulated_cycle1")
-        );
-        const isCycle2Done = typeof window !== "undefined" && Boolean(
-          localStorage.getItem(`sfa_student_promoted_cycle3_${selectedStudentDni}`) === "true" ||
-          localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
-          localStorage.getItem(`sfa_simulated_cycle2_${selectedStudentDni}`) ||
-          localStorage.getItem("sfa_simulated_cycle2_74859612") ||
-          localStorage.getItem("sfa_simulated_cycle2")
-        );
-
         return (
           <div className="bg-gradient-to-r from-[#800521] via-slate-900 to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-4 border-b-4 border-amber-500 w-full overflow-hidden">
             <div className="space-y-1.5 min-w-0 flex-1">
@@ -694,14 +695,30 @@ export default function MgeNotasTab({
                 {activeCourseObj.name} ({activeCourseObj.code})
               </span>
             </div>
-            <button
-              type="button"
-              onClick={onSaveGrades}
-              className="bg-[#9F062A] hover:bg-[#800521] text-white text-[10.5px] font-black uppercase tracking-wider px-4 py-2 rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>Sellar Acta Institucional</span>
-            </button>
+            {(() => {
+              const cCode = activeCourseObj?.code || "";
+              const isActaSigned = typeof window !== "undefined" && Boolean(
+                localStorage.getItem(`sfa_acta_signed_${activeCourseObj.code}`) === "true" ||
+                localStorage.getItem(`sfa_acta_signed_${activeCourseObj.id}`) === "true" ||
+                (isCycle2Done && (cCode.includes("-20") || cCode.includes("201"))) ||
+                (isCycle1Done && (cCode.includes("-10") || cCode.includes("101")))
+              );
+              return (
+                <button
+                  type="button"
+                  onClick={onSaveGrades}
+                  className={`text-[10.5px] font-black uppercase tracking-wider px-4 py-2 rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ${
+                    isActaSigned
+                      ? "bg-emerald-700 hover:bg-emerald-800 text-white border border-emerald-600"
+                      : "bg-[#9F062A] hover:bg-[#800521] text-white"
+                  }`}
+                  title={isActaSigned ? "Acta cerrada y sellada con validez oficial" : "Cerrar y sellar acta oficialmente"}
+                >
+                  {isActaSigned ? <CheckCircle2 className="w-3.5 h-3.5 text-amber-300 shrink-0" /> : <Save className="w-3.5 h-3.5 shrink-0" />}
+                  <span>{isActaSigned ? "Acta Sellada Institucionalmente" : "Sellar Acta Institucional"}</span>
+                </button>
+              );
+            })()}
           </div>
 
           <div className="overflow-x-auto">
