@@ -34,6 +34,7 @@ export default function CourseEnrollmentTab({
   const [, setStorageSync] = useState(0);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
   const [selectedBank, setSelectedBank] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem(`sfa_cycle2_bank_${currentStudentDni}`) ||
@@ -144,44 +145,33 @@ export default function CourseEnrollmentTab({
     e.preventDefault();
     const cleanOp = operationNumber.trim() || "OP-2027-02-BCO-94812";
     const fileName = voucherFile ? voucherFile.name : (storedVoucherFileName || "VOUCHER DE PGO.png");
+    const finalUrl = voucherPreviewUrl || storedVoucherDataUrl;
 
-    const saveToStorage = (dataUrl?: string) => {
-      const finalUrl = dataUrl || voucherPreviewUrl || storedVoucherDataUrl;
-      if (typeof window !== "undefined") {
-        localStorage.setItem(`sfa_cycle2_payment_${currentStudentDni}`, "true");
-        localStorage.setItem("sfa_cycle2_payment_74859612", "true");
-        localStorage.setItem("sfa_cycle2_payment", "true");
-        localStorage.setItem(`sfa_cycle2_operation_${currentStudentDni}`, cleanOp);
-        localStorage.setItem("sfa_cycle2_operation_74859612", cleanOp);
-        localStorage.setItem("sfa_cycle2_operation", cleanOp);
-        localStorage.setItem(`sfa_cycle2_bank_${currentStudentDni}`, selectedBank);
-        localStorage.setItem("sfa_cycle2_bank_74859612", selectedBank);
-        localStorage.setItem(`sfa_cycle2_date_${currentStudentDni}`, paymentDate);
-        localStorage.setItem("sfa_cycle2_date_74859612", paymentDate);
-        localStorage.setItem(`sfa_cycle2_voucher_file_${currentStudentDni}`, fileName);
-        localStorage.setItem("sfa_cycle2_voucher_file_74859612", fileName);
-        localStorage.setItem("sfa_cycle2_voucher_file", fileName);
-        if (finalUrl) {
-          localStorage.setItem(`sfa_cycle2_voucher_data_${currentStudentDni}`, finalUrl);
-          localStorage.setItem("sfa_cycle2_voucher_data_74859612", finalUrl);
-          localStorage.setItem("sfa_cycle2_voucher_data", finalUrl);
-        }
-        window.dispatchEvent(new Event("storage"));
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`sfa_cycle2_payment_${currentStudentDni}`, "true");
+      localStorage.setItem("sfa_cycle2_payment_74859612", "true");
+      localStorage.setItem("sfa_cycle2_payment", "true");
+      localStorage.setItem(`sfa_cycle2_operation_${currentStudentDni}`, cleanOp);
+      localStorage.setItem("sfa_cycle2_operation_74859612", cleanOp);
+      localStorage.setItem("sfa_cycle2_operation", cleanOp);
+      localStorage.setItem(`sfa_cycle2_bank_${currentStudentDni}`, selectedBank);
+      localStorage.setItem("sfa_cycle2_bank_74859612", selectedBank);
+      localStorage.setItem(`sfa_cycle2_date_${currentStudentDni}`, paymentDate);
+      localStorage.setItem("sfa_cycle2_date_74859612", paymentDate);
+      localStorage.setItem(`sfa_cycle2_voucher_file_${currentStudentDni}`, fileName);
+      localStorage.setItem("sfa_cycle2_voucher_file_74859612", fileName);
+      localStorage.setItem("sfa_cycle2_voucher_file", fileName);
+      if (finalUrl) {
+        localStorage.setItem(`sfa_cycle2_voucher_data_${currentStudentDni}`, finalUrl);
+        localStorage.setItem("sfa_cycle2_voucher_data_74859612", finalUrl);
+        localStorage.setItem("sfa_cycle2_voucher_data", finalUrl);
       }
-      setShowPaymentModal(false);
-      setPaymentNotice(`Voucher ${cleanOp} registrado exitosamente. Ha sido enviado a Caja (Pestaña 3 en Secretaría) para su validación oficial.`);
-      setTimeout(() => setPaymentNotice(""), 8000);
-      setStorageSync((v) => v + 1);
-    };
-
-    if (voucherFile && voucherFile.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = () => saveToStorage(reader.result as string);
-      reader.onerror = () => saveToStorage();
-      reader.readAsDataURL(voucherFile);
-    } else {
-      saveToStorage();
+      window.dispatchEvent(new Event("storage"));
     }
+    setShowPaymentModal(false);
+    setPaymentNotice(`Voucher ${cleanOp} registrado exitosamente. Ha sido enviado a Caja (Pestaña 3 en Secretaría) para su validación oficial.`);
+    setTimeout(() => setPaymentNotice(""), 8000);
+    setStorageSync((v) => v + 1);
   };
 
   const handleInstantValidation = () => {
@@ -451,7 +441,7 @@ export default function CourseEnrollmentTab({
             </button>
             <button
               type="button"
-              onClick={handleResetPayment}
+              onClick={() => setShowResetConfirmModal(true)}
               className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer ml-auto"
               title="Restablecer para ingresar otro comprobante"
             >
@@ -483,7 +473,7 @@ export default function CourseEnrollmentTab({
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={handleResetPayment}
+              onClick={() => setShowResetConfirmModal(true)}
               className="bg-white hover:bg-slate-100 text-slate-600 border border-slate-300 font-bold text-[11px] px-3 py-1.5 rounded-lg transition-all cursor-pointer"
               title="Restablecer para probar nuevamente el pago"
             >
@@ -900,6 +890,49 @@ export default function CourseEnrollmentTab({
                 className="px-4 py-1.5 text-xs font-black uppercase tracking-wider bg-[#800521] hover:bg-[#66041a] text-white rounded-lg shadow-xs transition-all cursor-pointer"
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL DE CONFIRMACIÓN: Reiniciar Matrícula */}
+      {showResetConfirmModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-sans animate-in fade-in duration-150"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowResetConfirmModal(false); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-sm overflow-hidden p-5 space-y-4 text-left">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 bg-amber-100 text-amber-800 rounded-xl shrink-0">
+                <AlertCircle className="w-5 h-5 text-amber-700" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-black text-sm text-slate-900">
+                  ¿Reiniciar registro de matrícula?
+                </h3>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Esta acción restablecerá el estado a <strong>Pendiente de Pago</strong> y eliminará el comprobante registrado. Deberá adjuntar o registrar un nuevo voucher para continuar el trámite.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirmModal(false)}
+                className="px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResetConfirmModal(false);
+                  handleResetPayment();
+                }}
+                className="px-4 py-2 text-xs font-black uppercase tracking-wider bg-rose-700 hover:bg-rose-800 text-white rounded-xl shadow-xs transition-colors cursor-pointer"
+              >
+                Sí, Reiniciar
               </button>
             </div>
           </div>
