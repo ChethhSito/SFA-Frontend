@@ -35,10 +35,18 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const formattedCourses = courses.map((c, i) => {
+  const filteredCourses = courses.filter((c) => {
+    if (cycleNumber === 1) {
+      return !c.code?.includes("-20");
+    } else {
+      return c.code?.includes("-20");
+    }
+  });
+
+  const formattedCourses = filteredCourses.map((c, i) => {
     const rawGrade = typeof c.grade === "number" ? c.grade : (Number(c.grade) > 0 ? Number(c.grade) : undefined);
     return {
-      code: c.code || `EIND-10${i + 1}`,
+      code: c.code || (cycleNumber === 1 ? `EIND-10${i + 1}` : `EIND-20${i + 1}`),
       name: c.name,
       credits: typeof c.credits === "number" ? c.credits : 4,
       grade: rawGrade
@@ -252,24 +260,9 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
                 {/* Left Signature: Secretaria General */}
                 <div className="flex flex-col items-center">
                   <div className="h-9 flex items-end justify-center w-full">
-                    <svg viewBox="0 0 160 40" className="w-28 h-8 text-[#1241A0]">
-                      <path
-                        d="M 15 28 Q 28 8 42 22 T 68 12 Q 82 30 102 18 T 132 24"
-                        fill="none"
-                        stroke="#1241A0"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M 30 32 Q 55 26 85 24 T 120 28"
-                        fill="none"
-                        stroke="#1241A0"
-                        strokeWidth="1.2"
-                      />
-                      <text x="80" y="22" textAnchor="middle" fill="#1241A0" fontStyle="italic" fontWeight="bold" fontSize="9">
-                        Carmen Valdivia M.
-                      </text>
-                    </svg>
+                    <div className="font-serif italic text-blue-900 text-sm font-semibold select-none flex items-center justify-center">
+                      <span style={{ fontFamily: "Georgia, serif", letterSpacing: "1px" }}>Carmen Valdivia M.</span>
+                    </div>
                   </div>
                   <div className="w-32 border-t border-slate-400 mt-1 mb-1" />
                   <span className="text-[8px] font-bold text-slate-900 uppercase block leading-tight">
@@ -309,24 +302,9 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
                 {/* Right Signature: Director General */}
                 <div className="flex flex-col items-center">
                   <div className="h-9 flex items-end justify-center w-full">
-                    <svg viewBox="0 0 160 40" className="w-28 h-8 text-[#1241A0]">
-                      <path
-                        d="M 18 30 Q 32 6 48 24 T 76 8 Q 94 28 116 14 T 142 22"
-                        fill="none"
-                        stroke="#1241A0"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M 25 34 Q 60 22 95 24 T 130 26"
-                        fill="none"
-                        stroke="#1241A0"
-                        strokeWidth="1.2"
-                      />
-                      <text x="80" y="22" textAnchor="middle" fill="#1241A0" fontStyle="italic" fontWeight="bold" fontSize="9">
-                        J. Morales Rojas
-                      </text>
-                    </svg>
+                    <div className="font-serif italic text-blue-900 text-sm font-semibold select-none flex items-center justify-center">
+                      <span style={{ fontFamily: "Georgia, serif", letterSpacing: "1px" }}>J. Morales Rojas</span>
+                    </div>
                   </div>
                   <div className="w-32 border-t border-slate-400 mt-1 mb-1" />
                   <span className="text-[8px] font-bold text-slate-900 uppercase block leading-tight">

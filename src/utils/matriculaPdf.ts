@@ -784,11 +784,17 @@ export async function generateBoletaNotasPdf(
 
   y += 21;
 
+  const isCycle1 = cycle === "1" || cycle === "I" || cycle === "Ciclo I";
+  const boletaCourses = courses.filter((c) => {
+    if (isCycle1) return !c.code?.includes("-20");
+    return c.code?.includes("-20") || !c.code?.includes("-10");
+  });
+
   autoTable(pdf, {
     startY: y,
     margin: { left: margin, right: margin, bottom: 25 },
     head: [["CÓDIGO", "ASIGNATURA / UNIDAD DIDÁCTICA", "CRÉD.", "CALIFICACIÓN", "CONDICIÓN ACADÉMICA"]],
-    body: courses.map((c) => [
+    body: boletaCourses.map((c) => [
       c.code,
       c.name,
       c.credits.toFixed(1),

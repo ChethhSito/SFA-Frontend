@@ -80,9 +80,13 @@ export const GradesTab: React.FC<GradesTabProps> = ({
 
   const semesterCourses = React.useMemo(() => {
     if (selectedSemester === "2027-I") {
-      return enrichedCourses.filter((c) => c.code.includes("-10") || c.cycle === "Ciclo I" || c.cycle === 1);
+      return enrichedCourses.filter((c) => {
+        const isCycle2 = c.code?.includes("-20") || c.cycle === "Ciclo II" || c.cycle === 2;
+        if (isCycle2) return false;
+        return c.code?.includes("-10") || c.cycle === "Ciclo I" || c.cycle === 1;
+      });
     } else {
-      const c2 = enrichedCourses.filter((c) => c.code.includes("-20") || c.cycle === "Ciclo II" || c.cycle === 2);
+      const c2 = enrichedCourses.filter((c) => c.code?.includes("-20") || c.cycle === "Ciclo II" || c.cycle === 2);
       if (c2.length === 0) {
         return [
           {
@@ -99,6 +103,67 @@ export const GradesTab: React.FC<GradesTabProps> = ({
               { id: "PC1", name: "Práctica Calificada 1 (CA)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: "NR", isCurricular: true },
               { id: "PC2", name: "Práctica Calificada 2 (Mediciones)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: "NR", isCurricular: true },
               { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: "NR", isCurricular: true }
+            ]
+          },
+          {
+            id: "cur_ei_202",
+            code: "EIND-202",
+            name: "Electrónica Analógica y de Potencia Básica",
+            credits: 4,
+            cycle: "Ciclo II",
+            classroom: "Taller de Potencia",
+            iconType: "Sliders",
+            formula: "NF = 0.20*NPA + 0.20*LAB1 + 0.20*LAB2 + 0.40*EX_FINAL",
+            evaluations: [
+              { id: "NPA", name: "Nota de Participación", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: "NR", isCurricular: true },
+              { id: "LAB1", name: "Laboratorio Diodos y Tiristores", prefix: "LAB1", weight: "20%", weightDecimal: 0.2, grade: "NR", isCurricular: true },
+              { id: "LAB2", name: "Laboratorio Circuitos Rectificadores", prefix: "LAB2", weight: "20%", weightDecimal: 0.2, grade: "NR", isCurricular: true },
+              { id: "EX_FINAL", name: "Evaluación Modular", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: "NR", isCurricular: true }
+            ]
+          },
+          {
+            id: "cur_ei_203",
+            code: "EIND-203",
+            name: "Taller de Medidas e Instrumentos Eléctricos",
+            credits: 3,
+            cycle: "Ciclo II",
+            classroom: "Laboratorio de Mediciones",
+            iconType: "Cpu",
+            formula: "NF = 0.20*NPA + 0.30*PC1 + 0.50*PROY",
+            evaluations: [
+              { id: "NPA", name: "Participación y Seguridad", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: "NR", isCurricular: true },
+              { id: "PC1", name: "Práctica de Osciloscopio y Fasores", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: "NR", isCurricular: true },
+              { id: "PROY", name: "Proyecto de Calibración", prefix: "PROY", weight: "50%", weightDecimal: 0.5, grade: "NR", isCurricular: true }
+            ]
+          },
+          {
+            id: "cur_ei_204",
+            code: "EIND-204",
+            name: "Dibujo y CAD Electrotécnico (AutoCAD Electrical)",
+            credits: 3,
+            cycle: "Ciclo II",
+            classroom: "Cómputo 2 • Pabellón A",
+            iconType: "Sliders",
+            formula: "NF = 0.30*PL1 + 0.30*PL2 + 0.40*PROY_CAD",
+            evaluations: [
+              { id: "PL1", name: "Plano Unifilar en CAD", prefix: "PL1", weight: "30%", weightDecimal: 0.3, grade: "NR", isCurricular: true },
+              { id: "PL2", name: "Plano Multifilar de Tableros", prefix: "PL2", weight: "30%", weightDecimal: 0.3, grade: "NR", isCurricular: true },
+              { id: "PROY_CAD", name: "Proyecto Final Planimetría", prefix: "PROY_CAD", weight: "40%", weightDecimal: 0.4, grade: "NR", isCurricular: true }
+            ]
+          },
+          {
+            id: "cur_ei_205",
+            code: "EIND-205",
+            name: "Inglés Técnico para Electricidad",
+            credits: 2,
+            cycle: "Ciclo II",
+            classroom: "Aula 201 • Pabellón A",
+            iconType: "Award",
+            formula: "NF = 0.30*ACT + 0.30*ORAL + 0.40*EX_FINAL",
+            evaluations: [
+              { id: "ACT", name: "Technical Vocabulary", prefix: "ACT", weight: "30%", weightDecimal: 0.3, grade: "NR", isCurricular: true },
+              { id: "ORAL", name: "Oral Presentation (Diagrams)", prefix: "ORAL", weight: "30%", weightDecimal: 0.3, grade: "NR", isCurricular: true },
+              { id: "EX_FINAL", name: "Final Technical Test", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: "NR", isCurricular: true }
             ]
           }
         ];

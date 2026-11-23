@@ -569,7 +569,7 @@ export default function AlumnoDashboard({
         teacherName: teacherFullName,
         career: enrollment.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad",
         group: mpaPlanningData.groups.find((group: any) => group.id === primaryTask?.groupId)?.name || studentGroup?.name || "Grupo A",
-        cycle: "Ciclo I",
+        cycle: (courseCode.includes("-20") || courseObj?.referenceCycle === 2 || courseObj?.cycle === 2) ? "Ciclo II" : "Ciclo I",
         startDate: mpaPlanningData.periods?.find((p: any) => p.id === studentGroup?.periodId)?.startDate || "2027-03-22",
         endDate: mpaPlanningData.periods?.find((p: any) => p.id === studentGroup?.periodId)?.endDate || "2027-07-30",
         studentCount: studentGroup?.capacity || 30,
@@ -1282,6 +1282,11 @@ export default function AlumnoDashboard({
                   enrichedCourses={enrichedCourses}
                   selectedCourseDetail={selectedCourseDetail}
                   setSelectedCourseDetail={setSelectedCourseDetail}
+                  studentInfo={{
+                    dni: studentDni,
+                    name: personalData ? `${personalData.name} ${personalData.lastName}` : "Mateo Sebastián Quispe Rojas",
+                    career: currentProgram?.name || "Electricidad Industrial"
+                  }}
                 />
               )}
 

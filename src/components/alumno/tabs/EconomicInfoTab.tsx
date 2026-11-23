@@ -335,6 +335,7 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                       operation: "OP-2027-01-BCO-11842",
                       date: "15/03/2027",
                       status: "Validado por Caja",
+                      dataUrl: "/voucher_ciclo1.png",
                       fileName: "Voucher_Matricula_2027_I.png"
                     })}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-[#800521] border border-rose-200 font-bold text-[10.5px] transition-colors cursor-pointer shadow-3xs"
@@ -399,7 +400,7 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                           operation: cycle2Op,
                           date: cycle2Date,
                           status: isCycle2Validated ? "Validado por Caja" : "En Auditoría de Caja",
-                          dataUrl: cycle2DataUrl,
+                          dataUrl: cycle2DataUrl || "/voucher_ciclo2.png",
                           fileName: cycle2FileName
                         })}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-bold text-[10.5px] transition-colors cursor-pointer shadow-3xs"
@@ -552,60 +553,25 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                 </div>
               </div>
 
-              {/* Vista Previa del Archivo o Ticket BN */}
+              {/* Vista Previa del Archivo de Comprobante Oficial */}
               <div className="border border-slate-300 rounded-xl p-3 bg-slate-100/70 space-y-2">
                 <div className="flex items-center justify-between border-b border-slate-300 pb-1.5">
-                  <span className="font-black text-[10.5px] uppercase text-slate-700">Comprobante Foliado</span>
+                  <span className="font-black text-[10.5px] uppercase text-slate-700">Comprobante Foliado Digital</span>
                   <span className="font-mono text-[10px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-300">
                     {viewingVoucher.fileName || "Voucher_Matricula.png"}
                   </span>
                 </div>
 
-                {viewingVoucher.dataUrl ? (
-                  <div className="bg-white rounded-lg p-2 border border-slate-200 flex justify-center">
-                    <img
-                      src={viewingVoucher.dataUrl}
-                      alt="Comprobante digital del estudiante"
-                      className="max-h-56 w-auto object-contain rounded"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-full max-w-sm mx-auto bg-white rounded-xl border-2 border-dashed border-slate-300 shadow-xs p-4 space-y-2 font-mono text-xs">
-                    <div className="flex justify-between items-center border-b border-slate-200 pb-2 text-[10px] text-slate-500 font-bold">
-                      <span className="font-extrabold text-[#800521]">BANCO DE LA NACIÓN</span>
-                      <span>TICKET DE RECAUDACIÓN</span>
-                    </div>
-                    <div className="text-center py-1">
-                      <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider font-sans">Concepto</span>
-                      <span className="text-xs font-black text-slate-900 uppercase block font-sans">{viewingVoucher.concept}</span>
-                      <span className="text-2xl font-black text-[#800521] block font-mono mt-0.5">{viewingVoucher.amount}</span>
-                    </div>
-                    <div className="border-t border-dashed border-slate-200 pt-2 space-y-1 text-[10px] text-slate-600">
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">N° Operación:</span>
-                        <span className="font-bold text-slate-900">{viewingVoucher.operation}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Titular DNI:</span>
-                        <span className="font-bold text-slate-900">{currentDni}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Estudiante:</span>
-                        <span className="font-bold text-slate-900 truncate max-w-[170px]">{studentFullName}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Fecha:</span>
-                        <span className="text-slate-700">{viewingVoucher.date}</span>
-                      </div>
-                      <div className="flex justify-between pt-1 border-t border-slate-100">
-                        <span className="text-slate-400">Estado Caja:</span>
-                        <span className={`font-black uppercase ${viewingVoucher.status.includes("Validado") ? "text-emerald-700" : "text-blue-700"}`}>
-                          {viewingVoucher.status}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <div className="bg-white rounded-lg p-3 border border-slate-200 flex flex-col items-center justify-center">
+                  <img
+                    src={viewingVoucher.dataUrl || (viewingVoucher.period === "2027-I" ? "/voucher_ciclo1.png" : "/voucher_ciclo2.png")}
+                    alt="Comprobante digital del estudiante"
+                    className="max-h-72 w-auto object-contain rounded-lg border border-slate-200 shadow-md"
+                  />
+                  <span className="text-[10px] font-mono font-bold text-slate-500 mt-2 block">
+                    Banco de la Nación • N° Op: {viewingVoucher.operation}
+                  </span>
+                </div>
               </div>
 
               <div className="pt-2 border-t border-slate-200 flex items-center justify-end">

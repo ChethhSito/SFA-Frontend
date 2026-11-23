@@ -251,37 +251,22 @@ export default function CourseEnrollmentTab({
 
     const statusVal = computeStatus();
 
-    if (careerCourses.length > 0) {
-      list = careerCourses.map((c, idx) => ({
-        id: c.id,
-        code: c.code,
-        name: c.name,
-        credits: c.credits || 4,
-        cycle: cycleNum,
-        type: c.type === "General" ? "General" : "Obligatorio",
-        group: cycleNum === 2 ? "EI-II-A" : (studentGroup?.name || "EI-I-A"),
-        sg: 0,
-        tsg: idx % 2 === 0 ? "Teoría / Taller" : idx % 3 === 0 ? "Práctica" : "Taller",
-        status: statusVal
-      }));
+    if (cycleNum === 2) {
+      list = [
+        { id: "eind-201", code: "EIND-201", name: "Circuitos Eléctricos en Corriente Alterna", credits: 4, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Teoría / Taller", status: statusVal },
+        { id: "eind-202", code: "EIND-202", name: "Electrónica Analógica y de Potencia Básica", credits: 4, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Taller", status: statusVal },
+        { id: "eind-203", code: "EIND-203", name: "Taller de Medidas e Instrumentos Eléctricos", credits: 3, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Teoría / Taller", status: statusVal },
+        { id: "eind-204", code: "EIND-204", name: "Dibujo y CAD Electrotécnico (AutoCAD Electrical)", credits: 3, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Práctica", status: statusVal },
+        { id: "eind-205", code: "EIND-205", name: "Inglés Técnico para Electricidad", credits: 2, cycle: 2, type: "General", group: "EI-II-A", sg: 0, tsg: "Teoría / Taller", status: statusVal },
+      ];
     } else {
-      if (cycleNum === 2) {
-        list = [
-          { id: "eind-201", code: "EIND-201", name: "Circuitos Eléctricos en Corriente Alterna", credits: 4, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Teoría / Taller", status: statusVal },
-          { id: "eind-202", code: "EIND-202", name: "Máquinas Eléctricas Estáticas y Transformadores", credits: 4, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Taller", status: statusVal },
-          { id: "eind-203", code: "EIND-203", name: "Mediciones e Instrumentación Eléctrica", credits: 3, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Laboratorio", status: statusVal },
-          { id: "eind-204", code: "EIND-204", name: "Electrónica Básica Aplicada", credits: 3, cycle: 2, type: "General", group: "EI-II-A", sg: 0, tsg: "Práctica", status: statusVal },
-          { id: "eind-205", code: "EIND-205", name: "Inglés Técnico para Electricidad", credits: 2, cycle: 2, type: "General", group: "EI-II-A", sg: 0, tsg: "Teoría", status: statusVal },
-        ];
-      } else {
-        list = [
-          { id: "eind-101", code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, cycle: 1, type: "Obligatorio", group: "EI-I-A", sg: 0, tsg: "Teoría / Taller", status: "Matriculado" },
-          { id: "eind-102", code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, cycle: 1, type: "Obligatorio", group: "EI-I-A", sg: 0, tsg: "Taller", status: "Matriculado" },
-          { id: "eind-103", code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, cycle: 1, type: "Obligatorio", group: "EI-I-A", sg: 0, tsg: "Práctica", status: "Matriculado" },
-          { id: "eind-104", code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, cycle: 1, type: "General", group: "EI-I-A", sg: 0, tsg: "Teoría", status: "Matriculado" },
-          { id: "eind-105", code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2, cycle: 1, type: "General", group: "EI-I-A", sg: 0, tsg: "Laboratorio", status: "Matriculado" },
-        ];
-      }
+      list = [
+        { id: "eind-101", code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, cycle: 1, type: "Obligatorio", group: studentGroup?.name || "EI-I-A", sg: 0, tsg: "Teoría / Taller", status: "Matriculado" },
+        { id: "eind-102", code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, cycle: 1, type: "Obligatorio", group: studentGroup?.name || "EI-I-A", sg: 0, tsg: "Taller", status: "Matriculado" },
+        { id: "eind-103", code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, cycle: 1, type: "Obligatorio", group: studentGroup?.name || "EI-I-A", sg: 0, tsg: "Práctica", status: "Matriculado" },
+        { id: "eind-104", code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, cycle: 1, type: "General", group: studentGroup?.name || "EI-I-A", sg: 0, tsg: "Teoría", status: "Matriculado" },
+        { id: "eind-105", code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2, cycle: 1, type: "General", group: studentGroup?.name || "EI-I-A", sg: 0, tsg: "Laboratorio", status: "Matriculado" },
+      ];
     }
     return list;
   }, [data.courses, enrollment.programId, studentGroup, cycleNum, isPromotedCycle2, isCycle2Paid, isCycle2Validated]);
@@ -917,52 +902,16 @@ export default function CourseEnrollmentTab({
                   </span>
                 </div>
 
-                {storedVoucherDataUrl || voucherPreviewUrl ? (
-                  <div className="bg-white rounded-lg p-2 border border-slate-200 flex justify-center">
-                    <img
-                      src={storedVoucherDataUrl || voucherPreviewUrl}
-                      alt="Comprobante digital del estudiante"
-                      className="max-h-56 w-auto object-contain rounded"
-                    />
-                  </div>
-                ) : (
-                  /* Visualización Oficial del Ticket Bancario BN */
-                  <div className="w-full max-w-sm mx-auto bg-white rounded-xl border-2 border-dashed border-slate-300 shadow-xs p-4 space-y-2 font-mono text-xs">
-                    <div className="flex justify-between items-center border-b border-slate-200 pb-2 text-[10px] text-slate-500 font-bold">
-                      <span className="font-extrabold text-[#800521]">BANCO DE LA NACIÓN</span>
-                      <span>TICKET DE RECAUDACIÓN</span>
-                    </div>
-                    <div className="text-center py-1">
-                      <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider font-sans">Concepto</span>
-                      <span className="text-xs font-black text-slate-900 uppercase block font-sans">Derecho de Matrícula Regular</span>
-                      <span className="text-2xl font-black text-[#800521] block font-mono mt-0.5">S/ 250.00</span>
-                    </div>
-                    <div className="border-t border-dashed border-slate-200 pt-2 space-y-1 text-[10px] text-slate-600">
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">N° Operación:</span>
-                        <span className="font-bold text-slate-900">{storedOp || "OP-2027-02-BCO-94812"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Titular DNI:</span>
-                        <span className="font-bold text-slate-900">{personalData?.dni || currentStudentDni}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Estudiante:</span>
-                        <span className="font-bold text-slate-900 truncate max-w-[170px]">{studentFullName}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Fecha:</span>
-                        <span className="text-slate-700">{storedDate}</span>
-                      </div>
-                      <div className="flex justify-between pt-1 border-t border-slate-100">
-                        <span className="text-slate-400">Estado Caja:</span>
-                        <span className={`font-black uppercase ${isCycle2Validated ? "text-emerald-700" : "text-blue-700"}`}>
-                          {isCycle2Validated ? "VALIDADO POR CAJA" : "EN AUDITORÍA DE CAJA"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <div className="bg-white rounded-lg p-3 border border-slate-200 flex flex-col items-center justify-center">
+                  <img
+                    src={storedVoucherDataUrl || voucherPreviewUrl || "/voucher_ciclo2.png"}
+                    alt="Comprobante digital del estudiante"
+                    className="max-h-72 w-auto object-contain rounded-lg border border-slate-200 shadow-md"
+                  />
+                  <span className="text-[10px] font-mono font-bold text-slate-500 mt-2 block">
+                    Banco de la Nación • N° Op: {storedOp || "OP-2027-02-BCO-94812"}
+                  </span>
+                </div>
               </div>
 
               <div className="pt-2 border-t border-slate-200 flex items-center justify-end">
