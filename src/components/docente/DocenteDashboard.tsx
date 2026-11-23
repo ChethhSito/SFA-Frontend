@@ -236,7 +236,8 @@ export default function DocenteDashboard({
     localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
     localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
     localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_validated_74859612") === "true"
+    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted_74859612") === "true"
   );
 
   const [selectedTeacherPeriod, setSelectedTeacherPeriod] = useState<string>(() => {
@@ -246,6 +247,21 @@ export default function DocenteDashboard({
     }
     return isGlobalCycle2Active ? "2027-II" : "2027-I";
   });
+
+  const isCourseCycle2 = useCallback((c: any) => Boolean(
+    c.cycle === 2 ||
+    c.referenceCycle === 2 ||
+    c.code?.includes("-20") ||
+    c.code?.includes("_20") ||
+    c.code?.includes("201") ||
+    c.code?.includes("202") ||
+    c.id?.includes("201") ||
+    c.id?.includes("202") ||
+    c.id?.includes("_20") ||
+    c.group?.includes("II") ||
+    c.name?.toLowerCase().includes("corriente alterna") ||
+    c.name?.toLowerCase().includes("potencia básica")
+  ), []);
 
   const teacherMpaTasks = scheduleData?.tasks.filter((task) =>
     task.teacherDni === effectiveTeacherDni && scheduleData.groups.some((group) => group.id === task.groupId),
@@ -445,8 +461,7 @@ export default function DocenteDashboard({
         }
       }
       const filtered = allCourses.filter((c) => {
-        const isCycle2 = c.cycle === 2 || c.referenceCycle === 2 || c.code?.includes("-20") || c.group?.includes("II");
-        if (!isCycle2) return false;
+        if (!isCourseCycle2(c)) return false;
         return c.teacherDni === effectiveTeacherDni || c.teacherDnis?.includes(effectiveTeacherDni) || c.teachers?.some((t: any) => t.dni === effectiveTeacherDni);
       });
       if (filtered.length > 0) return filtered;
@@ -476,8 +491,7 @@ export default function DocenteDashboard({
 
     // Period 2027-I (Ciclo I only: strictly exclude Ciclo II courses)
     return allCourses.filter((c) => {
-      const isCycle2 = c.cycle === 2 || c.referenceCycle === 2 || c.code?.includes("-20") || c.group?.includes("II");
-      if (isCycle2) return false;
+      if (isCourseCycle2(c)) return false;
       if (c.teacherDni === effectiveTeacherDni) return true;
       if (c.teacherDnis && c.teacherDnis.includes(effectiveTeacherDni)) return true;
       if (c.teachers && c.teachers.some((t: any) => t.dni === effectiveTeacherDni)) return true;

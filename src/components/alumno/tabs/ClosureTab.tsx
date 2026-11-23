@@ -154,11 +154,6 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   };
 
   const studentDni = personalData?.dni || enrollment?.studentDni || "74859612";
-  const isGraduatedVI = typeof window !== "undefined" && (
-    localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_graduated_all_74859612") === "true"
-  );
-  const isPromoted = isGraduatedVI;
   const rawSim = typeof window !== "undefined" ? (
     localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) ||
     localStorage.getItem("sfa_simulated_cycle1_74859612") ||
@@ -191,6 +186,20 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   );
   const isPromotedToCycle2 = isCycle1Simulated;
 
+  // Never treat student in cycle 1 or 2 as graduated
+  const isGraduatedVI = !isPromotedToCycle2 && typeof window !== "undefined" && (
+    localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_graduated_all_74859612") === "true"
+  );
+  const isPromoted = isGraduatedVI;
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && (isPromotedToCycle2 || isCycle1Simulated)) {
+      localStorage.removeItem(`sfa_student_graduated_all_${studentDni}`);
+      localStorage.removeItem("sfa_student_graduated_all_74859612");
+    }
+  }, [studentDni, isPromotedToCycle2, isCycle1Simulated]);
+
   const effectiveSimCourses = simData?.courses || [
     { code: "EIND-101", grade: 15.6 },
     { code: "EIND-102", grade: 16.5 },
@@ -199,7 +208,13 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
     { code: "EIND-105", grade: 16.0 },
   ];
 
-  const activePlanKey = (enrollment?.programId === "electronica" || enrollment?.programId === "electricidad_industrial" || currentProgram?.name?.toLowerCase().includes("electricidad")) ? "20" : "52";
+  const isElectricidad = studentDni === "74859612" ||
+    enrollment?.programId === "electronica" ||
+    enrollment?.programId === "electricidad_industrial" ||
+    enrollment?.programId === "electricidad" ||
+    currentProgram?.name?.toLowerCase().includes("electricidad") ||
+    !enrollment?.programId;
+  const activePlanKey = isElectricidad ? "20" : "52";
   const activeSemesterKey = selectedQueryCycle || "I";
   const cycleMap: Record<string, number> = { "I": 1, "II": 2, "III": 3, "IV": 4, "V": 5, "VI": 6 };
   const targetCycleNum = cycleMap[activeSemesterKey] || 1;
@@ -305,6 +320,11 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   const totalPoints = activeCoursesList.reduce((sum, c) => sum + c.credits * (typeof c.simGrade === "number" ? c.simGrade : 16.0), 0);
   const computedAverage = totalCreds > 0 ? Math.round((totalPoints / totalCreds) * 10) / 10 : 16.0;
   const weightedGpa = isGraduatedVI ? 17.4 : isCycle1Simulated ? (simData?.weightedAverage ? Number(simData.weightedAverage) : computedAverage) : 0.0;
+
+  const gradedCoursesInActiveCycle = activeCoursesList.filter((c) => typeof c.simGrade === "number");
+  const activeCycleGpa = gradedCoursesInActiveCycle.length > 0
+    ? (gradedCoursesInActiveCycle.reduce((sum, c) => sum + (c.simGrade as number) * c.credits, 0) / gradedCoursesInActiveCycle.reduce((sum, c) => sum + c.credits, 0))
+    : (targetCycleNum === 1 && isCycle1Simulated ? weightedGpa : null);
 
   return (
     <PageTransition id="closure" className="space-y-6">
@@ -539,13 +559,13 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                   strokeWidth="10"
                   fill="transparent"
                   strokeDasharray="314"
-                  strokeDashoffset={314 - (314 * ((isGraduatedVI || (isCycle1Simulated && targetCycleNum === 1)) ? (weightedGpa / 20) : 0))}
+                  strokeDashoffset={314 - (314 * (activeCycleGpa !== null ? (activeCycleGpa / 20) : 0))}
                   className="transition-all duration-300"
                 />
               </svg>
               <div className="absolute flex flex-col justify-center items-center">
                 <span className="text-3xl font-black text-slate-800 tracking-tighter">
-                  {isGraduatedVI || (isCycle1Simulated && targetCycleNum === 1) ? weightedGpa.toFixed(1) : "--"}
+                  {activeCycleGpa !== null ? activeCycleGpa.toFixed(1) : "--"}
                 </span>
                 <span className="text-[8px] text-slate-400 uppercase font-black">sobre 20</span>
               </div>
@@ -553,8 +573,8 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
 
             <div className="text-xs font-semibold">
               <span className="text-slate-500">Rendimiento Estimado: </span>
-              <span className={`font-black ${isGraduatedVI || (isCycle1Simulated && targetCycleNum === 1)
-                ? (weightedGpa >= 14 ? "text-emerald-600" : "text-slate-800")
+              <span className={`font-black ${activeCycleGpa !== null
+                ? (activeCycleGpa >= 14 ? "text-emerald-600" : "text-slate-800")
                 : targetCycleNum === 2
                 ? "text-blue-600"
                 : "text-amber-600"
@@ -564,7 +584,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                   : (isCycle1Simulated && targetCycleNum === 1)
                   ? (weightedGpa >= 16 ? "Sobresaliente" : "Aceptable")
                   : targetCycleNum === 2
-                  ? "Semestre en Curso (2027-II)"
+                  ? (activeCycleGpa !== null ? (activeCycleGpa >= 14 ? "Sobresaliente (En Proceso)" : "Regular (En Proceso)") : "Semestre en Curso (2027-II)")
                   : "No Cursado"}
               </span>
             </div>

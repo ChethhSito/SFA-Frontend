@@ -2,7 +2,7 @@ import { useState } from "react";
 import { 
   Clock3, LayoutGrid, ListFilter, MapPin, Printer, 
   UserRound, X, BookOpen, 
-  CalendarDays, School, Sparkles
+  Calendar, CalendarDays, School, Sparkles
 } from "lucide-react";
 import { 
   AcademicProgram, MpaAcademicGroup, MpaClassroom, MpaCourse, MpaPeriod, 
@@ -183,20 +183,36 @@ export function ScheduleTab({ personalData, currentProgram, studentTasks = [], m
   const [viewMode, setViewMode] = useState<"matrix" | "cards">("matrix");
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<MpaProgramTask | null>(null);
 
-  const activeSessions = studentTasks;
   const isCycle2 = typeof window !== "undefined" && Boolean(
     localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
     localStorage.getItem(`sfa_student_cycle_${personalData?.dni || "74859612"}`) === "2" ||
     localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+    localStorage.getItem("sfa_cycle2_payment") === "true" ||
+    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
     localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
     localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
     studentGroup?.cycle === 2 ||
     studentGroup?.name?.includes("II") ||
-    activeSessions.some((s) => s.courseId?.includes("-20") || s.courseId?.includes("_20") || s.groupId === "EI-II-A")
+    studentTasks.some((s) => s.courseId?.includes("-20") || s.courseId?.includes("_20") || s.groupId === "EI-II-A")
   );
 
-  const groupName = isCycle2 ? "EI-II-A" : (studentGroup?.name || "EI-I-A");
-  const periodName = isCycle2 ? "Periodo 2027-II" : "Periodo 2027-I";
+  const [selectedPeriodTab, setSelectedPeriodTab] = useState<"2027-I" | "2027-II">(() => {
+    return isCycle2 ? "2027-II" : "2027-I";
+  });
+
+  const activeSessions = useMemo(() => {
+    if (selectedPeriodTab === "2027-II") {
+      const c2Tasks = studentTasks.filter((t) => t.courseId?.includes("-20") || t.courseId?.includes("_20") || t.groupId === "EI-II-A");
+      if (c2Tasks.length > 0) return c2Tasks;
+      return DEFAULT_ELECTRICIDAD_CICLO2_TASKS;
+    }
+    const c1Tasks = studentTasks.filter((t) => !t.courseId?.includes("-20") && !t.courseId?.includes("_20") && t.groupId !== "EI-II-A");
+    if (c1Tasks.length > 0) return c1Tasks;
+    return DEFAULT_ELECTRICIDAD_TASKS;
+  }, [selectedPeriodTab, studentTasks]);
+
+  const groupName = selectedPeriodTab === "2027-II" ? "EI-II-A" : "EI-I-A";
+  const periodName = selectedPeriodTab === "2027-II" ? "Periodo 2027-II" : "Periodo 2027-I";
 
   const getCourseData = (task: MpaProgramTask) => {
     const course = mpaPlanningData.courses.find((item) => item.id === task.courseId || item.code === task.courseId);
@@ -296,6 +312,19 @@ export function ScheduleTab({ personalData, currentProgram, studentTasks = [], m
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* Period Selector */}
+            <div className="flex items-center gap-1.5 bg-black/30 border border-white/20 rounded-xl px-3 py-1.5 text-xs font-bold shadow-inner">
+              <Calendar className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+              <select
+                value={selectedPeriodTab}
+                onChange={(e) => setSelectedPeriodTab(e.target.value as any)}
+                className="bg-transparent text-white font-black text-xs focus:outline-none cursor-pointer"
+              >
+                <option value="2027-II" className="text-slate-900 bg-white">2027-II • Ciclo II (Activo)</option>
+                <option value="2027-I" className="text-slate-900 bg-white">2027-I • Ciclo I (Concluido)</option>
+              </select>
+            </div>
+
             <div className="flex rounded-xl border border-white/20 bg-black/30 p-1 text-xs font-bold shadow-inner">
               <button
                 type="button"

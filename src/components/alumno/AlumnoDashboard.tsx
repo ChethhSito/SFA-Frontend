@@ -132,16 +132,24 @@ export default function AlumnoDashboard({
   const [profileInnerTab, setProfileInnerTab] = useState<"docs" | "payments" | "academic">("docs");
 
   // State members for interactive Consulta Académica multi-sidebar view
-  const [selectedQueryCycle, setSelectedQueryCycle] = useState<"I" | "II" | "III" | "IV" | "V" | "VI">("I");
+  const [selectedQueryCycle, setSelectedQueryCycle] = useState<"I" | "II" | "III" | "IV" | "V" | "VI">(() => {
+    return isPromotedCycle2 ? "II" : "I";
+  });
   const [simulatedGrades, setSimulatedGrades] = useState<Record<string, number>>({});
 
   // Custom states for Image 1 and Image 2 High Fidelity replication
   const [expandedAttendanceCourse, setExpandedAttendanceCourse] = useState<string | null>("redes");
   const [selectedAcademicOption, setSelectedAcademicOption] = useState<string>("plan_curricular");
-  const [selectedSemesterFilter, setSelectedSemesterFilter] = useState<string>("01");
+  const [selectedSemesterFilter, setSelectedSemesterFilter] = useState<string>(() => {
+    return isPromotedCycle2 ? "02" : "01";
+  });
   const [selectedPlan, setSelectedPlan] = useState<string>("52");
-  const [selectedQueryPeriod, setSelectedQueryPeriod] = useState<string>("2027-I");
-  const [selectedAttendanceSemester, setSelectedAttendanceSemester] = useState<string>("2027-I");
+  const [selectedQueryPeriod, setSelectedQueryPeriod] = useState<string>(() => {
+    return isPromotedCycle2 ? "2027-II" : "2027-I";
+  });
+  const [selectedAttendanceSemester, setSelectedAttendanceSemester] = useState<string>(() => {
+    return isPromotedCycle2 ? "2027-II" : "2027-I";
+  });
   const [selectedCourseDetail, setSelectedCourseDetail] = useState<string>(() => {
     if (typeof window !== "undefined") {
       return sessionStorage.getItem("sfa_alumno_course_detail") || "";
@@ -865,13 +873,13 @@ export default function AlumnoDashboard({
     : (ciclo1Courses.length > 0 ? ciclo1Courses : courses.filter((c: any) => c.careerId === enrollment.programId || c.career === currentProgram?.name));
 
   const studentCourses = useMemo(() => {
-    if (isCycle2Paid) {
+    if (isCycle2Paid || isPromotedCycle2) {
       return ciclo2Courses;
     }
     return baseStudentCourses;
-  }, [baseStudentCourses, isCycle2Paid, ciclo2Courses]);
+  }, [baseStudentCourses, isCycle2Paid, isPromotedCycle2, ciclo2Courses]);
 
-  const enrichedCourses = studentCourses.map((c) => {
+  const enrichSingleCourse = useCallback((c: any) => {
     let iconType = "BarChart3";
     if (c.code.includes("101") || c.name.toLowerCase().includes("automatización") || c.name.toLowerCase().includes("control")) {
       iconType = "Cpu";
@@ -1099,7 +1107,7 @@ export default function AlumnoDashboard({
       id: c.id,
       name: c.name,
       code: c.code,
-      cycle: c.cycle || "Ciclo I",
+      cycle: c.cycle || (c.code?.includes("-20") ? "Ciclo II" : "Ciclo I"),
       classroom: c.classroom || "Aula Virtual",
       credits: c.credits,
       schedule: c.schedule,
@@ -1116,7 +1124,26 @@ export default function AlumnoDashboard({
       attendanceCourseIds: finalAttendanceCourseIds,
       evaluations: evaluationsList
     };
-  });
+  }, [assignments, courses, currentProgram, studentDni, studentGroup]);
+
+  const enrichedCourses = useMemo(() => {
+    return studentCourses.map(enrichSingleCourse);
+  }, [studentCourses, enrichSingleCourse]);
+
+  const allAvailableCourses = useMemo(() => {
+    const list = [...(ciclo1Courses.length > 0 ? ciclo1Courses : baseStudentCourses), ...ciclo2Courses];
+    const map = new Map<string, any>();
+    list.forEach((item) => {
+      if (!map.has(item.code)) {
+        map.set(item.code, item);
+      }
+    });
+    return Array.from(map.values());
+  }, [ciclo1Courses, baseStudentCourses, ciclo2Courses]);
+
+  const allEnrichedCourses = useMemo(() => {
+    return allAvailableCourses.map(enrichSingleCourse);
+  }, [allAvailableCourses, enrichSingleCourse]);
 
   const activeCourseObj = useMemo(() => {
     if (!selectedCourseDetail) return null;
@@ -1413,7 +1440,7 @@ export default function AlumnoDashboard({
                   attendance={attendance}
                   attendanceLoading={attendanceLoading}
                   attendanceError={attendanceError}
-                  enrichedCourses={enrichedCourses}
+                  enrichedCourses={allEnrichedCourses}
                   currentProgram={currentProgram}
                   selectedCourseDetail={selectedCourseDetail}
                   setSelectedCourseDetail={setSelectedCourseDetail}
@@ -1485,7 +1512,7 @@ export default function AlumnoDashboard({
                   enrollment={enrollment}
                   currentProgram={currentProgram}
                   courses={courses}
-                  enrichedCourses={enrichedCourses}
+                  enrichedCourses={allEnrichedCourses}
                   assignments={assignments}
                   selectedAcademicOption={selectedAcademicOption}
                   setSelectedAcademicOption={setSelectedAcademicOption}
@@ -1509,7 +1536,7 @@ export default function AlumnoDashboard({
 
               {activeTab === "notas" && (
                 <GradesTab
-                  enrichedCourses={enrichedCourses}
+                  enrichedCourses={allEnrichedCourses}
                   selectedCourseDetail={selectedCourseDetail}
                   setSelectedCourseDetail={setSelectedCourseDetail}
                   studentInfo={{

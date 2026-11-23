@@ -26,7 +26,36 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
   studentGroup,
   studentCourses = []
 }) => {
-  const currentPeriod = mpaPlanningData?.periods?.find((period: any) => period.id === studentGroup?.periodId)?.name || "Período académico";
+  const studentDni = personalData?.dni || enrollment?.studentDni || "74859612";
+  const isPromotedCycle2 = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
+    localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+    localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
+    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+    localStorage.getItem("sfa_student_cycle") === "2" ||
+    localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+    localStorage.getItem("sfa_cycle2_payment") === "true" ||
+    localStorage.getItem(`sfa_cycle2_validated_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
+    localStorage.getItem("sfa_cycle2_validated") === "true" ||
+    studentGroup?.cycle === 2 ||
+    studentGroup?.id?.includes("-II-")
+  );
+
+  const currentPeriod = isPromotedCycle2 
+    ? "Periodo 2027-II" 
+    : (mpaPlanningData?.periods?.find((period: any) => period.id === studentGroup?.periodId)?.name || "Periodo 2027-I");
+
+  const currentCycleRoman = isPromotedCycle2 ? "Ciclo II" : "Ciclo I";
+  const progressBadge = isPromotedCycle2 
+    ? "Formación Continua • Ciclo II (16.7% Concluido • Ciclo I Aprobado)" 
+    : "Inicio de Formación • Ciclo I (0% Concluido)";
+  const progressMeterWidth = isPromotedCycle2 ? "16.7%" : "3%";
+
   const scheduledGroups = [...new Set(studentTasks.map((task: any) =>
     mpaPlanningData?.groups?.find((group: any) => group.id === task.groupId)?.name || task.groupId,
   ))];
@@ -60,7 +89,7 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
             ¡Bienvenido de vuelta, {personalData.name}!
           </h2>
           <p className="text-xs text-slate-100 font-medium tracking-wide">
-            Estamos contentos de tenerte en el IESTP San Francisco de Asís. Revisa tus asignaturas inscritas de Ciclo I, tu horario de clases oficial y tus estados administrativos de un vistazo.
+            Estamos contentos de tenerte en el IESTP San Francisco de Asís. Revisa tus asignaturas inscritas de {currentCycleRoman}, tu horario de clases oficial y tus estados administrativos de un vistazo.
           </p>
         </div>
         <Flame className="absolute right-6 bottom-4 w-28 h-28 text-red-900/30 font-black pointer-events-none stroke-[0.5]" />
@@ -73,7 +102,7 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
           <div className="flex justify-between items-center mb-4">
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Avance de Carrera Técnica</span>
             <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-200 font-extrabold px-2.5 py-0.5 rounded-full">
-              Inicio de Formación • Ciclo I (0% Concluido)
+              {progressBadge}
             </span>
           </div>
 
@@ -83,7 +112,7 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
 
           {/* Horizontal Progress Meter Bar */}
           <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden mb-6">
-            <div className="bg-[#800521] h-full rounded-full transition-all duration-1000" style={{ width: "3%" }} />
+            <div className="bg-[#800521] h-full rounded-full transition-all duration-1000" style={{ width: progressMeterWidth }} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5 text-xs font-semibold text-slate-600 pt-3 border-t border-slate-100 items-stretch">
@@ -93,8 +122,8 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
             </div>
             <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-100 flex flex-col justify-center">
               <span className="text-[9px] text-slate-400 uppercase block font-bold tracking-wider">Grupos / Secciones</span>
-              <span className="text-slate-800 block font-extrabold text-sm mt-0.5 truncate" title={scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || "Ciclo I - Turno " + (enrollment.shift || "Mañana")}>
-                {scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || "Ciclo I - Turno " + (enrollment.shift || "Mañana")}
+              <span className="text-slate-800 block font-extrabold text-sm mt-0.5 truncate" title={scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || (isPromotedCycle2 ? "EI-II-A" : "EI-I-A")}>
+                {scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || (isPromotedCycle2 ? "EI-II-A" : "EI-I-A")}
               </span>
             </div>
             <div className="col-span-1 sm:col-span-2 xl:col-span-1 bg-gradient-to-br from-amber-50 to-amber-100/60 rounded-xl p-3 flex items-start gap-2.5 border border-amber-200/90 shadow-2xs">
@@ -195,14 +224,14 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
               </div>
               <div>
                 <h4 className="text-xs font-bold text-slate-800 uppercase block">Mis Asignaturas</h4>
-                <p className="text-[10px] text-slate-500 font-semibold mt-0.5">{studentCourses.length} cursos en Ciclo I</p>
+                <p className="text-[10px] text-slate-500 font-semibold mt-0.5">{studentCourses.length} cursos en {currentCycleRoman}</p>
               </div>
             </div>
           </div>
 
           {/* TAREAS PRÓXIMAS List */}
           <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-xs">
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-4">Actividades Académicas del Ciclo I</span>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-4">Actividades Académicas del {currentCycleRoman}</span>
             
             <div className="space-y-3">
               <div className="p-4 border border-emerald-100 bg-emerald-50/40 rounded-xl flex items-center justify-between gap-4">
@@ -244,7 +273,7 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
                 <h4 className="text-xs font-bold text-slate-800 leading-tight">Matrícula Oficial {currentPeriod} Regularizada</h4>
               </div>
               <p className="text-[10px] text-slate-500 leading-normal font-semibold pl-4">
-                Su matrícula académica en Ciclo I y asignación de sección han sido completadas con conformidad de Secretaría General.
+                Su matrícula académica en {currentCycleRoman} y asignación de sección han sido completadas con conformidad de Secretaría General.
               </p>
               <span className="text-[9px] text-slate-400 font-bold block mt-1 pl-4">{currentPeriod}</span>
             </div>

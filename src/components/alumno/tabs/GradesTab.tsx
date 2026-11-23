@@ -67,9 +67,6 @@ export const GradesTab: React.FC<GradesTabProps> = ({
   setSelectedCourseDetail,
   studentInfo
 }) => {
-  const [showBoletaModal, setShowBoletaModal] = useState(false);
-  const [selectedSemester, setSelectedSemester] = useState<"2027-I" | "2027-II">("2027-I");
-
   const isPromotedCycle2 = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_student_promoted_cycle2_${studentInfo?.dni || "74859612"}`) === "true" ||
     localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
@@ -78,6 +75,11 @@ export const GradesTab: React.FC<GradesTabProps> = ({
     localStorage.getItem("sfa_student_promoted_74859612") === "true"
   );
 
+  const [showBoletaModal, setShowBoletaModal] = useState(false);
+  const [selectedSemester, setSelectedSemester] = useState<"2027-I" | "2027-II">(() => {
+    return isPromotedCycle2 ? "2027-II" : "2027-I";
+  });
+
   const semesterCourses = React.useMemo(() => {
     if (selectedSemester === "2027-I") {
       const c1 = enrichedCourses.filter((c) => {
@@ -85,86 +87,87 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         if (isCycle2) return false;
         return c.code?.includes("-10") || c.cycle === "Ciclo I" || c.cycle === 1;
       });
-      if (c1.length === 0) {
-        return [
-          {
-            id: "cur_ei_101",
-            code: "EIND-101",
-            name: "Fundamentos de Electricidad y Circuitos CC",
-            credits: 4,
-            cycle: "Ciclo I",
-            classroom: "Aula 101 • Pabellón A",
-            iconType: "Zap",
-            formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
-            evaluations: [
-              { id: "NPA", name: "Nota de Participación Activa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: 16.0, isCurricular: true },
-              { id: "PC1", name: "Práctica Calificada 1 (Circuitos)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: 15.0, isCurricular: true },
-              { id: "PC2", name: "Práctica Calificada 2 (Leyes Kirchhoff)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: 15.0, isCurricular: true },
-              { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 16.0, isCurricular: true }
-            ]
-          },
-          {
-            id: "cur_ei_102",
-            code: "EIND-102",
-            name: "Instalaciones Eléctricas de Edificaciones",
-            credits: 4,
-            cycle: "Ciclo I",
-            classroom: "Aula 102 • Pabellón A",
-            iconType: "Sliders",
-            formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
-            evaluations: [
-              { id: "NPA", name: "Nota de Participación Activa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: 16.0, isCurricular: true },
-              { id: "PC1", name: "Práctica Calificada 1 (Tableros)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: 16.0, isCurricular: true },
-              { id: "PC2", name: "Práctica Calificada 2 (Canalizaciones)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: 17.0, isCurricular: true },
-              { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 17.0, isCurricular: true }
-            ]
-          },
-          {
-            id: "cur_ei_103",
-            code: "EIND-103",
-            name: "Seguridad e Higiene Industrial en Baja Tensión",
-            credits: 3,
-            cycle: "Ciclo I",
-            classroom: "Aula 101 • Pabellón A",
-            iconType: "Cpu",
-            formula: "NF = 0.20*NPA + 0.30*PC1 + 0.50*EX_FINAL",
-            evaluations: [
-              { id: "NPA", name: "Participación y Normativa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: 17.0, isCurricular: true },
-              { id: "PC1", name: "Práctica Calificada 1 (EPP y Riesgo)", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: 17.0, isCurricular: true },
-              { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "50%", weightDecimal: 0.5, grade: 17.0, isCurricular: true }
-            ]
-          },
-          {
-            id: "cur_ei_104",
-            code: "EIND-104",
-            name: "Matemática Aplicada a la Tecnología Eléctrica",
-            credits: 3,
-            cycle: "Ciclo I",
-            classroom: "Aula 101 • Pabellón A",
-            iconType: "BarChart3",
-            formula: "NF = 0.30*PC1 + 0.30*PC2 + 0.40*EX_FINAL",
-            evaluations: [
-              { id: "PC1", name: "Práctica Calificada 1 (Trigonometría)", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: 15.0, isCurricular: true },
-              { id: "PC2", name: "Práctica Calificada 2 (Fasores Básicos)", prefix: "PC2", weight: "30%", weightDecimal: 0.3, grade: 15.0, isCurricular: true },
-              { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 15.0, isCurricular: true }
-            ]
-          },
-          {
-            id: "cur_ei_105",
-            code: "EIND-105",
-            name: "Comunicación y Tecnologías Digitales",
-            credits: 2,
-            cycle: "Ciclo I",
-            classroom: "Aula 101 • Pabellón A",
-            iconType: "Award",
-            formula: "NF = 0.30*ACT + 0.30*ORAL + 0.40*EX_FINAL",
-            evaluations: [
-              { id: "ACT", name: "Actividades Digitales", prefix: "ACT", weight: "30%", weightDecimal: 0.3, grade: 16.0, isCurricular: true },
-              { id: "ORAL", name: "Exposición de Proyectos", prefix: "ORAL", weight: "30%", weightDecimal: 0.3, grade: 16.0, isCurricular: true },
-              { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 16.0, isCurricular: true }
-            ]
-          }
-        ];
+      const defaultCycle1 = [
+        {
+          id: "cur_ei_101",
+          code: "EIND-101",
+          name: "Fundamentos de Electricidad y Circuitos CC",
+          credits: 4,
+          cycle: "Ciclo I",
+          classroom: "Aula 101 • Pabellón A",
+          iconType: "Zap",
+          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+          evaluations: [
+            { id: "NPA", name: "Nota de Participación Activa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: 16.0, isCurricular: true },
+            { id: "PC1", name: "Práctica Calificada 1 (Circuitos)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: 15.0, isCurricular: true },
+            { id: "PC2", name: "Práctica Calificada 2 (Leyes Kirchhoff)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: 15.0, isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 16.0, isCurricular: true }
+          ]
+        },
+        {
+          id: "cur_ei_102",
+          code: "EIND-102",
+          name: "Instalaciones Eléctricas de Edificaciones",
+          credits: 4,
+          cycle: "Ciclo I",
+          classroom: "Aula 102 • Pabellón A",
+          iconType: "Sliders",
+          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+          evaluations: [
+            { id: "NPA", name: "Nota de Participación Activa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: 16.0, isCurricular: true },
+            { id: "PC1", name: "Práctica Calificada 1 (Tableros)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: 16.0, isCurricular: true },
+            { id: "PC2", name: "Práctica Calificada 2 (Canalizaciones)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: 17.0, isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 17.0, isCurricular: true }
+          ]
+        },
+        {
+          id: "cur_ei_103",
+          code: "EIND-103",
+          name: "Seguridad e Higiene Industrial en Baja Tensión",
+          credits: 3,
+          cycle: "Ciclo I",
+          classroom: "Aula 101 • Pabellón A",
+          iconType: "Cpu",
+          formula: "NF = 0.20*NPA + 0.30*PC1 + 0.50*EX_FINAL",
+          evaluations: [
+            { id: "NPA", name: "Participación y Normativa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: 17.0, isCurricular: true },
+            { id: "PC1", name: "Práctica Calificada 1 (EPP y Riesgo)", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: 17.0, isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "50%", weightDecimal: 0.5, grade: 17.0, isCurricular: true }
+          ]
+        },
+        {
+          id: "cur_ei_104",
+          code: "EIND-104",
+          name: "Matemática Aplicada a la Tecnología Eléctrica",
+          credits: 3,
+          cycle: "Ciclo I",
+          classroom: "Aula 101 • Pabellón A",
+          iconType: "BarChart3",
+          formula: "NF = 0.30*PC1 + 0.30*PC2 + 0.40*EX_FINAL",
+          evaluations: [
+            { id: "PC1", name: "Práctica Calificada 1 (Trigonometría)", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: 15.0, isCurricular: true },
+            { id: "PC2", name: "Práctica Calificada 2 (Fasores Básicos)", prefix: "PC2", weight: "30%", weightDecimal: 0.3, grade: 15.0, isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 15.0, isCurricular: true }
+          ]
+        },
+        {
+          id: "cur_ei_105",
+          code: "EIND-105",
+          name: "Comunicación y Tecnologías Digitales",
+          credits: 2,
+          cycle: "Ciclo I",
+          classroom: "Aula 101 • Pabellón A",
+          iconType: "Award",
+          formula: "NF = 0.30*ACT + 0.30*ORAL + 0.40*EX_FINAL",
+          evaluations: [
+            { id: "ACT", name: "Actividades Digitales", prefix: "ACT", weight: "30%", weightDecimal: 0.3, grade: 16.0, isCurricular: true },
+            { id: "ORAL", name: "Exposición de Proyectos", prefix: "ORAL", weight: "30%", weightDecimal: 0.3, grade: 16.0, isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 16.0, isCurricular: true }
+          ]
+        }
+      ];
+      if (c1.length < 5) {
+        return defaultCycle1;
       }
       return c1;
     } else {
@@ -181,7 +184,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
       } catch {}
 
       const c2 = enrichedCourses.filter((c) => c.code?.includes("-20") || c.cycle === "Ciclo II" || c.cycle === 2);
-      if (c2.length === 0) {
+      if (c2.length < 5) {
         return [
           {
             id: "cur_ei_201",

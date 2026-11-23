@@ -45,7 +45,22 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
   if (error) return <div role="alert" className="text-red-700"><p>{error}</p><button type="button" onClick={() => { void onReload(); }} className="border rounded-lg p-2 mt-2">Reintentar carga</button></div>;
   const activeDni = studentDni || enrollment.studentDni;
 
-  // Real enrolled courses for Ciclo I with live attendance calculations
+  const isCycle2 = typeof window !== "undefined" && Boolean(
+    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+    localStorage.getItem(`sfa_student_cycle_${activeDni}`) === "2" ||
+    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+    localStorage.getItem("sfa_cycle2_payment") === "true" ||
+    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+    studentGroup?.cycle === 2 ||
+    studentGroup?.id?.includes("-II-") ||
+    studentCourses.some((c) => c.code?.includes("-20") || c.code?.includes("201"))
+  );
+  const currentCycleRoman = isCycle2 ? "Ciclo II" : "Ciclo I";
+  const currentPeriod = isCycle2 ? "Periodo 2027-II" : "Periodo 2027-I";
+
+  // Real enrolled courses with live attendance calculations
   const currentAttendanceCourses = studentCourses.map((c) => {
     const courseRecords = studentAttendanceRecords(attendance, c.attendanceCourseIds || [c.id, c.code], activeDni);
     const sesDictadas = courseRecords.length;
@@ -75,7 +90,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
       id: c.id,
       code: c.code,
       name: c.name,
-      group: studentGroup?.name || "Ciclo I - Sección A",
+      group: studentGroup?.name || (isCycle2 ? "EI-II-A" : "EI-I-A"),
       attendanceRate,
       statusText: attendanceRate === null ? "Sin datos" : `${attendanceRate}% Asistencia`,
       statusDesc: sesDictadas === 0 ? "SIN REGISTROS" : (attendanceRate >= 70 ? "REGULAR • AL DÍA" : "EN RIESGO POR FALTAS"),
@@ -124,7 +139,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <div className="text-left bg-black/30 border border-white/20 px-3.5 py-2 rounded-xl select-none shadow-inner">
               <span className="text-[9px] text-amber-400 font-extrabold block uppercase mb-0.5 tracking-wider">Semestre Lectivo</span>
-              <span className="text-xs font-black text-white font-mono">Historial Disponible</span>
+              <span className="text-xs font-black text-white font-mono">{currentPeriod} • {currentCycleRoman}</span>
             </div>
             <button
               onClick={() => window.print()}
@@ -184,7 +199,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
           <div className="flex justify-between items-center border-b border-slate-100 pb-3">
             <h3 className="text-xs font-black text-slate-800 uppercase tracking-tight">
-              Listado de Asignaturas Matriculadas (Ciclo I)
+              Listado de Asignaturas Matriculadas ({currentCycleRoman})
             </h3>
             <span className="text-[10px] text-slate-500 font-extrabold uppercase">
               Historial de asistencia
