@@ -738,7 +738,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                       type: c.type,
                       group: selectedQueryCycle === "II" ? "EI-II-A" : "EI-I-A",
                       tsg: "Teoría / Taller",
-                      status: isGraduatedVI ? "APROBADO" : (selectedQueryCycle === "I" ? "APROBADO" : (selectedQueryCycle === "II" ? "MATRICULADO" : "PENDIENTE")),
+                      status: isGraduatedVI ? "APROBADO" : (selectedQueryCycle === "I" ? "APROBADO" : (selectedQueryCycle === "II" && isCycle2Simulated ? "APROBADO" : (selectedQueryCycle === "II" ? "MATRICULADO" : "PENDIENTE"))),
                     })),
                     totalCredits: cycleCreditsSum || 16,
                     totalCourses: activeCoursesList.length,

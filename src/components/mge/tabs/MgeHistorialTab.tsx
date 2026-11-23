@@ -7,7 +7,8 @@ import {
   FileDown,
   Filter,
   UserCheck,
-  BookOpen
+  BookOpen,
+  XCircle
 } from "lucide-react";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { Course, CourseAssignment } from "../../../types";
@@ -130,6 +131,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
   const [downloading, setDownloading] = useState(false);
   const [showSimulateCiclo1Modal, setShowSimulateCiclo1Modal] = useState(false);
   const [showSimulateCiclo2Modal, setShowSimulateCiclo2Modal] = useState(false);
+  const [showEgresadoModal, setShowEgresadoModal] = useState(false);
   const [cycleFilter, setCycleFilter] = useState<number | "ALL">("ALL");
   const [cycle1SimState, setCycle1SimState] = useState(0);
 
@@ -168,9 +170,9 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
 
   const isStudentPromoted = student ? !!promotedState[student.dni] : false;
 
-  const toggleStudentPromotion = () => {
+  const toggleStudentPromotion = (targetVal?: boolean) => {
     if (!student) return;
-    const nextVal = !isStudentPromoted;
+    const nextVal = typeof targetVal === "boolean" ? targetVal : !isStudentPromoted;
     setPromotedState((prev) => ({ ...prev, [student.dni]: nextVal }));
     localStorage.setItem(`sfa_student_promoted_${student.dni}`, String(nextVal));
     localStorage.setItem("sfa_student_promoted_74859612", String(nextVal));
@@ -559,15 +561,26 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
                 })()}
                 <button
                   type="button"
-                  onClick={toggleStudentPromotion}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border cursor-pointer flex items-center gap-2 ${isStudentPromoted
-                    ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600"
-                    : "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-500/50"
-                    }`}
-                  title="Acreditar los 6 semestres formativos para la emisión del certificado oficial"
+                  onClick={() => {
+                    if (isStudentPromoted) {
+                      toggleStudentPromotion(false);
+                    } else {
+                      setShowEgresadoModal(true);
+                    }
+                  }}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border cursor-pointer flex items-center gap-2 ${
+                    isStudentPromoted
+                      ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600"
+                      : "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-500/50"
+                  }`}
+                  title={
+                    isStudentPromoted
+                      ? "Revertir estado de egresado y mantener Ciclo II aprobado"
+                      : "Acreditar los 6 semestres formativos para la emisión del certificado oficial"
+                  }
                 >
                   <GraduationCap className="w-4 h-4 text-emerald-300" />
-                  {isStudentPromoted ? "Restablecer a Ciclo I" : "Acreditar Plan Completo (6 Ciclos / Egresado)"}
+                  {isStudentPromoted ? "Revertir a Ciclo II Aprobado" : "Acreditar Plan Completo (6 Ciclos / Egresado)"}
                 </button>
                 <button
                   type="button"
@@ -660,10 +673,10 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
                 {isStudentPromoted
                   ? "Plan formativo 100% aprobado"
                   : metrics.approvedCourses >= 10
-                  ? "Ciclos I y II Aprobados (Módulo I)"
-                  : metrics.approvedCourses >= 5
-                  ? "Ciclo I Aprobado"
-                  : "Ciclo I en curso oficial"}
+                    ? "Ciclos I y II Aprobados (Módulo I)"
+                    : metrics.approvedCourses >= 5
+                      ? "Ciclo I Aprobado"
+                      : "Ciclo I en curso oficial"}
               </p>
             </div>
 
@@ -685,18 +698,18 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
                   {isStudentPromoted
                     ? "Apto para emisión de Título Profesional"
                     : metrics.approvedCourses >= 10
-                    ? "Apto para Matrícula en Ciclo III (2028-I)"
-                    : metrics.approvedCourses >= 5
-                    ? "Habilitado en Ciclo II (2027-II)"
-                    : "Habilitado en Ciclo I (2027-I)"}
+                      ? "Apto para Matrícula en Ciclo III (2028-I)"
+                      : metrics.approvedCourses >= 5
+                        ? "Habilitado en Ciclo II (2027-II)"
+                        : "Habilitado en Ciclo I (2027-I)"}
                 </p>
               </div>
               <p className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md inline-block font-mono">
                 {isStudentPromoted
                   ? "EFSRT Concluida"
                   : metrics.approvedCourses >= 10
-                  ? "Módulo Técnico I Acreditado"
-                  : "Turno Mañana"}
+                    ? "Módulo Técnico I Acreditado"
+                    : "Turno Mañana"}
               </p>
             </div>
           </div>
@@ -868,6 +881,99 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
               setCycle1SimState((prev) => prev + 1);
             }}
           />
+
+          {showEgresadoModal && (
+            <div
+              className="fixed inset-0 z-[99999] flex items-center justify-center p-3 md:p-6 bg-slate-950/75 backdrop-blur-md overflow-y-auto animate-in fade-in duration-150"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setShowEgresadoModal(false);
+              }}
+            >
+              <div className="bg-white rounded-2xl max-w-xl w-full border border-slate-200 shadow-2xl flex flex-col overflow-hidden text-slate-800 font-sans text-left">
+                <div className="bg-gradient-to-r from-emerald-800 to-emerald-950 text-white px-5 py-3.5 flex items-center justify-between shadow-md">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5 text-amber-300" />
+                    <span className="font-extrabold text-xs md:text-sm uppercase tracking-wide">
+                      Acreditación de Plan Completo (6 Ciclos / Egresado)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowEgresadoModal(false)}
+                    className="text-white/80 hover:text-white p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="p-5 space-y-4">
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black uppercase text-slate-900">
+                        Estudiante: <span className="text-emerald-800">{student.lastName}, {student.name}</span>
+                      </span>
+                      <span className="text-[10px] font-mono font-bold bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-700">
+                        DNI: {student.dni}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-600 font-medium flex items-center gap-3">
+                      <span>Carrera: <b className="text-slate-800">{program}</b></span>
+                      <span>•</span>
+                      <span>Plan: <b className="text-slate-800">120 Créditos</b></span>
+                      <span>•</span>
+                      <span>Total Módulos: <b className="text-slate-800">3 Módulos</b></span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-2 text-xs text-emerald-900">
+                    <p className="font-bold flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      Consolidación Curricular de los 6 Ciclos Formativos
+                    </p>
+                    <p className="text-[11px] text-emerald-800/90 leading-relaxed">
+                      Al confirmar esta acción institucional, se registrará la culminación satisfactoria de los 6 semestres académicos (120 créditos acreditados). El estudiante pasará a condición <b>EGRESADO / APTO TITULACIÓN</b>, habilitándose la emisión de constancias de egresado y el registro de prácticas EFSRT en Secretaría.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block">Créditos Totales</span>
+                      <span className="text-sm font-black text-slate-900 block mt-0.5">120 / 120 cr.</span>
+                    </div>
+                    <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block">Promedio Proyectado</span>
+                      <span className="text-sm font-black text-emerald-700 block mt-0.5">16.8 / 20</span>
+                    </div>
+                    <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block">Condición Final</span>
+                      <span className="text-sm font-black text-[#800521] block mt-0.5">EGRESADO</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setShowEgresadoModal(false)}
+                      className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toggleStudentPromotion(true);
+                        setShowEgresadoModal(false);
+                      }}
+                      className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono bg-emerald-700 hover:bg-emerald-600 text-white shadow-sm border border-emerald-600 transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                      <span>Confirmar Egreso Curricular</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
