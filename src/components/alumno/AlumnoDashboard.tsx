@@ -81,13 +81,13 @@ export default function AlumnoDashboard({
   const [profileSavedMsg, setProfileSavedMsg] = useState("");
 
   // Outstanding billing simulation state (el alumno matriculado tiene su matrícula pagada y sin deuda)
-  const isEnrolledAndPaid = enrollment.academicStatus === "MATRICULADO" || (enrollment.paymentStatus as string) === "Validado" || (enrollment.paymentStatus as string) === "Pagado" || (enrollment.paymentStatus as string) === "PAGADO";
+  const isEnrolledAndPaid = enrollment?.academicStatus === "MATRICULADO" || (enrollment?.paymentStatus as string) === "Validado" || (enrollment?.paymentStatus as string) === "Pagado" || (enrollment?.paymentStatus as string) === "PAGADO";
   const [isPaidInvoice, setIsPaidInvoice] = useState(isEnrolledAndPaid);
-  const [paymentOp, setPaymentOp] = useState(enrollment.paymentOperation || (isEnrolledAndPaid ? `OP-MATR-2027-${personalData.dni ? personalData.dni.slice(-4) : "0001"}` : ""));
+  const [paymentOp, setPaymentOp] = useState(enrollment?.paymentOperation || (isEnrolledAndPaid ? `OP-MATR-2027-${personalData?.dni ? personalData.dni.slice(-4) : "0001"}` : ""));
   const [paySuccessMsg, setPaySuccessMsg] = useState("");
 
   useEffect(() => {
-    if (enrollment.academicStatus === "MATRICULADO" || (enrollment.paymentStatus as string) === "Validado" || (enrollment.paymentStatus as string) === "Pagado" || (enrollment.paymentStatus as string) === "PAGADO") {
+    if (enrollment?.academicStatus === "MATRICULADO" || (enrollment?.paymentStatus as string) === "Validado" || (enrollment?.paymentStatus as string) === "Pagado" || (enrollment?.paymentStatus as string) === "PAGADO") {
       setIsPaidInvoice(true);
     }
   }, [enrollment]);
