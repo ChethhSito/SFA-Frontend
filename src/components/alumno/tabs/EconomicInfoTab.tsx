@@ -47,7 +47,13 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
 
   const isCycle2Validated = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_cycle2_validated_${currentDni}`) === "true" ||
-    localStorage.getItem("sfa_cycle2_validated_74859612") === "true"
+    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
+    localStorage.getItem("sfa_cycle2_validated") === "true" ||
+    (enrollment?.paymentStatus === "Validado" && (
+      localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+      localStorage.getItem(`sfa_cycle2_payment_${currentDni}`) === "true" ||
+      localStorage.getItem("sfa_cycle2_payment") === "true"
+    ))
   );
 
   const cycle2Op = typeof window !== "undefined" ? (

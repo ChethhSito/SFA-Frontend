@@ -97,8 +97,23 @@ export default function CourseEnrollmentTab({
 
   const isCycle2Validated = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_cycle2_validated_${currentStudentDni}`) === "true" ||
-    localStorage.getItem("sfa_cycle2_validated_74859612") === "true"
+    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
+    localStorage.getItem("sfa_cycle2_validated") === "true" ||
+    localStorage.getItem("sfa_cycle2_status") === "Validado" ||
+    (enrollment?.paymentStatus === "Validado" && (
+      localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+      localStorage.getItem(`sfa_cycle2_payment_${currentStudentDni}`) === "true" ||
+      localStorage.getItem("sfa_cycle2_payment") === "true"
+    ))
   );
+
+  useEffect(() => {
+    if (isCycle2Validated && typeof window !== "undefined") {
+      localStorage.setItem(`sfa_cycle2_validated_${currentStudentDni}`, "true");
+      localStorage.setItem("sfa_cycle2_validated_74859612", "true");
+      localStorage.setItem("sfa_cycle2_validated", "true");
+    }
+  }, [isCycle2Validated, currentStudentDni]);
 
   const storedOp = typeof window !== "undefined" ? (
     localStorage.getItem(`sfa_cycle2_operation_${currentStudentDni}`) ||

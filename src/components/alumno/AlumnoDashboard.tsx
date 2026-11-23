@@ -609,7 +609,13 @@ export default function AlumnoDashboard({
     localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
     localStorage.getItem("sfa_cycle2_payment") === "true" ||
     localStorage.getItem(`sfa_cycle2_validated_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_cycle2_validated_74859612") === "true"
+    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
+    localStorage.getItem("sfa_cycle2_validated") === "true" ||
+    (enrollment?.paymentStatus === "Validado" && (
+      localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+      localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
+      localStorage.getItem("sfa_cycle2_payment") === "true"
+    ))
   );
 
   const baseStudentCourses = enrollment.registeredCourses ? dynamicMpaCourses : dynamicMpaCourses.length > 0
