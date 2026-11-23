@@ -34,8 +34,40 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
   const [fileObjectUrl, setFileObjectUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [isDocumentRemoved, setIsDocumentRemoved] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(`sfa_efsrt_file_removed_${currentDni}`) === "true";
+  });
+
+  const hasDocument = !isDocumentRemoved || Boolean(fileAttachment);
   const officialPdfUrl = "/documentos/Constancia_EFSRT_Practicas_Preprofesionales.pdf";
   const previewSource = fileObjectUrl || officialPdfUrl;
+
+  const handleDeleteDocument = () => {
+    setFileAttachment(null);
+    setIsDocumentRemoved(true);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`sfa_efsrt_file_removed_${currentDni}`, "true");
+      localStorage.setItem("sfa_efsrt_file_removed_74859612", "true");
+      window.dispatchEvent(new Event("storage"));
+    }
+    setNotice("Constancia eliminada del expediente. Puede adjuntar un nuevo archivo o restaurar la constancia original cuando lo desee.");
+    setTimeout(() => setNotice(""), 6000);
+  };
+
+  const handleRestoreDefaultDocument = () => {
+    setFileAttachment(null);
+    setIsDocumentRemoved(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(`sfa_efsrt_file_removed_${currentDni}`);
+      localStorage.removeItem("sfa_efsrt_file_removed_74859612");
+      window.dispatchEvent(new Event("storage"));
+    }
+    setNotice("Se restauró la constancia oficial predeterminada.");
+    setTimeout(() => setNotice(""), 5000);
+  };
 
   useEffect(() => {
     if (!fileAttachment) {
@@ -76,6 +108,11 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!hasDocument) {
+      setNotice("Atención: Debe adjuntar una constancia de prácticas (PDF o imagen) antes de enviar el expediente a Secretaría.");
+      setTimeout(() => setNotice(""), 6000);
+      return;
+    }
     const payload = {
       studentDni: currentDni,
       studentName: personalData ? `${personalData.name} ${personalData.lastName}` : "Mateo Sebastián Quispe Rojas",
@@ -86,7 +123,7 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
       hours: Number(hours),
       startDate,
       endDate,
-      fileName: fileAttachment ? fileAttachment.name : "Constancia_EFSRT_Firmada.pdf",
+      fileName: fileAttachment ? fileAttachment.name : "Constancia_EFSRT_Practicas_Preprofesionales.pdf",
       submittedAt: new Date().toISOString(),
       status: "En Revisión"
     };
@@ -136,6 +173,9 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
       localStorage.removeItem("sfa_titulacion_enabled_74859612");
       localStorage.removeItem(`sfa_efsrt_pending_review_${currentDni}`);
       localStorage.removeItem("sfa_efsrt_pending_review_74859612");
+      localStorage.removeItem(`sfa_efsrt_file_removed_${currentDni}`);
+      localStorage.removeItem("sfa_efsrt_file_removed_74859612");
+      setIsDocumentRemoved(false);
       window.dispatchEvent(new Event("storage"));
     }
     setNotice("Registro de prácticas restablecido a estado pendiente.");
@@ -435,72 +475,107 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
                 const file = e.target.files?.[0] || null;
                 setFileAttachment(file);
                 if (file) {
+                  setIsDocumentRemoved(false);
+                  if (typeof window !== "undefined") {
+                    localStorage.removeItem(`sfa_efsrt_file_removed_${currentDni}`);
+                    localStorage.removeItem("sfa_efsrt_file_removed_74859612");
+                    window.dispatchEvent(new Event("storage"));
+                  }
                   setNotice(`Archivo "${file.name}" cargado. Haga clic en "Ver Vista Previa" para revisarlo.`);
                   setTimeout(() => setNotice(""), 6000);
                 }
               }}
             />
 
-            {/* Tarjeta del Documento con Acciones Visuales Claras */}
-            <div className="bg-slate-50 border border-slate-250 rounded-2xl p-4 shadow-3xs flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-slate-300 transition-all">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-red-100 text-[#800521] border border-red-200 flex items-center justify-center shrink-0 shadow-2xs">
-                  <FileText className="w-6 h-6 text-[#800521]" />
-                </div>
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-black text-slate-900 break-all font-mono">
-                      {fileAttachment ? fileAttachment.name : (efsrtRecord?.fileName || "Constancia_EFSRT_Practicas_Preprofesionales.pdf")}
-                    </span>
-                    <span className="text-[9.5px] font-bold uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-300 font-mono">
-                      {fileAttachment ? "Archivo Adjuntado" : "Documento Oficial Conciliado"}
-                    </span>
+            {hasDocument ? (
+              /* Tarjeta del Documento con Acciones Visuales: Vista Previa, Cambiar y Eliminar */
+              <div className="bg-slate-50 border border-slate-250 rounded-2xl p-4 shadow-3xs flex flex-col md:flex-row md:items-center justify-between gap-3 hover:border-slate-300 transition-all">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-red-100 text-[#800521] border border-red-200 flex items-center justify-center shrink-0 shadow-2xs">
+                    <FileText className="w-6 h-6 text-[#800521]" />
                   </div>
-                  <p className="text-[11px] text-slate-500 font-medium">
-                    {companyName} • {department} • {hours} hrs efectivas
-                  </p>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-black text-slate-900 break-all font-mono">
+                        {fileAttachment ? fileAttachment.name : (efsrtRecord?.fileName || "Constancia_EFSRT_Practicas_Preprofesionales.pdf")}
+                      </span>
+                      <span className="text-[9.5px] font-bold uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-300 font-mono">
+                        {fileAttachment ? "Archivo Adjuntado" : "Documento Oficial Conciliado"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      {companyName} • {department} • {hours} hrs efectivas
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Botones de Vista Previa y Cambio de Archivo */}
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowPreviewModal(true)}
-                  className="bg-[#800521] hover:bg-[#66041a] text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
-                  title="Abrir vista previa del documento"
-                >
-                  <Eye className="w-4 h-4 text-amber-300" />
-                  <span>Ver Vista Previa</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer shadow-3xs flex items-center gap-1.5"
-                  title="Seleccionar otro archivo PDF o imagen de su computadora"
-                >
-                  <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Cambiar Archivo</span>
-                </button>
-
-                {fileAttachment && (
+                {/* Botones de Acción: Vista Previa, Cambiar y Eliminar */}
+                <div className="flex items-center gap-2 shrink-0 flex-wrap">
                   <button
                     type="button"
-                    onClick={() => {
-                      setFileAttachment(null);
-                      if (fileInputRef.current) fileInputRef.current.value = "";
-                      setNotice("Se restableció la constancia al documento oficial predeterminado.");
-                      setTimeout(() => setNotice(""), 4000);
-                    }}
-                    className="p-2 text-slate-400 hover:text-red-700 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
-                    title="Quitar archivo adjunto personalizado"
+                    onClick={() => setShowPreviewModal(true)}
+                    className="bg-[#800521] hover:bg-[#66041a] text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
+                    title="Abrir vista previa del documento"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Eye className="w-4 h-4 text-amber-300" />
+                    <span>Ver Vista Previa</span>
                   </button>
-                )}
+
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer shadow-3xs flex items-center gap-1.5"
+                    title="Seleccionar otro archivo PDF o imagen de su computadora"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Cambiar Archivo</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDeleteDocument}
+                    className="bg-white hover:bg-red-50 text-red-700 border border-red-300 hover:border-red-400 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer shadow-3xs flex items-center gap-1.5"
+                    title="Eliminar esta constancia del expediente"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                    <span>Eliminar</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              /* Estado Vacío cuando el usuario ha eliminado la constancia */
+              <div className="border-2 border-dashed border-red-300 bg-red-50/40 rounded-2xl p-5 text-center transition-all space-y-3">
+                <div className="w-10 h-10 rounded-full bg-red-100 text-red-800 flex items-center justify-center mx-auto shadow-2xs">
+                  <Trash2 className="w-5 h-5 text-red-700" />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-black text-slate-800">
+                    Constancia Eliminada • Sin Archivo Adjunto
+                  </p>
+                  <p className="text-[11px] text-slate-500 font-medium max-w-md mx-auto">
+                    Ha eliminado la constancia laboral. Puede adjuntar un nuevo archivo PDF o imagen de su computadora, o volver a restaurar la constancia original.
+                  </p>
+                </div>
+                <div className="flex items-center justify-center gap-2.5 pt-1 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-[#800521] hover:bg-[#66041a] text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Adjuntar Nuevo Archivo (PDF / Imagen)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRestoreDefaultDocument}
+                    className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-3xs flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Restaurar Constancia Original</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
