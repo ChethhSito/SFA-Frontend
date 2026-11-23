@@ -53,7 +53,9 @@ export default function CourseEnrollmentTab({
   const isCycle2Paid = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_cycle2_payment_${currentStudentDni}`) === "true" ||
     localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_payment") === "true"
+    localStorage.getItem("sfa_cycle2_payment") === "true" ||
+    localStorage.getItem(`sfa_cycle2_validated_${currentStudentDni}`) === "true" ||
+    localStorage.getItem("sfa_cycle2_validated_74859612") === "true"
   );
   const cycleNum = isPromotedCycle2 ? 2 : (studentGroup?.cycle || 1);
   const period = data.periods.find((item) => item.id === studentGroup?.periodId);

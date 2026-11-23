@@ -196,7 +196,11 @@ export default function MgeNotasTab({
       processedStudents.forEach((st) => {
         // 1. Check if student has simulated cycle 1 completion in localStorage
         try {
-          const rawSim = typeof window !== "undefined" ? localStorage.getItem(`sfa_simulated_cycle1_${st.dni}`) : null;
+          const rawSim = typeof window !== "undefined" ? (
+            localStorage.getItem(`sfa_simulated_cycle1_${st.dni}`) ||
+            localStorage.getItem("sfa_simulated_cycle1_74859612") ||
+            localStorage.getItem("sfa_simulated_cycle1")
+          ) : null;
           if (rawSim) {
             const simData = JSON.parse(rawSim);
             const simCourse = simData.courses?.find((sc: any) =>

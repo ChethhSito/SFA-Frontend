@@ -174,7 +174,11 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
     }
 
     try {
-      const rawSim = typeof window !== "undefined" && student ? localStorage.getItem(`sfa_simulated_cycle1_${student.dni}`) : null;
+      const rawSim = typeof window !== "undefined" && student ? (
+        localStorage.getItem(`sfa_simulated_cycle1_${student.dni}`) ||
+        localStorage.getItem("sfa_simulated_cycle1_74859612") ||
+        localStorage.getItem("sfa_simulated_cycle1")
+      ) : null;
       if (rawSim) {
         const simData = JSON.parse(rawSim);
         if (Array.isArray(simData.courses) && simData.courses.length > 0) {
