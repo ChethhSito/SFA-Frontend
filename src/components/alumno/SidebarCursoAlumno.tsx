@@ -31,6 +31,7 @@ export function SemanaAccordionAlumno({
   onSelectOption,
   isActiveWeek
 }: {
+  key?: React.Key;
   weekNumber: number;
   isExpanded: boolean;
   onToggleExpanded: () => void;

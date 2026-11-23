@@ -34,7 +34,7 @@ export default function TeacherProfileTab({ teacher, teacherDni, onShowNotice }:
       dni: currentDni,
       email: teacher?.email || `${emailPrefix}@iestpsfa.edu.pe`,
       personalEmail: (teacher as any)?.personalEmail || (teacher?.email ? teacher.email.replace('@iestpsfa.edu.pe', '@gmail.com') : ''),
-      phone: teacher?.phone || (teacher as any)?.telefono || '+51 984 512 890',
+      phone: (teacher as any)?.phone || (teacher as any)?.telefono || '+51 984 512 890',
       address: (teacher as any)?.address || 'Av. Universitaria 1420, Lima',
       specialty: teacher?.specialty || 'Control de Motores, PLC, Automatización Industrial',
       degree: (teacher as any)?.degree || 'Ingeniero Electricista — Reg. CIP 184592',

@@ -283,7 +283,7 @@ export function CierreCurso({
       const numPc2 = Number(simPc2) || 0;
       const numExFinal = Number(simExFinal) || 0;
 
-      const simulatedAssignments: CourseAssignment[] = [
+      const simulatedAssignments: CourseAssignment[] = ([
         {
           id: `asg_npa_${courseIdKey}_${Date.now()}`,
           courseId: courseIdKey,
@@ -292,14 +292,15 @@ export function CierreCurso({
           dueDate: "2027-09-05",
           dueTime: "23:59",
           points: 20,
-          kind: "homework",
+          kind: "assignment",
           status: "published",
           submissions: [
             {
               studentDni: targetDni,
+              studentName: "Quispe Rojas, Mateo Sebastián",
+              fileName: "informe_taller_ca.pdf",
+              submitDate: "2027-09-04",
               grade: numNpa,
-              submittedAt: "2027-09-04",
-              fileUrl: "",
               feedback: "Excelente participación en taller y cumplimiento de protocolos de seguridad."
             }
           ]
@@ -318,9 +319,10 @@ export function CierreCurso({
           submissions: [
             {
               studentDni: targetDni,
+              studentName: "Quispe Rojas, Mateo Sebastián",
+              fileName: "practica_calificada_1.pdf",
+              submitDate: "2027-09-26",
               grade: numPc1,
-              submittedAt: "2027-09-26",
-              fileUrl: "",
               feedback: "Dominio de fasores y cálculo de valores eficaces en régimen senoidal."
             }
           ]
@@ -339,9 +341,10 @@ export function CierreCurso({
           submissions: [
             {
               studentDni: targetDni,
+              studentName: "Quispe Rojas, Mateo Sebastián",
+              fileName: "practica_calificada_2.pdf",
+              submitDate: "2027-10-24",
               grade: numPc2,
-              submittedAt: "2027-10-24",
-              fileUrl: "",
               feedback: "Cálculo preciso del factor de potencia y diseño de bancos de condensadores."
             }
           ]
@@ -360,9 +363,10 @@ export function CierreCurso({
           submissions: [
             {
               studentDni: targetDni,
+              studentName: "Quispe Rojas, Mateo Sebastián",
+              fileName: "evaluacion_modular_final.pdf",
+              submitDate: "2027-12-12",
               grade: numExFinal,
-              submittedAt: "2027-12-12",
-              fileUrl: "",
               feedback: "Evaluación modular destacada con excelente sustento técnico."
             }
           ]
@@ -375,7 +379,7 @@ export function CierreCurso({
           points: 20,
           kind: "assessment",
           status: "published",
-          submissions: [{ studentDni: targetDni, grade: numNpa }]
+          submissions: [{ studentDni: targetDni, studentName: "Quispe Rojas, Mateo Sebastián", fileName: "acta_npa.pdf", submitDate: "2027-12-12", grade: numNpa }]
         },
         {
           id: `plan_pc1_${courseIdKey}`,
@@ -385,7 +389,7 @@ export function CierreCurso({
           points: 20,
           kind: "assessment",
           status: "published",
-          submissions: [{ studentDni: targetDni, grade: numPc1 }]
+          submissions: [{ studentDni: targetDni, studentName: "Quispe Rojas, Mateo Sebastián", fileName: "acta_pc1.pdf", submitDate: "2027-12-12", grade: numPc1 }]
         },
         {
           id: `plan_pc2_${courseIdKey}`,
@@ -395,7 +399,7 @@ export function CierreCurso({
           points: 20,
           kind: "assessment",
           status: "published",
-          submissions: [{ studentDni: targetDni, grade: numPc2 }]
+          submissions: [{ studentDni: targetDni, studentName: "Quispe Rojas, Mateo Sebastián", fileName: "acta_pc2.pdf", submitDate: "2027-12-12", grade: numPc2 }]
         },
         {
           id: `plan_exfinal_${courseIdKey}`,
@@ -405,9 +409,9 @@ export function CierreCurso({
           points: 20,
           kind: "assessment",
           status: "published",
-          submissions: [{ studentDni: targetDni, grade: numExFinal }]
+          submissions: [{ studentDni: targetDni, studentName: "Quispe Rojas, Mateo Sebastián", fileName: "acta_exfinal.pdf", submitDate: "2027-12-12", grade: numExFinal }]
         }
-      ];
+      ] as any);
 
       const gradeObj = {
         NPA: numNpa,
@@ -569,7 +573,7 @@ export function CierreCurso({
       doc.text("ACTA OFICIAL DE CONSOLIDACIÓN DE EVALUACIONES SEMESTRALES", 14, 18);
 
       doc.setTextColor(255, 255, 255);
-      doc.text(`PERIODO: ${course.period || "2027-I"}  |  FECHA: ${signedDate}`, 14, 24);
+      doc.text(`PERIODO: ${(course as any).period || "2027-II"}  |  FECHA: ${signedDate}`, 14, 24);
 
       // Course Metadata Card (sin colisiones de texto)
       let y = 35;
@@ -584,7 +588,7 @@ export function CierreCurso({
       doc.text(`Asignatura: ${course.name} [${course.code}]`, 14, y);
       y += 5;
       doc.text(`Programa de Estudios: ${course.career || "Electricidad Industrial"}`, 14, y);
-      doc.text(`Periodo Lectivo: ${course.period || "2027-I Regular"}`, 120, y);
+      doc.text(`Periodo Lectivo: ${(course as any).period || "2027-II Regular"}`, 120, y);
       y += 5;
       doc.text(`Docente(s): ${courseTeachers.map(t => t.name).join(" • ")}`, 14, y);
       doc.text(`Fórmula: ${formula.expression}`, 120, y);
@@ -675,7 +679,7 @@ export function CierreCurso({
       // Metadata rows
       worksheet.addRow([]);
       worksheet.addRow(["Asignatura:", `${course.name} (${course.code})`, "", "Docente:", courseTeachers.map(t => t.name).join(" • ")]);
-      worksheet.addRow(["Programa:", course.career || "Electricidad Industrial", "", "Periodo:", course.period || "2027-I"]);
+      worksheet.addRow(["Programa:", course.career || "Electricidad Industrial", "", "Periodo:", (course as any).period || "2027-II"]);
       worksheet.addRow(["Fórmula:", formula.expression, "", "Estado Acta:", isSigned ? "FIRMADA Y CERRADA" : "PENDIENTE DE FIRMA"]);
       worksheet.addRow([]);
 

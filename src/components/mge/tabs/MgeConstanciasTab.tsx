@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { Graduation, StudentPersonalData } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";

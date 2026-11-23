@@ -482,7 +482,7 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
         ? "[Semana 15] [EX_FINAL] Examen Final Integral"
         : `[Planilla] ${activeVariableId}`
     );
-    const assessment: CourseAssignment = existing ? { ...existing, submissions } : {
+    const assessment: CourseAssignment = existing ? { ...existing, submissions } : ({
       id: `assessment-${Date.now()}`,
       kind: "assessment",
       courseId: courseIdToSave,
@@ -492,7 +492,7 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
       description: `Componente oficial de la planilla de calificaciones: ${activeVariableId}`,
       dueDate: now.toISOString().slice(0, 10),
       submissions,
-    };
+    } as any);
     setSaving(true);
     try {
       const saved = await onUpdateAssignments(existing ? assignments.map((item) => item.id === existing.id ? assessment : item) : [...assignments, assessment]);

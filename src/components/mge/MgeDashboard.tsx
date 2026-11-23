@@ -251,7 +251,7 @@ export default function MgeDashboard({
   const activePeriodName = useMemo(() => {
     if (internalPeriodId === "all") return "Todos los Periodos";
     const found = admissionPeriods.find((p) => p.id === internalPeriodId) ||
-                  admissionPeriods.find((p) => p.status === "ACTIVO" || (p as any).active) ||
+                  admissionPeriods.find((p) => p.status === "APERTURADO" || (p as any).status === "ACTIVO" || (p as any).active) ||
                   admissionPeriods[0];
     return compactPeriodName(found?.name || "2026-I");
   }, [admissionPeriods, internalPeriodId]);

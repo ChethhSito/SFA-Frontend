@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { 
   Clock3, LayoutGrid, ListFilter, MapPin, Printer, 
   UserRound, X, BookOpen, 
@@ -179,6 +179,32 @@ function parseTimeToMinutes(value?: string): number {
   return hour * 60 + Number(match[2]);
 }
 
+const DEFAULT_C1_TASKS: MpaProgramTask[] = [
+  { id: "prog_ei_1_teo", groupId: "EI-I-A", courseId: "cur_ei_101", teacherDni: "99887766", classroomId: "aula_101", dayOfWeek: "Lunes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+  { id: "prog_ei_1_tal", groupId: "EI-I-A", courseId: "cur_ei_101", teacherDni: "99887766", classroomId: "lab_elec_1", dayOfWeek: "Lunes", startTime: "11:00 AM", endTime: "01:00 PM", sessionType: "Laboratorio", pedagogicalHours: 2 },
+  { id: "prog_ei_2_teo", groupId: "EI-I-A", courseId: "cur_ei_102", teacherDni: "44556677", classroomId: "aula_102", dayOfWeek: "Martes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+  { id: "prog_ei_2_tal", groupId: "EI-I-A", courseId: "cur_ei_102", teacherDni: "44556677", classroomId: "lab_elec_3", dayOfWeek: "Martes", startTime: "11:00 AM", endTime: "01:00 PM", sessionType: "Laboratorio", pedagogicalHours: 2 },
+  { id: "prog_ei_3_teo", groupId: "EI-I-A", courseId: "cur_ei_103", teacherDni: "66778899", classroomId: "aula_101", dayOfWeek: "Miércoles", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+  { id: "prog_ei_3_tal", groupId: "EI-I-A", courseId: "cur_ei_103", teacherDni: "66778899", classroomId: "lab_elec_1", dayOfWeek: "Miércoles", startTime: "11:00 AM", endTime: "01:00 PM", sessionType: "Laboratorio", pedagogicalHours: 2 },
+  { id: "prog_ei_5_lab", groupId: "EI-I-A", courseId: "cur_ei_105", teacherDni: "77889900", classroomId: "aula_101", dayOfWeek: "Jueves", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Laboratorio", pedagogicalHours: 2 },
+  { id: "prog_ei_4_pra", groupId: "EI-I-A", courseId: "cur_ei_104", teacherDni: "88990011", classroomId: "aula_101", dayOfWeek: "Jueves", startTime: "11:00 AM", endTime: "01:00 PM", sessionType: "Teoría", pedagogicalHours: 2 },
+  { id: "prog_ei_1_med", groupId: "EI-I-A", courseId: "cur_ei_101", teacherDni: "99887766", classroomId: "lab_elec_1", dayOfWeek: "Viernes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Laboratorio", pedagogicalHours: 2 },
+  { id: "prog_ei_2_mon", groupId: "EI-I-A", courseId: "cur_ei_102", teacherDni: "44556677", classroomId: "lab_elec_3", dayOfWeek: "Viernes", startTime: "11:00 AM", endTime: "01:00 PM", sessionType: "Laboratorio", pedagogicalHours: 2 }
+];
+
+const DEFAULT_C2_TASKS: MpaProgramTask[] = [
+  { id: "prog_ei2_202_teo", groupId: "EI-II-A", courseId: "cur_ei_202", teacherDni: "44556677", classroomId: "aula_102", dayOfWeek: "Lunes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+  { id: "prog_ei2_202_lab", groupId: "EI-II-A", courseId: "cur_ei_202", teacherDni: "44556677", classroomId: "lab_elec_3", dayOfWeek: "Lunes", startTime: "11:00 AM", endTime: "01:00 PM", sessionType: "Laboratorio", pedagogicalHours: 2 },
+  { id: "prog_ei2_201_teo", groupId: "EI-II-A", courseId: "cur_ei_201", teacherDni: "99887766", classroomId: "aula_101", dayOfWeek: "Martes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+  { id: "prog_ei2_201_lab", groupId: "EI-II-A", courseId: "cur_ei_201", teacherDni: "99887766", classroomId: "lab_elec_1", dayOfWeek: "Martes", startTime: "11:00 AM", endTime: "01:00 PM", sessionType: "Laboratorio", pedagogicalHours: 2 },
+  { id: "prog_ei2_202_pra", groupId: "EI-II-A", courseId: "cur_ei_202", teacherDni: "44556677", classroomId: "lab_elec_3", dayOfWeek: "Miércoles", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Laboratorio", pedagogicalHours: 2 },
+  { id: "prog_ei2_204_cad", groupId: "EI-II-A", courseId: "cur_ei_204", teacherDni: "88990011", classroomId: "lab_elec_2", dayOfWeek: "Miércoles", startTime: "11:00 AM", endTime: "01:00 PM", sessionType: "Laboratorio", pedagogicalHours: 2 },
+  { id: "prog_ei2_201_alt", groupId: "EI-II-A", courseId: "cur_ei_201", teacherDni: "99887766", classroomId: "lab_elec_1", dayOfWeek: "Jueves", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Laboratorio", pedagogicalHours: 2 },
+  { id: "prog_ei2_205_ing", groupId: "EI-II-A", courseId: "cur_ei_205", teacherDni: "77889900", classroomId: "aula_101", dayOfWeek: "Jueves", startTime: "11:00 AM", endTime: "01:00 PM", sessionType: "Teoría", pedagogicalHours: 2 },
+  { id: "prog_ei2_203_med", groupId: "EI-II-A", courseId: "cur_ei_203", teacherDni: "66778899", classroomId: "lab_elec_1", dayOfWeek: "Viernes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Laboratorio", pedagogicalHours: 2 },
+  { id: "prog_ei2_203_ins", groupId: "EI-II-A", courseId: "cur_ei_203", teacherDni: "66778899", classroomId: "lab_elec_1", dayOfWeek: "Viernes", startTime: "11:00 AM", endTime: "01:00 PM", sessionType: "Laboratorio", pedagogicalHours: 2 }
+];
+
 export function ScheduleTab({ personalData, currentProgram, studentTasks = [], mpaPlanningData, studentGroup }: ScheduleTabProps) {
   const [viewMode, setViewMode] = useState<"matrix" | "cards">("matrix");
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<MpaProgramTask | null>(null);
@@ -204,11 +230,11 @@ export function ScheduleTab({ personalData, currentProgram, studentTasks = [], m
     if (selectedPeriodTab === "2027-II") {
       const c2Tasks = studentTasks.filter((t) => t.courseId?.includes("-20") || t.courseId?.includes("_20") || t.groupId === "EI-II-A");
       if (c2Tasks.length > 0) return c2Tasks;
-      return DEFAULT_ELECTRICIDAD_CICLO2_TASKS;
+      return DEFAULT_C2_TASKS;
     }
     const c1Tasks = studentTasks.filter((t) => !t.courseId?.includes("-20") && !t.courseId?.includes("_20") && t.groupId !== "EI-II-A");
     if (c1Tasks.length > 0) return c1Tasks;
-    return DEFAULT_ELECTRICIDAD_TASKS;
+    return DEFAULT_C1_TASKS;
   }, [selectedPeriodTab, studentTasks]);
 
   const groupName = selectedPeriodTab === "2027-II" ? "EI-II-A" : "EI-I-A";
