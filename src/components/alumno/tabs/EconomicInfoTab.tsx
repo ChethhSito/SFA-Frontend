@@ -500,89 +500,58 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
 
       {/* Modal Institucional: Visor de Voucher y Comprobante de Pago */}
       {viewingVoucher && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-sans">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-150">
-            <div className="bg-[#800521] p-4 text-white flex items-center justify-between border-b-2 border-amber-500">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs font-sans animate-in fade-in duration-150"
+          onClick={(e) => { if (e.target === e.currentTarget) setViewingVoucher(null); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Header Compacto */}
+            <div className="bg-[#800521] px-4 py-3 text-white flex items-center justify-between border-b-2 border-amber-500 shrink-0">
               <div className="flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-amber-400" />
-                <div>
-                  <h3 className="font-black text-sm uppercase tracking-wide">
-                    Comprobante Oficial de Pago
-                  </h3>
-                  <span className="text-[10px] text-amber-200 block font-mono">
-                    {viewingVoucher.concept} • Periodo {viewingVoucher.period}
-                  </span>
-                </div>
+                <Receipt className="w-4 h-4 text-amber-400" />
+                <span className="font-black text-xs uppercase tracking-wide">
+                  Comprobante: {viewingVoucher.fileName || "Voucher.png"}
+                </span>
               </div>
               <button
                 type="button"
                 onClick={() => setViewingVoucher(null)}
                 className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-5 space-y-4 text-left text-xs">
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
-                <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                  <span className="text-slate-500 font-semibold uppercase text-[10px]">Entidad Bancaria:</span>
-                  <span className="font-bold text-slate-900">{viewingVoucher.bank}</span>
-                </div>
-                <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                  <span className="text-slate-500 font-semibold uppercase text-[10px]">N° de Operación:</span>
-                  <span className="font-mono font-black text-[#800521] text-sm">{viewingVoucher.operation}</span>
-                </div>
-                <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                  <span className="text-slate-500 font-semibold uppercase text-[10px]">Fecha de Pago:</span>
-                  <span className="font-semibold text-slate-800">{viewingVoucher.date}</span>
-                </div>
-                <div className="flex justify-between items-center border-b border-slate-200 pb-2">
-                  <span className="text-slate-500 font-semibold uppercase text-[10px]">Importe Cancelado:</span>
-                  <span className="font-mono font-bold text-emerald-700">{viewingVoucher.amount}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500 font-semibold uppercase text-[10px]">Estado de Auditoría:</span>
-                  <span className={`px-2 py-0.5 rounded font-black text-[10px] uppercase font-mono ${
-                    viewingVoucher.status.includes("Validado")
-                      ? "bg-emerald-100 text-emerald-900 border border-emerald-300"
-                      : "bg-blue-100 text-blue-900 border border-blue-300"
-                  }`}>
-                    {viewingVoucher.status}
-                  </span>
-                </div>
-              </div>
+            {/* Imagen Principal Limpia */}
+            <div className="p-3 bg-slate-100 flex-1 overflow-y-auto flex items-center justify-center min-h-[260px]">
+              <img
+                src={viewingVoucher.dataUrl || (viewingVoucher.period === "2027-I" ? "/voucher_ciclo1.png" : "/voucher_ciclo2.png")}
+                alt="Comprobante digital del estudiante"
+                className="max-h-[62vh] w-auto max-w-full object-contain rounded-xl border border-slate-200 shadow-md bg-white"
+              />
+            </div>
 
-              {/* Vista Previa del Archivo de Comprobante Oficial */}
-              <div className="border border-slate-300 rounded-xl p-3 bg-slate-100/70 space-y-2">
-                <div className="flex items-center justify-between border-b border-slate-300 pb-1.5">
-                  <span className="font-black text-[10.5px] uppercase text-slate-700">Comprobante Foliado Digital</span>
-                  <span className="font-mono text-[10px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-300">
-                    {viewingVoucher.fileName || "Voucher_Matricula.png"}
-                  </span>
-                </div>
-
-                <div className="bg-white rounded-lg p-3 border border-slate-200 flex flex-col items-center justify-center">
-                  <img
-                    src={viewingVoucher.dataUrl || (viewingVoucher.period === "2027-I" ? "/voucher_ciclo1.png" : "/voucher_ciclo2.png")}
-                    alt="Comprobante digital del estudiante"
-                    className="max-h-72 w-auto object-contain rounded-lg border border-slate-200 shadow-md"
-                  />
-                  <span className="text-[10px] font-mono font-bold text-slate-500 mt-2 block">
-                    Banco de la Nación • N° Op: {viewingVoucher.operation}
-                  </span>
-                </div>
+            {/* Footer Compacto con Datos Clave */}
+            <div className="px-4 py-2.5 bg-white border-t border-slate-200 flex items-center justify-between text-xs shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[11px] font-bold text-slate-600">
+                  {viewingVoucher.operation}
+                </span>
+                <span className={`px-2 py-0.5 rounded text-[9.5px] font-black uppercase font-mono ${
+                  viewingVoucher.status.includes("Validado")
+                    ? "bg-emerald-100 text-emerald-900 border border-emerald-300"
+                    : "bg-blue-100 text-blue-900 border border-blue-300"
+                }`}>
+                  {viewingVoucher.status}
+                </span>
               </div>
-
-              <div className="pt-2 border-t border-slate-200 flex items-center justify-end">
-                <button
-                  type="button"
-                  onClick={() => setViewingVoucher(null)}
-                  className="px-5 py-2 text-xs font-black uppercase tracking-wider bg-[#800521] hover:bg-[#66041a] text-white rounded-xl shadow-xs transition-all cursor-pointer"
-                >
-                  Cerrar Visor
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setViewingVoucher(null)}
+                className="px-4 py-1.5 text-xs font-black uppercase tracking-wider bg-[#800521] hover:bg-[#66041a] text-white rounded-lg shadow-xs transition-all cursor-pointer"
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         </div>
