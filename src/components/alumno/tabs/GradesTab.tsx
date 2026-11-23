@@ -14,6 +14,53 @@ interface GradesTabProps {
   };
 }
 
+// Helper to compute course progressive stats from formula variables
+export const computeCourseStats = (course: any) => {
+  const evals = course?.evaluations || [];
+  const weightedEvals = evals.filter((e: any) => typeof e.weightDecimal === "number" && e.weightDecimal > 0);
+  
+  let accumulatedPoints = 0;
+  let evaluatedWeight = 0;
+
+  weightedEvals.forEach((e: any) => {
+    if (typeof e.grade === "number") {
+      accumulatedPoints += e.grade * e.weightDecimal;
+      evaluatedWeight += e.weightDecimal;
+    }
+  });
+
+  const isFullyEvaluated = evaluatedWeight >= 0.99;
+  const progressiveAverage = evaluatedWeight > 0 
+    ? (accumulatedPoints / evaluatedWeight) 
+    : 0;
+
+  const isMultiComp = (course?.code || "").startsWith("EIND-101") || (course?.name || "").toLowerCase().includes("fundamentos de electricidad");
+  let breakdownText = "";
+  if (isMultiComp) {
+    const gTeo = weightedEvals.find((e: any) => e.prefix === "TEO")?.grade ?? "NR";
+    const gTal = weightedEvals.find((e: any) => e.prefix === "TAL")?.grade ?? "NR";
+    const gLab = weightedEvals.find((e: any) => e.prefix === "LAB")?.grade ?? "NR";
+    const gExFinal = weightedEvals.find((e: any) => e.prefix === "EX_FINAL")?.grade ?? "NR";
+    breakdownText = `0.60×[0.40×(${gTeo}) + 0.40×(${gTal}) + 0.20×(${gLab})] + 0.40×(${gExFinal})`;
+  } else {
+    breakdownText = weightedEvals.length > 0
+      ? weightedEvals.map((e: any) => {
+          const g = typeof e.grade === "number" ? e.grade : "NR";
+          return `${e.weightDecimal.toFixed(2)}×(${g})`;
+        }).join(" + ")
+      : "Sin componentes ponderados";
+  }
+
+  return {
+    accumulatedPoints: Math.round(accumulatedPoints * 10) / 10,
+    evaluatedWeight: Math.round(evaluatedWeight * 100) / 100,
+    progressiveAverage: Math.round(progressiveAverage * 10) / 10,
+    isFullyEvaluated,
+    hasAnyGrade: evaluatedWeight > 0,
+    breakdownText
+  };
+};
+
 export const GradesTab: React.FC<GradesTabProps> = ({
   enrichedCourses,
   selectedCourseDetail,
@@ -38,53 +85,6 @@ export const GradesTab: React.FC<GradesTabProps> = ({
   };
 
   const totalCredits = enrichedCourses.reduce((acc, c) => acc + (Number(c.credits) || 0), 0) || 24;
-
-  // Helper to compute course progressive stats from formula variables
-  const computeCourseStats = (course: any) => {
-    const evals = course?.evaluations || [];
-    const weightedEvals = evals.filter((e: any) => typeof e.weightDecimal === "number" && e.weightDecimal > 0);
-    
-    let accumulatedPoints = 0;
-    let evaluatedWeight = 0;
-
-    weightedEvals.forEach((e: any) => {
-      if (typeof e.grade === "number") {
-        accumulatedPoints += e.grade * e.weightDecimal;
-        evaluatedWeight += e.weightDecimal;
-      }
-    });
-
-    const isFullyEvaluated = evaluatedWeight >= 0.99;
-    const progressiveAverage = evaluatedWeight > 0 
-      ? (accumulatedPoints / evaluatedWeight) 
-      : 0;
-
-    const isMultiComp = (course?.code || "").startsWith("EIND-101") || (course?.name || "").toLowerCase().includes("fundamentos de electricidad");
-    let breakdownText = "";
-    if (isMultiComp) {
-      const gTeo = weightedEvals.find((e: any) => e.prefix === "TEO")?.grade ?? "NR";
-      const gTal = weightedEvals.find((e: any) => e.prefix === "TAL")?.grade ?? "NR";
-      const gLab = weightedEvals.find((e: any) => e.prefix === "LAB")?.grade ?? "NR";
-      const gExFinal = weightedEvals.find((e: any) => e.prefix === "EX_FINAL")?.grade ?? "NR";
-      breakdownText = `0.60×[0.40×(${gTeo}) + 0.40×(${gTal}) + 0.20×(${gLab})] + 0.40×(${gExFinal})`;
-    } else {
-      breakdownText = weightedEvals.length > 0
-        ? weightedEvals.map((e: any) => {
-            const g = typeof e.grade === "number" ? e.grade : "NR";
-            return `${e.weightDecimal.toFixed(2)}×(${g})`;
-          }).join(" + ")
-        : "Sin componentes ponderados";
-    }
-
-    return {
-      accumulatedPoints: Math.round(accumulatedPoints * 10) / 10,
-      evaluatedWeight: Math.round(evaluatedWeight * 100) / 100,
-      progressiveAverage: Math.round(progressiveAverage * 10) / 10,
-      isFullyEvaluated,
-      hasAnyGrade: evaluatedWeight > 0,
-      breakdownText
-    };
-  };
 
   const activeStats = computeCourseStats(activeCourse);
 

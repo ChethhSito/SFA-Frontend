@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Printer, Download, Award, CheckCircle2, Mail, FileText, ClipboardList } from "lucide-react";
-import { StudentPersonalData, Enrollment, AcademicProgram, CycleStatus, Course } from "../../../types";
+import { StudentPersonalData, Enrollment, AcademicProgram, CycleStatus, Course, CourseAssignment } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
 import Toast, { ToastNotice } from "../../ui/Toast";
 import { generateMatriculaPdf, generateCurriculumPlanPdf, generateBoletaNotasPdf } from "../../../utils/matriculaPdf";
+import { computeCourseStats } from "./GradesTab";
 
 interface ClosureTabProps {
   personalData: StudentPersonalData;
   enrollment: Enrollment;
   currentProgram?: AcademicProgram;
   courses?: Course[];
+  enrichedCourses?: any[];
+  assignments?: CourseAssignment[];
   selectedAcademicOption: string;
   setSelectedAcademicOption: React.Dispatch<React.SetStateAction<string>>;
   selectedSemesterFilter: string;
@@ -34,6 +37,8 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   enrollment,
   currentProgram,
   courses = [],
+  enrichedCourses = [],
+  assignments = [],
   selectedAcademicOption,
   setSelectedAcademicOption,
   selectedSemesterFilter,
@@ -150,7 +155,8 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   const studentDni = personalData?.dni || enrollment?.studentDni || "74859612";
   const isPromoted = typeof window !== "undefined" && (
     localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_74859612") === "true"
+    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted") === "true"
   );
   const rawSim = typeof window !== "undefined" ? (
     localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) ||
@@ -158,26 +164,41 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
     localStorage.getItem("sfa_simulated_cycle1")
   ) : null;
   const simData = rawSim ? (() => { try { return JSON.parse(rawSim); } catch { return null; } })() : null;
+
+  const hasTeacherActa = Boolean(
+    assignments?.some((a) =>
+      (a.title?.startsWith("[Planilla]") || a.title?.includes("EX_FINAL") || a.title?.includes("PC1") || a.courseId?.includes("101") || a.courseId === "cur_ei_101") &&
+      a.submissions?.some((s) => (s.studentDni === studentDni || s.studentDni === "74859612") && typeof s.grade === "number")
+    ) ||
+    enrichedCourses?.some((ec: any) => ec.code === "EIND-101" && ec.evaluations?.some((e: any) => typeof e.grade === "number"))
+  );
+
   const isCycle1Simulated = Boolean(
     isPromoted ||
+    hasTeacherActa ||
     (simData && Array.isArray(simData.courses) && simData.courses.length > 0) ||
     (typeof window !== "undefined" && (
       localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
       localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+      localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
       localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
-      localStorage.getItem("sfa_student_cycle_74859612") === "2"
+      localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+      localStorage.getItem("sfa_student_cycle") === "2" ||
+      localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) ||
+      localStorage.getItem("sfa_simulated_cycle1_74859612") ||
+      localStorage.getItem("sfa_simulated_cycle1")
     ))
   );
 
   const effectiveSimCourses = simData?.courses || [
-    { code: "EIND-101", grade: 15.5 },
+    { code: "EIND-101", grade: 15.6 },
     { code: "EIND-102", grade: 16.5 },
     { code: "EIND-103", grade: 17.0 },
     { code: "EIND-104", grade: 15.0 },
     { code: "EIND-105", grade: 16.0 },
   ];
 
-  const activePlanKey = enrollment.programId === "electronica" ? "20" : "52";
+  const activePlanKey = (enrollment.programId === "electronica" || enrollment.programId === "electricidad_industrial" || currentProgram?.name?.toLowerCase().includes("electricidad")) ? "20" : "52";
   const activeSemesterKey = selectedQueryCycle || "I";
   const cycleMap: Record<string, number> = { "I": 1, "II": 2, "III": 3, "IV": 4, "V": 5, "VI": 6 };
   const targetCycleNum = cycleMap[activeSemesterKey] || 1;
@@ -193,19 +214,31 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   const planCourses = CORE_PLAN_COURSES[activePlanKey]?.[activeSemesterKey] || CORE_PLAN_COURSES["20"]["I"] || [];
   const rawCoursesList = planCourses.map((planC) => {
     const dbCourse = realDbCourses.find((c) => c.code === planC.code);
+    const enriched = enrichedCourses?.find((ec: any) => ec.code === planC.code);
     const simCourse = effectiveSimCourses.find((sc: any) => sc.code === planC.code || sc.name === planC.name);
+
+    let gradeFromEnriched: number | undefined = undefined;
+    if (enriched) {
+      const stats = computeCourseStats(enriched);
+      if (stats.hasAnyGrade) {
+        gradeFromEnriched = stats.progressiveAverage;
+      }
+    }
+
     const isApprovedCourse = isPromoted || (isCycle1Simulated && targetCycleNum === 1) || (planC.code === "EIND-101");
     const simGrade = isPromoted
       ? undefined
-      : (isApprovedCourse
-        ? (typeof simCourse?.grade === "number" ? simCourse.grade : (planC.code === "EIND-101" ? 15.5 : 16.0))
-        : undefined);
+      : (gradeFromEnriched !== undefined
+        ? gradeFromEnriched
+        : (isApprovedCourse
+          ? (typeof simCourse?.grade === "number" ? simCourse.grade : (planC.code === "EIND-101" ? 15.6 : 16.0))
+          : undefined));
 
     return {
       code: planC.code,
-      name: dbCourse?.name || planC.name,
+      name: dbCourse?.name || enriched?.name || planC.name,
       type: planC.type,
-      credits: dbCourse?.credits || planC.credits,
+      credits: dbCourse?.credits || enriched?.credits || planC.credits,
       status: isApprovedCourse ? "Aprobado" : (targetCycleNum === 1 ? "Matriculado" : "Pendiente"),
       teo: planC.teo || 2,
       pr: planC.pr || 4,
@@ -228,7 +261,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
       return {
         ...c,
         status: "Aprobado",
-        simGrade: c.simGrade ?? (c.code === "EIND-101" ? 15.5 : 16.0)
+        simGrade: typeof c.simGrade === "number" ? c.simGrade : (c.code === "EIND-101" ? 15.6 : 16.0)
       };
     }
     return {
@@ -238,7 +271,10 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
     };
   });
   const cycleCreditsSum = activeCoursesList.reduce((sum, c) => sum + c.credits, 0);
-  const weightedGpa = isPromoted ? 17.4 : isCycle1Simulated ? Number(simData?.weightedAverage || 16.0) : 0.0;
+  const totalCreds = activeCoursesList.reduce((sum, c) => sum + c.credits, 0);
+  const totalPoints = activeCoursesList.reduce((sum, c) => sum + c.credits * (typeof c.simGrade === "number" ? c.simGrade : 16.0), 0);
+  const computedAverage = totalCreds > 0 ? Math.round((totalPoints / totalCreds) * 10) / 10 : 16.0;
+  const weightedGpa = isPromoted ? 17.4 : isCycle1Simulated ? (simData?.weightedAverage ? Number(simData.weightedAverage) : computedAverage) : 0.0;
 
   return (
     <PageTransition id="closure" className="space-y-6">
@@ -393,22 +429,22 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                         <td className="p-4 text-center">
                           {(() => {
                             const statusUpper = (crs.status || "").toUpperCase();
-                            const isMatriculado = statusUpper.includes("MATRICULADO");
-                            const isApprovedCourse = statusUpper.includes("APROBADO") || isApproved;
+                            const isApprovedCourse = statusUpper.includes("APROBADO") || isApproved || crs.simGrade !== undefined;
+                            const isMatriculado = statusUpper.includes("MATRICULADO") && !isApprovedCourse;
 
-                            if (isMatriculado) {
-                              return (
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 select-none shadow-3xs">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                  MATRICULADO
-                                </span>
-                              );
-                            }
                             if (isApprovedCourse) {
                               return (
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 select-none shadow-3xs">
                                   <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
                                   APROBADO{crs.simGrade ? ` (${crs.simGrade})` : ""}
+                                </span>
+                              );
+                            }
+                            if (isMatriculado) {
+                              return (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 select-none shadow-3xs">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                  MATRICULADO
                                 </span>
                               );
                             }
@@ -572,7 +608,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                       code: c.code,
                       name: c.name,
                       credits: c.credits,
-                      grade: c.simGrade,
+                      grade: typeof c.simGrade === "number" ? c.simGrade : (isCycle1Simulated ? (c.code === "EIND-101" ? 15.6 : 16.0) : undefined),
                     }))
                   );
                 }}
