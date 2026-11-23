@@ -288,7 +288,8 @@ export async function generateMatriculaPdf(data: MatriculaPdfData) {
   pdf.text("CICLO Y CONDICIÓN:", leftX, y + 25.5);
   pdf.setTextColor(15, 23, 42);
   pdf.setFontSize(8);
-  pdf.text(`CICLO ${data.cycle}  •  ALUMNO REGULAR`, leftX, y + 29.8);
+  const cleanCycle = String(data.cycle || "I").replace(/^ciclo\s*/i, "").trim().toUpperCase();
+  pdf.text(`CICLO ${cleanCycle}  •  ALUMNO REGULAR`, leftX, y + 29.8);
 
   pdf.setTextColor(100, 116, 139);
   pdf.setFontSize(7);

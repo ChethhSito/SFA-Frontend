@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { BookOpen, CheckCircle2, Download, FileText, Printer, ShieldCheck } from 'lucide-react';
+import { BookOpen, CheckCircle2, Download, FileText, Printer, ShieldCheck, CreditCard, Building, X, Upload, Clock, AlertCircle } from 'lucide-react';
 import { Enrollment, MpaAcademicGroup, MpaClassroom, MpaCourse, MpaCurriculumItem, MpaPeriod, MpaProgramTask, MpaShift, Program, StudentPersonalData } from '../../../types';
 import { generateMatriculaPdf, generateManualMatriculaPdf } from '../../../utils/matriculaPdf';
 
@@ -32,6 +32,20 @@ export default function CourseEnrollmentTab({
 }: CourseEnrollmentTabProps) {
   const currentStudentDni = enrollment.studentDni || personalData?.dni || "74859612";
   const [, setStorageSync] = useState(0);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedBank, setSelectedBank] = useState("Banco de la Nación — Cta. Cte. 00-000-123456");
+  const [operationNumber, setOperationNumber] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(`sfa_cycle2_operation_${currentStudentDni}`) ||
+             localStorage.getItem("sfa_cycle2_operation_74859612") ||
+             "OP-2027-02-BCO-94812";
+    }
+    return "OP-2027-02-BCO-94812";
+  });
+  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [voucherFile, setVoucherFile] = useState<File | null>(null);
+  const [paymentNotice, setPaymentNotice] = useState("");
+
   useEffect(() => {
     const handleSync = () => setStorageSync((v) => v + 1);
     window.addEventListener("storage", handleSync);
@@ -50,13 +64,24 @@ export default function CourseEnrollmentTab({
     localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
     localStorage.getItem("sfa_student_cycle") === "2"
   );
+
   const isCycle2Paid = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_cycle2_payment_${currentStudentDni}`) === "true" ||
     localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_payment") === "true" ||
+    localStorage.getItem("sfa_cycle2_payment") === "true"
+  );
+
+  const isCycle2Validated = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_cycle2_validated_${currentStudentDni}`) === "true" ||
     localStorage.getItem("sfa_cycle2_validated_74859612") === "true"
   );
+
+  const storedOp = typeof window !== "undefined" ? (
+    localStorage.getItem(`sfa_cycle2_operation_${currentStudentDni}`) ||
+    localStorage.getItem("sfa_cycle2_operation_74859612") ||
+    localStorage.getItem("sfa_cycle2_operation")
+  ) : null;
+
   const cycleNum = isPromotedCycle2 ? 2 : (studentGroup?.cycle || 1);
   const period = data.periods.find((item) => item.id === studentGroup?.periodId);
   const periodLabel = isPromotedCycle2 ? "2027-II" : (period?.name || "2027-I");
@@ -65,6 +90,45 @@ export default function CourseEnrollmentTab({
     ? `${personalData.lastName || ''}, ${personalData.name || ''}`.trim() || "Quispe Rojas, Mateo Sebastián"
     : "Quispe Rojas, Mateo Sebastián";
   const programName = currentProgram?.name || (enrollment.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad");
+
+  const handleSubmitPayment = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanOp = operationNumber.trim() || "OP-2027-02-BCO-94812";
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`sfa_cycle2_payment_${currentStudentDni}`, "true");
+      localStorage.setItem("sfa_cycle2_payment_74859612", "true");
+      localStorage.setItem("sfa_cycle2_payment", "true");
+      localStorage.setItem(`sfa_cycle2_operation_${currentStudentDni}`, cleanOp);
+      localStorage.setItem("sfa_cycle2_operation_74859612", cleanOp);
+      localStorage.setItem("sfa_cycle2_operation", cleanOp);
+      localStorage.setItem(`sfa_cycle2_bank_${currentStudentDni}`, selectedBank);
+      localStorage.setItem("sfa_cycle2_bank_74859612", selectedBank);
+      localStorage.setItem(`sfa_cycle2_date_${currentStudentDni}`, paymentDate);
+      localStorage.setItem("sfa_cycle2_date_74859612", paymentDate);
+      window.dispatchEvent(new Event("storage"));
+    }
+    setShowPaymentModal(false);
+    setPaymentNotice(`Voucher ${cleanOp} registrado exitosamente. Ha sido enviado a Caja (Pestaña 3 en Secretaría) para su validación oficial.`);
+    setTimeout(() => setPaymentNotice(""), 8000);
+    setStorageSync((v) => v + 1);
+  };
+
+  const handleResetPayment = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(`sfa_cycle2_payment_${currentStudentDni}`);
+      localStorage.removeItem("sfa_cycle2_payment_74859612");
+      localStorage.removeItem("sfa_cycle2_payment");
+      localStorage.removeItem(`sfa_cycle2_operation_${currentStudentDni}`);
+      localStorage.removeItem("sfa_cycle2_operation_74859612");
+      localStorage.removeItem("sfa_cycle2_operation");
+      localStorage.removeItem(`sfa_cycle2_validated_${currentStudentDni}`);
+      localStorage.removeItem("sfa_cycle2_validated_74859612");
+      window.dispatchEvent(new Event("storage"));
+    }
+    setPaymentNotice("Pago restablecido a estado pendiente. Puede ingresar un nuevo voucher manualmente.");
+    setTimeout(() => setPaymentNotice(""), 5000);
+    setStorageSync((v) => v + 1);
+  };
 
   // Derive official registered courses for the student's active cycle
   const registeredCoursesList = useMemo(() => {
@@ -85,6 +149,15 @@ export default function CourseEnrollmentTab({
       (c) => c.careerId === enrollment.programId && (Number(c.cycle ?? c.referenceCycle) === cycleNum || Number(c.referenceCycle ?? c.cycle) === cycleNum)
     );
 
+    const computeStatus = () => {
+      if (!isPromotedCycle2) return "Matriculado";
+      if (isCycle2Validated) return "Matriculado";
+      if (isCycle2Paid) return "En Trámite";
+      return "Pendiente de Pago";
+    };
+
+    const statusVal = computeStatus();
+
     if (careerCourses.length > 0) {
       list = careerCourses.map((c, idx) => ({
         id: c.id,
@@ -96,16 +169,16 @@ export default function CourseEnrollmentTab({
         group: cycleNum === 2 ? "EI-II-A" : (studentGroup?.name || "EI-I-A"),
         sg: 0,
         tsg: idx % 2 === 0 ? "Teoría / Taller" : idx % 3 === 0 ? "Práctica" : "Taller",
-        status: isPromotedCycle2 && !isCycle2Paid ? "Pendiente de Pago" : "Matriculado"
+        status: statusVal
       }));
     } else {
       if (cycleNum === 2) {
         list = [
-          { id: "eind-201", code: "EIND-201", name: "Circuitos Eléctricos en Corriente Alterna", credits: 4, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Teoría / Taller", status: isCycle2Paid ? "Matriculado" : "Pendiente de Pago" },
-          { id: "eind-202", code: "EIND-202", name: "Máquinas Eléctricas Estáticas y Transformadores", credits: 4, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Taller", status: isCycle2Paid ? "Matriculado" : "Pendiente de Pago" },
-          { id: "eind-203", code: "EIND-203", name: "Mediciones e Instrumentación Eléctrica", credits: 3, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Laboratorio", status: isCycle2Paid ? "Matriculado" : "Pendiente de Pago" },
-          { id: "eind-204", code: "EIND-204", name: "Electrónica Básica Aplicada", credits: 3, cycle: 2, type: "General", group: "EI-II-A", sg: 0, tsg: "Práctica", status: isCycle2Paid ? "Matriculado" : "Pendiente de Pago" },
-          { id: "eind-205", code: "EIND-205", name: "Inglés Técnico para Electricidad", credits: 2, cycle: 2, type: "General", group: "EI-II-A", sg: 0, tsg: "Teoría", status: isCycle2Paid ? "Matriculado" : "Pendiente de Pago" },
+          { id: "eind-201", code: "EIND-201", name: "Circuitos Eléctricos en Corriente Alterna", credits: 4, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Teoría / Taller", status: statusVal },
+          { id: "eind-202", code: "EIND-202", name: "Máquinas Eléctricas Estáticas y Transformadores", credits: 4, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Taller", status: statusVal },
+          { id: "eind-203", code: "EIND-203", name: "Mediciones e Instrumentación Eléctrica", credits: 3, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Laboratorio", status: statusVal },
+          { id: "eind-204", code: "EIND-204", name: "Electrónica Básica Aplicada", credits: 3, cycle: 2, type: "General", group: "EI-II-A", sg: 0, tsg: "Práctica", status: statusVal },
+          { id: "eind-205", code: "EIND-205", name: "Inglés Técnico para Electricidad", credits: 2, cycle: 2, type: "General", group: "EI-II-A", sg: 0, tsg: "Teoría", status: statusVal },
         ];
       } else {
         list = [
@@ -118,7 +191,7 @@ export default function CourseEnrollmentTab({
       }
     }
     return list;
-  }, [data.courses, enrollment.programId, studentGroup, cycleNum, isPromotedCycle2, isCycle2Paid]);
+  }, [data.courses, enrollment.programId, studentGroup, cycleNum, isPromotedCycle2, isCycle2Paid, isCycle2Validated]);
 
   const totalCredits = registeredCoursesList.reduce((acc, c) => acc + c.credits, 0);
 
@@ -134,7 +207,7 @@ export default function CourseEnrollmentTab({
       studentCode,
       programName,
       period: periodLabel,
-      cycle: "Ciclo I",
+      cycle: isPromotedCycle2 ? "II" : "I",
       shift: enrollment.shift || "Mañana",
       courses: registeredCoursesList.map((c) => ({
         code: c.code,
@@ -149,7 +222,11 @@ export default function CourseEnrollmentTab({
       totalCredits,
       totalCourses: registeredCoursesList.length,
       maxCredits: 22,
-      paymentStatus: "PAGADO (S/. 250.00)",
+      paymentStatus: isCycle2Validated
+        ? "PAGADO (S/. 250.00)"
+        : isCycle2Paid
+        ? `EN TRÁMITE / VOUCHER: ${storedOp || "OP-2027-02-BCO-94812"}`
+        : "PENDIENTE DE PAGO",
     });
   };
 
@@ -159,6 +236,18 @@ export default function CourseEnrollmentTab({
 
   return (
     <div className="space-y-4 text-left">
+      {paymentNotice && (
+        <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs font-bold text-blue-900 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>{paymentNotice}</span>
+          </div>
+          <button onClick={() => setPaymentNotice("")} className="text-blue-500 hover:text-blue-800 cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* 1. Hero Banner Borgoña Institucional Oficial */}
       <div className="relative bg-[#800521] text-white rounded-2xl shadow-lg p-6 md:p-7 overflow-hidden text-left border-b-4 border-amber-500 mb-5">
         <div className="absolute inset-0 bg-gradient-to-r from-[#800521] to-slate-900/70 opacity-95" />
@@ -196,7 +285,7 @@ export default function CourseEnrollmentTab({
         </div>
       </div>
 
-      {/* Banner de Pago Requerido para Ciclo II si aún no canceló */}
+      {/* Banner 1: Pago Requerido para Ciclo II (Sin Voucher Registrado) */}
       {isPromotedCycle2 && !isCycle2Paid && (
         <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
           <div className="space-y-0.5 text-left">
@@ -207,27 +296,88 @@ export default function CourseEnrollmentTab({
               Ciclo II Habilitado: Pago de Matrícula Pendiente (S/ 250.00)
             </h4>
             <p className="text-xs text-slate-600">
-              El estudiante ha concluido y aprobado el Ciclo I. Registre o abone la tasa de matrícula del Ciclo II para su validación oficial en Caja (MAF) y Secretaría (MGE).
+              El estudiante ha concluido el Ciclo I. Registre manualmente los datos de su comprobante de pago o transferencia bancaria para que Caja y Secretaría validen su matrícula.
             </p>
           </div>
           <button
             type="button"
-            onClick={() => {
-              localStorage.setItem(`sfa_cycle2_payment_${currentStudentDni}`, "true");
-              localStorage.setItem("sfa_cycle2_payment_74859612", "true");
-              localStorage.setItem("sfa_cycle2_payment", "true");
-              localStorage.setItem(`sfa_cycle2_operation_${currentStudentDni}`, "OP-2027-02-BCO-94812");
-              localStorage.setItem("sfa_cycle2_operation_74859612", "OP-2027-02-BCO-94812");
-              localStorage.setItem("sfa_cycle2_operation", "OP-2027-02-BCO-94812");
-              if (typeof window !== "undefined") {
-                window.dispatchEvent(new Event("storage"));
-              }
-              setStorageSync((v) => v + 1);
-            }}
-            className="bg-[#800521] hover:bg-[#9F062A] text-white font-black text-xs uppercase px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 cursor-pointer"
+            onClick={() => setShowPaymentModal(true)}
+            className="bg-[#800521] hover:bg-[#9F062A] text-white font-black text-xs uppercase px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 cursor-pointer flex items-center gap-2"
           >
-            Pagar Matrícula (S/ 250.00)
+            <CreditCard className="w-4 h-4 text-amber-300" />
+            <span>Registrar Pago (S/ 250.00)</span>
           </button>
+        </div>
+      )}
+
+      {/* Banner 2: Voucher Registrado en Espera de Validación de Caja */}
+      {isPromotedCycle2 && isCycle2Paid && !isCycle2Validated && (
+        <div className="bg-blue-50 border-2 border-blue-300 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+          <div className="space-y-0.5 text-left">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-blue-900 bg-blue-200/60 px-2 py-0.5 rounded font-mono">
+                Voucher Enviado • En Espera de Validación en Caja
+              </span>
+              <span className="text-xs font-mono font-black text-blue-800">
+                {storedOp || "OP-2027-02-BCO-94812"}
+              </span>
+            </div>
+            <h4 className="text-sm font-black text-slate-900">
+              Comprobante de S/ 250.00 remitido a Secretaría Académica y Caja
+            </h4>
+            <p className="text-xs text-slate-600">
+              Su matrícula se encuentra en trámite. Para formalizar su condición de <strong>Matriculado Activo</strong>, el personal de Secretaría/Caja debe ingresar a <strong>Pestaña 3 (Caja)</strong> y validar este voucher.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowPaymentModal(true)}
+              className="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-2xs cursor-pointer"
+            >
+              Modificar Voucher
+            </button>
+            <button
+              type="button"
+              onClick={handleResetPayment}
+              className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer"
+              title="Restablecer para probar de nuevo el flujo de registro"
+            >
+              Reiniciar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Banner 3: Matrícula Oficialmente Validada por Caja */}
+      {isPromotedCycle2 && isCycle2Validated && (
+        <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+          <div className="space-y-0.5 text-left">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-900 bg-emerald-200/60 px-2 py-0.5 rounded font-mono">
+                Matrícula Oficializada • Periodo 2027-II
+              </span>
+              <span className="text-xs font-mono font-black text-emerald-800">
+                {storedOp || "OP-2027-02-BCO-94812"} (Validado)
+              </span>
+            </div>
+            <h4 className="text-sm font-black text-slate-900">
+              Pago de Matrícula Auditado y Validado por Caja (S/ 250.00)
+            </h4>
+            <p className="text-xs text-slate-600">
+              Secretaría Académica y Caja han verificado la conformidad bancaria. El estudiante se encuentra formalmente como <strong>Matriculado Activo en el Ciclo II</strong>.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleResetPayment}
+              className="bg-white hover:bg-slate-100 text-slate-600 border border-slate-300 font-bold text-[11px] px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+              title="Restablecer para probar nuevamente el pago"
+            >
+              Reiniciar Estado
+            </button>
+          </div>
         </div>
       )}
 
@@ -258,40 +408,56 @@ export default function CourseEnrollmentTab({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {registeredCoursesList.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-2.5 px-3 font-mono font-black text-[#800521]">
-                      {c.code}
-                    </td>
-                    <td className="py-2.5 px-3 font-bold text-slate-900">
-                      {c.name}
-                    </td>
-                    <td className="py-2.5 px-2 text-center font-mono font-bold text-slate-800">
-                      {c.credits}
-                    </td>
-                    <td className="py-2.5 px-2 text-center font-mono text-slate-600">
-                      {c.cycle}
-                    </td>
-                    <td className="py-2.5 px-2 text-center text-slate-600">
-                      {c.type}
-                    </td>
-                    <td className="py-2.5 px-2 text-center font-mono font-bold text-indigo-700">
-                      {c.group}
-                    </td>
-                    <td className="py-2.5 px-2 text-center font-mono text-slate-400">
-                      {c.sg}
-                    </td>
-                    <td className="py-2.5 px-2 text-center text-slate-600">
-                      {c.tsg}
-                    </td>
-                    <td className="py-2.5 px-3 text-center">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase bg-emerald-50 text-emerald-800 border border-emerald-200">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        {c.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {registeredCoursesList.map((c) => {
+                  const isPending = c.status === "Pendiente de Pago";
+                  const isProcessing = c.status === "En Trámite";
+                  return (
+                    <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-2.5 px-3 font-mono font-black text-[#800521]">
+                        {c.code}
+                      </td>
+                      <td className="py-2.5 px-3 font-bold text-slate-900">
+                        {c.name}
+                      </td>
+                      <td className="py-2.5 px-2 text-center font-mono font-bold text-slate-800">
+                        {c.credits}
+                      </td>
+                      <td className="py-2.5 px-2 text-center font-mono text-slate-600">
+                        {c.cycle}
+                      </td>
+                      <td className="py-2.5 px-2 text-center text-slate-600">
+                        {c.type}
+                      </td>
+                      <td className="py-2.5 px-2 text-center font-mono font-bold text-indigo-700">
+                        {c.group}
+                      </td>
+                      <td className="py-2.5 px-2 text-center font-mono text-slate-400">
+                        {c.sg}
+                      </td>
+                      <td className="py-2.5 px-2 text-center text-slate-600">
+                        {c.tsg}
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase border ${
+                          isPending
+                            ? "bg-amber-50 text-amber-800 border-amber-300"
+                            : isProcessing
+                            ? "bg-blue-50 text-blue-800 border-blue-200"
+                            : "bg-emerald-50 text-emerald-800 border-emerald-200"
+                        }`}>
+                          {isPending ? (
+                            <AlertCircle className="w-3 h-3 text-amber-600" />
+                          ) : isProcessing ? (
+                            <Clock className="w-3 h-3 text-blue-600" />
+                          ) : (
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          )}
+                          {c.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -357,9 +523,13 @@ export default function CourseEnrollmentTab({
                 <span className="font-black text-amber-700 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded text-[10px] font-mono">
                   Pendiente (S/ 250.00)
                 </span>
+              ) : isPromotedCycle2 && !isCycle2Validated ? (
+                <span className="font-black text-blue-700 bg-blue-50 border border-blue-300 px-2 py-0.5 rounded text-[10px] font-mono">
+                  En Auditoría de Caja
+                </span>
               ) : (
                 <span className="font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-mono">
-                  Pagó
+                  Validado por Caja
                 </span>
               )}
             </div>
@@ -382,6 +552,130 @@ export default function CourseEnrollmentTab({
         </div>
 
       </div>
+
+      {/* MODAL OFICIAL: Registro Manual de Comprobante de Pago */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-sans">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-150">
+            <div className="bg-[#800521] p-4 text-white flex items-center justify-between border-b-2 border-amber-500">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-amber-400" />
+                <div>
+                  <h3 className="font-black text-sm uppercase tracking-wide">
+                    Registro de Comprobante de Pago
+                  </h3>
+                  <span className="text-[10px] text-amber-200 block font-mono">
+                    Derecho de Matrícula Regular • Periodo 2027-II
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(false)}
+                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitPayment} className="p-5 space-y-4 text-left">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5">
+                <Building className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-900">
+                  <span className="font-black block uppercase text-[10px] tracking-wider">Tasa Institucional de Matrícula</span>
+                  Monto a pagar: <strong>S/ 250.00</strong>. Una vez registrado, su comprobante quedará visible en el panel de Caja de Secretaría para su validación oficial.
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-black uppercase text-slate-700">
+                  Entidad Bancaria o Canal de Pago
+                </label>
+                <select
+                  value={selectedBank}
+                  onChange={(e) => setSelectedBank(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-[#800521]"
+                >
+                  <option value="Banco de la Nación — Cta. Cte. 00-000-123456">Banco de la Nación — Cta. Cte. 00-000-123456</option>
+                  <option value="Banco de Crédito del Perú (BCP) — Cta. Recaudo 191-88452-SFA">Banco de Crédito del Perú (BCP) — Cta. Recaudo 191-88452-SFA</option>
+                  <option value="BBVA Continental — Cta. Institucional 0011-0421-SFA">BBVA Continental — Cta. Institucional 0011-0421-SFA</option>
+                  <option value="Interbank — Código de Convenio SFA 04910">Interbank — Código de Convenio SFA 04910</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-black uppercase text-slate-700">
+                    N° de Operación / Voucher
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={operationNumber}
+                    onChange={(e) => setOperationNumber(e.target.value)}
+                    placeholder="Ej. OP-2027-02-BCO-94812"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-black text-slate-900 outline-none focus:border-[#800521]"
+                  />
+                  <span className="text-[9.5px] text-slate-400 block">Número impreso en su comprobante físico o digital.</span>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-black uppercase text-slate-700">
+                    Fecha de Operación
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-[#800521]"
+                  />
+                  <span className="text-[9.5px] text-slate-400 block">Fecha en la que realizó el depósito.</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-black uppercase text-slate-700">
+                  Comprobante Digital (Foto o PDF) <span className="text-slate-400 font-normal lowercase">(opcional)</span>
+                </label>
+                <div className="border-2 border-dashed border-slate-200 hover:border-slate-300 rounded-xl p-3 text-center transition-all bg-slate-50/50">
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={(e) => setVoucherFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                    id="voucher-file-input"
+                  />
+                  <label htmlFor="voucher-file-input" className="cursor-pointer block space-y-1">
+                    <Upload className="w-5 h-5 text-slate-400 mx-auto" />
+                    <span className="text-xs font-bold text-[#800521] block">
+                      {voucherFile ? voucherFile.name : "Haga clic para adjuntar comprobante"}
+                    </span>
+                    <span className="text-[10px] text-slate-400 block">Formatos permitidos: JPG, PNG o PDF (máx. 5 MB)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowPaymentModal(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 text-xs font-black uppercase tracking-wider bg-[#800521] hover:bg-[#66041a] text-white rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-amber-300" />
+                  <span>Registrar y Enviar a Caja</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
