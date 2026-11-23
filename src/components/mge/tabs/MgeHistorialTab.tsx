@@ -175,6 +175,8 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
       });
     }
 
+    const allCoursesList: any[] = [];
+
     try {
       const rawSim = typeof window !== "undefined" && student ? (
         localStorage.getItem(`sfa_simulated_cycle1_${student.dni}`) ||
@@ -184,17 +186,46 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
       if (rawSim) {
         const simData = JSON.parse(rawSim);
         if (Array.isArray(simData.courses) && simData.courses.length > 0) {
-          return simData.courses.map((sc: any) => ({
-            code: sc.code,
-            courseName: sc.name,
-            credits: sc.credits || 4,
-            count: 1,
-            grade: typeof sc.grade === "number" ? sc.grade : (sc.code === "EIND-101" ? 15.5 : 16),
-            cycle: inferCycleFromCode(sc.code)
-          }));
+          simData.courses.forEach((sc: any) => {
+            allCoursesList.push({
+              code: sc.code,
+              courseName: sc.name,
+              credits: sc.credits || 4,
+              count: 1,
+              grade: typeof sc.grade === "number" ? sc.grade : (sc.code === "EIND-101" ? 15.5 : 16),
+              cycle: inferCycleFromCode(sc.code)
+            });
+          });
         }
       }
     } catch {}
+
+    try {
+      const rawSim2 = typeof window !== "undefined" && student ? (
+        localStorage.getItem(`sfa_simulated_cycle2_${student.dni}`) ||
+        localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+        localStorage.getItem("sfa_simulated_cycle2")
+      ) : null;
+      if (rawSim2) {
+        const simData2 = JSON.parse(rawSim2);
+        if (Array.isArray(simData2.courses) && simData2.courses.length > 0) {
+          simData2.courses.forEach((sc: any) => {
+            allCoursesList.push({
+              code: sc.code,
+              courseName: sc.name,
+              credits: sc.credits || 4,
+              count: 1,
+              grade: typeof sc.grade === "number" ? sc.grade : 16.5,
+              cycle: 2
+            });
+          });
+        }
+      }
+    } catch {}
+
+    if (allCoursesList.length > 0) {
+      return allCoursesList;
+    }
 
     if (realRows.length > 0) {
       return realRows.map((r) => ({

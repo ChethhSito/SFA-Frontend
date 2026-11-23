@@ -49,6 +49,7 @@ export default function MgeNotasTab({
 }: Props) {
   const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   const [selectedStudentDni, setSelectedStudentDni] = useState<string>(() => processedStudents[0]?.dni || "");
+  const [cycleSyncKey, setCycleSyncKey] = useState(0);
   const [showSimulateModal, setShowSimulateModal] = useState(false);
   const [showSimulate2Modal, setShowSimulate2Modal] = useState(false);
 
@@ -197,7 +198,52 @@ export default function MgeNotasTab({
 
     if (selectedTaskTitle === "PROMEDIO_CONSOLIDADO" || !selectedTaskTitle) {
       processedStudents.forEach((st) => {
-        // 1. Check if student has simulated cycle 1 completion in localStorage
+        // 1. Check if student has simulated cycle 2 completion in localStorage
+        try {
+          const rawSim2 = typeof window !== "undefined" ? (
+            localStorage.getItem(`sfa_simulated_cycle2_${st.dni}`) ||
+            localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+            localStorage.getItem("sfa_simulated_cycle2")
+          ) : null;
+          if (rawSim2) {
+            const simData2 = JSON.parse(rawSim2);
+            const simCourse2 = simData2.courses?.find((sc: any) =>
+              sc.code === activeCourseObj?.code ||
+              (activeCourseObj?.code && sc.code?.startsWith(activeCourseObj.code.split("-").slice(0, 2).join("-"))) ||
+              (activeCourseObj?.id && sc.code?.includes(activeCourseObj.id.replace("cur_ei_", "")))
+            );
+            if (simCourse2 && typeof simCourse2.grade === "number") {
+              gradesMap[st.dni] = simCourse2.grade;
+              return;
+            }
+          }
+        } catch {}
+
+        // Check direct grade or formula in localStorage
+        try {
+          const cCode = activeCourseObj?.code || activeCourseObj?.id || "EIND-201";
+          const rawDirect = localStorage.getItem(`sfa_grades_${cCode}_${st.dni}`) ||
+            localStorage.getItem(`sfa_grades_EIND-201_${st.dni}`) ||
+            localStorage.getItem(`sfa_grades_${cCode}_74859612`) ||
+            localStorage.getItem("sfa_grades_EIND-201_74859612") ||
+            localStorage.getItem(`sfa_grades_cur_ei_201_74859612`);
+          if (rawDirect) {
+            if (!isNaN(Number(rawDirect))) {
+              gradesMap[st.dni] = Number(rawDirect);
+              return;
+            }
+            const p = JSON.parse(rawDirect);
+            if (typeof p === "object") {
+              const sum = 0.20 * (p.NPA || 0) + 0.20 * (p.PC1 || 0) + 0.20 * (p.PC2 || 0) + 0.40 * (p.EX_FINAL || 0);
+              if (sum > 0) {
+                gradesMap[st.dni] = Number(sum.toFixed(1));
+                return;
+              }
+            }
+          }
+        } catch {}
+
+        // 2. Check if student has simulated cycle 1 completion in localStorage
         try {
           const rawSim = typeof window !== "undefined" ? (
             localStorage.getItem(`sfa_simulated_cycle1_${st.dni}`) ||
@@ -217,7 +263,7 @@ export default function MgeNotasTab({
           }
         } catch {}
 
-        // 2. For EIND-101 / Fundamentos, check if teacher completed evaluation
+        // 3. For EIND-101 / Fundamentos, check if teacher completed evaluation
         if (isFundamentos) {
           const hasTeacherGrading = assignments.some((a) =>
             a.submissions?.some((s) => s.studentDni === st.dni && typeof s.grade === "number")
@@ -228,7 +274,7 @@ export default function MgeNotasTab({
           }
         }
 
-        // 3. Average of assignments recorded for this student
+        // 4. Average of assignments recorded for this student
         const stAssignments = courseAssignments.filter((a) =>
           a.submissions?.some((s) => s.studentDni === st.dni && typeof s.grade === "number")
         );
@@ -242,6 +288,21 @@ export default function MgeNotasTab({
       });
     } else {
       processedStudents.forEach((st) => {
+        // Check cycle 2 criterion grades
+        const isC2Course = activeCourseObj?.code?.includes("-20") || activeCourseObj?.code?.includes("201") || activeCourseObj?.id?.includes("201");
+        if (isC2Course) {
+          try {
+            const raw = localStorage.getItem("sfa_grades_EIND-201_74859612") || localStorage.getItem(`sfa_grades_EIND-201_${st.dni}`);
+            if (raw) {
+              const p = JSON.parse(raw);
+              if (/NPA|PARTICIPACIÓN/i.test(selectedTaskTitle) && p.NPA !== undefined) { gradesMap[st.dni] = p.NPA; return; }
+              if (/PC1|PRÁCTICA 1/i.test(selectedTaskTitle) && p.PC1 !== undefined) { gradesMap[st.dni] = p.PC1; return; }
+              if (/PC2|PRÁCTICA 2/i.test(selectedTaskTitle) && p.PC2 !== undefined) { gradesMap[st.dni] = p.PC2; return; }
+              if (/EX_FINAL|EXAMEN/i.test(selectedTaskTitle) && p.EX_FINAL !== undefined) { gradesMap[st.dni] = p.EX_FINAL; return; }
+            }
+          } catch {}
+        }
+
         if (/TEO|TEORÍA/i.test(selectedTaskTitle)) {
           gradesMap[st.dni] = 17.5;
           return;
@@ -284,7 +345,7 @@ export default function MgeNotasTab({
       });
     }
     return gradesMap;
-  }, [selectedTaskTitle, courseAssignments, processedStudents, activeCourseObj, assignments, isFundamentos, selectedStudentDni]);
+  }, [selectedTaskTitle, courseAssignments, processedStudents, activeCourseObj, assignments, isFundamentos, selectedStudentDni, cycleSyncKey]);
 
   const handleOpenRectify = (st: ProcessedStudent) => {
     const currentVal = temporaryGrades[st.dni] !== undefined ? temporaryGrades[st.dni] : currentGradesForTask[st.dni];
@@ -299,8 +360,6 @@ export default function MgeNotasTab({
     onGradeChange(rectifyingStudent.dni, rectifyGrade);
     setRectifyingStudent(null);
   };
-
-  const [cycleSyncKey, setCycleSyncKey] = useState(0);
 
   const handleResetFlowToCycle1 = () => {
     if (!selectedStudentDni) return;
@@ -805,6 +864,7 @@ export default function MgeNotasTab({
           onClose={() => setShowSimulateModal(false)}
           onSimulated={() => {
             setShowSimulateModal(false);
+            setCycleSyncKey((k) => k + 1);
           }}
         />
       )}
@@ -819,6 +879,7 @@ export default function MgeNotasTab({
           onClose={() => setShowSimulate2Modal(false)}
           onSimulated={() => {
             setShowSimulate2Modal(false);
+            setCycleSyncKey((k) => k + 1);
           }}
         />
       )}

@@ -67,8 +67,19 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
       localStorage.setItem("sfa_simulated_cycle2", JSON.stringify(simulationData));
 
       // Individual grades for courses including EIND-201
-      localStorage.setItem(`sfa_grades_EIND-201_${studentDni}`, "16.5");
-      localStorage.setItem("sfa_grades_EIND-201_74859612", "16.5");
+      const e201Obj = { NPA: 16.0, PC1: 16.0, PC2: 17.0, EX_FINAL: 17.0 };
+      localStorage.setItem(`sfa_grades_EIND-201_${studentDni}`, JSON.stringify(e201Obj));
+      localStorage.setItem("sfa_grades_EIND-201_74859612", JSON.stringify(e201Obj));
+      localStorage.setItem(`sfa_grades_cur_ei_201_${studentDni}`, JSON.stringify(e201Obj));
+      localStorage.setItem("sfa_grades_cur_ei_201_74859612", JSON.stringify(e201Obj));
+      localStorage.setItem("sfa_acta_signed_EIND-201", "true");
+      localStorage.setItem("sfa_acta_signed_cur_ei_201", "true");
+      localStorage.setItem("sfa_acta_signed_EIND-201_date", "20/11/2026 08:30");
+      localStorage.setItem("sfa_acta_signed_cur_ei_201_date", "20/11/2026 08:30");
+      localStorage.setItem(`sfa_course_passed_EIND-201_${studentDni}`, "true");
+      localStorage.setItem("sfa_course_passed_EIND-201_74859612", "true");
+      localStorage.setItem("sfa_course_passed_EIND-201", "true");
+
       localStorage.setItem(`sfa_grades_EIND-202_${studentDni}`, "17.0");
       localStorage.setItem("sfa_grades_EIND-202_74859612", "17.0");
       localStorage.setItem(`sfa_grades_EIND-203_${studentDni}`, "16.0");
