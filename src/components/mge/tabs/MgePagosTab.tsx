@@ -96,8 +96,31 @@ export default function MgePagosTab({
   };
 
   // Contadores
-  const totalValidados = processedStudents.filter((s) => s.paymentStatus === "Validado").length;
-  const totalPendientes = processedStudents.filter((s) => s.paymentStatus !== "Validado" && s.paymentStatus !== "Observado").length;
+  const totalValidados = processedStudents.filter((s) => {
+    const isC2P = typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_cycle2_payment_${s.dni}`) === "true" ||
+      (s.dni === "74859612" && localStorage.getItem("sfa_cycle2_payment_74859612") === "true")
+    );
+    const isC2V = typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_cycle2_validated_${s.dni}`) === "true" ||
+      (s.dni === "74859612" && localStorage.getItem("sfa_cycle2_validated_74859612") === "true")
+    );
+    if (isC2P) return isC2V;
+    return s.paymentStatus === "Validado";
+  }).length;
+
+  const totalPendientes = processedStudents.filter((s) => {
+    const isC2P = typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_cycle2_payment_${s.dni}`) === "true" ||
+      (s.dni === "74859612" && localStorage.getItem("sfa_cycle2_payment_74859612") === "true")
+    );
+    const isC2V = typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_cycle2_validated_${s.dni}`) === "true" ||
+      (s.dni === "74859612" && localStorage.getItem("sfa_cycle2_validated_74859612") === "true")
+    );
+    if (isC2P) return !isC2V;
+    return s.paymentStatus !== "Validado" && s.paymentStatus !== "Observado";
+  }).length;
   const totalObservados = processedStudents.filter((s) => s.paymentStatus === "Observado").length;
 
   return (
@@ -139,7 +162,7 @@ export default function MgePagosTab({
           <div className="flex items-center gap-2">
             <Receipt className="w-4 h-4 text-amber-400" />
             <span className="font-extrabold text-xs uppercase tracking-wider font-mono">
-              Bandeja de Conciliación de Pagos • Periodo 2026-I
+              Bandeja de Conciliación de Pagos • Periodo 2027-II
             </span>
           </div>
           <span className="text-[10px] text-slate-300 font-bold font-mono">
@@ -175,7 +198,7 @@ export default function MgePagosTab({
                 );
 
                 const operation = hasCycle2Payment ? (cycle2Op || "OP-2027-02-BCO-94812") : enrollment?.paymentOperation?.trim();
-                const validated = isCycle2Validated || st.paymentStatus === "Validado";
+                const validated = hasCycle2Payment ? isCycle2Validated : st.paymentStatus === "Validado";
                 const isObserved = !isCycle2Validated && st.paymentStatus === "Observado";
                 const hasVoucher = Boolean(operation);
 
@@ -198,9 +221,11 @@ export default function MgePagosTab({
 
                     {/* Concepto */}
                     <td className="px-5 py-3.5">
-                      <div className="font-bold text-slate-900 text-xs">Derecho de Matrícula Regular</div>
+                      <div className="font-bold text-slate-900 text-xs">
+                        {hasCycle2Payment ? "Derecho de Matrícula Regular (Ciclo II)" : "Derecho de Matrícula Regular (Ciclo I)"}
+                      </div>
                       <span className="text-[10px] font-black font-mono text-[#800521] block">
-                        {enrollment?.paymentAmount ? `S/ ${Number(enrollment.paymentAmount).toFixed(2)}` : "S/ 250.00 (Tarifa Institucional)"}
+                        S/ 250.00 (Tarifa Institucional)
                       </span>
                     </td>
 
@@ -265,6 +290,10 @@ export default function MgePagosTab({
                       ) : isObserved ? (
                         <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-rose-50 text-rose-800 border border-rose-300 font-mono font-black text-[10px] uppercase shadow-2xs">
                           OBSERVADO
+                        </span>
+                      ) : hasCycle2Payment ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-blue-50 text-blue-800 border border-blue-300 font-mono font-black text-[10px] uppercase shadow-2xs">
+                          EN AUDITORÍA
                         </span>
                       ) : !st.enrolled ? (
                         <span className="text-slate-400 text-xs italic">Sin matrícula</span>

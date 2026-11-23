@@ -146,10 +146,26 @@ export default function MgeDashboard({
   }, [courses, selectedCourseId, selectedAttendanceCourseId]);
 
   // ── Gestión y Formateo Breve de Periodos Institucionales ───────────────────
+  const effectiveAdmissionPeriods = useMemo(() => {
+    const list = [...admissionPeriods];
+    if (!list.some(p => p.id === "period-2027-2" || p.name?.includes("2027-II") || p.name?.includes("2027-2"))) {
+      list.push({
+        id: "period-2027-2",
+        name: "Semestre Académico 2027-II",
+        year: 2027,
+        status: "MATRICULA",
+        isActive: true,
+        startDate: "2027-08-16",
+        endDate: "2027-12-17"
+      } as any);
+    }
+    return list;
+  }, [admissionPeriods]);
+
   const [internalPeriodId, setInternalPeriodId] = useState<string>(() => {
     if (selectedPeriodId) return selectedPeriodId;
-    const active = admissionPeriods.find((p) => p.status === "APERTURADO" || p.status === "MATRICULA" || p.isActive);
-    return active ? active.id : (admissionPeriods[0]?.id || "all");
+    const active = effectiveAdmissionPeriods.find((p) => p.status === "APERTURADO" || p.status === "MATRICULA" || p.isActive);
+    return active ? active.id : (effectiveAdmissionPeriods[0]?.id || "all");
   });
 
   const handlePeriodChange = (id: string) => {
@@ -159,8 +175,8 @@ export default function MgeDashboard({
 
   const currentPeriod = useMemo(() => {
     if (internalPeriodId === "all") return null;
-    return admissionPeriods.find((p) => p.id === internalPeriodId) || null;
-  }, [admissionPeriods, internalPeriodId]);
+    return effectiveAdmissionPeriods.find((p) => p.id === internalPeriodId) || null;
+  }, [effectiveAdmissionPeriods, internalPeriodId]);
 
   const isPeriodActive = useMemo(() => {
     if (!currentPeriod) return true;
@@ -756,7 +772,7 @@ export default function MgeDashboard({
                   title="Filtrar por periodo académico"
                 >
                   <option value="all" className="bg-slate-900 text-white">Todos</option>
-                  {admissionPeriods.map((p) => {
+                  {effectiveAdmissionPeriods.map((p) => {
                     const shortName = compactPeriodName(p.name);
                     const isPActive = Boolean(p.isActive || p.status === "APERTURADO" || p.status === "MATRICULA");
                     return (
