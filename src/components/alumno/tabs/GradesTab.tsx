@@ -168,6 +168,18 @@ export const GradesTab: React.FC<GradesTabProps> = ({
       }
       return c1;
     } else {
+      let gNpa: any = "NR", gPc1: any = "NR", gPc2: any = "NR", gEx: any = "NR";
+      try {
+        const raw = localStorage.getItem("sfa_grades_EIND-201_74859612") || localStorage.getItem("sfa_grades_cur_ei_201_74859612");
+        if (raw) {
+          const p = JSON.parse(raw);
+          if (p.NPA !== undefined) gNpa = p.NPA;
+          if (p.PC1 !== undefined) gPc1 = p.PC1;
+          if (p.PC2 !== undefined) gPc2 = p.PC2;
+          if (p.EX_FINAL !== undefined) gEx = p.EX_FINAL;
+        }
+      } catch {}
+
       const c2 = enrichedCourses.filter((c) => c.code?.includes("-20") || c.cycle === "Ciclo II" || c.cycle === 2);
       if (c2.length === 0) {
         return [
@@ -181,10 +193,10 @@ export const GradesTab: React.FC<GradesTabProps> = ({
             iconType: "Zap",
             formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
             evaluations: [
-              { id: "NPA", name: "Nota de Participación / Informes", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: "NR", isCurricular: true },
-              { id: "PC1", name: "Práctica Calificada 1 (CA)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: "NR", isCurricular: true },
-              { id: "PC2", name: "Práctica Calificada 2 (Mediciones)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: "NR", isCurricular: true },
-              { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: "NR", isCurricular: true }
+              { id: "NPA", name: "Nota de Participación / Informes", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: gNpa, isCurricular: true },
+              { id: "PC1", name: "Práctica Calificada 1 (CA)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: gPc1, isCurricular: true },
+              { id: "PC2", name: "Práctica Calificada 2 (Mediciones)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: gPc2, isCurricular: true },
+              { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: gEx, isCurricular: true }
             ]
           },
           {
@@ -250,7 +262,20 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           }
         ];
       }
-      return c2;
+      return c2.map((c) => {
+        if (c.code === "EIND-201" || c.id === "cur_ei_201") {
+          return {
+            ...c,
+            evaluations: [
+              { id: "NPA", name: "Nota de Participación / Informes", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: gNpa, isCurricular: true },
+              { id: "PC1", name: "Práctica Calificada 1 (CA)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: gPc1, isCurricular: true },
+              { id: "PC2", name: "Práctica Calificada 2 (Mediciones)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: gPc2, isCurricular: true },
+              { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: gEx, isCurricular: true }
+            ]
+          };
+        }
+        return c;
+      });
     }
   }, [enrichedCourses, selectedSemester]);
 

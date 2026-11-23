@@ -1829,6 +1829,9 @@ export default function DocenteDashboard({
                       })()
                     }
                     teacherDni={teacherDni}
+                    onUpdateAssignments={onUpdateAssignments}
+                    onUpdateAttendance={onUpdateAttendance}
+                    attendanceRecords={attendance}
                   />
                 </PageTransition>
               )}

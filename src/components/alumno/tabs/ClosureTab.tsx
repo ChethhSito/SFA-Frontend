@@ -266,6 +266,28 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
       };
     }
     if (targetCycleNum === 2 && isPromotedToCycle2) {
+      const isCourseApproved = (c.code === "EIND-201" || c.code === "cur_ei_201") && (
+        localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
+        localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true" ||
+        localStorage.getItem("sfa_course_passed_EIND-201_74859612") === "true" ||
+        Boolean(localStorage.getItem("sfa_grades_EIND-201_74859612"))
+      );
+      if (isCourseApproved) {
+        let passedGrade = 16.6;
+        try {
+          const raw = localStorage.getItem("sfa_grades_EIND-201_74859612") || localStorage.getItem("sfa_grades_cur_ei_201_74859612");
+          if (raw) {
+            const p = JSON.parse(raw);
+            const sum = 0.20 * (p.NPA || 0) + 0.20 * (p.PC1 || 0) + 0.20 * (p.PC2 || 0) + 0.40 * (p.EX_FINAL || 0);
+            if (sum > 0) passedGrade = Number(sum.toFixed(1));
+          }
+        } catch {}
+        return {
+          ...c,
+          status: "Aprobado",
+          simGrade: passedGrade
+        };
+      }
       return {
         ...c,
         status: "Matriculado",
