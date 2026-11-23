@@ -472,12 +472,22 @@ export default function MgeDashboard({
 
   const handleSaveGrades = async () => {
     if (!selectedCourseId) return;
+    const activeCourseObj = courses.find((c) => c.id === selectedCourseId || c.code === selectedCourseId);
+    const courseCode = activeCourseObj?.code || selectedCourseId;
+
+    // Sellar acta institucionalmente
+    localStorage.setItem(`sfa_acta_signed_${courseCode}`, "true");
+    localStorage.setItem(`sfa_acta_signed_${selectedCourseId}`, "true");
+    localStorage.setItem(`sfa_acta_signed_${courseCode}_date`, new Date().toLocaleDateString("es-PE"));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("storage"));
+    }
+
     if (Object.keys(temporaryGrades).length === 0) {
-      triggerNotification("Ingrese al menos una calificación antes de guardar.", "warning");
+      triggerNotification("Acta Oficial Sellada e Inscrita Institucionalmente con Validez Oficial.", "success");
       return;
     }
 
-    const activeCourseObj = courses.find((c) => c.id === selectedCourseId);
     const studentsInActiveCourse = activeCourseObj
       ? processedStudents.filter((s) => s.enrolled && s.academicStatus === "MATRICULADO" && s.programId === (activeCourseObj.careerId || activeCourseObj.career))
       : [];

@@ -66,6 +66,34 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
       localStorage.setItem("sfa_simulated_cycle2_74859612", JSON.stringify(simulationData));
       localStorage.setItem("sfa_simulated_cycle2", JSON.stringify(simulationData));
 
+      // Guarantee Ciclo I is preserved and approved
+      localStorage.setItem(`sfa_student_promoted_cycle2_${studentDni}`, "true");
+      localStorage.setItem("sfa_student_promoted_cycle2_74859612", "true");
+      localStorage.setItem("sfa_student_promoted_cycle2", "true");
+      localStorage.setItem(`sfa_student_promoted_${studentDni}`, "true");
+      localStorage.setItem("sfa_student_promoted_74859612", "true");
+      localStorage.setItem("sfa_student_promoted", "true");
+      if (!localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`)) {
+        const c1Payload = {
+          studentDni,
+          studentName,
+          cycle: 1,
+          period: "2027-I",
+          completedAt: new Date().toISOString(),
+          weightedAverage: 16.2,
+          courses: [
+            { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, grade: 16.4, approved: true },
+            { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, grade: 16.5, approved: true },
+            { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, grade: 17.0, approved: true },
+            { code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, grade: 15.0, approved: true },
+            { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2, grade: 16.0, approved: true }
+          ]
+        };
+        localStorage.setItem(`sfa_simulated_cycle1_${studentDni}`, JSON.stringify(c1Payload));
+        localStorage.setItem("sfa_simulated_cycle1_74859612", JSON.stringify(c1Payload));
+        localStorage.setItem("sfa_simulated_cycle1", JSON.stringify(c1Payload));
+      }
+
       // Individual grades for courses including EIND-201
       const e201Obj = { NPA: 16.0, PC1: 16.0, PC2: 17.0, EX_FINAL: 17.0 };
       localStorage.setItem(`sfa_grades_EIND-201_${studentDni}`, JSON.stringify(e201Obj));

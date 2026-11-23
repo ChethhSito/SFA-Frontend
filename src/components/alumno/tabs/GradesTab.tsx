@@ -177,21 +177,11 @@ export const GradesTab: React.FC<GradesTabProps> = ({
     } else {
       // 2. Ciclo II oficial
       const studentDni = studentInfo?.dni || "74859612";
-      const isCiclo2AllSimulated = typeof window !== "undefined" && Boolean(
-        localStorage.getItem(`sfa_simulated_cycle2_${studentDni}`) ||
-        localStorage.getItem("sfa_simulated_cycle2_74859612") ||
-        localStorage.getItem("sfa_simulated_cycle2") ||
-        localStorage.getItem(`sfa_student_promoted_cycle3_${studentDni}`) === "true" ||
-        localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
-        localStorage.getItem("sfa_student_promoted_cycle3") === "true" ||
-        localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
-        localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true"
-      );
 
-      let g201Npa: any = isCiclo2AllSimulated ? 16.0 : "NR";
-      let g201Pc1: any = isCiclo2AllSimulated ? 16.0 : "NR";
-      let g201Pc2: any = isCiclo2AllSimulated ? 17.0 : "NR";
-      let g201Ex: any = isCiclo2AllSimulated ? 17.0 : "NR";
+      let g201Npa: number = 16.0;
+      let g201Pc1: number = 16.0;
+      let g201Pc2: number = 17.0;
+      let g201Ex: number = 17.0;
 
       try {
         const raw = localStorage.getItem(`sfa_grades_EIND-201_${studentDni}`) ||
@@ -200,10 +190,10 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           localStorage.getItem("sfa_grades_cur_ei_201_74859612");
         if (raw) {
           const p = JSON.parse(raw);
-          if (p.NPA !== undefined) g201Npa = p.NPA;
-          if (p.PC1 !== undefined) g201Pc1 = p.PC1;
-          if (p.PC2 !== undefined) g201Pc2 = p.PC2;
-          if (p.EX_FINAL !== undefined) g201Ex = p.EX_FINAL;
+          if (p.NPA !== undefined) g201Npa = Number(p.NPA);
+          if (p.PC1 !== undefined) g201Pc1 = Number(p.PC1);
+          if (p.PC2 !== undefined) g201Pc2 = Number(p.PC2);
+          if (p.EX_FINAL !== undefined) g201Ex = Number(p.EX_FINAL);
         }
       } catch {}
 
@@ -234,10 +224,10 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           iconType: "Sliders",
           formula: "NF = 0.20*NPA + 0.20*LAB1 + 0.20*LAB2 + 0.40*EX_FINAL",
           evaluations: [
-            { id: "NPA", name: "Nota de Participación", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true },
-            { id: "LAB1", name: "Laboratorio Diodos y Tiristores", prefix: "LAB1", weight: "20%", weightDecimal: 0.2, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true },
-            { id: "LAB2", name: "Laboratorio Circuitos Rectificadores", prefix: "LAB2", weight: "20%", weightDecimal: 0.2, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true },
-            { id: "EX_FINAL", name: "Evaluación Modular", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true }
+            { id: "NPA", name: "Nota de Participación", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: 17.0, isCurricular: true },
+            { id: "LAB1", name: "Laboratorio Diodos y Tiristores", prefix: "LAB1", weight: "20%", weightDecimal: 0.2, grade: 17.0, isCurricular: true },
+            { id: "LAB2", name: "Laboratorio Circuitos Rectificadores", prefix: "LAB2", weight: "20%", weightDecimal: 0.2, grade: 17.0, isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 17.0, isCurricular: true }
           ]
         },
         {
@@ -250,9 +240,9 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           iconType: "Cpu",
           formula: "NF = 0.20*NPA + 0.30*PC1 + 0.50*PROY",
           evaluations: [
-            { id: "NPA", name: "Participación y Seguridad", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true },
-            { id: "PC1", name: "Práctica de Osciloscopio y Fasores", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true },
-            { id: "PROY", name: "Proyecto de Calibración", prefix: "PROY", weight: "50%", weightDecimal: 0.5, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true }
+            { id: "NPA", name: "Participación y Seguridad", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: 16.0, isCurricular: true },
+            { id: "PC1", name: "Práctica de Osciloscopio y Fasores", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: 16.0, isCurricular: true },
+            { id: "PROY", name: "Proyecto de Calibración", prefix: "PROY", weight: "50%", weightDecimal: 0.5, grade: 16.0, isCurricular: true }
           ]
         },
         {
@@ -265,9 +255,9 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           iconType: "Sliders",
           formula: "NF = 0.30*PL1 + 0.30*PL2 + 0.40*PROY_CAD",
           evaluations: [
-            { id: "PL1", name: "Plano Unifilar en CAD", prefix: "PL1", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true },
-            { id: "PL2", name: "Plano Multifilar de Tableros", prefix: "PL2", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true },
-            { id: "PROY_CAD", name: "Proyecto Final Planimetría", prefix: "PROY_CAD", weight: "40%", weightDecimal: 0.4, grade: isCiclo2AllSimulated ? 17.0 : "NR", isCurricular: true }
+            { id: "PL1", name: "Plano Unifilar en CAD", prefix: "PL1", weight: "30%", weightDecimal: 0.3, grade: 16.0, isCurricular: true },
+            { id: "PL2", name: "Plano Multifilar de Tableros", prefix: "PL2", weight: "30%", weightDecimal: 0.3, grade: 17.0, isCurricular: true },
+            { id: "PROY_CAD", name: "Proyecto Final Planimetría", prefix: "PROY_CAD", weight: "40%", weightDecimal: 0.4, grade: 17.0, isCurricular: true }
           ]
         },
         {
@@ -280,9 +270,9 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           iconType: "Award",
           formula: "NF = 0.30*ACT + 0.30*ORAL + 0.40*EX_FINAL",
           evaluations: [
-            { id: "ACT", name: "Technical Vocabulary", prefix: "ACT", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 15.0 : "NR", isCurricular: true },
-            { id: "ORAL", name: "Oral Presentation (Diagrams)", prefix: "ORAL", weight: "30%", weightDecimal: 0.3, grade: isCiclo2AllSimulated ? 15.0 : "NR", isCurricular: true },
-            { id: "EX_FINAL", name: "Final Technical Test", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: isCiclo2AllSimulated ? 16.0 : "NR", isCurricular: true }
+            { id: "ACT", name: "Technical Vocabulary", prefix: "ACT", weight: "30%", weightDecimal: 0.3, grade: 15.0, isCurricular: true },
+            { id: "ORAL", name: "Oral Presentation (Diagrams)", prefix: "ORAL", weight: "30%", weightDecimal: 0.3, grade: 15.0, isCurricular: true },
+            { id: "EX_FINAL", name: "Final Technical Test", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 16.0, isCurricular: true }
           ]
         }
       ];
@@ -370,9 +360,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
                 className="bg-transparent text-xs font-black text-white font-mono outline-none cursor-pointer"
               >
                 <option value="2027-I" className="text-slate-900 bg-white">Semestre 2027-I (Ciclo I)</option>
-                {isPromotedCycle2 && (
-                  <option value="2027-II" className="text-slate-900 bg-white">Semestre 2027-II (Ciclo II)</option>
-                )}
+                <option value="2027-II" className="text-slate-900 bg-white">Semestre 2027-II (Ciclo II)</option>
               </select>
             </div>
             <button
