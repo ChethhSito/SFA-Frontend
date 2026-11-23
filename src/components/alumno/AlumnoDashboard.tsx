@@ -93,6 +93,31 @@ export default function AlumnoDashboard({
   }, [enrollment]);
 
   const [, setStorageSync] = useState(0);
+
+  const isCycle2Paid = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+    localStorage.getItem("sfa_cycle2_payment") === "true" ||
+    localStorage.getItem(`sfa_cycle2_validated_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
+    localStorage.getItem("sfa_cycle2_validated") === "true" ||
+    (enrollment?.paymentStatus === "Validado" && (
+      localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+      localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
+      localStorage.getItem("sfa_cycle2_payment") === "true"
+    ))
+  );
+
+  const isPromotedCycle2 = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+    localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
+    localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+    localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
+    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+    localStorage.getItem("sfa_student_cycle") === "2"
+  );
   useEffect(() => {
     const handleSync = () => setStorageSync((v) => v + 1);
     window.addEventListener("storage", handleSync);
@@ -741,20 +766,6 @@ export default function AlumnoDashboard({
         formula: `NF = ${getCourseFormula(c.code).expression}`
       }));
   }, [catalogCourses, enrollment.programId, enrollment.shift, studentGroup, mpaPlanningData.periods]);
-
-  const isCycle2Paid = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_payment") === "true" ||
-    localStorage.getItem(`sfa_cycle2_validated_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_validated") === "true" ||
-    (enrollment?.paymentStatus === "Validado" && (
-      localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-      localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
-      localStorage.getItem("sfa_cycle2_payment") === "true"
-    ))
-  );
 
   const ciclo2Courses = useMemo(() => [
     {
