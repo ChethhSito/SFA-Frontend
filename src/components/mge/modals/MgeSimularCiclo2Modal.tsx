@@ -121,6 +121,9 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
       localStorage.setItem(`sfa_attendance_complete_cycle2_${studentDni}`, "true");
       localStorage.setItem("sfa_attendance_complete_cycle2_74859612", "true");
       localStorage.setItem("sfa_attendance_complete_cycle2", "true");
+      localStorage.setItem(`sfa_attendance_complete_cycle1_${studentDni}`, "true");
+      localStorage.setItem("sfa_attendance_complete_cycle1_74859612", "true");
+      localStorage.setItem("sfa_attendance_complete_cycle1", "true");
 
       ["EIND-201", "EIND-202", "EIND-203", "EIND-204", "EIND-205", "cur_ei_201", "cur_ei_202", "cur_ei_203", "cur_ei_204", "cur_ei_205"].forEach((cId) => {
         localStorage.setItem(`sfa_attendance_complete_${cId}`, "true");

@@ -1499,7 +1499,7 @@ export default function AlumnoDashboard({
                   expandedAttendanceCourse={expandedAttendanceCourse}
                   setExpandedAttendanceCourse={setExpandedAttendanceCourse}
                   setActiveTab={setActiveTab}
-                  studentCourses={enrichedCourses}
+                  studentCourses={allEnrichedCourses}
                   studentTasks={studentTasks}
                   mpaPlanningData={mpaPlanningData}
                   studentGroup={studentGroup}
