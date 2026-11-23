@@ -32,6 +32,17 @@ export default function MgePagosTab({
   const [operations, setOperations] = useState<Record<string, string>>({});
   const [auditingStudent, setAuditingStudent] = useState<ProcessedStudent | null>(null);
   const [obsReason, setObsReason] = useState<string>("Importe arancelario no coincide con el tarifario oficial (S/ 250.00)");
+  const [, setStorageSync] = useState(0);
+
+  useEffect(() => {
+    const handleSync = () => setStorageSync((v) => v + 1);
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("focus", handleSync);
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("focus", handleSync);
+    };
+  }, []);
 
   const activeEnrollmentForAudit = auditingStudent
     ? enrollments.find((e) => e.studentDni === auditingStudent.dni)
@@ -45,6 +56,13 @@ export default function MgePagosTab({
   const handleConfirmValidar = () => {
     if (!auditingStudent) return;
     onUpdatePaymentStatus(auditingStudent.dni, "Validado");
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`sfa_cycle2_validated_${auditingStudent.dni}`, "true");
+      if (auditingStudent.dni === "74859612") {
+        localStorage.setItem("sfa_cycle2_validated_74859612", "true");
+      }
+      window.dispatchEvent(new Event("storage"));
+    }
     setAuditingStudent(null);
   };
 
@@ -120,9 +138,22 @@ export default function MgePagosTab({
             <tbody className="divide-y divide-slate-100">
               {processedStudents.map((st) => {
                 const enrollment = enrollments.find((item) => item.studentDni === st.dni);
-                const operation = enrollment?.paymentOperation?.trim();
-                const validated = st.paymentStatus === "Validado";
-                const isObserved = st.paymentStatus === "Observado";
+                const hasCycle2Payment = typeof window !== "undefined" && (
+                  localStorage.getItem(`sfa_cycle2_payment_${st.dni}`) === "true" ||
+                  (st.dni === "74859612" && localStorage.getItem("sfa_cycle2_payment_74859612") === "true")
+                );
+                const cycle2Op = typeof window !== "undefined" ? (
+                  localStorage.getItem(`sfa_cycle2_operation_${st.dni}`) ||
+                  (st.dni === "74859612" ? localStorage.getItem("sfa_cycle2_operation_74859612") : null)
+                ) : null;
+                const isCycle2Validated = typeof window !== "undefined" && (
+                  localStorage.getItem(`sfa_cycle2_validated_${st.dni}`) === "true" ||
+                  (st.dni === "74859612" && localStorage.getItem("sfa_cycle2_validated_74859612") === "true")
+                );
+
+                const operation = hasCycle2Payment ? (cycle2Op || "OP-2027-02-BCO-94812") : enrollment?.paymentOperation?.trim();
+                const validated = isCycle2Validated || st.paymentStatus === "Validado";
+                const isObserved = !isCycle2Validated && st.paymentStatus === "Observado";
                 const hasVoucher = Boolean(operation);
 
                 const initials = `${st.name?.charAt(0) || ""}${st.lastName?.charAt(0) || ""}`.toUpperCase();

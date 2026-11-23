@@ -219,6 +219,16 @@ export default function MgeMatriculaTab({
                   const isAdmitido = st.academicStatus !== "MATRICULADO" && st.active !== false;
                   const isDeBaja = st.active === false;
 
+                  const isCycle2 = typeof window !== "undefined" && Boolean(
+                    localStorage.getItem(`sfa_student_cycle_${st.dni}`) === "2" ||
+                    localStorage.getItem(`sfa_student_promoted_cycle2_${st.dni}`) === "true" ||
+                    (st.dni === "74859612" && (
+                      localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+                      localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+                      localStorage.getItem("sfa_student_cycle") === "2"
+                    ))
+                  );
+
                   const initials = `${st.name?.charAt(0) || ""}${st.lastName?.charAt(0) || ""}`.toUpperCase();
 
                   return (
@@ -265,9 +275,11 @@ export default function MgeMatriculaTab({
                         ) : isMatriculado ? (
                           <div className="inline-flex flex-col items-center">
                             <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-300 text-[10px] font-black uppercase font-mono shadow-2xs">
-                              MATRICULADO ACTIVO
+                              {isCycle2 ? "MATRICULADO ACTIVO • CICLO II" : "MATRICULADO ACTIVO"}
                             </span>
-                            <span className="text-[9px] font-bold text-emerald-700 font-mono mt-0.5">Periodo 2026-I</span>
+                            <span className="text-[9px] font-bold text-emerald-700 font-mono mt-0.5">
+                              {isCycle2 ? "Periodo 2027-II" : "Periodo 2027-I"}
+                            </span>
                           </div>
                         ) : (
                           <div className="inline-flex flex-col items-center">

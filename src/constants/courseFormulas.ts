@@ -88,6 +88,16 @@ export const COURSE_FORMULAS: Record<string, CourseFormula> = {
       { id: "EX_FINAL", label: "Evaluación Integral", weight: 0.40 },
     ],
   },
+  "EIND-201": {
+    courseCode: "EIND-201",
+    expression: "0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+    variables: [
+      { id: "NPA", label: "Nota de Participación / Informes", weight: 0.20 },
+      { id: "PC1", label: "Práctica Calificada 1 (CA)", weight: 0.20 },
+      { id: "PC2", label: "Práctica Calificada 2 (Mediciones)", weight: 0.20 },
+      { id: "EX_FINAL", label: "Evaluación Modular Ciclo II", weight: 0.40 },
+    ],
+  },
   "default": {
     courseCode: "default",
     expression: "0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",

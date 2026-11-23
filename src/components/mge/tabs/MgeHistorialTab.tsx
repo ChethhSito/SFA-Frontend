@@ -152,6 +152,11 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
     const nextVal = !isStudentPromoted;
     setPromotedState((prev) => ({ ...prev, [student.dni]: nextVal }));
     localStorage.setItem(`sfa_student_promoted_${student.dni}`, String(nextVal));
+    localStorage.setItem("sfa_student_promoted_74859612", String(nextVal));
+    localStorage.setItem("sfa_student_promoted", String(nextVal));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("storage"));
+    }
   };
 
   const realRows = useMemo(() => student ? recordedHistory(student, courses, assignments) : [], [student, courses, assignments]);

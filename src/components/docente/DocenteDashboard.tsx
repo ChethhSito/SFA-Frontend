@@ -244,23 +244,51 @@ export default function DocenteDashboard({
     || scheduleMinutes(a.startTime) - scheduleMinutes(b.startTime));
 
   // Filter courses assigned to this specific teacher (supporting multiple professors per course)
-  const teacherCourses = allCourses.filter((c) => {
-    if (c.teacherDni === effectiveTeacherDni) return true;
-    if (c.teacherDnis && c.teacherDnis.includes(effectiveTeacherDni)) return true;
-    if (c.teachers && c.teachers.some((t: any) => t.dni === effectiveTeacherDni)) return true;
-    if (teacherDni === "docente" || !teacherDni) {
-      if (currentTeacher) {
-        return (
-          c.teacherDni === currentTeacher.dni ||
-          c.teacherDnis?.includes(currentTeacher.dni) ||
-          c.teachers?.some((t: any) => t.dni === currentTeacher.dni) ||
-          (c.careerId && currentTeacher.careerId && c.careerId === currentTeacher.careerId)
-        );
+  const teacherCourses = useMemo(() => {
+    const list = allCourses.filter((c) => {
+      if (c.teacherDni === effectiveTeacherDni) return true;
+      if (c.teacherDnis && c.teacherDnis.includes(effectiveTeacherDni)) return true;
+      if (c.teachers && c.teachers.some((t: any) => t.dni === effectiveTeacherDni)) return true;
+      if (teacherDni === "docente" || !teacherDni) {
+        if (currentTeacher) {
+          return (
+            c.teacherDni === currentTeacher.dni ||
+            c.teacherDnis?.includes(currentTeacher.dni) ||
+            c.teachers?.some((t: any) => t.dni === currentTeacher.dni) ||
+            (c.careerId && currentTeacher.careerId && c.careerId === currentTeacher.careerId)
+          );
+        }
+        return true;
       }
-      return true;
+      return false;
+    });
+
+    // Ensure Ciclo II course EIND-201 is present for Electricidad Industrial evaluations
+    if (!list.some((c) => c.code === "EIND-201" || c.id === "cur_ei_201")) {
+      list.push({
+        id: "cur_ei_201",
+        code: "EIND-201",
+        name: "Circuitos Eléctricos en Corriente Alterna",
+        credits: 4,
+        classroom: "Aula 201 • Pabellón A",
+        schedule: "Martes y Jueves 08:00 AM - 12:00 PM",
+        teacherDni: effectiveTeacherDni || "docente",
+        teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Docente Titular",
+        careerId: "electricidad_industrial",
+        career: "Electricidad Industrial",
+        group: "EI-II-A",
+        cycle: 2,
+        referenceCycle: 2,
+        startDate: "2027-08-16",
+        endDate: "2027-12-17",
+        studentCount: 1,
+        description: "Unidad didáctica del Ciclo II. Análisis de formas de onda senoidales, fasores, potencia activa, reactiva y aparente en circuitos RLC.",
+        formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
+      } as any);
     }
-    return false;
-  });
+
+    return list;
+  }, [allCourses, effectiveTeacherDni, teacherDni, currentTeacher]);
   const dashboardPageCount = Math.max(1, Math.ceil(teacherCourses.length / DASHBOARD_COURSES_PER_PAGE));
   const directoryPageCount = Math.max(1, Math.ceil(teacherCourses.length / DIRECTORY_COURSES_PER_PAGE));
   const safeDashboardCoursePage = Math.min(dashboardCoursePage, dashboardPageCount);

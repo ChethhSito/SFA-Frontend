@@ -214,6 +214,9 @@ export default function CourseEnrollmentTab({
               localStorage.setItem(`sfa_cycle2_payment_${currentStudentDni}`, "true");
               localStorage.setItem("sfa_cycle2_payment_74859612", "true");
               localStorage.setItem("sfa_cycle2_payment", "true");
+              localStorage.setItem(`sfa_cycle2_operation_${currentStudentDni}`, "OP-2027-02-BCO-94812");
+              localStorage.setItem("sfa_cycle2_operation_74859612", "OP-2027-02-BCO-94812");
+              localStorage.setItem("sfa_cycle2_operation", "OP-2027-02-BCO-94812");
               if (typeof window !== "undefined") {
                 window.dispatchEvent(new Event("storage"));
               }
