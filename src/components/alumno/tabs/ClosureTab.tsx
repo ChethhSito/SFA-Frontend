@@ -204,19 +204,13 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   );
   const isPromotedToCycle2 = isCycle1Simulated;
 
-  // Never treat student in cycle 1 or 2 as graduated
-  const isGraduatedVI = !isPromotedToCycle2 && typeof window !== "undefined" && (
+  const isGraduatedVI = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_graduated_all_74859612") === "true"
+    localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+    localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_74859612") === "true"
   );
   const isPromoted = isGraduatedVI;
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && (isPromotedToCycle2 || isCycle1Simulated)) {
-      localStorage.removeItem(`sfa_student_graduated_all_${studentDni}`);
-      localStorage.removeItem("sfa_student_graduated_all_74859612");
-    }
-  }, [studentDni, isPromotedToCycle2, isCycle1Simulated]);
 
   const effectiveSimCourses = simData?.courses || [
     { code: "EIND-101", grade: 15.6 },

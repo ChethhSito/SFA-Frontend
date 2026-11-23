@@ -56,6 +56,13 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
     ))
   );
 
+  const isGraduated = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_student_promoted_${currentDni}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+    localStorage.getItem(`sfa_student_graduated_all_${currentDni}`) === "true" ||
+    localStorage.getItem("sfa_titulacion_enabled_74859612") === "true"
+  );
+
   const cycle2Op = typeof window !== "undefined" ? (
     localStorage.getItem(`sfa_cycle2_operation_${currentDni}`) ||
     localStorage.getItem("sfa_cycle2_operation_74859612") ||
@@ -494,8 +501,12 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                   S/ 120.00
                 </td>
                 <td className="py-3 px-4 text-center">
-                  <span className="font-mono text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                    Fase VI Semestre
+                  <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded border ${
+                    isGraduated
+                      ? "text-emerald-800 bg-emerald-100/90 border-emerald-300"
+                      : "text-slate-600 bg-slate-100 border-slate-200"
+                  }`}>
+                    {isGraduated ? "Habilitado" : "Fase VI Semestre"}
                   </span>
                 </td>
               </tr>
