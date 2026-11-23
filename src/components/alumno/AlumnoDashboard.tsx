@@ -618,34 +618,109 @@ export default function AlumnoDashboard({
     ))
   );
 
+  const ciclo2Courses = useMemo(() => [
+    {
+      id: "cur_ei_201",
+      name: "Circuitos Eléctricos en Corriente Alterna",
+      code: "EIND-201",
+      credits: 4,
+      classroom: "Aula 201 • Pabellón A",
+      schedule: "Martes y Jueves 08:00 AM - 12:00 PM",
+      teacherDni: "08529631",
+      teacherName: "Ing. Manuel Ramos Salazar",
+      career: "Electricidad Industrial",
+      group: "EI-II-A",
+      cycle: "Ciclo II",
+      startDate: "2027-08-16",
+      endDate: "2027-12-17",
+      studentCount: 30,
+      description: "Unidad didáctica del Ciclo II. Análisis de formas de onda senoidales, fasores, potencia activa, reactiva y aparente en circuitos RLC.",
+      formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
+    },
+    {
+      id: "cur_ei_202",
+      name: "Electrónica Analógica y de Potencia Básica",
+      code: "EIND-202",
+      credits: 4,
+      classroom: "Taller de Electrónica 102",
+      schedule: "Lunes y Miércoles 08:00 AM - 12:00 PM",
+      teacherDni: "44556677",
+      teacherName: "Ing. Carlos Alberto Mendoza Quispe",
+      career: "Electricidad Industrial",
+      group: "EI-II-A",
+      cycle: "Ciclo II",
+      startDate: "2027-08-16",
+      endDate: "2027-12-17",
+      studentCount: 30,
+      description: "Diodos, transistores BJT y MOSFET, tiristores, rectificación controlada y fuentes conmutadas.",
+      formula: "NF = 0.25*NPA + 0.25*PC1 + 0.25*PC2 + 0.25*EX_FINAL"
+    },
+    {
+      id: "cur_ei_203",
+      name: "Taller de Medidas e Instrumentos Eléctricos",
+      code: "EIND-203",
+      credits: 3,
+      classroom: "Lab. Medidas Eléctricas 103",
+      schedule: "Viernes 08:00 AM - 01:00 PM",
+      teacherDni: "77889900",
+      teacherName: "Lic. Jorge Luis Paucar Silva",
+      career: "Electricidad Industrial",
+      group: "EI-II-A",
+      cycle: "Ciclo II",
+      startDate: "2027-08-16",
+      endDate: "2027-12-17",
+      studentCount: 30,
+      description: "Uso de osciloscopios, analizadores de redes, vatímetros, telurómetros y megóhmetros.",
+      formula: "NF = 0.30*NPA + 0.30*LAB + 0.40*EX_FINAL"
+    },
+    {
+      id: "cur_ei_204",
+      name: "Dibujo y CAD Electrotécnico (AutoCAD Electrical)",
+      code: "EIND-204",
+      credits: 3,
+      classroom: "Centro de Cómputo CAD 204",
+      schedule: "Miércoles 02:00 PM - 06:00 PM",
+      teacherDni: "33221100",
+      teacherName: "Ing. Fernando Gabriel Díaz Torres",
+      career: "Electricidad Industrial",
+      group: "EI-II-A",
+      cycle: "Ciclo II",
+      startDate: "2027-08-16",
+      endDate: "2027-12-17",
+      studentCount: 30,
+      description: "Diseño y diagramación de planos unifilares, esquemas de fuerza y mando según norma IEC.",
+      formula: "NF = 0.30*NPA + 0.30*PROY + 0.40*EX_FINAL"
+    },
+    {
+      id: "cur_ei_205",
+      name: "Inglés Técnico para Electricidad",
+      code: "EIND-205",
+      credits: 2,
+      classroom: "Aula 205 • Pabellón B",
+      schedule: "Lunes 02:00 PM - 05:00 PM",
+      teacherDni: "55667788",
+      teacherName: "Prof. Sofía Lorena Valenzuela Ríos",
+      career: "Electricidad Industrial",
+      group: "EI-II-A",
+      cycle: "Ciclo II",
+      startDate: "2027-08-16",
+      endDate: "2027-12-17",
+      studentCount: 30,
+      description: "Terminología técnica en inglés aplicada a manuales de equipos, datasheets y normas internacionales.",
+      formula: "NF = 0.30*NPA + 0.30*ORAL + 0.40*EX_FINAL"
+    }
+  ], []);
+
   const baseStudentCourses = enrollment.registeredCourses ? dynamicMpaCourses : dynamicMpaCourses.length > 0
     ? dynamicMpaCourses
     : (ciclo1Courses.length > 0 ? ciclo1Courses : courses.filter((c: any) => c.careerId === enrollment.programId || c.career === currentProgram?.name));
 
   const studentCourses = useMemo(() => {
-    const list = [...baseStudentCourses];
-    if (isCycle2Paid && !list.some((c: any) => c.code === "EIND-201")) {
-      list.push({
-        id: "cur_ei_201",
-        name: "Circuitos Eléctricos en Corriente Alterna",
-        code: "EIND-201",
-        credits: 4,
-        classroom: "Aula 201 • Pabellón A",
-        schedule: "Martes y Jueves 08:00 AM - 12:00 PM",
-        teacherDni: "08529631",
-        teacherName: "Ing. Manuel Ramos Salazar",
-        career: "Electricidad Industrial",
-        group: "EI-II-A",
-        cycle: "Ciclo II",
-        startDate: "2027-08-16",
-        endDate: "2027-12-17",
-        studentCount: 30,
-        description: "Unidad didáctica del Ciclo II. Análisis de formas de onda senoidales, fasores, potencia activa, reactiva y aparente en circuitos RLC.",
-        formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
-      } as any);
+    if (isCycle2Paid) {
+      return ciclo2Courses;
     }
-    return list;
-  }, [baseStudentCourses, isCycle2Paid]);
+    return baseStudentCourses;
+  }, [baseStudentCourses, isCycle2Paid, ciclo2Courses]);
 
   const enrichedCourses = studentCourses.map((c) => {
     let iconType = "BarChart3";
