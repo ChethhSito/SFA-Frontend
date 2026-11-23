@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { CreditCard, CheckCircle2, AlertCircle, Clock, FileText, Download, Building, ShieldCheck, ArrowRight, Printer } from "lucide-react";
+import { CreditCard, CheckCircle2, AlertCircle, Clock, FileText, Download, Building, ShieldCheck, ArrowRight, Printer, Eye, Receipt, X } from "lucide-react";
 import PageTransition from "../../ui/PageTransition";
 import { StudentPersonalData, Enrollment } from "../../../types";
 
@@ -68,6 +68,33 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
     localStorage.getItem("sfa_cycle2_date_74859612") ||
     new Date().toLocaleDateString("es-PE")
   ) : new Date().toLocaleDateString("es-PE");
+
+  const cycle2DataUrl = typeof window !== "undefined" ? (
+    localStorage.getItem(`sfa_cycle2_voucher_data_${currentDni}`) ||
+    localStorage.getItem("sfa_cycle2_voucher_data_74859612") ||
+    localStorage.getItem("sfa_cycle2_voucher_data") ||
+    ""
+  ) : "";
+
+  const cycle2FileName = typeof window !== "undefined" ? (
+    localStorage.getItem(`sfa_cycle2_voucher_file_${currentDni}`) ||
+    localStorage.getItem("sfa_cycle2_voucher_file_74859612") ||
+    localStorage.getItem("sfa_cycle2_voucher_file") ||
+    "VOUCHER DE PGO.png"
+  ) : "VOUCHER DE PGO.png";
+
+  const [viewingVoucher, setViewingVoucher] = useState<{
+    period: string;
+    cycle: string;
+    concept: string;
+    amount: string;
+    bank: string;
+    operation: string;
+    date: string;
+    status: string;
+    dataUrl?: string;
+    fileName?: string;
+  } | null>(null);
 
   const careerName = enrollment?.programId === "electronica" || !enrollment?.programId
     ? "Electricidad Industrial"
@@ -265,6 +292,7 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                 <th className="py-3 px-3 font-mono">N° Operación / Voucher</th>
                 <th className="py-3 px-3 text-center">Fecha</th>
                 <th className="py-3 px-4 text-center">Estado de Caja</th>
+                <th className="py-3 px-4 text-center">Comprobante</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
@@ -294,6 +322,27 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                     <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                     Validado por Caja
                   </span>
+                </td>
+                <td className="py-3 px-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setViewingVoucher({
+                      period: "2027-I",
+                      cycle: "Ciclo I",
+                      concept: "Derecho de Matrícula Regular",
+                      amount: "S/ 250.00",
+                      bank: "Banco de la Nación (Cta. Recaudadora)",
+                      operation: "OP-2027-01-BCO-11842",
+                      date: "15/03/2027",
+                      status: "Validado por Caja",
+                      fileName: "Voucher_Matricula_2027_I.png"
+                    })}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-[#800521] border border-rose-200 font-bold text-[10.5px] transition-colors cursor-pointer shadow-3xs"
+                    title="Ver comprobante oficial de pago"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-[#800521]" />
+                    <span>Ver Voucher</span>
+                  </button>
                 </td>
               </tr>
 
@@ -335,6 +384,32 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                         <AlertCircle className="w-3 h-3 text-amber-600" />
                         Pendiente de Pago
                       </span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4 text-center">
+                    {isCycle2Paid ? (
+                      <button
+                        type="button"
+                        onClick={() => setViewingVoucher({
+                          period: "2027-II",
+                          cycle: "Ciclo II",
+                          concept: "Derecho de Matrícula Regular",
+                          amount: "S/ 250.00",
+                          bank: cycle2Bank,
+                          operation: cycle2Op,
+                          date: cycle2Date,
+                          status: isCycle2Validated ? "Validado por Caja" : "En Auditoría de Caja",
+                          dataUrl: cycle2DataUrl,
+                          fileName: cycle2FileName
+                        })}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 font-bold text-[10.5px] transition-colors cursor-pointer shadow-3xs"
+                        title="Ver comprobante registrado por el alumno"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-blue-700" />
+                        <span>Ver Voucher</span>
+                      </button>
+                    ) : (
+                      <span className="text-slate-400 text-[11px]">—</span>
                     )}
                   </td>
                 </tr>
@@ -421,6 +496,131 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Modal Institucional: Visor de Voucher y Comprobante de Pago */}
+      {viewingVoucher && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs font-sans">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-150">
+            <div className="bg-[#800521] p-4 text-white flex items-center justify-between border-b-2 border-amber-500">
+              <div className="flex items-center gap-2">
+                <Receipt className="w-5 h-5 text-amber-400" />
+                <div>
+                  <h3 className="font-black text-sm uppercase tracking-wide">
+                    Comprobante Oficial de Pago
+                  </h3>
+                  <span className="text-[10px] text-amber-200 block font-mono">
+                    {viewingVoucher.concept} • Periodo {viewingVoucher.period}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingVoucher(null)}
+                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-left text-xs">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+                <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                  <span className="text-slate-500 font-semibold uppercase text-[10px]">Entidad Bancaria:</span>
+                  <span className="font-bold text-slate-900">{viewingVoucher.bank}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                  <span className="text-slate-500 font-semibold uppercase text-[10px]">N° de Operación:</span>
+                  <span className="font-mono font-black text-[#800521] text-sm">{viewingVoucher.operation}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                  <span className="text-slate-500 font-semibold uppercase text-[10px]">Fecha de Pago:</span>
+                  <span className="font-semibold text-slate-800">{viewingVoucher.date}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                  <span className="text-slate-500 font-semibold uppercase text-[10px]">Importe Cancelado:</span>
+                  <span className="font-mono font-bold text-emerald-700">{viewingVoucher.amount}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500 font-semibold uppercase text-[10px]">Estado de Auditoría:</span>
+                  <span className={`px-2 py-0.5 rounded font-black text-[10px] uppercase font-mono ${
+                    viewingVoucher.status.includes("Validado")
+                      ? "bg-emerald-100 text-emerald-900 border border-emerald-300"
+                      : "bg-blue-100 text-blue-900 border border-blue-300"
+                  }`}>
+                    {viewingVoucher.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Vista Previa del Archivo o Ticket BN */}
+              <div className="border border-slate-300 rounded-xl p-3 bg-slate-100/70 space-y-2">
+                <div className="flex items-center justify-between border-b border-slate-300 pb-1.5">
+                  <span className="font-black text-[10.5px] uppercase text-slate-700">Comprobante Foliado</span>
+                  <span className="font-mono text-[10px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-300">
+                    {viewingVoucher.fileName || "Voucher_Matricula.png"}
+                  </span>
+                </div>
+
+                {viewingVoucher.dataUrl ? (
+                  <div className="bg-white rounded-lg p-2 border border-slate-200 flex justify-center">
+                    <img
+                      src={viewingVoucher.dataUrl}
+                      alt="Comprobante digital del estudiante"
+                      className="max-h-56 w-auto object-contain rounded"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full max-w-sm mx-auto bg-white rounded-xl border-2 border-dashed border-slate-300 shadow-xs p-4 space-y-2 font-mono text-xs">
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-2 text-[10px] text-slate-500 font-bold">
+                      <span className="font-extrabold text-[#800521]">BANCO DE LA NACIÓN</span>
+                      <span>TICKET DE RECAUDACIÓN</span>
+                    </div>
+                    <div className="text-center py-1">
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider font-sans">Concepto</span>
+                      <span className="text-xs font-black text-slate-900 uppercase block font-sans">{viewingVoucher.concept}</span>
+                      <span className="text-2xl font-black text-[#800521] block font-mono mt-0.5">{viewingVoucher.amount}</span>
+                    </div>
+                    <div className="border-t border-dashed border-slate-200 pt-2 space-y-1 text-[10px] text-slate-600">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">N° Operación:</span>
+                        <span className="font-bold text-slate-900">{viewingVoucher.operation}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Titular DNI:</span>
+                        <span className="font-bold text-slate-900">{currentDni}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Estudiante:</span>
+                        <span className="font-bold text-slate-900 truncate max-w-[170px]">{studentFullName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Fecha:</span>
+                        <span className="text-slate-700">{viewingVoucher.date}</span>
+                      </div>
+                      <div className="flex justify-between pt-1 border-t border-slate-100">
+                        <span className="text-slate-400">Estado Caja:</span>
+                        <span className={`font-black uppercase ${viewingVoucher.status.includes("Validado") ? "text-emerald-700" : "text-blue-700"}`}>
+                          {viewingVoucher.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-slate-200 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => setViewingVoucher(null)}
+                  className="px-5 py-2 text-xs font-black uppercase tracking-wider bg-[#800521] hover:bg-[#66041a] text-white rounded-xl shadow-xs transition-all cursor-pointer"
+                >
+                  Cerrar Visor
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </PageTransition>
   );
 };

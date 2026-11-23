@@ -60,6 +60,14 @@ export default function CourseEnrollmentTab({
   });
   const [voucherFile, setVoucherFile] = useState<File | null>(null);
   const [paymentNotice, setPaymentNotice] = useState("");
+  const [voucherPreviewUrl, setVoucherPreviewUrl] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(`sfa_cycle2_voucher_data_${currentStudentDni}`) ||
+             localStorage.getItem("sfa_cycle2_voucher_data_74859612") ||
+             localStorage.getItem("sfa_cycle2_voucher_data") || "";
+    }
+    return "";
+  });
 
   useEffect(() => {
     const handleSync = () => setStorageSync((v) => v + 1);
@@ -138,6 +146,7 @@ export default function CourseEnrollmentTab({
     const fileName = voucherFile ? voucherFile.name : (storedVoucherFileName || "VOUCHER DE PGO.png");
 
     const saveToStorage = (dataUrl?: string) => {
+      const finalUrl = dataUrl || voucherPreviewUrl || storedVoucherDataUrl;
       if (typeof window !== "undefined") {
         localStorage.setItem(`sfa_cycle2_payment_${currentStudentDni}`, "true");
         localStorage.setItem("sfa_cycle2_payment_74859612", "true");
@@ -152,10 +161,10 @@ export default function CourseEnrollmentTab({
         localStorage.setItem(`sfa_cycle2_voucher_file_${currentStudentDni}`, fileName);
         localStorage.setItem("sfa_cycle2_voucher_file_74859612", fileName);
         localStorage.setItem("sfa_cycle2_voucher_file", fileName);
-        if (dataUrl) {
-          localStorage.setItem(`sfa_cycle2_voucher_data_${currentStudentDni}`, dataUrl);
-          localStorage.setItem("sfa_cycle2_voucher_data_74859612", dataUrl);
-          localStorage.setItem("sfa_cycle2_voucher_data", dataUrl);
+        if (finalUrl) {
+          localStorage.setItem(`sfa_cycle2_voucher_data_${currentStudentDni}`, finalUrl);
+          localStorage.setItem("sfa_cycle2_voucher_data_74859612", finalUrl);
+          localStorage.setItem("sfa_cycle2_voucher_data", finalUrl);
         }
         window.dispatchEvent(new Event("storage"));
       }
@@ -457,18 +466,9 @@ export default function CourseEnrollmentTab({
             </button>
             <button
               type="button"
-              onClick={handleInstantValidation}
-              className="bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs uppercase px-4 py-2 rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
-              title="Aprobar formalmente la matrícula simulando la validación del personal de Caja"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 text-amber-300" />
-              <span>Validar Matrícula (Simular Caja)</span>
-            </button>
-            <button
-              type="button"
               onClick={handleResetPayment}
               className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer ml-auto"
-              title="Restablecer para probar de nuevo el flujo de registro"
+              title="Restablecer para ingresar otro comprobante"
             >
               Reiniciar
             </button>
@@ -791,16 +791,43 @@ export default function CourseEnrollmentTab({
                   <input
                     type="file"
                     accept="image/*,application/pdf"
-                    onChange={(e) => setVoucherFile(e.target.files?.[0] || null)}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setVoucherFile(file);
+                      if (file && file.type.startsWith("image/")) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const result = reader.result as string;
+                          setVoucherPreviewUrl(result);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
                     className="hidden"
                     id="voucher-file-input"
                   />
-                  <label htmlFor="voucher-file-input" className="cursor-pointer block space-y-1">
-                    <Upload className="w-5 h-5 text-slate-400 mx-auto" />
-                    <span className="text-xs font-bold text-[#800521] block">
-                      {voucherFile ? voucherFile.name : "Haga clic para adjuntar comprobante"}
-                    </span>
-                    <span className="text-[10px] text-slate-400 block">Formatos permitidos: JPG, PNG o PDF (máx. 5 MB)</span>
+                  <label htmlFor="voucher-file-input" className="cursor-pointer block space-y-2">
+                    {voucherPreviewUrl ? (
+                      <div className="space-y-2 py-1">
+                        <img
+                          src={voucherPreviewUrl}
+                          alt="Vista previa del comprobante"
+                          className="max-h-44 w-auto mx-auto object-contain rounded-lg border border-slate-300 shadow-xs"
+                        />
+                        <span className="text-xs font-bold text-[#800521] block">
+                          {voucherFile ? voucherFile.name : (storedVoucherFileName || "VOUCHER DE PGO.png")}
+                        </span>
+                        <span className="text-[10px] text-slate-500 block">Haga clic sobre la imagen para cambiar de archivo</span>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="w-5 h-5 text-slate-400 mx-auto" />
+                        <span className="text-xs font-bold text-[#800521] block">
+                          {voucherFile ? voucherFile.name : "Haga clic para adjuntar comprobante"}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block">Formatos permitidos: JPG, PNG o PDF (máx. 5 MB)</span>
+                      </>
+                    )}
                   </label>
                 </div>
               </div>
@@ -890,43 +917,61 @@ export default function CourseEnrollmentTab({
                   </span>
                 </div>
 
-                {storedVoucherDataUrl ? (
+                {storedVoucherDataUrl || voucherPreviewUrl ? (
                   <div className="bg-white rounded-lg p-2 border border-slate-200 flex justify-center">
                     <img
-                      src={storedVoucherDataUrl}
+                      src={storedVoucherDataUrl || voucherPreviewUrl}
                       alt="Comprobante digital del estudiante"
-                      className="max-h-52 w-auto object-contain rounded"
+                      className="max-h-56 w-auto object-contain rounded"
                     />
                   </div>
                 ) : (
-                  <div className="bg-white rounded-lg p-4 border border-slate-200 text-center space-y-1">
-                    <FileText className="w-8 h-8 text-[#800521] mx-auto opacity-70" />
-                    <p className="font-bold text-slate-800 text-xs">{storedVoucherFileName}</p>
-                    <p className="text-[10px] text-slate-500">Documento adjuntado y remitido para validación bancaria en Tesorería y Caja.</p>
+                  /* Visualización Oficial del Ticket Bancario BN */
+                  <div className="w-full max-w-sm mx-auto bg-white rounded-xl border-2 border-dashed border-slate-300 shadow-xs p-4 space-y-2 font-mono text-xs">
+                    <div className="flex justify-between items-center border-b border-slate-200 pb-2 text-[10px] text-slate-500 font-bold">
+                      <span className="font-extrabold text-[#800521]">BANCO DE LA NACIÓN</span>
+                      <span>TICKET DE RECAUDACIÓN</span>
+                    </div>
+                    <div className="text-center py-1">
+                      <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider font-sans">Concepto</span>
+                      <span className="text-xs font-black text-slate-900 uppercase block font-sans">Derecho de Matrícula Regular</span>
+                      <span className="text-2xl font-black text-[#800521] block font-mono mt-0.5">S/ 250.00</span>
+                    </div>
+                    <div className="border-t border-dashed border-slate-200 pt-2 space-y-1 text-[10px] text-slate-600">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">N° Operación:</span>
+                        <span className="font-bold text-slate-900">{storedOp || "OP-2027-02-BCO-94812"}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Titular DNI:</span>
+                        <span className="font-bold text-slate-900">{personalData?.dni || currentStudentDni}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Estudiante:</span>
+                        <span className="font-bold text-slate-900 truncate max-w-[170px]">{studentFullName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Fecha:</span>
+                        <span className="text-slate-700">{storedDate}</span>
+                      </div>
+                      <div className="flex justify-between pt-1 border-t border-slate-100">
+                        <span className="text-slate-400">Estado Caja:</span>
+                        <span className={`font-black uppercase ${isCycle2Validated ? "text-emerald-700" : "text-blue-700"}`}>
+                          {isCycle2Validated ? "VALIDADO POR CAJA" : "EN AUDITORÍA DE CAJA"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
 
-              <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
-                {!isCycle2Validated && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowVoucherModal(false);
-                      handleInstantValidation();
-                    }}
-                    className="px-3.5 py-2 text-xs font-black uppercase tracking-wider bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Aprobar Ahora</span>
-                  </button>
-                )}
+              <div className="pt-2 border-t border-slate-200 flex items-center justify-end">
                 <button
                   type="button"
                   onClick={() => setShowVoucherModal(false)}
-                  className="ml-auto px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 border border-slate-300 rounded-xl transition-all cursor-pointer"
+                  className="px-5 py-2 text-xs font-black uppercase tracking-wider bg-[#800521] hover:bg-[#66041a] text-white rounded-xl shadow-xs transition-all cursor-pointer"
                 >
-                  Cerrar
+                  Cerrar Visor
                 </button>
               </div>
             </div>
