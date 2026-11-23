@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { BookOpen, CheckCircle2, Download, FileText, Printer, ShieldCheck } from 'lucide-react';
 import { Enrollment, MpaAcademicGroup, MpaClassroom, MpaCourse, MpaCurriculumItem, MpaPeriod, MpaProgramTask, MpaShift, Program, StudentPersonalData } from '../../../types';
 import { generateMatriculaPdf, generateManualMatriculaPdf } from '../../../utils/matriculaPdf';
@@ -31,12 +31,29 @@ export default function CourseEnrollmentTab({
   currentProgram
 }: CourseEnrollmentTabProps) {
   const currentStudentDni = enrollment.studentDni || personalData?.dni || "74859612";
-  const isPromotedCycle2 = typeof window !== "undefined" && (
+  const [, setStorageSync] = useState(0);
+  useEffect(() => {
+    const handleSync = () => setStorageSync((v) => v + 1);
+    window.addEventListener("storage", handleSync);
+    window.addEventListener("focus", handleSync);
+    return () => {
+      window.removeEventListener("storage", handleSync);
+      window.removeEventListener("focus", handleSync);
+    };
+  }, []);
+
+  const isPromotedCycle2 = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_student_promoted_cycle2_${currentStudentDni}`) === "true" ||
-    localStorage.getItem(`sfa_student_promoted_cycle2_${personalData?.dni}`) === "true"
+    localStorage.getItem(`sfa_student_promoted_cycle2_${personalData?.dni}`) === "true" ||
+    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+    localStorage.getItem(`sfa_student_cycle_${currentStudentDni}`) === "2" ||
+    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+    localStorage.getItem("sfa_student_cycle") === "2"
   );
-  const isCycle2Paid = typeof window !== "undefined" && (
-    localStorage.getItem(`sfa_cycle2_payment_${currentStudentDni}`) === "true"
+  const isCycle2Paid = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_cycle2_payment_${currentStudentDni}`) === "true" ||
+    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+    localStorage.getItem("sfa_cycle2_payment") === "true"
   );
   const cycleNum = isPromotedCycle2 ? 2 : (studentGroup?.cycle || 1);
   const period = data.periods.find((item) => item.id === studentGroup?.periodId);
@@ -195,7 +212,12 @@ export default function CourseEnrollmentTab({
             type="button"
             onClick={() => {
               localStorage.setItem(`sfa_cycle2_payment_${currentStudentDni}`, "true");
-              window.location.reload();
+              localStorage.setItem("sfa_cycle2_payment_74859612", "true");
+              localStorage.setItem("sfa_cycle2_payment", "true");
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(new Event("storage"));
+              }
+              setStorageSync((v) => v + 1);
             }}
             className="bg-[#800521] hover:bg-[#9F062A] text-white font-black text-xs uppercase px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 cursor-pointer"
           >
