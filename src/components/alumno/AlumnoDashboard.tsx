@@ -494,11 +494,13 @@ export default function AlumnoDashboard({
         "cur_ei_103": { name: "Seguridad e Higiene Industrial en Baja Tensión", code: "EIND-103", credits: 3 },
         "cur_ei_104": { name: "Matemática Aplicada a la Tecnología Eléctrica", code: "EIND-104", credits: 3 },
         "cur_ei_105": { name: "Comunicación y Tecnologías Digitales", code: "EIND-105", credits: 2 },
+        "cur_ei_201": { name: "Circuitos Eléctricos en Corriente Alterna", code: "EIND-201", credits: 4 },
         "EIND-101": { name: "Fundamentos de Electricidad y Circuitos CC", code: "EIND-101", credits: 4 },
         "EIND-102": { name: "Instalaciones Eléctricas de Edificaciones", code: "EIND-102", credits: 4 },
         "EIND-103": { name: "Seguridad e Higiene Industrial en Baja Tensión", code: "EIND-103", credits: 3 },
         "EIND-104": { name: "Matemática Aplicada a la Tecnología Eléctrica", code: "EIND-104", credits: 3 },
-        "EIND-105": { name: "Comunicación y Tecnologías Digitales", code: "EIND-105", credits: 2 }
+        "EIND-105": { name: "Comunicación y Tecnologías Digitales", code: "EIND-105", credits: 2 },
+        "EIND-201": { name: "Circuitos Eléctricos en Corriente Alterna", code: "EIND-201", credits: 4 }
       };
 
       const teacherFallbackNames: Record<string, string> = {
@@ -600,9 +602,40 @@ export default function AlumnoDashboard({
       }));
   }, [catalogCourses, enrollment.programId, enrollment.shift, studentGroup, mpaPlanningData.periods]);
 
-  const studentCourses = enrollment.registeredCourses ? dynamicMpaCourses : dynamicMpaCourses.length > 0
+  const isCycle2Paid = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
+    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+    localStorage.getItem("sfa_cycle2_payment") === "true"
+  );
+
+  const baseStudentCourses = enrollment.registeredCourses ? dynamicMpaCourses : dynamicMpaCourses.length > 0
     ? dynamicMpaCourses
     : (ciclo1Courses.length > 0 ? ciclo1Courses : courses.filter((c: any) => c.careerId === enrollment.programId || c.career === currentProgram?.name));
+
+  const studentCourses = useMemo(() => {
+    const list = [...baseStudentCourses];
+    if (isCycle2Paid && !list.some((c: any) => c.code === "EIND-201")) {
+      list.push({
+        id: "cur_ei_201",
+        name: "Circuitos Eléctricos en Corriente Alterna",
+        code: "EIND-201",
+        credits: 4,
+        classroom: "Aula 201 • Pabellón A",
+        schedule: "Martes y Jueves 08:00 AM - 12:00 PM",
+        teacherDni: "08529631",
+        teacherName: "Ing. Manuel Ramos Salazar",
+        career: "Electricidad Industrial",
+        group: "EI-II-A",
+        cycle: "Ciclo II",
+        startDate: "2027-08-16",
+        endDate: "2027-12-17",
+        studentCount: 30,
+        description: "Unidad didáctica del Ciclo II. Análisis de formas de onda senoidales, fasores, potencia activa, reactiva y aparente en circuitos RLC.",
+        formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
+      } as any);
+    }
+    return list;
+  }, [baseStudentCourses, isCycle2Paid]);
 
   const enrichedCourses = studentCourses.map((c) => {
     let iconType = "BarChart3";
