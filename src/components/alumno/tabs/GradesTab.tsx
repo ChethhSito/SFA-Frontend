@@ -23,39 +23,6 @@ export const GradesTab: React.FC<GradesTabProps> = ({
   const [showBoletaModal, setShowBoletaModal] = useState(false);
   const activeCourse = enrichedCourses.find(c => c.name === selectedCourseDetail || c.id === selectedCourseDetail) || enrichedCourses[0];
 
-  const handleSimulateCycle1 = () => {
-    const dni = studentInfo?.dni || "74859612";
-    const name = studentInfo?.name || "Mateo Sebastián Quispe Rojas";
-    const simulationData = {
-      studentDni: dni,
-      studentName: name,
-      cycle: 1,
-      completedAt: new Date().toISOString(),
-      weightedAverage: 16.0,
-      courses: [
-        { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, grade: 15.6, isManual: true, approved: true },
-        { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, grade: 16.5, isManual: false, approved: true },
-        { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, grade: 17.0, isManual: false, approved: true },
-        { code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, grade: 15.0, isManual: false, approved: true },
-        { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2, grade: 16.0, isManual: false, approved: true },
-      ],
-    };
-
-    localStorage.setItem(`sfa_simulated_cycle1_${dni}`, JSON.stringify(simulationData));
-    localStorage.setItem("sfa_simulated_cycle1_74859612", JSON.stringify(simulationData));
-    localStorage.setItem("sfa_simulated_cycle1", JSON.stringify(simulationData));
-    localStorage.setItem(`sfa_student_promoted_cycle2_${dni}`, "true");
-    localStorage.setItem("sfa_student_promoted_cycle2_74859612", "true");
-    localStorage.setItem(`sfa_student_cycle_${dni}`, "2");
-    localStorage.setItem("sfa_student_cycle_74859612", "2");
-    localStorage.setItem("sfa_student_cycle", "2");
-
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("storage"));
-      window.location.reload();
-    }
-  };
-
   const renderCourseIcon = (iconName: string, className = "w-4 h-4") => {
     switch (iconName) {
       case "Zap":
@@ -175,30 +142,6 @@ export const GradesTab: React.FC<GradesTabProps> = ({
               <span className="text-[9px] text-amber-400 font-extrabold block uppercase mb-0.5 tracking-wider">Período Académico</span>
               <span className="text-xs font-black text-white font-mono">2027-I</span>
             </div>
-            {(() => {
-              const isSimulated = typeof window !== "undefined" && Boolean(
-                localStorage.getItem(`sfa_simulated_cycle1_${studentInfo?.dni || "74859612"}`) ||
-                localStorage.getItem("sfa_simulated_cycle1_74859612") ||
-                localStorage.getItem("sfa_simulated_cycle1") ||
-                localStorage.getItem(`sfa_student_promoted_cycle2_${studentInfo?.dni || "74859612"}`) === "true" ||
-                localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true"
-              );
-              return (
-                <button
-                  type="button"
-                  onClick={handleSimulateCycle1}
-                  className={`text-xs font-black uppercase tracking-wider py-2 px-4 rounded-xl flex items-center gap-2 select-none cursor-pointer transition-all shadow-md border ${
-                    isSimulated
-                      ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-400"
-                      : "bg-amber-400 hover:bg-amber-300 text-slate-950 border-amber-300"
-                  }`}
-                  title="Consolidar y cerrar las actas del Ciclo I para reflejar todas las calificaciones oficiales"
-                >
-                  {isSimulated ? <CheckCircle2 className="w-3.5 h-3.5 text-white" /> : <Award className="w-3.5 h-3.5 text-slate-950" />}
-                  <span>{isSimulated ? "Actas Ciclo I Consolidadas" : "Simular Cierre de Ciclo I"}</span>
-                </button>
-              );
-            })()}
             <button
               onClick={() => setShowBoletaModal(true)}
               className="bg-white hover:bg-amber-50 text-slate-900 font-bold text-xs py-2 px-4 rounded-xl flex items-center gap-2 select-none cursor-pointer transition-all shadow-md border border-white/30"
@@ -273,31 +216,6 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Banner de Consolidación de Ciclo I */}
-      {coursesWithEvaluations.length < enrichedCourses.length && (
-        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs text-left mb-6">
-          <div className="space-y-1">
-            <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-200/60 px-2 py-0.5 rounded font-mono">
-              Consolidación Institucional de Actas • Ciclo I
-            </span>
-            <h4 className="text-sm font-black text-slate-900">
-              {coursesWithEvaluations.length} de {enrichedCourses.length} cursos calificados. Las 4 asignaturas restantes están pendientes de consolidar desde Secretaría Académica.
-            </h4>
-            <p className="text-xs text-slate-600">
-              Puede consolidar y cerrar formalmente las actas del Ciclo I para reflejar de inmediato todas las calificaciones aprobadas y habilitar la matrícula del Ciclo II.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleSimulateCycle1}
-            className="bg-[#800521] hover:bg-[#9F062A] text-white font-black text-xs uppercase px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 cursor-pointer flex items-center gap-2"
-          >
-            <Award className="w-4 h-4 text-amber-300" />
-            <span>Simular Cierre Ciclo I Ahora</span>
-          </button>
-        </div>
-      )}
 
       {/* Main Split Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">

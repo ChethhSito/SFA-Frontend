@@ -642,16 +642,20 @@ export default function AlumnoDashboard({
           const found = simData.courses?.find((sc: any) => sc.code === c.code || sc.name === c.name);
           if (found) return found;
         }
-        if (
-          (typeof window !== "undefined") && (
-            localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
-            localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-            localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
-            localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
-            localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
-            localStorage.getItem("sfa_student_cycle") === "2"
-          )
-        ) {
+
+        const isAnyPromotionOrSimulationActive = typeof window !== "undefined" && Boolean(
+          localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
+          localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+          localStorage.getItem("sfa_student_promoted") === "true" ||
+          localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
+          localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+          localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
+          localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
+          localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+          localStorage.getItem("sfa_student_cycle") === "2"
+        );
+
+        if (isAnyPromotionOrSimulationActive) {
           const defaults: Record<string, number> = {
             "EIND-101": 15.6,
             "EIND-102": 16.5,
