@@ -12,7 +12,8 @@ import {
   FileText,
   X,
   AlertTriangle,
-  Filter
+  Filter,
+  RotateCcw
 } from "lucide-react";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import Button from "../../ui/Button";
@@ -299,6 +300,45 @@ export default function MgeNotasTab({
     setRectifyingStudent(null);
   };
 
+  const [cycleSyncKey, setCycleSyncKey] = useState(0);
+
+  const handleResetFlowToCycle1 = () => {
+    if (!selectedStudentDni) return;
+    const dni = selectedStudentDni;
+    localStorage.removeItem(`sfa_simulated_cycle1_${dni}`);
+    localStorage.removeItem("sfa_simulated_cycle1_74859612");
+    localStorage.removeItem("sfa_simulated_cycle1");
+    localStorage.removeItem(`sfa_simulated_cycle2_${dni}`);
+    localStorage.removeItem("sfa_simulated_cycle2_74859612");
+    localStorage.removeItem("sfa_simulated_cycle2");
+    localStorage.removeItem(`sfa_student_promoted_cycle2_${dni}`);
+    localStorage.removeItem("sfa_student_promoted_cycle2_74859612");
+    localStorage.removeItem("sfa_student_promoted_cycle2");
+    localStorage.removeItem(`sfa_student_promoted_cycle3_${dni}`);
+    localStorage.removeItem("sfa_student_promoted_cycle3_74859612");
+    localStorage.removeItem("sfa_student_promoted_cycle3");
+    localStorage.removeItem(`sfa_student_promoted_${dni}`);
+    localStorage.removeItem("sfa_student_promoted_74859612");
+    localStorage.removeItem("sfa_student_promoted");
+    localStorage.removeItem(`sfa_student_cycle_${dni}`);
+    localStorage.removeItem("sfa_student_cycle_74859612");
+    localStorage.removeItem("sfa_student_cycle");
+    localStorage.removeItem(`sfa_cycle2_payment_${dni}`);
+    localStorage.removeItem("sfa_cycle2_payment_74859612");
+    localStorage.removeItem("sfa_cycle2_payment");
+    localStorage.removeItem(`sfa_cycle2_validated_${dni}`);
+    localStorage.removeItem("sfa_cycle2_validated_74859612");
+    localStorage.removeItem("sfa_cycle2_validated");
+    localStorage.removeItem(`sfa_efsrt_modulo1_approved_${dni}`);
+    localStorage.removeItem("sfa_efsrt_modulo1_approved_74859612");
+    localStorage.removeItem("sfa_efsrt_modulo1_approved");
+    localStorage.removeItem(`sfa_grades_EIND-201_${dni}`);
+    localStorage.removeItem("sfa_grades_EIND-201_74859612");
+    localStorage.removeItem("sfa_acta_signed_EIND-201");
+    window.dispatchEvent(new Event("storage"));
+    setCycleSyncKey((k) => k + 1);
+  };
+
   return (
     <div className="space-y-6 text-left font-sans">
       {/* Banner de Consolidación y Simulación de Ciclos */}
@@ -372,6 +412,16 @@ export default function MgeNotasTab({
                   >
                     <CheckCircle2 className="w-4 h-4 text-amber-300 shrink-0" />
                     <span className="truncate">{isCycle2Done ? "Ciclo II Consolidado (Actas Listas)" : "Simular y Consolidar Ciclo II"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleResetFlowToCycle1}
+                    title="Reiniciar estudiante a Ciclo I para practicar el flujo desde cero"
+                    className="p-2.5 sm:px-3 sm:py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="hidden sm:inline text-[10.5px]">Reiniciar a Ciclo I</span>
                   </button>
                 </div>
               ) : (
