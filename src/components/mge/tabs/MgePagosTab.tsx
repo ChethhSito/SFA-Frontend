@@ -21,6 +21,7 @@ interface Props {
   enrollments: Enrollment[];
   onUpdatePaymentStatus: (dni: string, status: "Validado" | "Observado") => void;
   onRegisterOperation: (dni: string, operation: string) => void;
+  currentPeriodName?: string;
 }
 
 export default function MgePagosTab({
@@ -28,6 +29,7 @@ export default function MgePagosTab({
   enrollments,
   onUpdatePaymentStatus,
   onRegisterOperation,
+  currentPeriodName,
 }: Props) {
   const [operations, setOperations] = useState<Record<string, string>>({});
   const [auditingStudent, setAuditingStudent] = useState<ProcessedStudent | null>(null);
@@ -95,30 +97,33 @@ export default function MgePagosTab({
     setAuditingStudent(null);
   };
 
+  const isPeriodCycle2 = useMemo(() => {
+    return Boolean(currentPeriodName && (currentPeriodName.includes("2027-II") || currentPeriodName.includes("2027-2")));
+  }, [currentPeriodName]);
+
   // Contadores
   const totalValidados = processedStudents.filter((s) => {
-    const isC2P = typeof window !== "undefined" && (
-      localStorage.getItem(`sfa_cycle2_payment_${s.dni}`) === "true" ||
-      (s.dni === "74859612" && localStorage.getItem("sfa_cycle2_payment_74859612") === "true")
-    );
-    const isC2V = typeof window !== "undefined" && (
-      localStorage.getItem(`sfa_cycle2_validated_${s.dni}`) === "true" ||
-      (s.dni === "74859612" && localStorage.getItem("sfa_cycle2_validated_74859612") === "true")
-    );
-    if (isC2P) return isC2V;
+    if (isPeriodCycle2) {
+      return typeof window !== "undefined" && Boolean(
+        localStorage.getItem(`sfa_cycle2_validated_${s.dni}`) === "true" ||
+        (s.dni === "74859612" && localStorage.getItem("sfa_cycle2_validated_74859612") === "true")
+      );
+    }
     return s.paymentStatus === "Validado";
   }).length;
 
   const totalPendientes = processedStudents.filter((s) => {
-    const isC2P = typeof window !== "undefined" && (
-      localStorage.getItem(`sfa_cycle2_payment_${s.dni}`) === "true" ||
-      (s.dni === "74859612" && localStorage.getItem("sfa_cycle2_payment_74859612") === "true")
-    );
-    const isC2V = typeof window !== "undefined" && (
-      localStorage.getItem(`sfa_cycle2_validated_${s.dni}`) === "true" ||
-      (s.dni === "74859612" && localStorage.getItem("sfa_cycle2_validated_74859612") === "true")
-    );
-    if (isC2P) return !isC2V;
+    if (isPeriodCycle2) {
+      const isC2V = typeof window !== "undefined" && Boolean(
+        localStorage.getItem(`sfa_cycle2_validated_${s.dni}`) === "true" ||
+        (s.dni === "74859612" && localStorage.getItem("sfa_cycle2_validated_74859612") === "true")
+      );
+      const isC2P = typeof window !== "undefined" && Boolean(
+        localStorage.getItem(`sfa_cycle2_payment_${s.dni}`) === "true" ||
+        (s.dni === "74859612" && localStorage.getItem("sfa_cycle2_payment_74859612") === "true")
+      );
+      return isC2P && !isC2V;
+    }
     return s.paymentStatus !== "Validado" && s.paymentStatus !== "Observado";
   }).length;
   const totalObservados = processedStudents.filter((s) => s.paymentStatus === "Observado").length;
@@ -162,7 +167,7 @@ export default function MgePagosTab({
           <div className="flex items-center gap-2">
             <Receipt className="w-4 h-4 text-amber-400" />
             <span className="font-extrabold text-xs uppercase tracking-wider font-mono">
-              Bandeja de Conciliación de Pagos • Periodo 2027-II
+              Bandeja de Conciliación de Pagos • {currentPeriodName || (isPeriodCycle2 ? "Periodo 2027-II" : "Periodo 2027-I")}
             </span>
           </div>
           <span className="text-[10px] text-slate-300 font-bold font-mono">
@@ -197,9 +202,11 @@ export default function MgePagosTab({
                   (st.dni === "74859612" && localStorage.getItem("sfa_cycle2_validated_74859612") === "true")
                 );
 
-                const operation = hasCycle2Payment ? (cycle2Op || "OP-2027-02-BCO-94812") : enrollment?.paymentOperation?.trim();
-                const validated = hasCycle2Payment ? isCycle2Validated : st.paymentStatus === "Validado";
-                const isObserved = !isCycle2Validated && st.paymentStatus === "Observado";
+                const operation = isPeriodCycle2
+                  ? (cycle2Op || (hasCycle2Payment ? "OP-2027-02-BCO-94812" : enrollment?.paymentOperation?.trim()))
+                  : (enrollment?.paymentOperation?.trim() || "OP-2027-01-BC0-11842");
+                const validated = isPeriodCycle2 ? isCycle2Validated : st.paymentStatus === "Validado";
+                const isObserved = isPeriodCycle2 ? (!isCycle2Validated && st.paymentStatus === "Observado") : st.paymentStatus === "Observado";
                 const hasVoucher = Boolean(operation);
 
                 const initials = `${st.name?.charAt(0) || ""}${st.lastName?.charAt(0) || ""}`.toUpperCase();
@@ -222,7 +229,7 @@ export default function MgePagosTab({
                     {/* Concepto */}
                     <td className="px-5 py-3.5">
                       <div className="font-bold text-slate-900 text-xs">
-                        {hasCycle2Payment ? "Derecho de Matrícula Regular (Ciclo II)" : "Derecho de Matrícula Regular (Ciclo I)"}
+                        {isPeriodCycle2 ? "Derecho de Matrícula Regular (Ciclo II)" : "Derecho de Matrícula Regular (Ciclo I)"}
                       </div>
                       <span className="text-[10px] font-black font-mono text-[#800521] block">
                         S/ 250.00 (Tarifa Institucional)
@@ -376,7 +383,7 @@ export default function MgePagosTab({
                     Matrícula Regular
                   </span>
                   <span className="font-mono font-black text-[#800521] text-xs">
-                    S/ 250.00 (Periodo 2026-I)
+                    S/ 250.00 ({currentPeriodName || (isPeriodCycle2 ? "Periodo 2027-II" : "Periodo 2027-I")})
                   </span>
                 </div>
               </div>
