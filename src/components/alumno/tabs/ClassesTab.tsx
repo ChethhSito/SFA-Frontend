@@ -459,12 +459,18 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
             const averageGrade = grades.length ? (grades.reduce((sum, grade) => sum + grade, 0) / grades.length).toFixed(1) : "NR";
 
             const isCiclo1 = selectedClassesPeriod === "2027-I";
-            const isCiclo2Passed = courseItem.code === "EIND-201" && (
+            const isCiclo2AllSimulated = Boolean(
+              localStorage.getItem(`sfa_simulated_cycle2_${studentDni}`) ||
+              localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+              localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
+              localStorage.getItem(`sfa_student_promoted_cycle3_${studentDni}`) === "true"
+            );
+            const isCiclo2Passed = (courseItem.code === "EIND-201" && (
               localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
               localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true" ||
               localStorage.getItem("sfa_course_passed_EIND-201_74859612") === "true" ||
               Boolean(localStorage.getItem("sfa_grades_EIND-201_74859612"))
-            );
+            )) || isCiclo2AllSimulated;
             const isApproved = isCiclo1 || isCiclo2Passed;
 
             let displayGrade = averageGrade;
@@ -477,6 +483,15 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 "EIND-105": "16.0"
               };
               displayGrade = c1Defaults[courseItem.code] || "16.0";
+            } else if (isCiclo2AllSimulated) {
+              const c2Defaults: Record<string, string> = {
+                "EIND-201": "16.5",
+                "EIND-202": "17.0",
+                "EIND-203": "16.0",
+                "EIND-204": "16.5",
+                "EIND-205": "15.5"
+              };
+              displayGrade = c2Defaults[courseItem.code] || "16.5";
             } else if (courseItem.code === "EIND-201") {
               try {
                 const raw = localStorage.getItem("sfa_grades_EIND-201_74859612") || localStorage.getItem("sfa_grades_cur_ei_201_74859612");

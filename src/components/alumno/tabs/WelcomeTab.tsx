@@ -43,12 +43,15 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
     localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
     localStorage.getItem("sfa_cycle2_validated") === "true" ||
     studentGroup?.cycle === 2 ||
-    studentGroup?.id?.includes("-II-")
+    studentGroup?.id?.includes("-II-") ||
+    studentGroup?.name?.includes("-II-") ||
+    studentTasks?.some((t: any) => t.groupId?.includes("-II-") || t.id?.includes("ei2_"))
   );
 
+  const rawPeriodName = mpaPlanningData?.periods?.find((period: any) => period.id === studentGroup?.periodId)?.name;
   const currentPeriod = isPromotedCycle2 
     ? "Periodo 2027-II" 
-    : (mpaPlanningData?.periods?.find((period: any) => period.id === studentGroup?.periodId)?.name || "Periodo 2027-I");
+    : (rawPeriodName && rawPeriodName !== "Periodo académico" ? rawPeriodName : "Periodo 2027-I");
 
   const currentCycleRoman = isPromotedCycle2 ? "Ciclo II" : "Ciclo I";
   const progressBadge = isPromotedCycle2 

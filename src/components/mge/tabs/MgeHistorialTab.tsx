@@ -16,6 +16,7 @@ import { recordedHistory } from "../../../utils/mgeReports";
 import { createHistoryPdf } from "../../../utils/historyPdf";
 import { academicToday } from "../../../utils/attendance";
 import { MgeSimularCicloModal } from "../modals/MgeSimularCicloModal";
+import { MgeSimularCiclo2Modal } from "../modals/MgeSimularCiclo2Modal";
 
 interface Props {
   processedStudents: ProcessedStudent[];
@@ -128,6 +129,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
   const [printError, setPrintError] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [showSimulateCiclo1Modal, setShowSimulateCiclo1Modal] = useState(false);
+  const [showSimulateCiclo2Modal, setShowSimulateCiclo2Modal] = useState(false);
   const [cycleFilter, setCycleFilter] = useState<number | "ALL">("ALL");
   const [cycle1SimState, setCycle1SimState] = useState(0);
 
@@ -421,20 +423,43 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
                     localStorage.getItem("sfa_simulated_cycle1_74859612") ||
                     localStorage.getItem("sfa_simulated_cycle1")
                   );
+                  const isCycle2Done = typeof window !== "undefined" && Boolean(
+                    localStorage.getItem(`sfa_student_promoted_cycle3_${student?.dni}`) === "true" ||
+                    localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
+                    localStorage.getItem(`sfa_simulated_cycle2_${student?.dni}`) ||
+                    localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+                    localStorage.getItem("sfa_simulated_cycle2")
+                  );
                   return (
-                    <button
-                      type="button"
-                      onClick={() => setShowSimulateCiclo1Modal(true)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border cursor-pointer flex items-center gap-2 ${
-                        isCycle1Done
-                          ? "bg-emerald-800 hover:bg-emerald-700 text-white border-emerald-600/70"
-                          : "bg-[#800521] hover:bg-[#9F062A] text-white border-red-700/60"
-                      }`}
-                      title="Consolidar y cerrar las actas del Ciclo I para promover al estudiante a Ciclo II"
-                    >
-                      {isCycle1Done ? <CheckCircle2 className="w-4 h-4 text-emerald-300" /> : <Award className="w-4 h-4 text-amber-300" />}
-                      {isCycle1Done ? "Ciclo I Culminado (Re-simular)" : "Simular Cierre de Ciclo I"}
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setShowSimulateCiclo1Modal(true)}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border cursor-pointer flex items-center gap-2 ${
+                          isCycle1Done
+                            ? "bg-emerald-800 hover:bg-emerald-700 text-white border-emerald-600/70"
+                            : "bg-[#800521] hover:bg-[#9F062A] text-white border-red-700/60"
+                        }`}
+                        title="Consolidar y cerrar las actas del Ciclo I para promover al estudiante a Ciclo II"
+                      >
+                        {isCycle1Done ? <CheckCircle2 className="w-4 h-4 text-emerald-300" /> : <Award className="w-4 h-4 text-amber-300" />}
+                        {isCycle1Done ? "Ciclo I Culminado" : "Simular Cierre Ciclo I"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowSimulateCiclo2Modal(true)}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-black uppercase tracking-wider font-mono transition-all shadow-sm border cursor-pointer flex items-center gap-2 ${
+                          isCycle2Done
+                            ? "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-500/70"
+                            : "bg-[#800521] hover:bg-[#9F062A] text-white border-red-700/60"
+                        }`}
+                        title="Consolidar Ciclo II, generar actas y habilitar Módulo Técnico I de EFSRT"
+                      >
+                        {isCycle2Done ? <CheckCircle2 className="w-4 h-4 text-emerald-300" /> : <Award className="w-4 h-4 text-amber-300" />}
+                        {isCycle2Done ? "Ciclo II Culminado" : "Simular y Consolidar Ciclo II (Presentación)"}
+                      </button>
+                    </div>
                   );
                 })()}
                 <button
@@ -710,17 +735,31 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
       )}
 
       {student && (
-        <MgeSimularCicloModal
-          isOpen={showSimulateCiclo1Modal}
-          onClose={() => setShowSimulateCiclo1Modal(false)}
-          student={student}
-          courses={courses}
-          assignments={assignments}
-          onSimulated={() => {
-            setPromotedState((prev) => ({ ...prev }));
-            setCycle1SimState((prev) => prev + 1);
-          }}
-        />
+        <>
+          <MgeSimularCicloModal
+            isOpen={showSimulateCiclo1Modal}
+            onClose={() => setShowSimulateCiclo1Modal(false)}
+            student={student}
+            courses={courses}
+            assignments={assignments}
+            onSimulated={() => {
+              setPromotedState((prev) => ({ ...prev }));
+              setCycle1SimState((prev) => prev + 1);
+            }}
+          />
+
+          <MgeSimularCiclo2Modal
+            isOpen={showSimulateCiclo2Modal}
+            onClose={() => setShowSimulateCiclo2Modal(false)}
+            student={student}
+            courses={courses}
+            assignments={assignments}
+            onSimulated={() => {
+              setPromotedState((prev) => ({ ...prev }));
+              setCycle1SimState((prev) => prev + 1);
+            }}
+          />
+        </>
       )}
     </div>
   );

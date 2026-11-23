@@ -19,6 +19,7 @@ import Button from "../../ui/Button";
 import { Course, CourseAssignment } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
 import { MgeSimularCicloModal } from "../modals/MgeSimularCicloModal";
+import { MgeSimularCiclo2Modal } from "../modals/MgeSimularCiclo2Modal";
 
 interface Props {
   courses: Course[];
@@ -48,6 +49,7 @@ export default function MgeNotasTab({
   const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
   const [selectedStudentDni, setSelectedStudentDni] = useState<string>(() => processedStudents[0]?.dni || "");
   const [showSimulateModal, setShowSimulateModal] = useState(false);
+  const [showSimulate2Modal, setShowSimulate2Modal] = useState(false);
 
   // Filtros de Carrera y Ciclo para el selector de cursos
   const [filterCareer, setFilterCareer] = useState<string>("electricidad_industrial");
@@ -337,20 +339,43 @@ export default function MgeNotasTab({
               localStorage.getItem("sfa_simulated_cycle1_74859612") ||
               localStorage.getItem("sfa_simulated_cycle1")
             );
+            const isCycle2Done = typeof window !== "undefined" && Boolean(
+              localStorage.getItem(`sfa_student_promoted_cycle3_${selectedStudentDni}`) === "true" ||
+              localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
+              localStorage.getItem(`sfa_simulated_cycle2_${selectedStudentDni}`) ||
+              localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+              localStorage.getItem("sfa_simulated_cycle2")
+            );
             return (
-              <button
-                type="button"
-                disabled={!selectedStudentDni}
-                onClick={() => setShowSimulateModal(true)}
-                className={`font-black text-xs uppercase tracking-wider px-4 py-2.5 rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer ${
-                  isCycle1Done
-                    ? "bg-emerald-700 hover:bg-emerald-600 text-white"
-                    : "bg-amber-400 hover:bg-amber-300 text-slate-950"
-                }`}
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{isCycle1Done ? "Ciclo I Culminado (Re-simular)" : "Simular Cierre de Ciclo I"}</span>
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  disabled={!selectedStudentDni}
+                  onClick={() => setShowSimulateModal(true)}
+                  className={`font-black text-xs uppercase tracking-wider px-3.5 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isCycle1Done
+                      ? "bg-slate-700 hover:bg-slate-600 text-white"
+                      : "bg-amber-400 hover:bg-amber-300 text-slate-950"
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{isCycle1Done ? "Ciclo I Culminado (Re-simular)" : "Simular Cierre Ciclo I"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!selectedStudentDni}
+                  onClick={() => setShowSimulate2Modal(true)}
+                  className={`font-black text-xs uppercase tracking-wider px-3.5 py-2.5 rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isCycle2Done
+                      ? "bg-emerald-700 hover:bg-emerald-600 text-white"
+                      : "bg-[#800521] hover:bg-[#66041a] text-white"
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{isCycle2Done ? "Ciclo II Consolidado (Re-simular)" : "Simular y Consolidar Ciclo II (Presentación)"}</span>
+                </button>
+              </div>
             );
           })()}
         </div>
@@ -705,7 +730,7 @@ export default function MgeNotasTab({
         </div>
       )}
 
-      {/* Modal de Simulación de Cierre de Ciclo */}
+      {/* Modal de Simulación de Cierre de Ciclo I */}
       {showSimulateModal && (
         <MgeSimularCicloModal
           isOpen={showSimulateModal}
@@ -715,6 +740,20 @@ export default function MgeNotasTab({
           onClose={() => setShowSimulateModal(false)}
           onSimulated={() => {
             setShowSimulateModal(false);
+          }}
+        />
+      )}
+
+      {/* Modal de Simulación de Cierre de Ciclo II */}
+      {showSimulate2Modal && (
+        <MgeSimularCiclo2Modal
+          isOpen={showSimulate2Modal}
+          student={selectedStudentObj}
+          courses={courses}
+          assignments={assignments}
+          onClose={() => setShowSimulate2Modal(false)}
+          onSimulated={() => {
+            setShowSimulate2Modal(false);
           }}
         />
       )}

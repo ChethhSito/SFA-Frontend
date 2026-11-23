@@ -161,6 +161,24 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   ) : null;
   const simData = rawSim ? (() => { try { return JSON.parse(rawSim); } catch { return null; } })() : null;
 
+  const rawSim2 = typeof window !== "undefined" ? (
+    localStorage.getItem(`sfa_simulated_cycle2_${studentDni}`) ||
+    localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+    localStorage.getItem("sfa_simulated_cycle2")
+  ) : null;
+  const simData2 = rawSim2 ? (() => { try { return JSON.parse(rawSim2); } catch { return null; } })() : null;
+
+  const isCycle2Simulated = Boolean(
+    (simData2 && Array.isArray(simData2.courses) && simData2.courses.length > 0) ||
+    (typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_student_promoted_cycle3_${studentDni}`) === "true" ||
+      localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
+      localStorage.getItem("sfa_student_promoted_cycle3") === "true" ||
+      localStorage.getItem(`sfa_efsrt_modulo1_approved_${studentDni}`) === "true" ||
+      localStorage.getItem("sfa_efsrt_modulo1_approved_74859612") === "true"
+    ))
+  );
+
   const hasTeacherActa = Boolean(
     assignments?.some((a) =>
       (a.title?.startsWith("[Planilla]") || a.title?.includes("EX_FINAL") || a.title?.includes("PC1") || a.courseId?.includes("101") || a.courseId === "cur_ei_101") &&
@@ -281,6 +299,21 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
       };
     }
     if (targetCycleNum === 2 && isPromotedToCycle2) {
+      if (isCycle2Simulated) {
+        const sim2Course = simData2?.courses?.find((sc: any) => sc.code === c.code || sc.name === c.name);
+        const storedGradeStr = typeof window !== "undefined" ? (
+          localStorage.getItem(`sfa_grades_${c.code}_${studentDni}`) ||
+          localStorage.getItem(`sfa_grades_${c.code}_74859612`)
+        ) : null;
+        const finalC2Grade = storedGradeStr
+          ? Number(storedGradeStr)
+          : (typeof sim2Course?.grade === "number" ? sim2Course.grade : (c.code === "EIND-202" ? 17.0 : 16.5));
+        return {
+          ...c,
+          status: "Aprobado",
+          simGrade: finalC2Grade
+        };
+      }
       const isCourseApproved = (c.code === "EIND-201" || c.code === "cur_ei_201") && (
         localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
         localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true" ||
