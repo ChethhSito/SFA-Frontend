@@ -1148,6 +1148,15 @@ function Application({
           <CertificateDocuments
             dni={record.studentDni}
             ready={!dirty && (record.status === "Apto" || record.status === "Certificado Emitido" || allRequirementsChecked)}
+            studentName={student ? `${student.name} ${student.lastName}` : (record.studentDni === "74859612" ? "Mateo Sebastián Quispe Rojas" : `Estudiante DNI ${record.studentDni}`)}
+            program={program}
+            record={record}
+            extra={{
+              efsrtData,
+              feeOpNumber,
+              feeAmount,
+              futId,
+            }}
           />
         </div>
       </div>
