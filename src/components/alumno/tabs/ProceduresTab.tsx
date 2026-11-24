@@ -11,6 +11,7 @@ import {
   deleteServiceRequest
 } from '../../../services/serviceRequests';
 import { readMafState } from '../../../services/mafState';
+import { fetchCertificates } from '../../../services/api';
 import { generateOfficialCertificatePdf } from '../../../utils/officialCertificatePdf';
 import { academicToday } from '../../../utils/attendance';
 import { Pagination, usePagination } from '../../ui/Pagination';
@@ -243,7 +244,18 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
   const reload = async () => {
     setLoading(true);
     try {
-      setItems(await fetchServiceRequests(studentDni));
+      const [reqs, certs] = await Promise.all([
+        fetchServiceRequests(studentDni),
+        fetchCertificates(studentDni).catch(() => []),
+      ]);
+      const hasActiveCert = Array.isArray(certs) && certs.some(c => c.active);
+      const mapped = (reqs || []).map(r => {
+        if ((r.conceptCode === 'CER01' || r.conceptCode === 'TIT01') && hasActiveCert) {
+          return { ...r, status: 'Validado', deliveryStatus: 'Emitido' as const };
+        }
+        return r;
+      });
+      setItems(mapped);
       setError('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudieron consultar las solicitudes.');
@@ -252,7 +264,16 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
     }
   };
 
-  useEffect(() => { void reload(); }, [studentDni]);
+  useEffect(() => { 
+    void reload(); 
+    const handleSync = () => { void reload(); };
+    window.addEventListener("sfa_service_requests_changed", handleSync);
+    window.addEventListener("storage", handleSync);
+    return () => {
+      window.removeEventListener("sfa_service_requests_changed", handleSync);
+      window.removeEventListener("storage", handleSync);
+    };
+  }, [studentDni]);
   useEffect(() => { 
     void readMafState<{ code: string; amount: number }>('concepts')
       .then(list => setRates(Object.fromEntries(list.map(item => [item.code, item.amount]))))
