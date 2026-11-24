@@ -25,7 +25,19 @@ async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T 
     });
 
     if (!res.ok) {
-      console.warn(`[API] Endpoint ${endpoint} returned status ${res.status}`);
+      let errorMsg = `Endpoint ${endpoint} returned status ${res.status}`;
+      try {
+        const errorData = await res.json();
+        if (errorData?.message) {
+          errorMsg = Array.isArray(errorData.message) ? errorData.message.join(", ") : errorData.message;
+        }
+      } catch {
+        // Ignored if body not JSON
+      }
+      console.warn(`[API] ${errorMsg}`);
+      if (options?.method && options.method !== "GET") {
+        throw new Error(errorMsg);
+      }
       return null;
     }
 

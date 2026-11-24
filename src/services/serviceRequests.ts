@@ -93,7 +93,7 @@ export async function deliverServiceRequestResult(id: string, file: File): Promi
 }
 
 export function serviceRequestResultUrl(id: string, dni: string): string {
-  return `${API_BASE_URL}/service-requests/${encodeURIComponent(id)}${dni ? `?dni=${encodeURIComponent(dni)}` : ''}`;
+  return `${API_BASE_URL}/service-requests/${encodeURIComponent(id)}/result${dni ? `?dni=${encodeURIComponent(dni)}` : ''}`;
 }
 
 export function deleteServiceRequest(id: string, dni?: string): Promise<{ success: boolean; id: string }> {

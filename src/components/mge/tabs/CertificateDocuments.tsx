@@ -133,13 +133,15 @@ export default function CertificateDocuments({
     if (file.size > 5 * 1024 * 1024 || !file.name.toLowerCase().endsWith(".pdf")) {
       throw new Error("Seleccione un archivo PDF institucional válido de hasta 5 MB.");
     }
+    const rawData = await readFile(file);
+    const cleanData = rawData.replace(/\s+/g, "");
     const saved = await registerCertificate({
       studentDni: dni,
       number,
       issuedDate: date,
       issuerName: issuer,
       fileName: file.name,
-      fileData: await readFile(file)
+      fileData: cleanData
     });
     if (!saved?._id) throw new Error("No se pudo registrar el PDF. Verifique los requisitos e intente nuevamente.");
     setItems((previous) => [saved, ...previous.filter((item) => item._id !== saved._id)]);
