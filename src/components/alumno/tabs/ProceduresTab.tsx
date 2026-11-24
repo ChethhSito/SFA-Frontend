@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { 
   FileText, RefreshCw, Award, CheckCircle2, Clock, AlertCircle, 
   Download, ArrowRight, ShieldCheck, Building2, Send, Sparkles,
-  Lock, Unlock, GraduationCap, Briefcase, FileCheck, Check, Info, AlertTriangle
+  Lock, Unlock, GraduationCap, Briefcase, FileCheck, Check, Info, AlertTriangle,
+  Upload, X
 } from 'lucide-react';
 import { 
   createServiceRequest, fetchServiceRequests, ServiceRequest, 
@@ -165,6 +166,17 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [voucher, setVoucher] = useState({ requestId: '', operationNumber: '', paymentDate: '', amountPaid: '' });
+  const [voucherFile, setVoucherFile] = useState<{ name: string; url: string; size?: string } | null>(() => {
+    if (typeof window === "undefined") return null;
+    const savedUrl = localStorage.getItem(`sfa_fee_voucher_file_${studentDni}`) ||
+      (studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null);
+    const savedName = localStorage.getItem(`sfa_fee_voucher_name_${studentDni}`) ||
+      (studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_name_74859612") : null);
+    if (savedUrl && savedName) {
+      return { name: savedName, url: savedUrl };
+    }
+    return null;
+  });
   const [voucherSaving, setVoucherSaving] = useState(false);
   const [voucherFeedback, setVoucherFeedback] = useState('');
   const [voucherError, setVoucherError] = useState('');
@@ -261,10 +273,26 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
         localStorage.setItem(`sfa_fee_paid_${studentDni}`, "true");
         localStorage.setItem(`sfa_fee_op_${studentDni}`, voucher.operationNumber.trim());
         localStorage.setItem(`sfa_fee_amount_${studentDni}`, String(voucher.amountPaid));
+        localStorage.setItem(`sfa_fee_date_${studentDni}`, voucher.paymentDate);
+        if (voucherFile) {
+          localStorage.setItem(`sfa_fee_voucher_file_${studentDni}`, voucherFile.url);
+          localStorage.setItem(`sfa_fee_voucher_name_${studentDni}`, voucherFile.name);
+        } else {
+          localStorage.setItem(`sfa_fee_voucher_file_${studentDni}`, "/voucher_ciclo2.png");
+          localStorage.setItem(`sfa_fee_voucher_name_${studentDni}`, "VOUCHER_BN_49102.png");
+        }
         if (studentDni === "74859612") {
           localStorage.setItem("sfa_fee_paid_74859612", "true");
           localStorage.setItem("sfa_fee_op_74859612", voucher.operationNumber.trim());
           localStorage.setItem("sfa_fee_amount_74859612", String(voucher.amountPaid));
+          localStorage.setItem("sfa_fee_date_74859612", voucher.paymentDate);
+          if (voucherFile) {
+            localStorage.setItem("sfa_fee_voucher_file_74859612", voucherFile.url);
+            localStorage.setItem("sfa_fee_voucher_name_74859612", voucherFile.name);
+          } else {
+            localStorage.setItem("sfa_fee_voucher_file_74859612", "/voucher_ciclo2.png");
+            localStorage.setItem("sfa_fee_voucher_name_74859612", "VOUCHER_BN_49102.png");
+          }
         }
         window.dispatchEvent(new Event("storage"));
       }
@@ -854,6 +882,79 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                             className="w-full rounded-lg border border-slate-300 p-2 text-xs font-mono font-bold bg-white" 
                           />
                         </div>
+                      </div>
+
+                      {/* Adjuntar Voucher de Pago */}
+                      <div>
+                        <label className="block text-[10.5px] font-bold uppercase text-slate-600 mb-1 flex items-center justify-between">
+                          <span>Comprobante o Voucher de Pago Digital *</span>
+                          <span className="text-[10px] text-slate-400 font-normal">JPG, PNG o PDF • Máx. 5 MB</span>
+                        </label>
+
+                        {voucherFile ? (
+                          <div className="bg-white border border-emerald-300 rounded-xl p-3 flex items-center justify-between gap-3 shadow-2xs">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              {voucherFile.url.startsWith("data:image") || voucherFile.url.endsWith(".png") || voucherFile.url.endsWith(".jpg") ? (
+                                <img src={voucherFile.url} alt="Voucher" className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-800 font-bold text-xs shrink-0">
+                                  PDF
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-slate-800 truncate">{voucherFile.name}</p>
+                                <p className="text-[10px] text-emerald-700 font-bold uppercase">Comprobante oficial adjuntado</p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setVoucherFile(null)}
+                              className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                              title="Quitar archivo"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <label className="flex-1 border-2 border-dashed border-slate-300 hover:border-[#800521] bg-white rounded-xl p-3 flex items-center justify-center gap-2 text-xs text-slate-600 hover:text-[#800521] cursor-pointer transition-all group">
+                              <Upload className="w-4 h-4 text-slate-400 group-hover:text-[#800521]" />
+                              <span className="font-bold">Examinar voucher desde dispositivo...</span>
+                              <input
+                                type="file"
+                                accept="image/*,application/pdf"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  const reader = new FileReader();
+                                  reader.onload = () => {
+                                    setVoucherFile({
+                                      name: file.name,
+                                      url: reader.result as string,
+                                      size: `${(file.size / 1024).toFixed(0)} KB`
+                                    });
+                                  };
+                                  reader.readAsDataURL(file);
+                                }}
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setVoucherFile({
+                                  name: "VOUCHER_BN_49102.png",
+                                  url: "/voucher_ciclo2.png",
+                                  size: "184 KB"
+                                });
+                              }}
+                              className="shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold px-3 py-2 rounded-xl transition-all cursor-pointer border border-slate-200 flex items-center gap-1.5"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Usar comprobante Banco de la Nación</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2 pt-1">

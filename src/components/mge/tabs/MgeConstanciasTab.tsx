@@ -61,25 +61,56 @@ function Application({
     localStorage.getItem(`sfa_student_cycle_${record.studentDni}`) === "6"
   ));
 
-  const [docs, setDocs] = useState(() => {
-    const base = { ...record.docsChecked };
-    // Los 96 créditos ya están concluidos por el récord académico de los 6 ciclos
-    if (isEgresado96Credits) {
-      base.constanciaEgresado = true;
-    }
-    const hasFut = typeof window !== "undefined" && (
+  const [hasFut, setHasFut] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
       localStorage.getItem(`sfa_fut_registered_${record.studentDni}`) === "true" ||
       (record.studentDni === "74859612" && localStorage.getItem("sfa_fut_registered_74859612") === "true")
     );
-    if (hasFut) base.solicitud = true;
+  });
 
-    const hasFeePaid = typeof window !== "undefined" && (
+  const [hasFeePaid, setHasFeePaid] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return (
       localStorage.getItem(`sfa_fee_paid_${record.studentDni}`) === "true" ||
       (record.studentDni === "74859612" && localStorage.getItem("sfa_fee_paid_74859612") === "true")
     );
-    if (hasFeePaid) base.pagoDerecho = true;
+  });
 
-    return base;
+  const [feeOpNumber, setFeeOpNumber] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return (
+      localStorage.getItem(`sfa_fee_op_${record.studentDni}`) ||
+      (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_op_74859612") : null) ||
+      ""
+    );
+  });
+
+  const [feeVoucherUrl, setFeeVoucherUrl] = useState(() => {
+    if (typeof window === "undefined") return "/voucher_ciclo2.png";
+    return (
+      localStorage.getItem(`sfa_fee_voucher_file_${record.studentDni}`) ||
+      (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null) ||
+      "/voucher_ciclo2.png"
+    );
+  });
+
+  const [docs, setDocs] = useState(() => {
+    const isFut = typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_fut_registered_${record.studentDni}`) === "true" ||
+      (record.studentDni === "74859612" && localStorage.getItem("sfa_fut_registered_74859612") === "true")
+    );
+    const isFee = typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_fee_paid_${record.studentDni}`) === "true" ||
+      (record.studentDni === "74859612" && localStorage.getItem("sfa_fee_paid_74859612") === "true")
+    );
+
+    return {
+      solicitud: isFut,
+      constanciaEgresado: isEgresado96Credits,
+      practicasPre: record.docsChecked.practicasPre === true,
+      pagoDerecho: isFee
+    };
   });
 
   const [obs, setObs] = useState(record.obs || "Expediente curricular de titulación en trámite. Requisitos de egresado auditados.");
@@ -148,19 +179,31 @@ function Application({
           setDocs((prev) => ({ ...prev, practicasPre: true }));
         }
 
-        const hasFut =
+        const hasFutVal =
           localStorage.getItem(`sfa_fut_registered_${record.studentDni}`) === "true" ||
           (record.studentDni === "74859612" && localStorage.getItem("sfa_fut_registered_74859612") === "true");
-        if (hasFut) {
+        setHasFut(hasFutVal);
+        if (hasFutVal) {
           setDocs((prev) => ({ ...prev, solicitud: true }));
         }
 
-        const hasFeePaid =
+        const hasFeeVal =
           localStorage.getItem(`sfa_fee_paid_${record.studentDni}`) === "true" ||
           (record.studentDni === "74859612" && localStorage.getItem("sfa_fee_paid_74859612") === "true");
-        if (hasFeePaid) {
+        setHasFeePaid(hasFeeVal);
+        if (hasFeeVal) {
           setDocs((prev) => ({ ...prev, pagoDerecho: true }));
         }
+
+        const op =
+          localStorage.getItem(`sfa_fee_op_${record.studentDni}`) ||
+          (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_op_74859612") : null);
+        if (op) setFeeOpNumber(op);
+
+        const vUrl =
+          localStorage.getItem(`sfa_fee_voucher_file_${record.studentDni}`) ||
+          (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null);
+        if (vUrl) setFeeVoucherUrl(vUrl);
       } catch {}
     };
     window.addEventListener("storage", handleStorage);
@@ -373,8 +416,8 @@ function Application({
 
         {/* Modal de Vista Previa del PDF Real de Prácticas */}
         {previewPdfOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn">
-            <div className="bg-white rounded-3xl w-full max-w-4xl h-[88vh] flex flex-col shadow-2xl overflow-hidden border border-slate-300">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
+            <div className="bg-white rounded-3xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-300 my-auto">
               <div className="bg-[#800521] text-white px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <FileText className="w-5 h-5 text-amber-300" />
@@ -464,23 +507,33 @@ function Application({
                   <div>
                     <p className="text-xs font-bold text-slate-900">1. Solicitud Única de Trámite (FUT)</p>
                     <p className="text-[11px] text-slate-500 mt-0.5 font-mono">
-                      Expediente Digital N° EXP-2029-{record.studentDni}-CER
+                      {hasFut ? `Expediente Digital N° EXP-2029-${record.studentDni}-CER` : "Sin solicitud registrada en Portal del Estudiante"}
                     </p>
                     <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${
                       docs.solicitud ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
                     }`}>
-                      {docs.solicitud ? "Conforme • Solicitud FUT Presentada" : "Pendiente de Verificación"}
+                      {docs.solicitud
+                        ? "Conforme • Solicitud FUT Acreditada"
+                        : hasFut
+                        ? "FUT Registrado • Pendiente de Validación"
+                        : "Pendiente de Registro por el Estudiante"}
                     </span>
                   </div>
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setPreviewFutOpen(true)}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1 shrink-0"
-                >
-                  <Eye className="w-3.5 h-3.5 text-slate-600" />
-                  Ver FUT
-                </button>
+                {hasFut ? (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewFutOpen(true)}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1 shrink-0"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-slate-600" />
+                    Ver FUT
+                  </button>
+                ) : (
+                  <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded-lg shrink-0 select-none">
+                    No Registrado
+                  </span>
+                )}
               </div>
             </div>
 
@@ -589,24 +642,36 @@ function Application({
                   <div>
                     <p className="text-xs font-bold text-slate-900">4. Pago de Tasa de Certificación (Banco de la Nación)</p>
                     <p className="text-[11px] text-slate-500 mt-0.5 font-mono">
-                      Arancel S/ 50.00 • N° Op: OP-2029-BN-49102
+                      {hasFeePaid
+                        ? `Arancel S/ 50.00 • N° Op: ${feeOpNumber || "OP-2029-BN-49102"}`
+                        : "Sin comprobante de abono registrado en Banco de la Nación"}
                     </p>
                     <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${
                       docs.pagoDerecho ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
                     }`}>
-                      {docs.pagoDerecho ? "Conforme • Tasa S/ 50.00 Conciliada en Caja" : "Pendiente de Verificación en Tesorería"}
+                      {docs.pagoDerecho
+                        ? "Conforme • Tasa S/ 50.00 Conciliada en Caja"
+                        : hasFeePaid
+                        ? "Voucher Adjuntado • Pendiente de Validación"
+                        : "Pendiente de Pago en Tesorería / Banco"}
                     </span>
                   </div>
                 </label>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewVoucherOpen(true)}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-slate-600" />
-                    Ver Voucher
-                  </button>
+                  {hasFeePaid ? (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewVoucherOpen(true)}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-600" />
+                      Ver Voucher
+                    </button>
+                  ) : (
+                    <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded-lg select-none">
+                      Sin Voucher
+                    </span>
+                  )}
                   {!docs.pagoDerecho && (
                     <button
                       type="button"
@@ -624,8 +689,8 @@ function Application({
 
         {/* Modal de Vista Previa del Voucher de Pago Bancario */}
         {previewVoucherOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn">
-            <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-300">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
+            <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-300 my-auto">
               <div className="bg-[#800521] text-white px-5 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <FileText className="w-5 h-5 text-amber-300" />
@@ -641,7 +706,7 @@ function Application({
                 <button
                   type="button"
                   onClick={() => setPreviewVoucherOpen(false)}
-                  className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10"
+                  className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -650,16 +715,16 @@ function Application({
               <div className="p-5 space-y-4 bg-slate-50">
                 <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col items-center justify-center shadow-inner">
                   <img
-                    src="/voucher_ciclo2.png"
+                    src={feeVoucherUrl || "/voucher_ciclo2.png"}
                     alt="Voucher Banco de la Nación"
-                    className="max-h-[220px] w-auto object-contain rounded-lg border border-slate-300 shadow-xs"
+                    className="max-h-[240px] w-auto object-contain rounded-lg border border-slate-300 shadow-xs"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 text-xs bg-white p-3.5 rounded-2xl border border-slate-200 font-mono">
                   <div>
                     <span className="text-[10px] uppercase font-bold text-slate-500 block">N° Operación</span>
-                    <strong className="text-slate-900 font-extrabold">OP-2029-BN-49102</strong>
+                    <strong className="text-slate-900 font-extrabold">{feeOpNumber || "OP-2029-BN-49102"}</strong>
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-bold text-slate-500 block">Importe Cancelado</span>
@@ -703,8 +768,8 @@ function Application({
 
         {/* Modal de Vista Previa del FUT Digital */}
         {previewFutOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn">
-            <div className="bg-white rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl border border-slate-300">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
+            <div className="bg-white rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl border border-slate-300 my-auto">
               <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b-2 border-amber-500">
                 <div className="flex items-center gap-2.5">
                   <FileText className="w-5 h-5 text-amber-400" />
@@ -779,8 +844,8 @@ function Application({
 
         {/* Modal de Vista Previa del Récord de Notas (6 Ciclos / 96 Créditos) */}
         {previewTranscriptOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn">
-            <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-300">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
+            <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-300 my-auto">
               <div className="bg-gradient-to-r from-[#800521] via-[#5c0317] to-slate-900 text-white px-6 py-4 flex items-center justify-between border-b-2 border-amber-500 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-300 font-bold">
@@ -842,7 +907,6 @@ function Application({
                     <div key={cicloNum} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
                       <div className="bg-slate-900 text-white px-4 py-2 flex items-center justify-between text-xs font-mono">
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-amber-400"></span>
                           <strong className="uppercase font-bold tracking-wider">Ciclo Modular 0{cicloNum}</strong>
                           <span className="text-slate-400 text-[11px]">({cycleCredits} Créditos Académicos)</span>
                         </div>
@@ -1013,10 +1077,10 @@ export default function MgeConstanciasTab({
             step: "Revisión Documentaria",
             status: "En Proceso" as const,
             docsChecked: {
-              solicitud: true,
+              solicitud: false,
               constanciaEgresado: true,
               practicasPre: false,
-              pagoDerecho: true
+              pagoDerecho: false
             },
             obs: "Expediente curricular de titulación en trámite. 96 créditos lectivos culminados. Prácticas EFSRT registradas y pendientes de convalidación."
           }
