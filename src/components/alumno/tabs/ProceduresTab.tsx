@@ -379,12 +379,10 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
     setTimeout(() => setVoucherFeedback(''), 6000);
   };
 
-  // Eliminación formal y reinicio del trámite
-  const handleDeleteRequest = async (item: ServiceRequest) => {
-    if (!window.confirm(`¿Desea eliminar la solicitud #${item.id} (${item.conceptName}) y reiniciar el trámite?`)) {
-      return;
-    }
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<ServiceRequest | null>(null);
 
+  // Eliminación formal y reinicio del trámite
+  const executeDeleteRequest = async (item: ServiceRequest) => {
     try {
       await deleteServiceRequest(item.id, studentDni);
     } catch {
@@ -419,7 +417,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       window.dispatchEvent(new Event("storage"));
     }
 
-    setVoucherFeedback(`Solicitud #${item.id} eliminada exitosamente. Puede registrar un nuevo trámite.`);
+    setVoucherFeedback(`Solicitud #${item.id} eliminada exitosamente. El trámite ha sido reiniciado.`);
     setTimeout(() => setVoucherFeedback(""), 5000);
   };
 
@@ -886,7 +884,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                       {item.deliveryStatus !== 'Emitido' && (
                         <button
                           type="button"
-                          onClick={() => void handleDeleteRequest(item)}
+                          onClick={() => setDeleteConfirmItem(item)}
                           className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
                           title="Eliminar solicitud y reiniciar trámite"
                         >
@@ -1231,6 +1229,67 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                 className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer"
               >
                 Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Institucional de Confirmación de Eliminación de Trámite */}
+      {deleteConfirmItem && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-slate-300 animate-in zoom-in-95">
+            <div className="bg-[#800521] text-white px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <AlertTriangle className="w-5 h-5 text-amber-300" />
+                <h3 className="font-extrabold text-xs uppercase tracking-wide">
+                  Confirmar Eliminación de Trámite
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmItem(null)}
+                className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-3.5 bg-slate-50 text-xs">
+              <p className="text-slate-700 font-medium">
+                ¿Está seguro de que desea eliminar la solicitud formal de <strong>{deleteConfirmItem.conceptName}</strong>?
+              </p>
+              <div className="bg-white p-3.5 rounded-2xl border border-slate-200 font-mono text-[11px] text-slate-700 space-y-1.5 shadow-2xs">
+                <div><span className="text-slate-400 font-bold">Expediente:</span> #{deleteConfirmItem.id}</div>
+                <div><span className="text-slate-400 font-bold">Tasa Arancelaria:</span> S/ {deleteConfirmItem.amount.toFixed(2)}</div>
+                {deleteConfirmItem.paymentOperation && (
+                  <div><span className="text-slate-400 font-bold">Voucher Registrado:</span> {deleteConfirmItem.paymentOperation}</div>
+                )}
+              </div>
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-[11px] text-rose-900 font-medium leading-relaxed">
+                Esta acción cancelará el trámite y reiniciará el expediente en Secretaría Académica para que pueda iniciarlo nuevamente desde cero.
+              </div>
+            </div>
+
+            <div className="bg-white px-6 py-3.5 border-t border-slate-200 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmItem(null)}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer border border-slate-200"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const target = deleteConfirmItem;
+                  setDeleteConfirmItem(null);
+                  await executeDeleteRequest(target);
+                }}
+                className="bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Sí, Eliminar Trámite</span>
               </button>
             </div>
           </div>

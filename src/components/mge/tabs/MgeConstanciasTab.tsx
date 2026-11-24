@@ -25,6 +25,7 @@ import { graduationSummaryPdf } from "../../../utils/graduationSummaryPdf";
 import { academicToday } from "../../../utils/attendance";
 import CertificateDocuments from "./CertificateDocuments";
 import { ACCREDITED_CURRICULUM_ELECTRICIDAD } from "./MgeHistorialTab";
+import { fetchServiceRequests } from "../../../services/serviceRequests";
 
 const requirements = {
   solicitud: "Solicitud Única de Trámite (FUT)",
@@ -190,8 +191,47 @@ function Application({
   });
 
   useEffect(() => {
-    const handleStorage = () => {
+    let mounted = true;
+
+    const syncState = async () => {
       try {
+        // 1. Sincronización prioritaria directa con la base de datos del Backend
+        const backendRequests = await fetchServiceRequests(record.studentDni).catch(() => []);
+        if (!mounted) return;
+
+        const req = (backendRequests || []).find((r) => r.conceptCode === 'CER01' || r.conceptCode === 'TIT01') || backendRequests?.[0];
+
+        if (req) {
+          setHasFut(true);
+          setFutId(req.id);
+          setDocs((prev) => ({ ...prev, solicitud: true }));
+
+          if (req.paymentOperation || req.status === 'En Proceso' || req.status === 'Validado') {
+            setHasFeePaid(true);
+            setFeeOpNumber(req.paymentOperation || '');
+            if (req.amountPaid || req.amount) setFeeAmount(String(req.amountPaid || req.amount));
+            if (req.paymentDate) setFeeDate(req.paymentDate);
+            setDocs((prev) => ({ ...prev, pagoDerecho: true }));
+          } else {
+            setHasFeePaid(false);
+            setDocs((prev) => ({ ...prev, pagoDerecho: false }));
+          }
+        } else {
+          // Si no hay solicitudes en backend, consultar localStorage
+          const hasFutVal =
+            localStorage.getItem(`sfa_fut_registered_${record.studentDni}`) === "true" ||
+            (record.studentDni === "74859612" && localStorage.getItem("sfa_fut_registered_74859612") === "true");
+          setHasFut(hasFutVal);
+          setDocs((prev) => ({ ...prev, solicitud: hasFutVal }));
+
+          const hasFeeVal =
+            localStorage.getItem(`sfa_fee_paid_${record.studentDni}`) === "true" ||
+            (record.studentDni === "74859612" && localStorage.getItem("sfa_fee_paid_74859612") === "true");
+          setHasFeePaid(hasFeeVal);
+          setDocs((prev) => ({ ...prev, pagoDerecho: hasFeeVal }));
+        }
+
+        // 2. Sincronización de EFSRT y Comprobante de Voucher
         const raw =
           localStorage.getItem(`sfa_efsrt_${record.studentDni}`) ||
           (record.studentDni === "74859612" ? localStorage.getItem("sfa_efsrt_74859612") : null);
@@ -206,53 +246,24 @@ function Application({
           setDocs((prev) => ({ ...prev, practicasPre: true }));
         }
 
-        const hasFutVal =
-          localStorage.getItem(`sfa_fut_registered_${record.studentDni}`) === "true" ||
-          (record.studentDni === "74859612" && localStorage.getItem("sfa_fut_registered_74859612") === "true");
-        setHasFut(hasFutVal);
-        if (hasFutVal) {
-          setDocs((prev) => ({ ...prev, solicitud: true }));
-        }
-
-        const fId =
-          localStorage.getItem(`sfa_fut_id_${record.studentDni}`) ||
-          (record.studentDni === "74859612" ? localStorage.getItem("sfa_fut_id_74859612") : null);
-        if (fId) setFutId(fId);
-
-        const hasFeeVal =
-          localStorage.getItem(`sfa_fee_paid_${record.studentDni}`) === "true" ||
-          (record.studentDni === "74859612" && localStorage.getItem("sfa_fee_paid_74859612") === "true");
-        setHasFeePaid(hasFeeVal);
-        if (hasFeeVal) {
-          setDocs((prev) => ({ ...prev, pagoDerecho: true }));
-        }
-
-        const op =
-          localStorage.getItem(`sfa_fee_op_${record.studentDni}`) ||
-          (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_op_74859612") : null);
-        if (op) setFeeOpNumber(op);
-
-        const amt =
-          localStorage.getItem(`sfa_fee_amount_${record.studentDni}`) ||
-          (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_amount_74859612") : null);
-        if (amt) setFeeAmount(amt);
-
-        const dt =
-          localStorage.getItem(`sfa_fee_date_${record.studentDni}`) ||
-          (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_date_74859612") : null);
-        if (dt) setFeeDate(dt);
-
         const vUrl =
           localStorage.getItem(`sfa_fee_voucher_file_${record.studentDni}`) ||
           (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null);
         if (vUrl) setFeeVoucherUrl(vUrl);
-      } catch {}
+      } catch (err) {
+        console.warn("syncState error in MgeConstanciasTab:", err);
+      }
     };
-    window.addEventListener("storage", handleStorage);
-    window.addEventListener("focus", handleStorage);
+
+    // Ejecutar inmediatamente al montar
+    void syncState();
+
+    window.addEventListener("storage", syncState);
+    window.addEventListener("focus", syncState);
     return () => {
-      window.removeEventListener("storage", handleStorage);
-      window.removeEventListener("focus", handleStorage);
+      mounted = false;
+      window.removeEventListener("storage", syncState);
+      window.removeEventListener("focus", syncState);
     };
   }, [record.studentDni]);
 
