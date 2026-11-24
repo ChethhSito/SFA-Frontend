@@ -147,49 +147,28 @@ export default function MgeDashboard({
 
   // ── Gestión y Formateo Breve de Periodos Institucionales ───────────────────
   const effectiveAdmissionPeriods = useMemo(() => {
-    const list = [...admissionPeriods];
-    const fullPeriods = [
+    // Normalización de los 6 semestres del plan modular de Electricidad Industrial.
+    // Solo el ciclo actual vigente es Activo; los ciclos cursados previos son Concluidos.
+    return [
       { id: "period-2027-1", name: "Semestre Académico 2027-I", year: 2027, status: "CONCLUIDO", isActive: false, startDate: "2027-03-15", endDate: "2027-07-16" },
-      { id: "period-2027-2", name: "Semestre Académico 2027-II", year: 2027, status: "ACTIVO", isActive: true, startDate: "2027-08-16", endDate: "2027-12-17" },
+      { id: "period-2027-2", name: "Semestre Académico 2027-II", year: 2027, status: "CONCLUIDO", isActive: false, startDate: "2027-08-16", endDate: "2027-12-17" },
       { id: "period-2028-1", name: "Semestre Académico 2028-I", year: 2028, status: "CONCLUIDO", isActive: false, startDate: "2028-03-15", endDate: "2028-07-16" },
       { id: "period-2028-2", name: "Semestre Académico 2028-II", year: 2028, status: "CONCLUIDO", isActive: false, startDate: "2028-08-16", endDate: "2028-12-17" },
       { id: "period-2029-1", name: "Semestre Académico 2029-I", year: 2029, status: "CONCLUIDO", isActive: false, startDate: "2029-03-15", endDate: "2029-07-16" },
       { id: "period-2029-2", name: "Semestre Académico 2029-II", year: 2029, status: "ACTIVO", isActive: true, startDate: "2029-08-16", endDate: "2029-12-17" },
-    ];
-    for (const p of fullPeriods) {
-      const exists = list.some(
-        (existing) =>
-          existing.id === p.id ||
-          existing.name?.includes(p.name.replace("Semestre Académico ", "")) ||
-          (p.id === "period-2027-2" && (existing.name?.includes("2027-II") || existing.name?.includes("2027-2")))
-      );
-      if (!exists) {
-        list.push(p as any);
-      }
-    }
-    return list;
-  }, [admissionPeriods]);
+    ] as any[];
+  }, []);
 
   const [internalPeriodId, setInternalPeriodId] = useState<string>(() => {
     if (selectedPeriodId) return selectedPeriodId;
-    const active = effectiveAdmissionPeriods.find((p) => p.status === "APERTURADO" || p.status === "MATRICULA" || p.isActive);
-    return active ? active.id : (effectiveAdmissionPeriods[0]?.id || "all");
+    const active = effectiveAdmissionPeriods.find((p) => p.status === "ACTIVO" || p.isActive);
+    return active ? active.id : (effectiveAdmissionPeriods[effectiveAdmissionPeriods.length - 1]?.id || "period-2029-2");
   });
 
   const handlePeriodChange = (id: string) => {
     setInternalPeriodId(id);
     if (onSelectPeriodId) onSelectPeriodId(id);
   };
-
-  const currentPeriod = useMemo(() => {
-    if (internalPeriodId === "all") return null;
-    return effectiveAdmissionPeriods.find((p) => p.id === internalPeriodId) || null;
-  }, [effectiveAdmissionPeriods, internalPeriodId]);
-
-  const isPeriodActive = useMemo(() => {
-    if (!currentPeriod) return true;
-    return Boolean(currentPeriod.isActive || currentPeriod.status === "APERTURADO" || currentPeriod.status === "MATRICULA");
-  }, [currentPeriod]);
 
   const compactPeriodName = (rawName?: string) => {
     if (!rawName) return "Periodo";
@@ -204,6 +183,28 @@ export default function MgeDashboard({
       .replace(/Periodo\s+Acad[eé]mico/gi, "")
       .trim() || clean;
   };
+
+  const currentPeriod = useMemo(() => {
+    if (internalPeriodId === "all") return null;
+    return effectiveAdmissionPeriods.find((p) => p.id === internalPeriodId) || null;
+  }, [effectiveAdmissionPeriods, internalPeriodId]);
+
+  const currentPeriodLabel = useMemo(() => {
+    if (internalPeriodId === "all") return "Todos los Periodos";
+    if (internalPeriodId === "period-2027-1" || internalPeriodId.includes("2027-1") || internalPeriodId.includes("2027-I")) return "Periodo 2027-I";
+    if (internalPeriodId === "period-2027-2" || internalPeriodId.includes("2027-2") || internalPeriodId.includes("2027-II")) return "Periodo 2027-II";
+    if (internalPeriodId === "period-2028-1" || internalPeriodId.includes("2028-1") || internalPeriodId.includes("2028-I")) return "Periodo 2028-I";
+    if (internalPeriodId === "period-2028-2" || internalPeriodId.includes("2028-2") || internalPeriodId.includes("2028-II")) return "Periodo 2028-II";
+    if (internalPeriodId === "period-2029-1" || internalPeriodId.includes("2029-1") || internalPeriodId.includes("2029-I")) return "Periodo 2029-I";
+    if (internalPeriodId === "period-2029-2" || internalPeriodId.includes("2029-2") || internalPeriodId.includes("2029-II")) return "Periodo 2029-II";
+    const found = effectiveAdmissionPeriods.find((p) => p.id === internalPeriodId);
+    return found ? (compactPeriodName(found.name) || found.name) : "Periodo 2029-II";
+  }, [internalPeriodId, effectiveAdmissionPeriods]);
+
+  const isPeriodActive = useMemo(() => {
+    if (!currentPeriod) return true;
+    return Boolean(currentPeriod.isActive || currentPeriod.status === "ACTIVO");
+  }, [currentPeriod]);
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const processedStudents = useMemo(() => {
@@ -814,10 +815,10 @@ export default function MgeDashboard({
                   <option value="all" className="bg-slate-900 text-white">Todos</option>
                   {effectiveAdmissionPeriods.map((p) => {
                     const shortName = compactPeriodName(p.name);
-                    const isPActive = Boolean(p.isActive || p.status === "APERTURADO" || p.status === "MATRICULA");
+                    const isPActive = Boolean(p.isActive || p.status === "ACTIVO");
                     return (
                       <option key={p.id} value={p.id} className="bg-slate-900 text-white">
-                        {shortName} • {isPActive ? "Activo" : "Cerrado"}
+                        {shortName} • {isPActive ? "Activo" : "Concluido"}
                       </option>
                     );
                   })}
@@ -829,10 +830,10 @@ export default function MgeDashboard({
                       ? "bg-slate-500/30 text-slate-300 border border-slate-500/40"
                       : isPeriodActive
                       ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/40"
-                      : "bg-amber-500/25 text-amber-300 border border-amber-500/40"
+                      : "bg-slate-500/25 text-slate-300 border border-slate-500/40"
                   }`}
                 >
-                  {internalPeriodId === "all" ? "Todos" : isPeriodActive ? "Activo" : "Cerrado"}
+                  {internalPeriodId === "all" ? "Todos" : isPeriodActive ? "Activo" : "Concluido"}
                 </span>
               </div>
             </div>
@@ -894,7 +895,7 @@ export default function MgeDashboard({
               enrollments={enrollments}
               onUpdatePaymentStatus={(dni, status) => { void runSave(() => handleUpdatePaymentStatus(dni, status)); }}
               onRegisterOperation={(dni, operation) => { void runSave(() => handleRegisterPaymentOperation(dni, operation)); }}
-              currentPeriodName={internalPeriodId === "period-2027-2" || internalPeriodId.includes("2027-2") || internalPeriodId.includes("2027-II") ? "Periodo 2027-II" : (internalPeriodId === "all" ? "Todos los Periodos" : "Periodo 2027-I")}
+              currentPeriodName={currentPeriodLabel}
             />
           )}
 
