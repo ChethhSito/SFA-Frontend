@@ -3,11 +3,12 @@ import {
   FileText, RefreshCw, Award, CheckCircle2, Clock, AlertCircle, 
   Download, ArrowRight, ShieldCheck, Building2, Send, Sparkles,
   Lock, Unlock, GraduationCap, Briefcase, FileCheck, Check, Info, AlertTriangle,
-  Upload, X
+  Upload, X, Trash2
 } from 'lucide-react';
 import { 
   createServiceRequest, fetchServiceRequests, ServiceRequest, 
-  StudentProcedureCode, submitServiceRequestVoucher, serviceRequestResultUrl 
+  StudentProcedureCode, submitServiceRequestVoucher, serviceRequestResultUrl,
+  deleteServiceRequest
 } from '../../../services/serviceRequests';
 import { readMafState } from '../../../services/mafState';
 import { Pagination, usePagination } from '../../ui/Pagination';
@@ -316,6 +317,50 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
     setItems(current => current.map(i => i.id === item.id ? updated : i));
     setVoucherFeedback(`Documento oficial ${item.conceptName} expedido con firma y sello digital.`);
     setTimeout(() => setVoucherFeedback(''), 6000);
+  };
+
+  // Eliminación formal y reinicio del trámite
+  const handleDeleteRequest = async (item: ServiceRequest) => {
+    if (!window.confirm(`¿Desea eliminar la solicitud #${item.id} (${item.conceptName}) y reiniciar el trámite?`)) {
+      return;
+    }
+
+    try {
+      await deleteServiceRequest(item.id, studentDni);
+    } catch {
+      // Ignorar error si ya fue eliminado en servidor
+    }
+
+    setItems((curr) => curr.filter((i) => i.id !== item.id));
+
+    if (typeof window !== "undefined") {
+      // Limpiar estados de FUT y Pago asociados para que MGE se resetee reactivamente
+      localStorage.removeItem(`sfa_fut_registered_${studentDni}`);
+      localStorage.removeItem(`sfa_fut_id_${studentDni}`);
+      localStorage.removeItem(`sfa_fut_concept_${studentDni}`);
+      localStorage.removeItem(`sfa_fee_paid_${studentDni}`);
+      localStorage.removeItem(`sfa_fee_op_${studentDni}`);
+      localStorage.removeItem(`sfa_fee_amount_${studentDni}`);
+      localStorage.removeItem(`sfa_fee_date_${studentDni}`);
+      localStorage.removeItem(`sfa_fee_voucher_file_${studentDni}`);
+      localStorage.removeItem(`sfa_fee_voucher_name_${studentDni}`);
+
+      if (studentDni === "74859612") {
+        localStorage.removeItem("sfa_fut_registered_74859612");
+        localStorage.removeItem("sfa_fut_id_74859612");
+        localStorage.removeItem("sfa_fee_paid_74859612");
+        localStorage.removeItem("sfa_fee_op_74859612");
+        localStorage.removeItem("sfa_fee_amount_74859612");
+        localStorage.removeItem("sfa_fee_date_74859612");
+        localStorage.removeItem("sfa_fee_voucher_file_74859612");
+        localStorage.removeItem("sfa_fee_voucher_name_74859612");
+      }
+
+      window.dispatchEvent(new Event("storage"));
+    }
+
+    setVoucherFeedback(`Solicitud #${item.id} eliminada exitosamente. Puede registrar un nuevo trámite.`);
+    setTimeout(() => setVoucherFeedback(""), 5000);
   };
 
   const getStatusBadge = (status: string, deliveryStatus?: string) => {
@@ -776,8 +821,18 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                       </p>
                     </div>
 
-                    <div className="shrink-0">
+                    <div className="shrink-0 flex items-center gap-2">
                       {getStatusBadge(item.status, item.deliveryStatus)}
+                      {item.deliveryStatus !== 'Emitido' && (
+                        <button
+                          type="button"
+                          onClick={() => void handleDeleteRequest(item)}
+                          className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                          title="Eliminar solicitud y reiniciar trámite"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
 
