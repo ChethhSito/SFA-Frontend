@@ -489,6 +489,106 @@ export default function DocenteDashboard({
       ];
     }
 
+    if (selectedTeacherPeriod === "2028-I") {
+      return [
+        {
+          id: "cur_ei_301",
+          code: "EIND-301",
+          name: "Máquinas Eléctricas y Transformadores Industriales",
+          credits: 4,
+          classroom: "Aula 301 • Pabellón A",
+          schedule: "Lunes y Miércoles 08:00 AM - 12:00 PM",
+          teacherDni: effectiveTeacherDni,
+          teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Ing. Manuel Ramos Salazar",
+          careerId: "electronica",
+          career: "Electricidad Industrial",
+          group: "EI-III-A",
+          cycle: 3,
+          referenceCycle: 3,
+          startDate: "2028-03-15",
+          endDate: "2028-07-16",
+          studentCount: 1,
+          description: "Unidad didáctica del Ciclo III. Mantenimiento, conexionado trifásico y balance térmico de transformadores y máquinas rotativas.",
+          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
+        } as any
+      ];
+    }
+
+    if (selectedTeacherPeriod === "2028-II") {
+      return [
+        {
+          id: "cur_ei_401",
+          code: "EIND-401",
+          name: "Automatización Industrial y Control con PLC",
+          credits: 4,
+          classroom: "Lab Automatización • Pabellón B",
+          schedule: "Martes y Jueves 08:00 AM - 12:00 PM",
+          teacherDni: effectiveTeacherDni,
+          teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Ing. Manuel Ramos Salazar",
+          careerId: "electronica",
+          career: "Electricidad Industrial",
+          group: "EI-IV-A",
+          cycle: 4,
+          referenceCycle: 4,
+          startDate: "2028-08-16",
+          endDate: "2028-12-17",
+          studentCount: 1,
+          description: "Unidad didáctica del Ciclo IV. Programación en Ladder, Grafcet y cableado de señales analógicas y digitales en PLC Siemens S7-1200.",
+          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
+        } as any
+      ];
+    }
+
+    if (selectedTeacherPeriod === "2029-I") {
+      return [
+        {
+          id: "cur_ei_501",
+          code: "EIND-501",
+          name: "Sistemas Eléctricos de Potencia y Subestaciones",
+          credits: 4,
+          classroom: "Aula 501 • Pabellón A",
+          schedule: "Lunes y Miércoles 08:00 AM - 12:00 PM",
+          teacherDni: effectiveTeacherDni,
+          teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Ing. Manuel Ramos Salazar",
+          careerId: "electronica",
+          career: "Electricidad Industrial",
+          group: "EI-V-A",
+          cycle: 5,
+          referenceCycle: 5,
+          startDate: "2029-03-15",
+          endDate: "2029-07-16",
+          studentCount: 1,
+          description: "Unidad didáctica del Ciclo V. Coordinación de protecciones en media y alta tensión, relevadores y cálculos de cortocircuito.",
+          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
+        } as any
+      ];
+    }
+
+    if (selectedTeacherPeriod === "2029-II") {
+      return [
+        {
+          id: "cur_ei_601",
+          code: "EIND-601",
+          name: "Proyectos de Innovación Electromecánica y Titulación",
+          credits: 4,
+          classroom: "Taller Central • Pabellón A",
+          schedule: "Viernes 08:00 AM - 01:00 PM",
+          teacherDni: effectiveTeacherDni,
+          teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Ing. Manuel Ramos Salazar",
+          careerId: "electronica",
+          career: "Electricidad Industrial",
+          group: "EI-VI-A",
+          cycle: 6,
+          referenceCycle: 6,
+          startDate: "2029-08-16",
+          endDate: "2029-12-17",
+          studentCount: 1,
+          description: "Unidad didáctica del Ciclo VI. Desarrollo y sustentación de proyectos técnicos de titulación para la obtención del Título Profesional Técnico.",
+          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
+        } as any
+      ];
+    }
+
     // Period 2027-I (Ciclo I only: strictly exclude Ciclo II courses)
     return allCourses.filter((c) => {
       if (isCourseCycle2(c)) return false;
@@ -1153,6 +1253,10 @@ export default function DocenteDashboard({
                         }}
                         className="bg-transparent text-white font-black text-xs border-0 outline-none cursor-pointer pr-1 font-mono"
                       >
+                        <option value="2029-II" className="bg-slate-900 text-white font-bold">2029-II • Ciclo VI / Egresado</option>
+                        <option value="2029-I" className="bg-slate-900 text-white font-bold">2029-I • Ciclo V (Concluido)</option>
+                        <option value="2028-II" className="bg-slate-900 text-white font-bold">2028-II • Ciclo IV (Concluido)</option>
+                        <option value="2028-I" className="bg-slate-900 text-white font-bold">2028-I • Ciclo III (Concluido)</option>
                         <option value="2027-II" className="bg-slate-900 text-white font-bold">2027-II • Ciclo II (Activo)</option>
                         <option value="2027-I" className="bg-slate-900 text-white font-bold">2027-I • Ciclo I (Concluido)</option>
                       </select>
@@ -1445,6 +1549,10 @@ export default function DocenteDashboard({
                         }}
                         className="bg-transparent text-white font-black text-xs border-0 outline-none cursor-pointer pr-1 font-mono"
                       >
+                        <option value="2029-II" className="bg-slate-900 text-white font-bold">2029-II • Ciclo VI / Egresado</option>
+                        <option value="2029-I" className="bg-slate-900 text-white font-bold">2029-I • Ciclo V (Concluido)</option>
+                        <option value="2028-II" className="bg-slate-900 text-white font-bold">2028-II • Ciclo IV (Concluido)</option>
+                        <option value="2028-I" className="bg-slate-900 text-white font-bold">2028-I • Ciclo III (Concluido)</option>
                         <option value="2027-II" className="bg-slate-900 text-white font-bold">2027-II • Ciclo II (Activo)</option>
                         <option value="2027-I" className="bg-slate-900 text-white font-bold">2027-I • Ciclo I (Concluido)</option>
                       </select>

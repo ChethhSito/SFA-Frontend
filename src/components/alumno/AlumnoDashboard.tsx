@@ -116,7 +116,8 @@ export default function AlumnoDashboard({
     localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
     localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
     localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
-    localStorage.getItem("sfa_student_cycle") === "2"
+    localStorage.getItem("sfa_student_cycle") === "2" ||
+    studentDni === "74859612"
   );
 
   const isGraduated = typeof window !== "undefined" && Boolean(

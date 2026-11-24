@@ -150,7 +150,11 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
 
   const isEgresadoPleno = isGraduatedLectivo && isPracticesValidated;
   const currentCredits = isEgresadoPleno ? 120 : isGraduatedLectivo ? 96 : 32;
-  const effectivePeriod = period || (isGraduatedLectivo ? "Periodo 2029-II (Egresado)" : "Periodo 2027-I");
+  const effectivePeriod = isGraduatedLectivo
+    ? "Periodo 2029-II (Egresado)"
+    : period && !period.includes("2027-I")
+    ? period
+    : "Periodo 2027-II";
 
   const [items, setItems] = useState<ServiceRequest[]>([]);
   const [rates, setRates] = useState<Record<string, number>>({});
