@@ -342,7 +342,19 @@ function Application({
       ? "Mateo Sebastián Quispe Rojas"
       : `Estudiante (${record.studentDni})`;
     try {
-      const pdf = await graduationSummaryPdf(name, record.studentDni, program, record, academicToday());
+      const pdf = await graduationSummaryPdf(
+        name,
+        record.studentDni,
+        program,
+        record,
+        academicToday(),
+        {
+          efsrtData,
+          feeOpNumber,
+          feeAmount,
+          futId,
+        }
+      );
       pdf.save(`Expediente_${record.studentDni}_${academicToday()}.pdf`);
     } catch {
       setDownloadError("No se pudo generar el resumen PDF. Intente nuevamente.");
