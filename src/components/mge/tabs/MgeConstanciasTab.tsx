@@ -95,6 +95,33 @@ function Application({
     );
   });
 
+  const [futId, setFutId] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return (
+      localStorage.getItem(`sfa_fut_id_${record.studentDni}`) ||
+      (record.studentDni === "74859612" ? localStorage.getItem("sfa_fut_id_74859612") : null) ||
+      ""
+    );
+  });
+
+  const [feeAmount, setFeeAmount] = useState(() => {
+    if (typeof window === "undefined") return "50.00";
+    return (
+      localStorage.getItem(`sfa_fee_amount_${record.studentDni}`) ||
+      (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_amount_74859612") : null) ||
+      "50.00"
+    );
+  });
+
+  const [feeDate, setFeeDate] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return (
+      localStorage.getItem(`sfa_fee_date_${record.studentDni}`) ||
+      (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_date_74859612") : null) ||
+      ""
+    );
+  });
+
   const [docs, setDocs] = useState(() => {
     const isFut = typeof window !== "undefined" && (
       localStorage.getItem(`sfa_fut_registered_${record.studentDni}`) === "true" ||
@@ -187,6 +214,11 @@ function Application({
           setDocs((prev) => ({ ...prev, solicitud: true }));
         }
 
+        const fId =
+          localStorage.getItem(`sfa_fut_id_${record.studentDni}`) ||
+          (record.studentDni === "74859612" ? localStorage.getItem("sfa_fut_id_74859612") : null);
+        if (fId) setFutId(fId);
+
         const hasFeeVal =
           localStorage.getItem(`sfa_fee_paid_${record.studentDni}`) === "true" ||
           (record.studentDni === "74859612" && localStorage.getItem("sfa_fee_paid_74859612") === "true");
@@ -199,6 +231,16 @@ function Application({
           localStorage.getItem(`sfa_fee_op_${record.studentDni}`) ||
           (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_op_74859612") : null);
         if (op) setFeeOpNumber(op);
+
+        const amt =
+          localStorage.getItem(`sfa_fee_amount_${record.studentDni}`) ||
+          (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_amount_74859612") : null);
+        if (amt) setFeeAmount(amt);
+
+        const dt =
+          localStorage.getItem(`sfa_fee_date_${record.studentDni}`) ||
+          (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_date_74859612") : null);
+        if (dt) setFeeDate(dt);
 
         const vUrl =
           localStorage.getItem(`sfa_fee_voucher_file_${record.studentDni}`) ||
@@ -643,7 +685,7 @@ function Application({
                     <p className="text-xs font-bold text-slate-900">4. Pago de Tasa de Certificación (Banco de la Nación)</p>
                     <p className="text-[11px] text-slate-500 mt-0.5 font-mono">
                       {hasFeePaid
-                        ? `Arancel S/ 50.00 • N° Op: ${feeOpNumber || "OP-2029-BN-49102"}`
+                        ? `Arancel S/ ${Number(feeAmount || 50).toFixed(2)} • N° Op: ${feeOpNumber || "OP-2029-BN-49102"}`
                         : "Sin comprobante de abono registrado en Banco de la Nación"}
                     </p>
                     <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${
@@ -728,11 +770,11 @@ function Application({
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-bold text-slate-500 block">Importe Cancelado</span>
-                    <strong className="text-[#800521] font-extrabold">S/ 50.00</strong>
+                    <strong className="text-[#800521] font-extrabold">S/ {Number(feeAmount || 50).toFixed(2)}</strong>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Entidad Recaudadora</span>
-                    <span className="text-slate-700 font-bold">Banco de la Nación</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Fecha de Abono</span>
+                    <span className="text-slate-700 font-bold">{feeDate || "24/11/2026"}</span>
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-bold text-slate-500 block">Estado de Caja</span>
