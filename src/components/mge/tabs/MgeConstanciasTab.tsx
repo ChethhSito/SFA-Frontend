@@ -60,6 +60,8 @@ function Application({
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
   const [previewPdfOpen, setPreviewPdfOpen] = useState(false);
+  const [previewVoucherOpen, setPreviewVoucherOpen] = useState(false);
+  const [previewFutOpen, setPreviewFutOpen] = useState(false);
   const [showValidationSuccess, setShowValidationSuccess] = useState(false);
 
   // EFSRT Data state with fallback to official dossier for Mateo
@@ -404,50 +406,324 @@ function Application({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            {Object.entries(requirements).map(([key, label]) => {
-              const checked = docs[key as keyof typeof docs] === true;
-              return (
-                <label
-                  key={key}
-                  className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer select-none ${
-                    checked
-                      ? "bg-white border-emerald-300 shadow-2xs"
-                      : "bg-white border-slate-200 hover:border-slate-300"
-                  }`}
-                >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            {/* 1. Solicitud Única de Trámite (FUT) */}
+            <div className={`p-4 rounded-2xl border transition-all ${
+              docs.solicitud ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
                   <input
                     type="checkbox"
-                    checked={checked}
-                    onChange={(event) => {
-                      const updatedChecked = event.target.checked;
-                      setDocs((previous) => ({ ...previous, [key]: updatedChecked }));
-                      if (key === "practicasPre") {
-                        setIsEfsrtValidated(updatedChecked);
-                        if (typeof window !== "undefined") {
-                          localStorage.setItem(`sfa_efsrt_validated_${record.studentDni}`, String(updatedChecked));
-                          localStorage.setItem(`sfa_efsrt_validated_74859612`, String(updatedChecked));
-                          window.dispatchEvent(new Event("storage"));
-                        }
+                    checked={docs.solicitud === true}
+                    onChange={(e) => setDocs((prev) => ({ ...prev, solicitud: e.target.checked }))}
+                    className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer"
+                  />
+                  <div>
+                    <p className="text-xs font-bold text-slate-900">1. Solicitud Única de Trámite (FUT)</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5 font-mono">
+                      Expediente Digital N° EXP-2029-{record.studentDni}-CER
+                    </p>
+                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${
+                      docs.solicitud ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
+                    }`}>
+                      {docs.solicitud ? "Conforme • Solicitud FUT Presentada" : "Pendiente de Verificación"}
+                    </span>
+                  </div>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setPreviewFutOpen(true)}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1 shrink-0"
+                >
+                  <Eye className="w-3.5 h-3.5 text-slate-600" />
+                  Ver FUT
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Constancia de Egresado (96 créditos concluidos) */}
+            <div className={`p-4 rounded-2xl border transition-all ${
+              docs.constanciaEgresado ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
+                  <input
+                    type="checkbox"
+                    checked={docs.constanciaEgresado === true}
+                    onChange={(e) => setDocs((prev) => ({ ...prev, constanciaEgresado: e.target.checked }))}
+                    className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer"
+                  />
+                  <div>
+                    <p className="text-xs font-bold text-slate-900">2. Constancia de Egresado (96 créditos concluidos)</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Auditoría Curricular: 6 de 6 ciclos aprobados (100% concluido)
+                    </p>
+                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${
+                      docs.constanciaEgresado ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
+                    }`}>
+                      {docs.constanciaEgresado ? "Conforme • 96/96 Créditos Acreditados" : "Pendiente de Verificación Curricular"}
+                    </span>
+                  </div>
+                </label>
+                {!docs.constanciaEgresado && (
+                  <button
+                    type="button"
+                    onClick={() => setDocs((prev) => ({ ...prev, constanciaEgresado: true }))}
+                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer shrink-0"
+                  >
+                    Acreditar
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 3. Prácticas Preprofesionales EFSRT (24 créditos formativos) */}
+            <div className={`p-4 rounded-2xl border transition-all ${
+              docs.practicasPre ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
+                  <input
+                    type="checkbox"
+                    checked={docs.practicasPre === true}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      setDocs((prev) => ({ ...prev, practicasPre: val }));
+                      setIsEfsrtValidated(val);
+                      if (typeof window !== "undefined") {
+                        localStorage.setItem(`sfa_efsrt_validated_${record.studentDni}`, String(val));
+                        localStorage.setItem(`sfa_efsrt_validated_74859612`, String(val));
+                        window.dispatchEvent(new Event("storage"));
                       }
                     }}
                     className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer"
                   />
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-bold ${checked ? "text-slate-900" : "text-slate-700"}`}>
-                      {label}
+                  <div>
+                    <p className="text-xs font-bold text-slate-900">3. Prácticas Preprofesionales EFSRT (24 créditos)</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5 truncate max-w-[260px]" title={efsrtCompany}>
+                      {efsrtCompany} ({efsrtHours} hrs)
                     </p>
-                    <span className={`text-[10px] font-mono uppercase font-bold mt-0.5 inline-block ${
-                      checked ? "text-emerald-700" : "text-amber-700"
+                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${
+                      docs.practicasPre ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
                     }`}>
-                      {checked ? "Conforme • Acreditado" : "Pendiente de verificación"}
+                      {docs.practicasPre ? "Conforme • 480 Horas Acreditadas (+24 Cr.)" : "Pendiente de Validación Laboral"}
                     </span>
                   </div>
                 </label>
-              );
-            })}
+                <button
+                  type="button"
+                  onClick={() => setPreviewPdfOpen(true)}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1 shrink-0"
+                >
+                  <Eye className="w-3.5 h-3.5 text-slate-600" />
+                  Ver PDF
+                </button>
+              </div>
+            </div>
+
+            {/* 4. Pago de Tasa de Certificación (Banco de la Nación) */}
+            <div className={`p-4 rounded-2xl border transition-all ${
+              docs.pagoDerecho ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
+            }`}>
+              <div className="flex items-start justify-between gap-3">
+                <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
+                  <input
+                    type="checkbox"
+                    checked={docs.pagoDerecho === true}
+                    onChange={(e) => setDocs((prev) => ({ ...prev, pagoDerecho: e.target.checked }))}
+                    className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer"
+                  />
+                  <div>
+                    <p className="text-xs font-bold text-slate-900">4. Pago de Tasa de Certificación (Banco de la Nación)</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5 font-mono">
+                      Arancel S/ 50.00 • N° Op: OP-2029-BN-49102
+                    </p>
+                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${
+                      docs.pagoDerecho ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
+                    }`}>
+                      {docs.pagoDerecho ? "Conforme • Tasa S/ 50.00 Conciliada en Caja" : "Pendiente de Verificación en Tesorería"}
+                    </span>
+                  </div>
+                </label>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewVoucherOpen(true)}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-slate-600" />
+                    Ver Voucher
+                  </button>
+                  {!docs.pagoDerecho && (
+                    <button
+                      type="button"
+                      onClick={() => setDocs((prev) => ({ ...prev, pagoDerecho: true }))}
+                      className="bg-emerald-700 hover:bg-emerald-800 text-white text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-xs"
+                    >
+                      Acreditar Pago
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </fieldset>
+
+        {/* Modal de Vista Previa del Voucher de Pago Bancario */}
+        {previewVoucherOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn">
+            <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-300">
+              <div className="bg-[#800521] text-white px-5 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <FileText className="w-5 h-5 text-amber-300" />
+                  <div>
+                    <h3 className="font-extrabold text-xs uppercase tracking-wider">
+                      Auditoría de Comprobante de Pago • Banco de la Nación
+                    </h3>
+                    <p className="text-[10px] text-amber-200 font-mono">
+                      Derecho de Certificado de Estudios Oficial (S/ 50.00)
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPreviewVoucherOpen(false)}
+                  className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4 bg-slate-50">
+                <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col items-center justify-center shadow-inner">
+                  <img
+                    src="/voucher_ciclo2.png"
+                    alt="Voucher Banco de la Nación"
+                    className="max-h-[220px] w-auto object-contain rounded-lg border border-slate-300 shadow-xs"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs bg-white p-3.5 rounded-2xl border border-slate-200 font-mono">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">N° Operación</span>
+                    <strong className="text-slate-900 font-extrabold">OP-2029-BN-49102</strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Importe Cancelado</span>
+                    <strong className="text-[#800521] font-extrabold">S/ 50.00</strong>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Entidad Recaudadora</span>
+                    <span className="text-slate-700 font-bold">Banco de la Nación</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Estado de Caja</span>
+                    <span className="text-emerald-700 font-black">Conciliado • Conforme</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
+                {!docs.pagoDerecho && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDocs((prev) => ({ ...prev, pagoDerecho: true }));
+                      setPreviewVoucherOpen(false);
+                    }}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+                  >
+                    Validar y Conciliar Pago
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPreviewVoucherOpen(false)}
+                  className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Vista Previa del FUT Digital */}
+        {previewFutOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn">
+            <div className="bg-white rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl border border-slate-300">
+              <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b-2 border-amber-500">
+                <div className="flex items-center gap-2.5">
+                  <FileText className="w-5 h-5 text-amber-400" />
+                  <div>
+                    <h3 className="font-extrabold text-xs uppercase tracking-wider font-mono">
+                      Formulario Único de Trámite (FUT) • Mesa de Partes
+                    </h3>
+                    <p className="text-[10px] text-slate-300">
+                      Expediente Digital N° EXP-2029-{record.studentDni}-CER
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPreviewFutOpen(false)}
+                  className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4 bg-slate-50 text-xs">
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2.5">
+                  <div className="flex justify-between border-b border-slate-100 pb-2">
+                    <span className="text-slate-500 font-bold uppercase text-[10px]">Administrado Solicitante:</span>
+                    <strong className="text-slate-900">{student ? `${student.name} ${student.lastName}` : "Quispe Rojas, Mateo Sebastián"}</strong>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-2">
+                    <span className="text-slate-500 font-bold uppercase text-[10px]">Documento de Identidad:</span>
+                    <strong className="text-slate-900 font-mono">DNI {record.studentDni}</strong>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-2">
+                    <span className="text-slate-500 font-bold uppercase text-[10px]">Programa de Estudios:</span>
+                    <strong className="text-slate-900">{program}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 font-bold uppercase text-[10px]">Petitorio Concreto:</span>
+                    <strong className="text-[#800521]">Emisión de Certificado de Estudios Oficial y Carpeta de Titulación</strong>
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-3 text-[11px] text-emerald-900 flex items-center gap-2 font-medium">
+                  <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span>Suscrito electrónicamente mediante autenticación segura en Portal del Estudiante IESTP SFA.</span>
+                </div>
+              </div>
+
+              <div className="bg-white px-6 py-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
+                {!docs.solicitud && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDocs((prev) => ({ ...prev, solicitud: true }));
+                      setPreviewFutOpen(false);
+                    }}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+                  >
+                    Validar y Dar Conforme
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setPreviewFutOpen(false)}
+                  className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Observaciones de Secretaría Académica */}
         <div>
