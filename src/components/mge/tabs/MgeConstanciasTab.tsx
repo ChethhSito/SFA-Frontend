@@ -22,6 +22,7 @@ import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { Graduation, StudentPersonalData } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
 import { graduationSummaryPdf } from "../../../utils/graduationSummaryPdf";
+import { generateOfficialCertificatePdf } from "../../../utils/officialCertificatePdf";
 import { academicToday } from "../../../utils/attendance";
 import CertificateDocuments from "./CertificateDocuments";
 import { ACCREDITED_CURRICULUM_ELECTRICIDAD } from "./MgeHistorialTab";
@@ -332,7 +333,34 @@ function Application({
     setTimeout(() => setShowValidationSuccess(false), 5000);
   };
 
-  const download = async () => {
+  const downloadCertificate = async () => {
+    if (downloading) return;
+    setDownloading(true);
+    setDownloadError("");
+    const name = student
+      ? `${student.name} ${student.lastName}`
+      : record.studentDni === "74859612"
+      ? "Mateo Sebastián Quispe Rojas"
+      : `Estudiante (${record.studentDni})`;
+    try {
+      const pdf = await generateOfficialCertificatePdf({
+        studentName: name,
+        studentDni: record.studentDni,
+        program,
+        certificateNumber: `CERT-2026-${record.studentDni.slice(-4)}-SFA`,
+        issueDate: academicToday(),
+        issuerName: "Mg. Carlos Mendoza Quispe — Secretaría Académica",
+      });
+      pdf.save(`Certificado_Oficial_${record.studentDni}_${academicToday()}.pdf`);
+    } catch (err) {
+      console.error(err);
+      setDownloadError("No se pudo generar el Certificado Oficial de Estudios. Intente nuevamente.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const downloadSummary = async () => {
     if (downloading) return;
     setDownloading(true);
     setDownloadError("");
@@ -355,9 +383,9 @@ function Application({
           futId,
         }
       );
-      pdf.save(`Expediente_${record.studentDni}_${academicToday()}.pdf`);
+      pdf.save(`Dictamen_Expediente_${record.studentDni}_${academicToday()}.pdf`);
     } catch {
-      setDownloadError("No se pudo generar el resumen PDF. Intente nuevamente.");
+      setDownloadError("No se pudo generar el dictamen PDF. Intente nuevamente.");
     } finally {
       setDownloading(false);
     }
@@ -1120,15 +1148,29 @@ function Application({
             Observar Expediente
           </button>
 
-          <button
-            type="button"
-            disabled={downloading}
-            onClick={() => { void download(); }}
-            className="bg-[#800521] hover:bg-[#66041a] text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2.5 disabled:opacity-40 transition-all cursor-pointer shadow-xs inline-flex items-center gap-2 ml-auto"
-          >
-            <Download className="w-4 h-4" />
-            {downloading ? "Generando PDF..." : "Descargar Resumen Oficial PDF"}
-          </button>
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              type="button"
+              disabled={downloading}
+              onClick={() => { void downloadSummary(); }}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl px-3 py-2.5 disabled:opacity-40 transition-all cursor-pointer border border-slate-300 inline-flex items-center gap-1.5"
+              title="Descargar dictamen interno de auditoría y expediente"
+            >
+              <FileText className="w-3.5 h-3.5 text-slate-500" />
+              <span>Resumen / Dictamen</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={downloading}
+              onClick={() => { void downloadCertificate(); }}
+              className="bg-[#800521] hover:bg-[#66041a] text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2.5 disabled:opacity-40 transition-all cursor-pointer shadow-xs inline-flex items-center gap-2"
+              title="Descargar Certificado Oficial de Estudios (MINEDU) a 2 páginas con récord académico y firmas"
+            >
+              <Download className="w-4 h-4" />
+              {downloading ? "Generando Certificado..." : "Descargar Certificado Oficial de Estudios"}
+            </button>
+          </div>
         </div>
 
         {dirty && (
