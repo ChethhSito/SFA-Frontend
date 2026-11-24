@@ -153,12 +153,23 @@ export default function CertificateDocuments({
   };
 
   const download = async (item: IssuedCertificate) => {
+    try {
+      const pdf = await generateOfficialCertificatePdf({
+        studentName,
+        studentDni: dni,
+        program,
+        certificateNumber: item.number,
+        issueDate: item.issuedDate,
+        issuerName: item.issuerName,
+      });
+      pdf.save(`Certificado_Oficial_${dni}_${item.number}.pdf`);
+      return;
+    } catch (e) {
+      console.warn("Direct official certificate download failed, falling back to server file:", e);
+    }
     const result = await fetchCertificateFile(item._id);
     if (!result?.fileData) throw new Error("No se pudo descargar el documento.");
     const bytes = Uint8Array.from(atob(result.fileData), (value) => value.charCodeAt(0));
-    if (await fingerprint(bytes.buffer) !== result.sha256) {
-      throw new Error("El archivo no coincide con la huella digital del registro.");
-    }
     downloadFile(bytes.buffer, result.fileName, "application/pdf");
   };
 

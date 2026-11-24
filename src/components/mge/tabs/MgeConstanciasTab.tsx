@@ -159,7 +159,7 @@ function Application({
         localStorage.getItem(`sfa_efsrt_${record.studentDni}`) ||
         (record.studentDni === "74859612" ? localStorage.getItem("sfa_efsrt_74859612") : null);
       if (raw) return JSON.parse(raw);
-    } catch {}
+    } catch { }
     // Fallback baseline for Mateo Sebastián Quispe Rojas
     if (record.studentDni === "74859612") {
       return {
@@ -367,8 +367,8 @@ function Application({
     const name = student
       ? `${student.name} ${student.lastName}`
       : record.studentDni === "74859612"
-      ? "Mateo Sebastián Quispe Rojas"
-      : `Estudiante (${record.studentDni})`;
+        ? "Mateo Sebastián Quispe Rojas"
+        : `Estudiante (${record.studentDni})`;
     try {
       const pdf = await graduationSummaryPdf(
         name,
@@ -425,13 +425,12 @@ function Application({
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-auto">
-            <span className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase font-mono tracking-wider border shadow-sm ${
-              record.status === "Apto"
-                ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/40"
-                : record.status === "Certificado Emitido"
+            <span className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase font-mono tracking-wider border shadow-sm ${record.status === "Apto"
+              ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/40"
+              : record.status === "Certificado Emitido"
                 ? "bg-blue-500/20 text-blue-300 border-blue-400/40"
                 : "bg-amber-500/20 text-amber-300 border-amber-400/40"
-            }`}>
+              }`}>
               {record.status}
             </span>
           </div>
@@ -617,9 +616,8 @@ function Application({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
             {/* 1. Solicitud Única de Trámite (FUT) */}
-            <div className={`p-4 rounded-2xl border transition-all ${
-              docs.solicitud ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
-            }`}>
+            <div className={`p-4 rounded-2xl border transition-all ${docs.solicitud ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
+              }`}>
               <div className="flex items-start justify-between gap-3">
                 <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
                   <input
@@ -633,14 +631,13 @@ function Application({
                     <p className="text-[11px] text-slate-500 mt-0.5 font-mono">
                       {hasFut ? `Expediente Digital N° EXP-2029-${record.studentDni}-CER` : "Sin solicitud registrada en Portal del Estudiante"}
                     </p>
-                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${
-                      docs.solicitud ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
-                    }`}>
+                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${docs.solicitud ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
+                      }`}>
                       {docs.solicitud
                         ? "Conforme • Solicitud FUT Acreditada"
                         : hasFut
-                        ? "FUT Registrado • Pendiente de Validación"
-                        : "Pendiente de Registro por el Estudiante"}
+                          ? "FUT Registrado • Pendiente de Validación"
+                          : "Pendiente de Registro por el Estudiante"}
                     </span>
                   </div>
                 </label>
@@ -662,9 +659,8 @@ function Application({
             </div>
 
             {/* 2. Constancia de Egresado (96 créditos concluidos) */}
-            <div className={`p-4 rounded-2xl border transition-all ${
-              docs.constanciaEgresado ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
-            }`}>
+            <div className={`p-4 rounded-2xl border transition-all ${docs.constanciaEgresado ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
+              }`}>
               <div className="flex items-start justify-between gap-3">
                 <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
                   <input
@@ -678,9 +674,8 @@ function Application({
                     <p className="text-[11px] text-slate-500 mt-0.5">
                       Auditoría Curricular: 6 de 6 ciclos aprobados (100% malla modular concluida)
                     </p>
-                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${
-                      docs.constanciaEgresado ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
-                    }`}>
+                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${docs.constanciaEgresado ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
+                      }`}>
                       {docs.constanciaEgresado ? "Conforme • 96/96 Créditos Acreditados" : "Pendiente de Verificación Curricular"}
                     </span>
                   </div>
@@ -708,9 +703,8 @@ function Application({
             </div>
 
             {/* 3. Prácticas Preprofesionales EFSRT (24 créditos formativos) */}
-            <div className={`p-4 rounded-2xl border transition-all ${
-              docs.practicasPre ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
-            }`}>
+            <div className={`p-4 rounded-2xl border transition-all ${docs.practicasPre ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
+              }`}>
               <div className="flex items-start justify-between gap-3">
                 <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
                   <input
@@ -733,9 +727,8 @@ function Application({
                     <p className="text-[11px] text-slate-500 mt-0.5 truncate max-w-[260px]" title={efsrtCompany}>
                       {efsrtCompany} ({efsrtHours} hrs)
                     </p>
-                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${
-                      docs.practicasPre ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
-                    }`}>
+                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${docs.practicasPre ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
+                      }`}>
                       {docs.practicasPre ? "Conforme • 480 Horas Acreditadas (+24 Cr.)" : "Pendiente de Validación Laboral"}
                     </span>
                   </div>
@@ -752,9 +745,8 @@ function Application({
             </div>
 
             {/* 4. Pago de Tasa de Certificación (Banco de la Nación) */}
-            <div className={`p-4 rounded-2xl border transition-all ${
-              docs.pagoDerecho ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
-            }`}>
+            <div className={`p-4 rounded-2xl border transition-all ${docs.pagoDerecho ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
+              }`}>
               <div className="flex items-start justify-between gap-3">
                 <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
                   <input
@@ -770,14 +762,13 @@ function Application({
                         ? `Arancel S/ ${Number(feeAmount || 50).toFixed(2)} • N° Op: ${feeOpNumber || "OP-2029-BN-49102"}`
                         : "Sin comprobante de abono registrado en Banco de la Nación"}
                     </p>
-                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${
-                      docs.pagoDerecho ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
-                    }`}>
+                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${docs.pagoDerecho ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
+                      }`}>
                       {docs.pagoDerecho
                         ? "Conforme • Tasa S/ 50.00 Conciliada en Caja"
                         : hasFeePaid
-                        ? "Voucher Adjuntado • Pendiente de Validación"
-                        : "Pendiente de Pago en Tesorería / Banco"}
+                          ? "Voucher Adjuntado • Pendiente de Validación"
+                          : "Pendiente de Pago en Tesorería / Banco"}
                     </span>
                   </div>
                 </label>
@@ -1219,19 +1210,19 @@ export default function MgeConstanciasTab({
     graduations.length > 0
       ? graduations
       : [
-          {
-            studentDni: "74859612",
-            step: "Revisión Documentaria",
-            status: "En Proceso" as const,
-            docsChecked: {
-              solicitud: false,
-              constanciaEgresado: true,
-              practicasPre: false,
-              pagoDerecho: false
-            },
-            obs: "Expediente curricular de titulación en trámite. 96 créditos lectivos culminados. Prácticas EFSRT registradas y pendientes de convalidación."
-          }
-        ];
+        {
+          studentDni: "74859612",
+          step: "Revisión Documentaria",
+          status: "En Proceso" as const,
+          docsChecked: {
+            solicitud: false,
+            constanciaEgresado: true,
+            practicasPre: false,
+            pagoDerecho: false
+          },
+          obs: "Expediente curricular de titulación en trámite. 96 créditos lectivos culminados. Prácticas EFSRT registradas y pendientes de convalidación."
+        }
+      ];
 
   // Métricas del Módulo de Secretaría
   const totalExpedientes = displayRecords.length;
