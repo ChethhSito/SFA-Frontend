@@ -118,16 +118,17 @@ const proceduresCatalog: ProcedureDef[] = [
 
 const compressImageFile = (file: File): Promise<string> => {
   return new Promise((resolve) => {
-    if (file.type === 'application/pdf') {
-      resolve('/voucher_ciclo2.png');
-      return;
-    }
     const reader = new FileReader();
     reader.onload = (e) => {
+      const rawDataUrl = (e.target?.result as string) || '';
+      if (file.type === 'application/pdf') {
+        resolve(rawDataUrl || '/voucher_ciclo2.png');
+        return;
+      }
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_DIM = 900;
+        const MAX_DIM = 800;
         let width = img.width;
         let height = img.height;
 
@@ -148,21 +149,22 @@ const compressImageFile = (file: File): Promise<string> => {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.72));
+          resolve(canvas.toDataURL('image/jpeg', 0.68));
         } else {
-          resolve((e.target?.result as string) || '/voucher_ciclo2.png');
+          resolve(rawDataUrl);
         }
       };
-      img.onerror = () => resolve('/voucher_ciclo2.png');
-      img.src = e.target?.result as string;
+      img.onerror = () => resolve(rawDataUrl);
+      img.src = rawDataUrl;
     };
-    reader.onerror = () => resolve('/voucher_ciclo2.png');
+    reader.onerror = () => resolve('');
     reader.readAsDataURL(file);
   });
 };
 
 const safeStorageSet = (key: string, value: string) => {
   try {
+    localStorage.removeItem(key);
     localStorage.setItem(key, value);
   } catch (err) {
     console.warn(`Could not set localStorage key "${key}":`, err);
@@ -322,6 +324,8 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
         operationNumber: voucher.operationNumber.trim(),
         paymentDate: voucher.paymentDate,
         amountPaid: Number(voucher.amountPaid),
+        voucherUrl: voucherFile?.url || '',
+        voucherFileName: voucherFile?.name || '',
       });
       setItems(current => current.map(item => item.id === saved.id ? saved : item));
       if (typeof window !== "undefined") {
@@ -329,24 +333,18 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
         safeStorageSet(`sfa_fee_op_${studentDni}`, voucher.operationNumber.trim());
         safeStorageSet(`sfa_fee_amount_${studentDni}`, String(voucher.amountPaid));
         safeStorageSet(`sfa_fee_date_${studentDni}`, voucher.paymentDate);
-        if (voucherFile) {
+        if (voucherFile?.url) {
           safeStorageSet(`sfa_fee_voucher_file_${studentDni}`, voucherFile.url);
           safeStorageSet(`sfa_fee_voucher_name_${studentDni}`, voucherFile.name);
-        } else {
-          safeStorageSet(`sfa_fee_voucher_file_${studentDni}`, "/voucher_ciclo2.png");
-          safeStorageSet(`sfa_fee_voucher_name_${studentDni}`, "VOUCHER_BN_49102.png");
         }
         if (studentDni === "74859612") {
           safeStorageSet("sfa_fee_paid_74859612", "true");
           safeStorageSet("sfa_fee_op_74859612", voucher.operationNumber.trim());
           safeStorageSet("sfa_fee_amount_74859612", String(voucher.amountPaid));
           safeStorageSet("sfa_fee_date_74859612", voucher.paymentDate);
-          if (voucherFile) {
+          if (voucherFile?.url) {
             safeStorageSet("sfa_fee_voucher_file_74859612", voucherFile.url);
             safeStorageSet("sfa_fee_voucher_name_74859612", voucherFile.name);
-          } else {
-            safeStorageSet("sfa_fee_voucher_file_74859612", "/voucher_ciclo2.png");
-            safeStorageSet("sfa_fee_voucher_name_74859612", "VOUCHER_BN_49102.png");
           }
         }
         window.dispatchEvent(new CustomEvent("sfa_service_requests_changed"));
@@ -904,13 +902,15 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                         type="button"
                         onClick={() => {
                           const url =
+                            item.voucherUrl ||
                             localStorage.getItem(`sfa_fee_voucher_file_${studentDni}`) ||
                             (studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null) ||
                             "/voucher_ciclo2.png";
                           const name =
+                            item.voucherFileName ||
                             localStorage.getItem(`sfa_fee_voucher_name_${studentDni}`) ||
                             (studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_name_74859612") : null) ||
-                            "VOUCHER_BN_49102.png";
+                            "VOUCHER_DE_PAGO.png";
                           setPreviewVoucherData({
                             url,
                             name,

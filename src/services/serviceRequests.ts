@@ -23,6 +23,8 @@ export interface ServiceRequest {
   bankName?: string;
   deliveryStatus?: 'Pendiente' | 'Emitido';
   resultFileName?: string;
+  voucherUrl?: string;
+  voucherFileName?: string;
   createdAt: string;
   updatedAt?: string;
   voucherRegisteredAt?: string;
@@ -59,7 +61,13 @@ export function createServiceRequest(input: {
 }
 
 export function submitServiceRequestVoucher(id: string, input: {
-  studentDni?: string; teacherDni?: string; operationNumber: string; paymentDate: string; amountPaid: number;
+  studentDni?: string;
+  teacherDni?: string;
+  operationNumber: string;
+  paymentDate: string;
+  amountPaid: number;
+  voucherUrl?: string;
+  voucherFileName?: string;
 }): Promise<ServiceRequest> {
   return request<ServiceRequest>(`/service-requests/${encodeURIComponent(id)}/voucher`, {
     method: 'POST', body: JSON.stringify(input),

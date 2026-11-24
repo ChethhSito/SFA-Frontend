@@ -211,6 +211,7 @@ function Application({
             setFeeOpNumber(req.paymentOperation || '');
             if (req.amountPaid || req.amount) setFeeAmount(String(req.amountPaid || req.amount));
             if (req.paymentDate) setFeeDate(req.paymentDate);
+            if (req.voucherUrl) setFeeVoucherUrl(req.voucherUrl);
             setDocs((prev) => ({ ...prev, pagoDerecho: true }));
           } else {
             setHasFeePaid(false);
@@ -259,6 +260,7 @@ function Application({
         }
 
         const vUrl =
+          req?.voucherUrl ||
           localStorage.getItem(`sfa_fee_voucher_file_${record.studentDni}`) ||
           (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null);
         if (vUrl) {
