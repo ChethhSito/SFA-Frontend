@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Loader2, FileText, CheckCircle2, AlertTriangle, ShieldCheck, Download, Trash2, Search, UploadCloud, RefreshCw } from "lucide-react";
+import { Loader2, FileText, CheckCircle2, AlertTriangle, ShieldCheck, Download, Trash2, Search, UploadCloud, RefreshCw, Eye } from "lucide-react";
 import { fetchCertificateFile, fetchCertificates, IssuedCertificate, registerCertificate, revokeCertificate, verifyCertificate } from "../../../services/api";
 import { downloadFile } from "../../../utils/mgeExports";
 import { academicToday } from "../../../utils/attendance";
-import { graduationSummaryPdf, GraduationSummaryExtra } from "../../../utils/graduationSummaryPdf";
+import { generateOfficialCertificatePdf } from "../../../utils/officialCertificatePdf";
+import { GraduationSummaryExtra } from "../../../utils/graduationSummaryPdf";
 import { deliverServiceRequestResult, fetchServiceRequests } from "../../../services/serviceRequests";
 import type { Graduation } from "../../../types";
 
@@ -57,33 +58,21 @@ export default function CertificateDocuments({
   const autoGenerateCertificatePdf = async () => {
     setGeneratingPdf(true);
     try {
-      const rec: Graduation = record || {
-        studentDni: dni,
-        status: "Apto",
-        step: "Emision",
-        docsChecked: {
-          solicitud: true,
-          constanciaEgresado: true,
-          practicasPre: true,
-          pagoDerecho: true,
-        },
-        obs: "Expediente curricular acreditado con 120 créditos formativos (96 lectivos + 24 EFSRT). Apto para emisión de Certificado Oficial.",
-      };
-      const pdf = await graduationSummaryPdf(
+      const pdf = await generateOfficialCertificatePdf({
         studentName,
-        dni,
+        studentDni: dni,
         program,
-        rec,
-        academicToday(),
-        extra
-      );
+        certificateNumber: number,
+        issueDate: date,
+        issuerName: issuer,
+      });
       const blob = pdf.output("blob");
       const autoFile = new File([blob], `Certificado_Oficial_${dni}_SFA.pdf`, {
         type: "application/pdf",
       });
       setFile(autoFile);
     } catch (err) {
-      console.warn("Could not auto-generate certificate PDF:", err);
+      console.warn("Could not auto-generate official certificate PDF:", err);
     } finally {
       setGeneratingPdf(false);
     }
@@ -284,9 +273,23 @@ export default function CertificateDocuments({
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
+                          onClick={() => {
+                            if (file) {
+                              const url = URL.createObjectURL(file);
+                              window.open(url, "_blank");
+                            }
+                          }}
+                          title="Ver vista previa del Certificado Oficial de Estudios"
+                          className="text-[#800521] hover:text-[#66041a] text-[10.5px] font-bold bg-white border border-rose-200 px-2 py-1 rounded-lg cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                        >
+                          <Eye className="w-3 h-3 text-[#800521]" />
+                          <span>Vista Previa</span>
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => void autoGenerateCertificatePdf()}
                           disabled={generatingPdf}
-                          title="Volver a generar el dictamen con los datos actualizados"
+                          title="Volver a generar el certificado con los datos actualizados"
                           className="text-slate-600 hover:text-slate-900 text-[10.5px] font-bold bg-white border border-slate-200 px-2 py-1 rounded-lg cursor-pointer inline-flex items-center gap-1"
                         >
                           <RefreshCw className={`w-3 h-3 ${generatingPdf ? "animate-spin" : ""}`} />
