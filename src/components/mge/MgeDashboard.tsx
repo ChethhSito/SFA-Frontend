@@ -271,8 +271,8 @@ export default function MgeDashboard({
   const activePeriodName = useMemo(() => {
     if (internalPeriodId === "all") return "Todos los Periodos";
     const found = admissionPeriods.find((p) => p.id === internalPeriodId) ||
-                  admissionPeriods.find((p) => p.status === "APERTURADO" || (p as any).status === "ACTIVO" || (p as any).active) ||
-                  admissionPeriods[0];
+      admissionPeriods.find((p) => p.status === "APERTURADO" || (p as any).status === "ACTIVO" || (p as any).active) ||
+      admissionPeriods[0];
     return compactPeriodName(found?.name || "2026-I");
   }, [admissionPeriods, internalPeriodId]);
 
@@ -383,10 +383,14 @@ export default function MgeDashboard({
     const enrollmentData = { programId: studentForm.programId, shift: studentForm.shift };
     const savedEnrollment = enrollments.some((en) => en.studentDni === editingStudentDni)
       ? await onSaveEnrollment(editingStudentDni, enrollmentData)
-      : await onCreateEnrollment({ studentDni: editingStudentDni, ...enrollmentData,
-          academicStatus: "ADMITIDO", paymentStatus: "No Pagado",
-          docs: { dniFile: { status: "No Enviado" }, certificadoFile: { status: "No Enviado" },
-            partidaFile: { status: "No Enviado" }, fotoFile: { status: "No Enviado" } } });
+      : await onCreateEnrollment({
+        studentDni: editingStudentDni, ...enrollmentData,
+        academicStatus: "ADMITIDO", paymentStatus: "No Pagado",
+        docs: {
+          dniFile: { status: "No Enviado" }, certificadoFile: { status: "No Enviado" },
+          partidaFile: { status: "No Enviado" }, fotoFile: { status: "No Enviado" }
+        }
+      });
     if (!savedEnrollment) {
       triggerNotification("La ficha se guardó, pero la carrera y el turno no se pudieron guardar. Intente nuevamente.", "error");
       return;
@@ -656,11 +660,11 @@ export default function MgeDashboard({
       return;
     }
     const saved = await createGraduation({
-        studentDni: dni,
-        status: "Solicitado",
-        step: "Solicitud",
-        docsChecked: { solicitud: false, constanciaEgresado: false, practicasPre: false, pagoDerecho: false },
-        obs: "Ingresado manualmente por el MGE Administrativo"
+      studentDni: dni,
+      status: "Solicitado",
+      step: "Solicitud",
+      docsChecked: { solicitud: false, constanciaEgresado: false, practicasPre: false, pagoDerecho: false },
+      obs: "Ingresado manualmente por el MGE Administrativo"
     });
     if (!saved) { triggerNotification("No se pudo abrir el expediente en el servidor.", "error"); return; }
     onUpdateGraduations([...graduations, saved]);
@@ -825,13 +829,12 @@ export default function MgeDashboard({
                 </select>
 
                 <span
-                  className={`text-[9.5px] font-black uppercase px-2 py-0.5 rounded-md font-mono ${
-                    internalPeriodId === "all"
-                      ? "bg-slate-500/30 text-slate-300 border border-slate-500/40"
-                      : isPeriodActive
+                  className={`text-[9.5px] font-black uppercase px-2 py-0.5 rounded-md font-mono ${internalPeriodId === "all"
+                    ? "bg-slate-500/30 text-slate-300 border border-slate-500/40"
+                    : isPeriodActive
                       ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/40"
                       : "bg-slate-500/25 text-slate-300 border border-slate-500/40"
-                  }`}
+                    }`}
                 >
                   {internalPeriodId === "all" ? "Todos" : isPeriodActive ? "Activo" : "Concluido"}
                 </span>

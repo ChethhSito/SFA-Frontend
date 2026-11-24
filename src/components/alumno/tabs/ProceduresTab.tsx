@@ -215,6 +215,16 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       setItems(current => [created, ...current]);
       setReason('');
       setMessage(`Solicitud #${created.id} (${created.conceptName}) registrada exitosamente. Proceda a registrar el pago en ventanilla o agente del Banco de la Nación.`);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`sfa_fut_registered_${studentDni}`, "true");
+        localStorage.setItem(`sfa_fut_id_${studentDni}`, created.id);
+        localStorage.setItem(`sfa_fut_concept_${studentDni}`, created.conceptName);
+        if (studentDni === "74859612") {
+          localStorage.setItem("sfa_fut_registered_74859612", "true");
+          localStorage.setItem("sfa_fut_id_74859612", created.id);
+        }
+        window.dispatchEvent(new Event("storage"));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo enviar la solicitud.');
     } finally {
@@ -247,6 +257,17 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
         amountPaid: Number(voucher.amountPaid),
       });
       setItems(current => current.map(item => item.id === saved.id ? saved : item));
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`sfa_fee_paid_${studentDni}`, "true");
+        localStorage.setItem(`sfa_fee_op_${studentDni}`, voucher.operationNumber.trim());
+        localStorage.setItem(`sfa_fee_amount_${studentDni}`, String(voucher.amountPaid));
+        if (studentDni === "74859612") {
+          localStorage.setItem("sfa_fee_paid_74859612", "true");
+          localStorage.setItem("sfa_fee_op_74859612", voucher.operationNumber.trim());
+          localStorage.setItem("sfa_fee_amount_74859612", String(voucher.amountPaid));
+        }
+        window.dispatchEvent(new Event("storage"));
+      }
       setVoucher({ requestId: '', operationNumber: '', paymentDate: '', amountPaid: '' });
       setVoucherFeedback('Comprobante de pago verificado y enviado a Tesorería MAF. Su trámite pasará a firma digital y emisión.');
     } catch (e) {

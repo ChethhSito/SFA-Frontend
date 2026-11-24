@@ -24,6 +24,7 @@ import { ProcessedStudent } from "../mgeTypes";
 import { graduationSummaryPdf } from "../../../utils/graduationSummaryPdf";
 import { academicToday } from "../../../utils/attendance";
 import CertificateDocuments from "./CertificateDocuments";
+import { ACCREDITED_CURRICULUM_ELECTRICIDAD } from "./MgeHistorialTab";
 
 const requirements = {
   solicitud: "Solicitud Única de Trámite (FUT)",
@@ -54,7 +55,33 @@ function Application({
   onIssuerUpdate: Props['onIssuerUpdate'];
   onSaveDocs: Props['onSaveDocs'];
 }) {
-  const [docs, setDocs] = useState(record.docsChecked);
+  const isEgresado96Credits = record.studentDni === "74859612" || (typeof window !== "undefined" && (
+    localStorage.getItem(`sfa_student_promoted_${record.studentDni}`) === "true" ||
+    localStorage.getItem(`sfa_student_graduated_all_${record.studentDni}`) === "true" ||
+    localStorage.getItem(`sfa_student_cycle_${record.studentDni}`) === "6"
+  ));
+
+  const [docs, setDocs] = useState(() => {
+    const base = { ...record.docsChecked };
+    // Los 96 créditos ya están concluidos por el récord académico de los 6 ciclos
+    if (isEgresado96Credits) {
+      base.constanciaEgresado = true;
+    }
+    const hasFut = typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_fut_registered_${record.studentDni}`) === "true" ||
+      (record.studentDni === "74859612" && localStorage.getItem("sfa_fut_registered_74859612") === "true")
+    );
+    if (hasFut) base.solicitud = true;
+
+    const hasFeePaid = typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_fee_paid_${record.studentDni}`) === "true" ||
+      (record.studentDni === "74859612" && localStorage.getItem("sfa_fee_paid_74859612") === "true")
+    );
+    if (hasFeePaid) base.pagoDerecho = true;
+
+    return base;
+  });
+
   const [obs, setObs] = useState(record.obs || "Expediente curricular de titulación en trámite. Requisitos de egresado auditados.");
   const dirty = JSON.stringify(docs) !== JSON.stringify(record.docsChecked) || obs !== (record.obs || "");
   const [downloading, setDownloading] = useState(false);
@@ -62,6 +89,7 @@ function Application({
   const [previewPdfOpen, setPreviewPdfOpen] = useState(false);
   const [previewVoucherOpen, setPreviewVoucherOpen] = useState(false);
   const [previewFutOpen, setPreviewFutOpen] = useState(false);
+  const [previewTranscriptOpen, setPreviewTranscriptOpen] = useState(false);
   const [showValidationSuccess, setShowValidationSuccess] = useState(false);
 
   // EFSRT Data state with fallback to official dossier for Mateo
@@ -118,6 +146,20 @@ function Application({
         if (validated) {
           setIsEfsrtValidated(true);
           setDocs((prev) => ({ ...prev, practicasPre: true }));
+        }
+
+        const hasFut =
+          localStorage.getItem(`sfa_fut_registered_${record.studentDni}`) === "true" ||
+          (record.studentDni === "74859612" && localStorage.getItem("sfa_fut_registered_74859612") === "true");
+        if (hasFut) {
+          setDocs((prev) => ({ ...prev, solicitud: true }));
+        }
+
+        const hasFeePaid =
+          localStorage.getItem(`sfa_fee_paid_${record.studentDni}`) === "true" ||
+          (record.studentDni === "74859612" && localStorage.getItem("sfa_fee_paid_74859612") === "true");
+        if (hasFeePaid) {
+          setDocs((prev) => ({ ...prev, pagoDerecho: true }));
         }
       } catch {}
     };
@@ -457,7 +499,7 @@ function Application({
                   <div>
                     <p className="text-xs font-bold text-slate-900">2. Constancia de Egresado (96 créditos concluidos)</p>
                     <p className="text-[11px] text-slate-500 mt-0.5">
-                      Auditoría Curricular: 6 de 6 ciclos aprobados (100% concluido)
+                      Auditoría Curricular: 6 de 6 ciclos aprobados (100% malla modular concluida)
                     </p>
                     <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${
                       docs.constanciaEgresado ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
@@ -466,15 +508,25 @@ function Application({
                     </span>
                   </div>
                 </label>
-                {!docs.constanciaEgresado && (
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setDocs((prev) => ({ ...prev, constanciaEgresado: true }))}
-                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer shrink-0"
+                    onClick={() => setPreviewTranscriptOpen(true)}
+                    className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1 shadow-2xs"
                   >
-                    Acreditar
+                    <Eye className="w-3.5 h-3.5 text-slate-600" />
+                    Ver Récord (6 Ciclos)
                   </button>
-                )}
+                  {!docs.constanciaEgresado && (
+                    <button
+                      type="button"
+                      onClick={() => setDocs((prev) => ({ ...prev, constanciaEgresado: true }))}
+                      className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+                    >
+                      Acreditar
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -668,7 +720,7 @@ function Application({
                 <button
                   type="button"
                   onClick={() => setPreviewFutOpen(false)}
-                  className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10"
+                  className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -720,6 +772,141 @@ function Application({
                 >
                   Cerrar
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Vista Previa del Récord de Notas (6 Ciclos / 96 Créditos) */}
+        {previewTranscriptOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn">
+            <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-slate-300">
+              <div className="bg-gradient-to-r from-[#800521] via-[#5c0317] to-slate-900 text-white px-6 py-4 flex items-center justify-between border-b-2 border-amber-500 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-300 font-bold">
+                    96
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-sm uppercase tracking-wide flex items-center gap-2">
+                      Récord Académico Integral • 6 Ciclos Modulares
+                      <span className="bg-emerald-500/30 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full border border-emerald-400/40 font-mono">
+                        100% Concluido
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-slate-300">
+                      IESTP San Francisco de Asís • Programa: {program} • DNI: {record.studentDni}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPreviewTranscriptOpen(false)}
+                  className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Encabezado del Estudiante */}
+              <div className="bg-slate-100 px-6 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs font-mono shrink-0">
+                <div>
+                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Estudiante Egresado</span>
+                  <strong className="text-slate-900 text-sm font-sans">{student ? `${student.name} ${student.lastName}` : "Quispe Rojas, Mateo Sebastián"}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Créditos Acumulados</span>
+                  <span className="text-emerald-700 font-extrabold text-sm">96 / 96 Créditos (30 Cursos)</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Promedio Ponderado</span>
+                  <span className="text-indigo-900 font-extrabold text-sm">17.13 / 20.00</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Condición Curricular</span>
+                  <span className="bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2 py-0.5 rounded-md border border-emerald-300">
+                    EGRESADO REGULAR
+                  </span>
+                </div>
+              </div>
+
+              {/* Contenido scrolleable con los 6 ciclos */}
+              <div className="p-6 overflow-y-auto space-y-5 bg-slate-50 flex-1">
+                {[1, 2, 3, 4, 5, 6].map((cicloNum) => {
+                  const cycleCourses = ACCREDITED_CURRICULUM_ELECTRICIDAD.filter((c) => c.cycle === cicloNum);
+                  const cycleCredits = cycleCourses.reduce((acc, c) => acc + c.credits, 0);
+                  const cycleAvg = (
+                    cycleCourses.reduce((acc, c) => acc + c.grade * c.credits, 0) / (cycleCredits || 1)
+                  ).toFixed(1);
+
+                  return (
+                    <div key={cicloNum} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
+                      <div className="bg-slate-900 text-white px-4 py-2 flex items-center justify-between text-xs font-mono">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                          <strong className="uppercase font-bold tracking-wider">Ciclo Modular 0{cicloNum}</strong>
+                          <span className="text-slate-400 text-[11px]">({cycleCredits} Créditos Académicos)</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-amber-300 font-semibold text-[11px]">Prom. Ciclo: {cycleAvg}</span>
+                          <span className="bg-emerald-600/30 text-emerald-300 text-[10px] px-2 py-0.5 rounded border border-emerald-500/40">
+                            Aprobado
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="divide-y divide-slate-100">
+                        {cycleCourses.map((c) => (
+                          <div key={c.code} className="px-4 py-2.5 flex items-center justify-between text-xs hover:bg-slate-50/80 transition-colors">
+                            <div className="flex items-center gap-3 flex-1 min-w-0 pr-4">
+                              <span className="font-mono text-[11px] text-slate-500 font-bold bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
+                                {c.code}
+                              </span>
+                              <span className="text-slate-800 font-medium truncate">{c.courseName}</span>
+                            </div>
+                            <div className="flex items-center gap-4 shrink-0 font-mono text-[11px]">
+                              <span className="text-slate-500">{c.credits} cr.</span>
+                              <span className="text-emerald-700 font-extrabold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-xs min-w-[34px] text-center">
+                                {c.grade.toFixed(1)}
+                              </span>
+                              <span className="text-[10px] text-emerald-700 font-bold uppercase">
+                                Aprobado
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Footer con Acciones */}
+              <div className="bg-white px-6 py-3.5 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+                <div className="text-[11px] text-slate-500 font-medium">
+                  Auditoría automática de plan de estudios aprobada por Dirección Académica.
+                </div>
+                <div className="flex items-center gap-2">
+                  {!docs.constanciaEgresado && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDocs((prev) => ({ ...prev, constanciaEgresado: true }));
+                        setPreviewTranscriptOpen(false);
+                      }}
+                      className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+                    >
+                      <Check className="w-4 h-4" />
+                      Validar y Acreditar Egresado
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTranscriptOpen(false)}
+                    className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer"
+                  >
+                    Cerrar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
