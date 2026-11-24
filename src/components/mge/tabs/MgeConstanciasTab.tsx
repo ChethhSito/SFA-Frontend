@@ -234,7 +234,9 @@ function Application({
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <div className="text-xs">
               <strong className="block text-emerald-800 font-black uppercase tracking-wider">¡Prácticas EFSRT Validadas Exitosamente!</strong>
-              <span>Se asignaron los 24 créditos reglamentarios al estudiante Mateo Sebastián Quispe Rojas. El total acumulado es 120/120 créditos (Condición: Egresado Pleno).</span>
+              <span>
+                Se asignaron los 24 créditos reglamentarios al estudiante {student ? `${student.name} ${student.lastName}` : (record.studentDni === "74859612" ? "Mateo Sebastián Quispe Rojas" : `DNI ${record.studentDni}`)}. El total acumulado es 120/120 créditos (Condición: Egresado Pleno).
+              </span>
             </div>
           </div>
         )}
