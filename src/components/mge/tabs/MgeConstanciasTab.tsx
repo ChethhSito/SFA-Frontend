@@ -214,21 +214,33 @@ function Application({
             setDocs((prev) => ({ ...prev, pagoDerecho: true }));
           } else {
             setHasFeePaid(false);
-            setDocs((prev) => ({ ...prev, pagoDerecho: false }));
+            setFeeOpNumber('');
+            setFeeVoucherUrl('');
           }
         } else {
-          // Si no hay solicitudes en backend, consultar localStorage
+          // Si no hay solicitudes en backend ni en localStorage, reiniciar requisitos
           const hasFutVal =
             localStorage.getItem(`sfa_fut_registered_${record.studentDni}`) === "true" ||
             (record.studentDni === "74859612" && localStorage.getItem("sfa_fut_registered_74859612") === "true");
           setHasFut(hasFutVal);
-          setDocs((prev) => ({ ...prev, solicitud: hasFutVal }));
+          if (!hasFutVal) {
+            setFutId('');
+            setDocs((prev) => ({ ...prev, solicitud: false }));
+          } else {
+            setDocs((prev) => ({ ...prev, solicitud: true }));
+          }
 
           const hasFeeVal =
             localStorage.getItem(`sfa_fee_paid_${record.studentDni}`) === "true" ||
             (record.studentDni === "74859612" && localStorage.getItem("sfa_fee_paid_74859612") === "true");
           setHasFeePaid(hasFeeVal);
-          setDocs((prev) => ({ ...prev, pagoDerecho: hasFeeVal }));
+          if (!hasFeeVal) {
+            setFeeOpNumber('');
+            setFeeVoucherUrl('');
+            setDocs((prev) => ({ ...prev, pagoDerecho: false }));
+          } else {
+            setDocs((prev) => ({ ...prev, pagoDerecho: true }));
+          }
         }
 
         // 2. Sincronización de EFSRT y Comprobante de Voucher
@@ -249,7 +261,11 @@ function Application({
         const vUrl =
           localStorage.getItem(`sfa_fee_voucher_file_${record.studentDni}`) ||
           (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null);
-        if (vUrl) setFeeVoucherUrl(vUrl);
+        if (vUrl) {
+          setFeeVoucherUrl(vUrl);
+        } else if (!req?.paymentOperation) {
+          setFeeVoucherUrl('');
+        }
       } catch (err) {
         console.warn("syncState error in MgeConstanciasTab:", err);
       }
@@ -258,12 +274,25 @@ function Application({
     // Ejecutar inmediatamente al montar
     void syncState();
 
-    window.addEventListener("storage", syncState);
-    window.addEventListener("focus", syncState);
+    // Polling ligero cada 1.5s para sincronización en tiempo real sin recargar
+    const pollInterval = setInterval(() => {
+      void syncState();
+    }, 1500);
+
+    const handleSyncEvent = () => {
+      void syncState();
+    };
+
+    window.addEventListener("storage", handleSyncEvent);
+    window.addEventListener("focus", handleSyncEvent);
+    window.addEventListener("sfa_service_requests_changed", handleSyncEvent);
+
     return () => {
       mounted = false;
-      window.removeEventListener("storage", syncState);
-      window.removeEventListener("focus", syncState);
+      clearInterval(pollInterval);
+      window.removeEventListener("storage", handleSyncEvent);
+      window.removeEventListener("focus", handleSyncEvent);
+      window.removeEventListener("sfa_service_requests_changed", handleSyncEvent);
     };
   }, [record.studentDni]);
 

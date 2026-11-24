@@ -220,17 +220,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [voucher, setVoucher] = useState({ requestId: '', operationNumber: '', paymentDate: '', amountPaid: '' });
-  const [voucherFile, setVoucherFile] = useState<{ name: string; url: string; size?: string } | null>(() => {
-    if (typeof window === "undefined") return null;
-    const savedUrl = localStorage.getItem(`sfa_fee_voucher_file_${studentDni}`) ||
-      (studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null);
-    const savedName = localStorage.getItem(`sfa_fee_voucher_name_${studentDni}`) ||
-      (studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_name_74859612") : null);
-    if (savedUrl && savedName) {
-      return { name: savedName, url: savedUrl };
-    }
-    return null;
-  });
+  const [voucherFile, setVoucherFile] = useState<{ name: string; url: string; size?: string } | null>(null);
   const [voucherSaving, setVoucherSaving] = useState(false);
   const [voucherFeedback, setVoucherFeedback] = useState('');
   const [voucherError, setVoucherError] = useState('');
@@ -288,6 +278,8 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       setItems(current => [created, ...current]);
       setReason('');
       setMessage(`Solicitud #${created.id} (${created.conceptName}) registrada exitosamente. Proceda a registrar el pago en ventanilla o agente del Banco de la Nación.`);
+      setVoucher({ requestId: '', operationNumber: '', paymentDate: '', amountPaid: '' });
+      setVoucherFile(null);
       if (typeof window !== "undefined") {
         localStorage.setItem(`sfa_fut_registered_${studentDni}`, "true");
         localStorage.setItem(`sfa_fut_id_${studentDni}`, created.id);
@@ -296,6 +288,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
           localStorage.setItem("sfa_fut_registered_74859612", "true");
           localStorage.setItem("sfa_fut_id_74859612", created.id);
         }
+        window.dispatchEvent(new CustomEvent("sfa_service_requests_changed"));
         window.dispatchEvent(new Event("storage"));
       }
     } catch (e) {
@@ -309,10 +302,11 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
     const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     setVoucher({ 
       requestId: item.id, 
-      operationNumber: item.paymentOperation || `048${Math.floor(1000 + Math.random() * 9000)}`, 
+      operationNumber: item.paymentOperation || '', 
       paymentDate: item.paymentDate || today, 
       amountPaid: String(item.amountPaid || item.amount) 
     });
+    setVoucherFile(null);
     setVoucherFeedback('');
     setVoucherError('');
   };
@@ -355,9 +349,11 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
             safeStorageSet("sfa_fee_voucher_name_74859612", "VOUCHER_BN_49102.png");
           }
         }
+        window.dispatchEvent(new CustomEvent("sfa_service_requests_changed"));
         window.dispatchEvent(new Event("storage"));
       }
       setVoucher({ requestId: '', operationNumber: '', paymentDate: '', amountPaid: '' });
+      setVoucherFile(null);
       setVoucherFeedback('Comprobante de pago verificado y enviado a Tesorería MAF. Su trámite pasará a firma digital y emisión.');
     } catch (e) {
       setVoucherError(e instanceof Error ? e.message : 'No se pudo registrar el voucher.');
@@ -390,6 +386,8 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
     }
 
     setItems((curr) => curr.filter((i) => i.id !== item.id));
+    setVoucher({ requestId: '', operationNumber: '', paymentDate: '', amountPaid: '' });
+    setVoucherFile(null);
 
     if (typeof window !== "undefined") {
       // Limpiar estados de FUT y Pago asociados para que MGE se resetee reactivamente
@@ -406,6 +404,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       if (studentDni === "74859612") {
         localStorage.removeItem("sfa_fut_registered_74859612");
         localStorage.removeItem("sfa_fut_id_74859612");
+        localStorage.removeItem("sfa_fut_concept_74859612");
         localStorage.removeItem("sfa_fee_paid_74859612");
         localStorage.removeItem("sfa_fee_op_74859612");
         localStorage.removeItem("sfa_fee_amount_74859612");
@@ -414,6 +413,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
         localStorage.removeItem("sfa_fee_voucher_name_74859612");
       }
 
+      window.dispatchEvent(new CustomEvent("sfa_service_requests_changed"));
       window.dispatchEvent(new Event("storage"));
     }
 
@@ -1125,7 +1125,10 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                         </button>
                         <button 
                           type="button" 
-                          onClick={() => setVoucher({ requestId: '', operationNumber: '', paymentDate: '', amountPaid: '' })} 
+                          onClick={() => {
+                            setVoucher({ requestId: '', operationNumber: '', paymentDate: '', amountPaid: '' });
+                            setVoucherFile(null);
+                          }} 
                           className="rounded-xl border border-slate-250 bg-white hover:bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 transition-all cursor-pointer"
                         >
                           Cancelar
