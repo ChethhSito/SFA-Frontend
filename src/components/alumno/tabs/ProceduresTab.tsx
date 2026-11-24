@@ -3,7 +3,7 @@ import {
   FileText, RefreshCw, Award, CheckCircle2, Clock, AlertCircle, 
   Download, ArrowRight, ShieldCheck, Building2, Send, Sparkles,
   Lock, Unlock, GraduationCap, Briefcase, FileCheck, Check, Info, AlertTriangle,
-  Upload, X, Trash2
+  Upload, X, Trash2, Eye
 } from 'lucide-react';
 import { 
   createServiceRequest, fetchServiceRequests, ServiceRequest, 
@@ -116,6 +116,59 @@ const proceduresCatalog: ProcedureDef[] = [
   },
 ];
 
+const compressImageFile = (file: File): Promise<string> => {
+  return new Promise((resolve) => {
+    if (file.type === 'application/pdf') {
+      resolve('/voucher_ciclo2.png');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 900;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.72));
+        } else {
+          resolve((e.target?.result as string) || '/voucher_ciclo2.png');
+        }
+      };
+      img.onerror = () => resolve('/voucher_ciclo2.png');
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => resolve('/voucher_ciclo2.png');
+    reader.readAsDataURL(file);
+  });
+};
+
+const safeStorageSet = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch (err) {
+    console.warn(`Could not set localStorage key "${key}":`, err);
+  }
+};
+
 export function ProceduresTab({ studentDni, period }: { studentDni: string; period: string }) {
   const [, setSync] = useState(0);
   useEffect(() => {
@@ -182,6 +235,13 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
   const [voucherFeedback, setVoucherFeedback] = useState('');
   const [voucherError, setVoucherError] = useState('');
   const [lockedModal, setLockedModal] = useState<{ title: string; reason: string; requirement: string } | null>(null);
+  const [previewVoucherData, setPreviewVoucherData] = useState<{
+    url: string;
+    name: string;
+    operationNumber?: string;
+    date?: string;
+    amount?: number | string;
+  } | null>(null);
 
   const sortedItems = [...items].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   const pagination = usePagination(sortedItems, 5, sortedItems[0]?.id, 'sfa_student_requests_page_size');
@@ -271,28 +331,28 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       });
       setItems(current => current.map(item => item.id === saved.id ? saved : item));
       if (typeof window !== "undefined") {
-        localStorage.setItem(`sfa_fee_paid_${studentDni}`, "true");
-        localStorage.setItem(`sfa_fee_op_${studentDni}`, voucher.operationNumber.trim());
-        localStorage.setItem(`sfa_fee_amount_${studentDni}`, String(voucher.amountPaid));
-        localStorage.setItem(`sfa_fee_date_${studentDni}`, voucher.paymentDate);
+        safeStorageSet(`sfa_fee_paid_${studentDni}`, "true");
+        safeStorageSet(`sfa_fee_op_${studentDni}`, voucher.operationNumber.trim());
+        safeStorageSet(`sfa_fee_amount_${studentDni}`, String(voucher.amountPaid));
+        safeStorageSet(`sfa_fee_date_${studentDni}`, voucher.paymentDate);
         if (voucherFile) {
-          localStorage.setItem(`sfa_fee_voucher_file_${studentDni}`, voucherFile.url);
-          localStorage.setItem(`sfa_fee_voucher_name_${studentDni}`, voucherFile.name);
+          safeStorageSet(`sfa_fee_voucher_file_${studentDni}`, voucherFile.url);
+          safeStorageSet(`sfa_fee_voucher_name_${studentDni}`, voucherFile.name);
         } else {
-          localStorage.setItem(`sfa_fee_voucher_file_${studentDni}`, "/voucher_ciclo2.png");
-          localStorage.setItem(`sfa_fee_voucher_name_${studentDni}`, "VOUCHER_BN_49102.png");
+          safeStorageSet(`sfa_fee_voucher_file_${studentDni}`, "/voucher_ciclo2.png");
+          safeStorageSet(`sfa_fee_voucher_name_${studentDni}`, "VOUCHER_BN_49102.png");
         }
         if (studentDni === "74859612") {
-          localStorage.setItem("sfa_fee_paid_74859612", "true");
-          localStorage.setItem("sfa_fee_op_74859612", voucher.operationNumber.trim());
-          localStorage.setItem("sfa_fee_amount_74859612", String(voucher.amountPaid));
-          localStorage.setItem("sfa_fee_date_74859612", voucher.paymentDate);
+          safeStorageSet("sfa_fee_paid_74859612", "true");
+          safeStorageSet("sfa_fee_op_74859612", voucher.operationNumber.trim());
+          safeStorageSet("sfa_fee_amount_74859612", String(voucher.amountPaid));
+          safeStorageSet("sfa_fee_date_74859612", voucher.paymentDate);
           if (voucherFile) {
-            localStorage.setItem("sfa_fee_voucher_file_74859612", voucherFile.url);
-            localStorage.setItem("sfa_fee_voucher_name_74859612", voucherFile.name);
+            safeStorageSet("sfa_fee_voucher_file_74859612", voucherFile.url);
+            safeStorageSet("sfa_fee_voucher_name_74859612", voucherFile.name);
           } else {
-            localStorage.setItem("sfa_fee_voucher_file_74859612", "/voucher_ciclo2.png");
-            localStorage.setItem("sfa_fee_voucher_name_74859612", "VOUCHER_BN_49102.png");
+            safeStorageSet("sfa_fee_voucher_file_74859612", "/voucher_ciclo2.png");
+            safeStorageSet("sfa_fee_voucher_name_74859612", "VOUCHER_BN_49102.png");
           }
         }
         window.dispatchEvent(new Event("storage"));
@@ -837,9 +897,35 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                   </div>
 
                   {item.paymentOperation && (
-                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 font-medium flex items-center justify-between">
-                      <span>Voucher registrado: <strong className="font-mono text-slate-800">{item.paymentOperation}</strong></span>
-                      <span className="text-[10px] text-slate-500">{item.paymentDate}</span>
+                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 font-medium flex items-center justify-between gap-3">
+                      <div>
+                        <span>Voucher registrado: <strong className="font-mono text-slate-800">{item.paymentOperation}</strong></span>
+                        <span className="text-[10px] text-slate-500 ml-2">({item.paymentDate})</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url =
+                            localStorage.getItem(`sfa_fee_voucher_file_${studentDni}`) ||
+                            (studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null) ||
+                            "/voucher_ciclo2.png";
+                          const name =
+                            localStorage.getItem(`sfa_fee_voucher_name_${studentDni}`) ||
+                            (studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_name_74859612") : null) ||
+                            "VOUCHER_BN_49102.png";
+                          setPreviewVoucherData({
+                            url,
+                            name,
+                            operationNumber: item.paymentOperation,
+                            date: item.paymentDate,
+                            amount: item.amountPaid || item.amount
+                          });
+                        }}
+                        className="inline-flex items-center gap-1.5 text-slate-700 hover:text-[#800521] bg-white border border-slate-200 hover:bg-slate-100 text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-2xs shrink-0"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Ver Voucher</span>
+                      </button>
                     </div>
                   )}
 
@@ -869,15 +955,10 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                         )}
 
                         {item.status === 'En Proceso' && (
-                          <button
-                            type="button"
-                            onClick={() => simulateExpediteDocument(item)}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs py-1.5 px-3 shadow-xs transition-all cursor-pointer"
-                            title="Validar formalmente el pago y emitir el documento con firma digital"
-                          >
-                            <Sparkles className="w-3 h-3 text-purple-200" />
-                            <span>Emitir Documento Oficial</span>
-                          </button>
+                          <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-900 border border-amber-200 text-xs font-semibold px-3 py-1.5 rounded-xl">
+                            <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                            <span>Comprobante en auditoría por Tesorería y Secretaría Académica</span>
+                          </div>
                         )}
                       </>
                     )}
@@ -950,7 +1031,18 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                           <div className="bg-white border border-emerald-300 rounded-xl p-3 flex items-center justify-between gap-3 shadow-2xs">
                             <div className="flex items-center gap-2.5 min-w-0">
                               {voucherFile.url.startsWith("data:image") || voucherFile.url.endsWith(".png") || voucherFile.url.endsWith(".jpg") ? (
-                                <img src={voucherFile.url} alt="Voucher" className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0" />
+                                <img
+                                  src={voucherFile.url}
+                                  alt="Voucher"
+                                  className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0 cursor-pointer hover:opacity-80"
+                                  onClick={() => setPreviewVoucherData({
+                                    url: voucherFile.url,
+                                    name: voucherFile.name,
+                                    operationNumber: voucher.operationNumber,
+                                    date: voucher.paymentDate,
+                                    amount: Number(voucher.amountPaid)
+                                  })}
+                                />
                               ) : (
                                 <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-800 font-bold text-xs shrink-0">
                                   PDF
@@ -961,14 +1053,30 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                                 <p className="text-[10px] text-emerald-700 font-bold uppercase">Comprobante oficial adjuntado</p>
                               </div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => setVoucherFile(null)}
-                              className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                              title="Quitar archivo"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewVoucherData({
+                                  url: voucherFile.url,
+                                  name: voucherFile.name,
+                                  operationNumber: voucher.operationNumber,
+                                  date: voucher.paymentDate,
+                                  amount: Number(voucher.amountPaid)
+                                })}
+                                className="text-slate-600 hover:text-slate-900 text-[10.5px] font-bold bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-slate-500" />
+                                <span>Ver</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setVoucherFile(null)}
+                                className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                                title="Quitar archivo"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           <div className="flex flex-col sm:flex-row gap-2">
@@ -979,18 +1087,15 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                                 type="file"
                                 accept="image/*,application/pdf"
                                 className="hidden"
-                                onChange={(e) => {
+                                onChange={async (e) => {
                                   const file = e.target.files?.[0];
                                   if (!file) return;
-                                  const reader = new FileReader();
-                                  reader.onload = () => {
-                                    setVoucherFile({
-                                      name: file.name,
-                                      url: reader.result as string,
-                                      size: `${(file.size / 1024).toFixed(0)} KB`
-                                    });
-                                  };
-                                  reader.readAsDataURL(file);
+                                  const compressedUrl = await compressImageFile(file);
+                                  setVoucherFile({
+                                    name: file.name,
+                                    url: compressedUrl,
+                                    size: `${(file.size / 1024).toFixed(0)} KB`
+                                  });
                                 }}
                               />
                             </label>
@@ -1050,6 +1155,87 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
           )}
         </div>
       </div>
+
+      {/* Modal de Vista Previa del Voucher de Pago para el Estudiante */}
+      {previewVoucherData && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-300 my-auto">
+            <div className="bg-[#800521] text-white px-5 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <FileText className="w-5 h-5 text-amber-300" />
+                <div>
+                  <h3 className="font-extrabold text-xs uppercase tracking-wider">
+                    Comprobante de Pago • Banco de la Nación
+                  </h3>
+                  <p className="text-[10px] text-amber-200 font-mono truncate max-w-[280px]">
+                    {previewVoucherData.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewVoucherData(null)}
+                className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 bg-slate-50">
+              <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col items-center justify-center shadow-inner">
+                {previewVoucherData.url.startsWith("data:image") || previewVoucherData.url.endsWith(".png") || previewVoucherData.url.endsWith(".jpg") ? (
+                  <img
+                    src={previewVoucherData.url}
+                    alt="Voucher"
+                    className="max-h-[280px] w-auto object-contain rounded-lg border border-slate-300 shadow-xs"
+                  />
+                ) : (
+                  <div className="py-12 text-center text-xs font-mono font-bold text-slate-700">
+                    Documento PDF adjuntado ({previewVoucherData.name})
+                  </div>
+                )}
+              </div>
+
+              {(previewVoucherData.operationNumber || previewVoucherData.amount) && (
+                <div className="grid grid-cols-2 gap-3 text-xs bg-white p-3.5 rounded-2xl border border-slate-200 font-mono">
+                  {previewVoucherData.operationNumber && (
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">N° Operación</span>
+                      <strong className="text-slate-900 font-extrabold">{previewVoucherData.operationNumber}</strong>
+                    </div>
+                  )}
+                  {previewVoucherData.amount && (
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Importe</span>
+                      <strong className="text-[#800521] font-extrabold">S/ {Number(previewVoucherData.amount).toFixed(2)}</strong>
+                    </div>
+                  )}
+                  {previewVoucherData.date && (
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Fecha de Pago</span>
+                      <span className="text-slate-700 font-bold">{previewVoucherData.date}</span>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Entidad Recaudadora</span>
+                    <span className="text-slate-700 font-bold">Banco de la Nación</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setPreviewVoucherData(null)}
+                className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageTransition>
   );
 }
