@@ -187,34 +187,44 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
   }, []);
 
   // Contexto curricular del estudiante
+  const isMateo = studentDni === "74859612";
   const isGraduatedLectivo = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted") === "true" ||
-    localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
-    localStorage.getItem("sfa_student_graduated_all") === "true" ||
-    localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "6" ||
-    localStorage.getItem("sfa_student_cycle_74859612") === "6" ||
-    localStorage.getItem(`sfa_student_status_${studentDni}`)?.includes("Egresado")
+    !isMateo && localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) !== "true"
+      ? false
+      : (
+        localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
+        localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
+        localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "6" ||
+        localStorage.getItem(`sfa_student_status_${studentDni}`)?.includes("Egresado") ||
+        (isMateo && (
+          localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+          localStorage.getItem("sfa_student_promoted") === "true" ||
+          localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+          localStorage.getItem("sfa_student_graduated_all") === "true" ||
+          localStorage.getItem("sfa_student_cycle_74859612") === "6" ||
+          localStorage.getItem("sfa_student_cycle") === "6"
+        ))
+      )
   );
 
   const isPracticesValidated = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_efsrt_validated_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_efsrt_validated_74859612") === "true" ||
     localStorage.getItem(`sfa_efsrt_all_approved_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_efsrt_all_approved_74859612") === "true" ||
     localStorage.getItem(`sfa_graduation_docs_${studentDni}_practicas`) === "true" ||
-    localStorage.getItem("sfa_graduation_docs_74859612_practicas") === "true"
+    (isMateo && (
+      localStorage.getItem("sfa_efsrt_validated_74859612") === "true" ||
+      localStorage.getItem("sfa_efsrt_all_approved_74859612") === "true" ||
+      localStorage.getItem("sfa_graduation_docs_74859612_practicas") === "true"
+    ))
   );
 
   const isEgresadoPleno = isGraduatedLectivo && isPracticesValidated;
-  const currentCredits = isEgresadoPleno ? 120 : isGraduatedLectivo ? 96 : 32;
+  const currentCredits = isEgresadoPleno ? 120 : isGraduatedLectivo ? 96 : 0;
   const effectivePeriod = isGraduatedLectivo
     ? "Periodo 2029-II (Egresado)"
-    : period && !period.includes("2027-I")
+    : period && period.includes("2027-II")
     ? period
-    : "Periodo 2027-II";
+    : "Periodo 2027-I";
 
   const [items, setItems] = useState<ServiceRequest[]>([]);
   const [rates, setRates] = useState<Record<string, number>>({});
@@ -958,11 +968,25 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                         onClick={async () => {
                           if (item.conceptCode === 'CER01' || item.conceptCode === 'TIT01') {
                             try {
-                              const sName = studentDni === '74859612' ? 'Mateo Sebastián Quispe Rojas' : `Estudiante (${studentDni})`;
+                              let sName = studentDni === '74859612' ? 'Mateo Sebastián Quispe Rojas' : `Estudiante (${studentDni})`;
+                              let sProgram = item.program || 'Electricidad Industrial';
+                              try {
+                                const raw = localStorage.getItem('sfa_students');
+                                if (raw) {
+                                  const parsed = JSON.parse(raw);
+                                  const found = (parsed[studentDni] || Object.values(parsed).find((p: any) => p?.dni === studentDni)) as any;
+                                  if (found) {
+                                    const full = `${found.name || ''} ${found.lastName || ''}`.trim();
+                                    if (full) sName = full;
+                                    sProgram = found.career || found.program || found.programId || sProgram;
+                                  }
+                                }
+                              } catch (e) {}
+
                               const pdf = await generateOfficialCertificatePdf({
                                 studentName: sName,
                                 studentDni,
-                                program: 'Electricidad Industrial',
+                                program: sProgram,
                                 certificateNumber: `CERT-2026-${studentDni.slice(-4)}-SFA`,
                                 issueDate: academicToday(),
                                 issuerName: 'Mg. Carlos Mendoza Quispe — Secretaría Académica',

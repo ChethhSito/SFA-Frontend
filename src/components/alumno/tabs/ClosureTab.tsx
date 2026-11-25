@@ -154,17 +154,17 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   };
 
   const studentDni = personalData?.dni || enrollment?.studentDni || "74859612";
+  const isMateo = studentDni === "74859612";
+
   const rawSim = typeof window !== "undefined" ? (
     localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) ||
-    localStorage.getItem("sfa_simulated_cycle1_74859612") ||
-    localStorage.getItem("sfa_simulated_cycle1")
+    (isMateo ? (localStorage.getItem("sfa_simulated_cycle1_74859612") || localStorage.getItem("sfa_simulated_cycle1")) : null)
   ) : null;
   const simData = rawSim ? (() => { try { return JSON.parse(rawSim); } catch { return null; } })() : null;
 
   const rawSim2 = typeof window !== "undefined" ? (
     localStorage.getItem(`sfa_simulated_cycle2_${studentDni}`) ||
-    localStorage.getItem("sfa_simulated_cycle2_74859612") ||
-    localStorage.getItem("sfa_simulated_cycle2")
+    (isMateo ? (localStorage.getItem("sfa_simulated_cycle2_74859612") || localStorage.getItem("sfa_simulated_cycle2")) : null)
   ) : null;
   const simData2 = rawSim2 ? (() => { try { return JSON.parse(rawSim2); } catch { return null; } })() : null;
 
@@ -172,19 +172,21 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
     (simData2 && Array.isArray(simData2.courses) && simData2.courses.length > 0) ||
     (typeof window !== "undefined" && (
       localStorage.getItem(`sfa_student_promoted_cycle3_${studentDni}`) === "true" ||
-      localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
-      localStorage.getItem("sfa_student_promoted_cycle3") === "true" ||
       localStorage.getItem(`sfa_efsrt_modulo1_approved_${studentDni}`) === "true" ||
-      localStorage.getItem("sfa_efsrt_modulo1_approved_74859612") === "true"
+      (isMateo && (
+        localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
+        localStorage.getItem("sfa_student_promoted_cycle3") === "true" ||
+        localStorage.getItem("sfa_efsrt_modulo1_approved_74859612") === "true"
+      ))
     ))
   );
 
   const hasTeacherActa = Boolean(
     assignments?.some((a) =>
       (a.title?.startsWith("[Planilla]") || a.title?.includes("EX_FINAL") || a.title?.includes("PC1") || a.courseId?.includes("101") || a.courseId === "cur_ei_101") &&
-      a.submissions?.some((s) => (s.studentDni === studentDni || s.studentDni === "74859612") && typeof s.grade === "number")
+      a.submissions?.some((s) => (s.studentDni === studentDni || (isMateo && s.studentDni === "74859612")) && typeof s.grade === "number")
     ) ||
-    enrichedCourses?.some((ec: any) => ec.code === "EIND-101" && ec.evaluations?.some((e: any) => typeof e.grade === "number"))
+    (isMateo && enrichedCourses?.some((ec: any) => ec.code === "EIND-101" && ec.evaluations?.some((e: any) => typeof e.grade === "number")))
   );
 
   const isCycle1Simulated = Boolean(
@@ -192,45 +194,53 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
     (simData && Array.isArray(simData.courses) && simData.courses.length > 0) ||
     (typeof window !== "undefined" && (
       localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
-      localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-      localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
       localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
-      localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
-      localStorage.getItem("sfa_student_cycle") === "2" ||
       localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) ||
-      localStorage.getItem("sfa_simulated_cycle1_74859612") ||
-      localStorage.getItem("sfa_simulated_cycle1")
+      (isMateo && (
+        localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+        localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
+        localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+        localStorage.getItem("sfa_student_cycle") === "2" ||
+        localStorage.getItem("sfa_simulated_cycle1_74859612") ||
+        localStorage.getItem("sfa_simulated_cycle1")
+      ))
     ))
   );
   const isPromotedToCycle2 = isCycle1Simulated;
 
   const isGraduatedVI = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
-    localStorage.getItem("sfa_student_graduated_all") === "true" ||
-    localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted") === "true" ||
-    localStorage.getItem(`sfa_titulacion_enabled_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_titulacion_enabled_74859612") === "true" ||
-    localStorage.getItem(`sfa_student_status_${studentDni}`) === "Egresado"
+    !isMateo && enrollment?.academicStatus === "MATRICULADO" && localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) !== "true"
+      ? false
+      : (
+        localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
+        localStorage.getItem(`sfa_titulacion_enabled_${studentDni}`) === "true" ||
+        localStorage.getItem(`sfa_student_status_${studentDni}`) === "Egresado" ||
+        (isMateo && (
+          localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+          localStorage.getItem("sfa_student_graduated_all") === "true" ||
+          localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+          localStorage.getItem("sfa_student_promoted") === "true" ||
+          localStorage.getItem("sfa_titulacion_enabled_74859612") === "true"
+        ))
+      )
   );
   const isPromoted = isGraduatedVI;
 
-  const effectiveSimCourses = simData?.courses || [
+  const effectiveSimCourses = isMateo ? (simData?.courses || [
     { code: "EIND-101", grade: 15.6 },
     { code: "EIND-102", grade: 16.5 },
     { code: "EIND-103", grade: 17.0 },
     { code: "EIND-104", grade: 15.0 },
     { code: "EIND-105", grade: 16.0 },
-  ];
+  ]) : (simData?.courses || []);
 
-  const isElectricidad = studentDni === "74859612" ||
+  const isElectricidad = (studentDni === "74859612" ||
     enrollment?.programId === "electronica" ||
     enrollment?.programId === "electricidad_industrial" ||
     enrollment?.programId === "electricidad" ||
-    currentProgram?.name?.toLowerCase().includes("electricidad") ||
-    !enrollment?.programId;
+    currentProgram?.name?.toLowerCase().includes("electricidad")) &&
+    enrollment?.programId !== "contabilidad" &&
+    studentDni !== "71248596";
   const activePlanKey = isElectricidad ? "20" : "52";
   const activeSemesterKey = selectedQueryCycle || "I";
   const cycleMap: Record<string, number> = { "I": 1, "II": 2, "III": 3, "IV": 4, "V": 5, "VI": 6 };
@@ -258,14 +268,25 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
       }
     }
 
-    const isApprovedCourse = isGraduatedVI || (targetCycleNum === 1 && isCycle1Simulated);
+    let directGrade: number | undefined = undefined;
+    try {
+      const rawG = localStorage.getItem(`sfa_grades_${planC.code}_${studentDni}`);
+      if (rawG) {
+        const pG = JSON.parse(rawG);
+        if (typeof pG.finalGrade === "number") directGrade = pG.finalGrade;
+      }
+    } catch {}
+
+    const isApprovedCourse = isGraduatedVI || (targetCycleNum === 1 && ((isMateo && isCycle1Simulated) || (directGrade !== undefined && directGrade >= 12.5)));
     const simGrade = isGraduatedVI
       ? undefined
-      : (gradeFromEnriched !== undefined
-        ? gradeFromEnriched
-        : (isApprovedCourse
-          ? (typeof simCourse?.grade === "number" ? simCourse.grade : (planC.code === "EIND-101" ? 15.6 : 16.0))
-          : undefined));
+      : (directGrade !== undefined
+        ? directGrade
+        : (gradeFromEnriched !== undefined
+          ? gradeFromEnriched
+          : (isApprovedCourse
+            ? (typeof simCourse?.grade === "number" ? simCourse.grade : (isMateo ? (planC.code === "EIND-101" ? 15.6 : 16.0) : undefined))
+            : undefined)));
 
     return {
       code: planC.code,
@@ -290,11 +311,11 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         simGrade: grade
       };
     }
-    if (targetCycleNum === 1 && isCycle1Simulated) {
+    if (targetCycleNum === 1 && ((isMateo && isCycle1Simulated) || c.status === "Aprobado")) {
       return {
         ...c,
         status: "Aprobado",
-        simGrade: typeof c.simGrade === "number" ? c.simGrade : (c.code === "EIND-101" ? 15.6 : 16.0)
+        simGrade: typeof c.simGrade === "number" ? c.simGrade : (isMateo ? (c.code === "EIND-101" ? 15.6 : 16.0) : undefined)
       };
     }
     if (targetCycleNum === 2 && isPromotedToCycle2) {
@@ -302,18 +323,18 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         const sim2Course = simData2?.courses?.find((sc: any) => sc.code === c.code || sc.name === c.name);
         const storedGradeStr = typeof window !== "undefined" ? (
           localStorage.getItem(`sfa_grades_${c.code}_${studentDni}`) ||
-          localStorage.getItem(`sfa_grades_${c.code}_74859612`)
+          (isMateo ? localStorage.getItem(`sfa_grades_${c.code}_74859612`) : null)
         ) : null;
         const finalC2Grade = storedGradeStr
           ? Number(storedGradeStr)
-          : (typeof sim2Course?.grade === "number" ? sim2Course.grade : (c.code === "EIND-202" ? 17.0 : 16.5));
+          : (typeof sim2Course?.grade === "number" ? sim2Course.grade : (isMateo ? (c.code === "EIND-202" ? 17.0 : 16.5) : undefined));
         return {
           ...c,
           status: "Aprobado",
           simGrade: finalC2Grade
         };
       }
-      const isCourseApproved = (c.code === "EIND-201" || c.code === "cur_ei_201") && (
+      const isCourseApproved = (c.code === "EIND-201" || c.code === "cur_ei_201") && isMateo && (
         localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
         localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true" ||
         localStorage.getItem("sfa_course_passed_EIND-201_74859612") === "true" ||

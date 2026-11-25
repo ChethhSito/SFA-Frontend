@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   fetchStudents,
   fetchGraduations,
@@ -28,39 +28,61 @@ export function useStudentGrades() {
   const [studentsLoading, setStudentsLoading] = useState<boolean>(false);
   const [studentsError, setStudentsError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const reloadStudents = useCallback(async () => {
     setStudentsLoading(true);
-    fetchStudents()
-      .then((apiStudents) => {
-        if (!apiStudents) throw new Error("No se pudo consultar estudiantes");
-        if (Array.isArray(apiStudents)) {
-          const studentMap: any = {};
-          const cyclesMap: any = {};
+    try {
+      const apiStudents = await fetchStudents();
+      if (!apiStudents) throw new Error("No se pudo consultar estudiantes");
+      if (Array.isArray(apiStudents)) {
+        const studentMap: any = {};
+        const cyclesMap: any = {};
 
-          apiStudents.forEach((st) => {
-            if (st.dni) {
-              studentMap[st.dni] = st;
-              if (st.cycleStatuses && Array.isArray(st.cycleStatuses) && st.cycleStatuses.length > 0) {
-                cyclesMap[st.dni] = st.cycleStatuses;
-              }
+        apiStudents.forEach((st) => {
+          if (st.dni) {
+            studentMap[st.dni] = st;
+            if (st.cycleStatuses && Array.isArray(st.cycleStatuses) && st.cycleStatuses.length > 0) {
+              cyclesMap[st.dni] = st.cycleStatuses;
             }
-          });
-
-          setStudentsData(studentMap);
-          setCycleStatuses(cyclesMap);
-          localStorage.setItem("sfa_students", JSON.stringify(studentMap));
-          if (apiStudents.length === 0) {
-            localStorage.removeItem("sfa_cycle_statuses");
-            localStorage.removeItem("sfa_cycles");
           }
+        });
+
+        setStudentsData(studentMap);
+        setCycleStatuses(cyclesMap);
+        localStorage.setItem("sfa_students", JSON.stringify(studentMap));
+        if (apiStudents.length === 0) {
+          localStorage.removeItem("sfa_cycle_statuses");
+          localStorage.removeItem("sfa_cycles");
         }
-      })
-      .catch((err) => {
-        console.error("Error fetching students from REST API:", err);
-        setStudentsError("Error al cargar datos de estudiantes.");
-      })
-      .finally(() => setStudentsLoading(false));
+        setStudentsError(null);
+      }
+    } catch (err) {
+      console.error("Error fetching students from REST API:", err);
+      setStudentsError("Error al cargar datos de estudiantes.");
+    } finally {
+      setStudentsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void reloadStudents();
+  }, [reloadStudents]);
+
+  useEffect(() => {
+    let lastFetch = Date.now();
+    const handleFocusOrVisible = () => {
+      if (document.visibilityState === "hidden") return;
+      const now = Date.now();
+      if (now - lastFetch < 3000) return;
+      lastFetch = now;
+      void reloadStudents();
+    };
+    window.addEventListener("focus", handleFocusOrVisible);
+    document.addEventListener("visibilitychange", handleFocusOrVisible);
+    return () => {
+      window.removeEventListener("focus", handleFocusOrVisible);
+      document.removeEventListener("visibilitychange", handleFocusOrVisible);
+    };
+  }, [reloadStudents]);
 
   useEffect(() => {
     fetchGraduations()
@@ -141,6 +163,7 @@ export function useStudentGrades() {
     setGraduations,
     studentsLoading,
     studentsError,
+    reloadStudents,
     handleUpdateStudentsData,
     handleSetStudentActive,
     handleUpdatePersonalSingle,

@@ -30,7 +30,7 @@ export default function PostulanteRouter({
   const [liveApplicant, setLiveApplicant] = useState<Applicant | null>(null);
   const [liveEnrollment, setLiveEnrollment] = useState<Enrollment | null>(null);
   const [loading, setLoading] = useState(true);
-  const [, setSyncTick] = useState(0);
+  const [syncTick, setSyncTick] = useState(0);
 
   useEffect(() => {
     const s = localStorage.getItem("sfa_session_postulante");
@@ -42,27 +42,28 @@ export default function PostulanteRouter({
     }
 
     let cancelled = false;
-    const loadFromMongo = (showSpinner: boolean) => {
+    const loadFromMongo = async (showSpinner: boolean) => {
       if (showSpinner) setLoading(true);
-      Promise.all([
-        fetchApplicantByDni(s),
-        fetchEnrollmentByDni(s)
-      ])
-        .then(([apiApp, apiEnr]) => {
-          if (!cancelled) {
-            if (apiApp) setLiveApplicant(apiApp);
-            if (apiEnr) {
+      try {
+        const apiApp = await fetchApplicantByDni(s);
+        if (cancelled) return;
+        if (apiApp) {
+          setLiveApplicant(apiApp);
+          const isAdmitted = apiApp.admitted === true || apiApp.admitted === "ADMITIDO" || apiApp.folderStatus === "Approved" || apiApp.folderStatus === "Enrolled";
+          if (isAdmitted) {
+            const realDni = apiApp.dni || s;
+            const apiEnr = await fetchEnrollmentByDni(realDni);
+            if (!cancelled && apiEnr) {
               setLiveEnrollment(apiEnr);
               onUpdateEnrollment(apiEnr);
             }
           }
-        })
-        .catch((err) => {
-          console.error("Error fetching REST API data in PostulanteRouter:", err);
-        })
-        .finally(() => {
-          if (!cancelled && showSpinner) setLoading(false);
-        });
+        }
+      } catch (err) {
+        console.error("Error fetching REST API data in PostulanteRouter:", err);
+      } finally {
+        if (!cancelled && showSpinner) setLoading(false);
+      }
     };
 
     // Carga inicial
@@ -81,21 +82,40 @@ export default function PostulanteRouter({
 
     window.addEventListener("focus", handleSync);
     window.addEventListener("storage", handleSync);
+    window.addEventListener("sfa_sync_event", handleSync);
 
     return () => {
       cancelled = true;
       clearInterval(interval);
       window.removeEventListener("focus", handleSync);
       window.removeEventListener("storage", handleSync);
+      window.removeEventListener("sfa_sync_event", handleSync);
     };
   }, []);
 
-  const currentDni = session || "";
+  const currentDni = liveApplicant?.dni || session || "";
+
+  useEffect(() => {
+    const targetDni = liveApplicant?.dni || currentDni;
+    const matched = enrollments.find(
+      (e) => e.studentDni === targetDni || (liveApplicant?.applicantCode && e.studentDni === liveApplicant.applicantCode)
+    );
+    if (matched) {
+      setLiveEnrollment((prev) => {
+        if (!prev) return matched;
+        if (matched.paymentStatus === "Validado" || matched.academicStatus === "MATRICULADO") {
+          return { ...prev, ...matched };
+        }
+        return prev;
+      });
+    }
+  }, [enrollments, currentDni, liveApplicant]);
 
   const effectiveEnrollments = useMemo(() => {
     let list = [...enrollments];
+    const targetDni = liveApplicant?.dni || currentDni;
     if (liveEnrollment) {
-      const idx = list.findIndex(e => e.studentDni === liveEnrollment.studentDni);
+      const idx = list.findIndex(e => e.studentDni === liveEnrollment.studentDni || e.studentDni === targetDni);
       if (idx >= 0) {
         list[idx] = { ...list[idx], ...liveEnrollment };
       } else {
@@ -106,9 +126,9 @@ export default function PostulanteRouter({
       const saved = localStorage.getItem("sfa_enrollments");
       if (saved) {
         const parsed: Enrollment[] = JSON.parse(saved);
-        const mySaved = parsed.find(e => e.studentDni === currentDni);
+        const mySaved = parsed.find(e => e.studentDni === targetDni || e.studentDni === currentDni);
         if (mySaved) {
-          const idx = list.findIndex(e => e.studentDni === currentDni);
+          const idx = list.findIndex(e => e.studentDni === targetDni || e.studentDni === currentDni);
           if (idx >= 0) {
             list[idx] = { ...list[idx], ...mySaved };
           } else {
@@ -118,7 +138,7 @@ export default function PostulanteRouter({
       }
     } catch {}
     return list;
-  }, [enrollments, liveEnrollment, currentDni]);
+  }, [enrollments, liveEnrollment, currentDni, liveApplicant, syncTick]);
 
   let storedApp: Applicant | null = null;
   try {

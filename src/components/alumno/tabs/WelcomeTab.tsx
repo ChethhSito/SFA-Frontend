@@ -39,38 +39,51 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
   }, []);
 
   const studentDni = personalData?.dni || enrollment?.studentDni || "74859612";
+  const isMateo = studentDni === "74859612";
+
+  const programPrefix = (currentProgram?.id === "contabilidad" || currentProgram?.name?.toLowerCase().includes("contab"))
+    ? "CONT"
+    : (currentProgram?.id === "computacion" || currentProgram?.name?.toLowerCase().includes("comput"))
+      ? "CI"
+      : "EI";
 
   const isGraduated = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted") === "true" ||
-    localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
-    localStorage.getItem("sfa_student_graduated_all") === "true" ||
-    localStorage.getItem(`sfa_titulacion_enabled_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_titulacion_enabled_74859612") === "true" ||
-    localStorage.getItem(`sfa_student_status_${studentDni}`) === "Egresado"
+    !isMateo && enrollment?.academicStatus === "MATRICULADO" && localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) !== "true"
+      ? false
+      : (
+        localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
+        localStorage.getItem(`sfa_titulacion_enabled_${studentDni}`) === "true" ||
+        localStorage.getItem(`sfa_student_status_${studentDni}`) === "Egresado" ||
+        (isMateo && (
+          localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+          localStorage.getItem("sfa_student_graduated_all") === "true" ||
+          localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+          localStorage.getItem("sfa_student_promoted") === "true" ||
+          localStorage.getItem("sfa_titulacion_enabled_74859612") === "true"
+        ))
+      )
   );
 
   const isPromotedCycle2 = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
-    localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-    localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
-    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
-    localStorage.getItem("sfa_student_cycle") === "2" ||
-    localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_payment") === "true" ||
-    localStorage.getItem(`sfa_cycle2_validated_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_validated") === "true" ||
-    studentGroup?.cycle === 2 ||
-    studentGroup?.id?.includes("-II-") ||
-    studentGroup?.name?.includes("-II-") ||
-    studentTasks?.some((t: any) => t.groupId?.includes("-II-") || t.id?.includes("ei2_"))
+    !isMateo && enrollment?.academicStatus === "MATRICULADO" && localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) !== "true"
+      ? false
+      : (
+        localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
+        localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
+        localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
+        localStorage.getItem(`sfa_cycle2_validated_${studentDni}`) === "true" ||
+        (isMateo && (
+          localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+          localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
+          localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+          localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+          localStorage.getItem("sfa_student_cycle") === "2" ||
+          localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+          localStorage.getItem("sfa_cycle2_payment") === "true" ||
+          localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
+          localStorage.getItem("sfa_cycle2_validated") === "true"
+        ))
+      )
   );
 
   const rawPeriodName = mpaPlanningData?.periods?.find((period: any) => period.id === studentGroup?.periodId)?.name;
@@ -83,9 +96,11 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
   const hasPracticesValidated = Boolean(
     typeof window !== "undefined" && (
       localStorage.getItem(`sfa_efsrt_validated_${studentDni}`) === "true" ||
-      localStorage.getItem("sfa_efsrt_validated_74859612") === "true" ||
       localStorage.getItem(`sfa_efsrt_all_approved_${studentDni}`) === "true" ||
-      localStorage.getItem("sfa_efsrt_all_approved_74859612") === "true"
+      (isMateo && (
+        localStorage.getItem("sfa_efsrt_validated_74859612") === "true" ||
+        localStorage.getItem("sfa_efsrt_all_approved_74859612") === "true"
+      ))
     )
   );
 
@@ -173,8 +188,8 @@ export const WelcomeTab: React.FC<WelcomeTabProps> = ({
             </div>
             <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-100 flex flex-col justify-center">
               <span className="text-[9px] text-slate-400 uppercase block font-bold tracking-wider">Grupos / Secciones</span>
-              <span className="text-slate-800 block font-extrabold text-sm mt-0.5 truncate" title={isGraduated ? "EI-VI-A (Egresado)" : scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || (isPromotedCycle2 ? "EI-II-A" : "EI-I-A")}>
-                {isGraduated ? "EI-VI-A (Egresado)" : (scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || (isPromotedCycle2 ? "EI-II-A" : "EI-I-A"))}
+              <span className="text-slate-800 block font-extrabold text-sm mt-0.5 truncate" title={isGraduated ? `${programPrefix}-VI-A (Egresado)` : (scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || (isPromotedCycle2 ? `${programPrefix}-II-A` : `${programPrefix}-I-A`))}>
+                {isGraduated ? `${programPrefix}-VI-A (Egresado)` : (scheduledGroups.length ? scheduledGroups.join(" · ") : studentGroup?.name || (isPromotedCycle2 ? `${programPrefix}-II-A` : `${programPrefix}-I-A`))}
               </span>
             </div>
             <div className="col-span-1 sm:col-span-2 xl:col-span-1 bg-gradient-to-br from-amber-50 to-amber-100/60 rounded-xl p-3 flex items-start gap-2.5 border border-amber-200/90 shadow-2xs">

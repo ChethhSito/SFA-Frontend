@@ -79,18 +79,22 @@ export default function MgeNotasTab({
 
   const isCycle1Done = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_student_promoted_cycle2_${selectedStudentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
     localStorage.getItem(`sfa_simulated_cycle1_${selectedStudentDni}`) ||
-    localStorage.getItem("sfa_simulated_cycle1_74859612") ||
-    localStorage.getItem("sfa_simulated_cycle1")
+    (selectedStudentDni === "74859612" && (
+      localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+      localStorage.getItem("sfa_simulated_cycle1_74859612") ||
+      localStorage.getItem("sfa_simulated_cycle1")
+    ))
   );
 
   const isCycle2Done = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_student_promoted_cycle3_${selectedStudentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
     localStorage.getItem(`sfa_simulated_cycle2_${selectedStudentDni}`) ||
-    localStorage.getItem("sfa_simulated_cycle2_74859612") ||
-    localStorage.getItem("sfa_simulated_cycle2")
+    (selectedStudentDni === "74859612" && (
+      localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
+      localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+      localStorage.getItem("sfa_simulated_cycle2")
+    ))
   );
 
   // Lista depurada de cursos consolidados oficiales (sin subcomponentes TEO, TAL, LAB)
@@ -276,13 +280,15 @@ export default function MgeNotasTab({
         // Check if cycle 2 is completed via promotion flags or signed acta
         const isCycle2Done = typeof window !== "undefined" && Boolean(
           localStorage.getItem(`sfa_student_promoted_cycle3_${st.dni}`) === "true" ||
-          localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
-          localStorage.getItem("sfa_student_promoted_cycle3") === "true" ||
           localStorage.getItem(`sfa_simulated_cycle2_${st.dni}`) ||
-          localStorage.getItem("sfa_simulated_cycle2_74859612") ||
-          localStorage.getItem("sfa_simulated_cycle2") ||
-          localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
-          localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true"
+          (st.dni === "74859612" && (
+            localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
+            localStorage.getItem("sfa_student_promoted_cycle3") === "true" ||
+            localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+            localStorage.getItem("sfa_simulated_cycle2") ||
+            localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
+            localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true"
+          ))
         );
 
         if (isCiclo2Course && isCycle2Done) {
@@ -306,8 +312,7 @@ export default function MgeNotasTab({
         try {
           const rawSim = typeof window !== "undefined" ? (
             localStorage.getItem(`sfa_simulated_cycle1_${st.dni}`) ||
-            localStorage.getItem("sfa_simulated_cycle1_74859612") ||
-            localStorage.getItem("sfa_simulated_cycle1")
+            (st.dni === "74859612" ? (localStorage.getItem("sfa_simulated_cycle1_74859612") || localStorage.getItem("sfa_simulated_cycle1")) : null)
           ) : null;
           if (rawSim) {
             const simData = JSON.parse(rawSim);
@@ -325,11 +330,13 @@ export default function MgeNotasTab({
         // Check if cycle 1 is completed via promotion flags
         const isCycle1Done = typeof window !== "undefined" && Boolean(
           localStorage.getItem(`sfa_student_promoted_cycle2_${st.dni}`) === "true" ||
-          localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-          localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
           localStorage.getItem(`sfa_simulated_cycle1_${st.dni}`) ||
-          localStorage.getItem("sfa_simulated_cycle1_74859612") ||
-          localStorage.getItem("sfa_simulated_cycle1")
+          (st.dni === "74859612" && (
+            localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+            localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
+            localStorage.getItem("sfa_simulated_cycle1_74859612") ||
+            localStorage.getItem("sfa_simulated_cycle1")
+          ))
         );
 
         if (isCiclo1Course && isCycle1Done) {
@@ -349,12 +356,12 @@ export default function MgeNotasTab({
           return;
         }
 
-        // 3. For EIND-101 / Fundamentos, check if teacher completed evaluation
+        // 3. For Fundamentos, check if teacher completed evaluation
         if (isFundamentos) {
           const hasTeacherGrading = assignments.some((a) =>
             a.submissions?.some((s) => s.studentDni === st.dni && typeof s.grade === "number")
           );
-          if (hasTeacherGrading || st.dni === selectedStudentDni || st.dni === "74859612") {
+          if (hasTeacherGrading || st.dni === "74859612") {
             gradesMap[st.dni] = 15.5;
             return;
           }

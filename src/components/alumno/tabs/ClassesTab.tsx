@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import {
   Zap, Cpu, Sliders, Award, ChevronRight, ChevronLeft, ChevronDown, BookOpen, Clock, CheckCircle2,
   Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark, MapPin, GraduationCap,
-  Eye, Download, Trash2, Pencil, X, MessageSquare, Send, Check, ExternalLink
+  Eye, Download, Trash2, Pencil, X, MessageSquare, Send, Check, ExternalLink, Loader2
 } from "lucide-react";
 import { CourseMaterial, CourseAssignment, CourseEvaluation, AcademicProgram, StudentPersonalData } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
@@ -13,7 +13,7 @@ import Toast, { ToastNotice } from "../../ui/Toast";
 import { Card, CardHeader, CardTitle, CardContent } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
 import ConfirmModal from "../../ui/ConfirmModal";
-import { courseFileUrl, fileToBase64 } from "../../../services/api";
+import { courseFileUrl, assignmentSubmissionFileUrl, fileToBase64 } from "../../../services/api";
 import { getCourseFormula } from "../../../constants/courseFormulas";
 
 const COURSE_WEEKS = 16;
@@ -42,6 +42,7 @@ interface ClassesTabProps {
   studentDni: string;
   personalData: StudentPersonalData;
   onUpdateAssignments: (asgs: CourseAssignment[]) => void;
+  assignmentsLoading?: boolean;
   activeCourseComponentId?: string | null;
   setActiveCourseComponentId?: React.Dispatch<React.SetStateAction<string | null>>;
 }
@@ -70,27 +71,95 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   studentDni,
   personalData,
   onUpdateAssignments,
+  assignmentsLoading = false,
   activeCourseComponentId: propActiveCourseComponentId,
   setActiveCourseComponentId: propSetActiveCourseComponentId
 }) => {
+  const isMateo = studentDni === "74859612";
   const isPromotedCycle2 = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
     localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
-    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
-    localStorage.getItem("sfa_student_cycle") === "2" ||
     localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_cycle2_payment_74859612") === "true"
+    (isMateo && (
+      localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+      localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
+      localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+      localStorage.getItem("sfa_student_cycle") === "2" ||
+      localStorage.getItem("sfa_cycle2_payment_74859612") === "true"
+    ))
   );
 
   const [selectedClassesPeriod, setSelectedClassesPeriod] = useState<"2027-II" | "2027-I">(() => {
     return isPromotedCycle2 ? "2027-II" : "2027-I";
   });
 
+  const isContabilidad = personalData?.dni === "71248596" || enrichedCourses.some(c => c.career?.toLowerCase().includes("contab") || c.code?.includes("CONT"));
+
   const classesCoursesData = useMemo(() => {
     if (selectedClassesPeriod === "2027-II") {
       const c2 = enrichedCourses.filter(c => c.code?.includes("-20") || c.cycle === "Ciclo II" || c.cycle === 2 || c.group?.includes("II"));
+      if (c2.length > 0 && !c2.some(c => isContabilidad && c.code?.includes("EIND"))) {
+        return c2;
+      }
+      if (isContabilidad) {
+        return [
+          {
+            id: "cur_co_201",
+            code: "CONT-201",
+            name: "Contabilidad General Aplicada",
+            credits: 4,
+            classroom: "Aula 201 • Pabellón C",
+            schedule: "Lunes y Miércoles 08:00 AM - 10:00 AM",
+            teacherName: "Lic. Patricia Elena Benavides Silva",
+            group: "Grupo CONT-II-A • 30 cupos",
+            cycle: "Ciclo II"
+          },
+          {
+            id: "cur_co_202",
+            code: "CONT-202",
+            name: "Administración de Archivos Contables",
+            credits: 3,
+            classroom: "Aula 202 • Pabellón C",
+            schedule: "Martes 08:00 AM - 11:00 AM",
+            teacherName: "Lic. Patricia Elena Benavides Silva",
+            group: "Grupo CONT-II-A • 30 cupos",
+            cycle: "Ciclo II"
+          },
+          {
+            id: "cur_co_203",
+            code: "CONT-203",
+            name: "Sistema de Información Contable I",
+            credits: 3,
+            classroom: "Lab. Contable 1 • Pabellón C",
+            schedule: "Jueves 08:00 AM - 11:00 AM",
+            teacherName: "Lic. Fernando Gabriel Díaz Torres",
+            group: "Grupo CONT-II-A • 30 cupos",
+            cycle: "Ciclo II"
+          },
+          {
+            id: "cur_co_204",
+            code: "CONT-204",
+            name: "Tributación y Legislación Comercial",
+            credits: 2,
+            classroom: "Aula 203 • Pabellón C",
+            schedule: "Viernes 08:00 AM - 10:00 AM",
+            teacherName: "Dr. Roberto Carlos Vega Santos",
+            group: "Grupo CONT-II-A • 30 cupos",
+            cycle: "Ciclo II"
+          },
+          {
+            id: "cur_co_205",
+            code: "CONT-205",
+            name: "Inglés Técnico para Contabilidad",
+            credits: 2,
+            classroom: "Aula 204 • Pabellón C",
+            schedule: "Viernes 10:00 AM - 12:00 PM",
+            teacherName: "Lic. Sofía Lorena Valenzuela Ríos",
+            group: "Grupo CONT-II-A • 30 cupos",
+            cycle: "Ciclo II"
+          }
+        ];
+      }
       const defaultCycle2 = [
         {
           id: "cur_ei_201",
@@ -158,6 +227,68 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
         if (isC2) return false;
         return c.code?.includes("-10") || c.cycle === "Ciclo I" || c.cycle === 1 || c.group?.includes("I-A");
       });
+      if (c1.length > 0 && !c1.some(c => isContabilidad && c.code?.includes("EIND"))) {
+        return c1;
+      }
+      if (isContabilidad) {
+        return [
+          {
+            id: "cur_co_101",
+            code: "CONT-101",
+            name: "Fundamentos de Contabilidad y Doctrina Contable",
+            credits: 4,
+            classroom: "Aula 201 • Pabellón C",
+            schedule: "Lunes 08:00 AM - 09:40 AM",
+            teacherName: "Lic. Patricia Elena Benavides Silva",
+            group: "Grupo CONT-I-A • 35 cupos",
+            cycle: "Ciclo I"
+          },
+          {
+            id: "cur_co_102",
+            code: "CONT-102",
+            name: "Documentación Comercial, Mercantil y Bancaria",
+            credits: 4,
+            classroom: "Aula 201 • Pabellón C",
+            schedule: "Martes 08:00 AM - 09:40 AM",
+            teacherName: "Lic. Patricia Elena Benavides Silva",
+            group: "Grupo CONT-I-A • 35 cupos",
+            cycle: "Ciclo I"
+          },
+          {
+            id: "cur_co_103",
+            code: "CONT-103",
+            name: "Matemática Financiera y Comercial",
+            credits: 3,
+            classroom: "Aula 201 • Pabellón C",
+            schedule: "Miércoles 08:00 AM - 09:40 AM",
+            teacherName: "Lic. Fernando Gabriel Díaz Torres",
+            group: "Grupo CONT-I-A • 35 cupos",
+            cycle: "Ciclo I"
+          },
+          {
+            id: "cur_co_104",
+            code: "CONT-104",
+            name: "Legislación Comercial y Societaria",
+            credits: 3,
+            classroom: "Aula 201 • Pabellón C",
+            schedule: "Jueves 08:00 AM - 09:40 AM",
+            teacherName: "Dr. Roberto Carlos Vega Santos",
+            group: "Grupo CONT-I-A • 35 cupos",
+            cycle: "Ciclo I"
+          },
+          {
+            id: "cur_co_105",
+            code: "CONT-105",
+            name: "Comunicación y Competencias Digitales",
+            credits: 2,
+            classroom: "Lab. Cómputo 1 • Pabellón C",
+            schedule: "Viernes 08:00 AM - 09:40 AM",
+            teacherName: "Lic. Sofía Lorena Valenzuela Ríos",
+            group: "Grupo CONT-I-A • 35 cupos",
+            cycle: "Ciclo I"
+          }
+        ];
+      }
       const defaultCycle1 = [
         {
           id: "cur_ei_101",
@@ -220,7 +351,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
         return found ? { ...def, ...found } : def;
       });
     }
-  }, [enrichedCourses, selectedClassesPeriod]);
+  }, [enrichedCourses, selectedClassesPeriod, isContabilidad]);
 
   const activeCourse = classesCoursesData.find(c => c.name === selectedCourseDetail || c.code === selectedCourseDetail || c.id === selectedCourseDetail);
   const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
@@ -440,8 +571,12 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   }}
                   className="bg-transparent text-white font-black text-xs border-0 outline-none cursor-pointer pr-1 font-mono"
                 >
-                  <option value="2027-II" className="bg-slate-900 text-white font-bold">2027-II • Ciclo II (Activo)</option>
-                  <option value="2027-I" className="bg-slate-900 text-white font-bold">2027-I • Ciclo I (Concluido)</option>
+                  {isPromotedCycle2 && (
+                    <option value="2027-II" className="bg-slate-900 text-white font-bold">2027-II • Ciclo II (Activo)</option>
+                  )}
+                  <option value="2027-I" className="bg-slate-900 text-white font-bold">
+                    {isPromotedCycle2 ? "2027-I • Ciclo I (Concluido)" : "2027-I • Ciclo I (Activo)"}
+                  </option>
                 </select>
               </div>
             </div>
@@ -459,30 +594,42 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
             const averageGrade = grades.length ? (grades.reduce((sum, grade) => sum + grade, 0) / grades.length).toFixed(1) : "NR";
 
             const isCiclo1 = selectedClassesPeriod === "2027-I";
+            const isMateo = studentDni === "74859612";
+            const isRealCiclo1Simulated = typeof window !== "undefined" && Boolean(
+              localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) ||
+              (isMateo && (localStorage.getItem("sfa_simulated_cycle1_74859612") || localStorage.getItem("sfa_simulated_cycle1")))
+            );
             const isCiclo2AllSimulated = Boolean(
               localStorage.getItem(`sfa_simulated_cycle2_${studentDni}`) ||
-              localStorage.getItem("sfa_simulated_cycle2_74859612") ||
-              localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
+              (isMateo && (
+                localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+                localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true"
+              )) ||
               localStorage.getItem(`sfa_student_promoted_cycle3_${studentDni}`) === "true"
             );
-            const isCiclo2Passed = (courseItem.code === "EIND-201" && (
+            const isCiclo2Passed = (courseItem.code === "EIND-201" && isMateo && (
               localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
               localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true" ||
               localStorage.getItem("sfa_course_passed_EIND-201_74859612") === "true" ||
               Boolean(localStorage.getItem("sfa_grades_EIND-201_74859612"))
             )) || isCiclo2AllSimulated;
-            const isApproved = isCiclo1 || isCiclo2Passed;
+            const isApproved = (isCiclo1 && (isMateo || isRealCiclo1Simulated)) || isCiclo2Passed;
 
             let displayGrade = averageGrade;
-            if (isCiclo1) {
+            if (isCiclo1 && (isMateo || isRealCiclo1Simulated)) {
               const c1Defaults: Record<string, string> = {
                 "EIND-101": "16.4",
                 "EIND-102": "16.5",
                 "EIND-103": "17.0",
                 "EIND-104": "15.0",
-                "EIND-105": "16.0"
+                "EIND-105": "16.0",
+                "CONT-101": "17.0",
+                "CONT-102": "16.5",
+                "CONT-103": "16.0",
+                "CONT-104": "15.5",
+                "CONT-105": "16.0"
               };
-              displayGrade = c1Defaults[courseItem.code] || "16.0";
+              displayGrade = c1Defaults[courseItem.code] || (averageGrade !== "NR" ? averageGrade : "16.0");
             } else if (isCiclo2AllSimulated) {
               const c2Defaults: Record<string, string> = {
                 "EIND-201": "16.5",
@@ -492,7 +639,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 "EIND-205": "15.5"
               };
               displayGrade = c2Defaults[courseItem.code] || "16.5";
-            } else if (courseItem.code === "EIND-201") {
+            } else if (courseItem.code === "EIND-201" && isMateo) {
               try {
                 const raw = localStorage.getItem("sfa_grades_EIND-201_74859612") || localStorage.getItem("sfa_grades_cur_ei_201_74859612");
                 if (raw) {
@@ -501,7 +648,23 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   if (sum > 0) displayGrade = sum.toFixed(1);
                 }
               } catch {}
+            } else {
+              try {
+                const raw = localStorage.getItem(`sfa_grades_${courseItem.code}_${studentDni}`) ||
+                  localStorage.getItem(`sfa_grades_${courseItem.id}_${studentDni}`);
+                if (raw) {
+                  const p = JSON.parse(raw);
+                  if (typeof p.finalGrade === "number") {
+                    displayGrade = p.finalGrade.toFixed(1);
+                  } else {
+                    const sum = 0.20 * (p.NPA || 0) + 0.20 * (p.PC1 || 0) + 0.20 * (p.PC2 || 0) + 0.40 * (p.EX_FINAL || 0);
+                    if (sum > 0) displayGrade = sum.toFixed(1);
+                  }
+                }
+              } catch {}
             }
+
+            const effectiveIsApproved = isApproved || (displayGrade !== "NR" && !isNaN(Number(displayGrade)) && Number(displayGrade) >= 12.5);
 
             return (
               <Card key={courseItem.id} className="group border border-slate-200/90 rounded-2xl shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between overflow-hidden bg-white hover:-translate-y-1">
@@ -519,12 +682,12 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                         {courseItem.credits} Créditos
                       </span>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase tracking-wider border ${
-                        isApproved
+                        effectiveIsApproved
                           ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                           : "bg-blue-50 text-blue-700 border-blue-200"
                       }`}>
                         <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        {isApproved ? "APROBADO" : "MATRICULADO"}
+                        {effectiveIsApproved ? "APROBADO" : "MATRICULADO"}
                       </span>
                     </div>
                   </div>
@@ -716,10 +879,25 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     if (code === "EE-101" || code === "EIND-101") return "cur-elec-1";
     if (code === "EE-403" || code === "EIND-102") return "cur-elec-2";
     if (code === "EE-502" || code === "EIND-103") return "cur-elec-3";
+    const contMatch = code?.match(/^CONT-(\d+)$/i);
+    if (contMatch) return `cur_co_${contMatch[1]}`;
+    const eindMatch = code?.match(/^EIND-(\d+)$/i);
+    if (eindMatch) return `cur_ei_${eindMatch[1]}`;
     return code;
   };
 
   const activeCourseDbId = getMappedCourseId(activeCourse.code);
+  const rawCourseId = activeCourse.id?.replace(/^cur-/, "");
+  const matchesActiveCourse = (targetCourseId?: string) => {
+    if (!targetCourseId) return false;
+    return (
+      activeCourse.attendanceCourseIds?.includes(targetCourseId) ||
+      targetCourseId === activeCourse.id ||
+      targetCourseId === rawCourseId ||
+      targetCourseId === activeCourse.code ||
+      targetCourseId === activeCourseDbId
+    );
+  };
 
   const filteredDBMaterials = materials.filter(m => {
     const weekMatches = m.title.includes(`[Semana ${selectedClassWeek}]`) || m.title.includes(`Semana ${selectedClassWeek}`);
@@ -731,8 +909,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
         (selectedComponent.id === "tal" && (m.courseId.includes("tal") || m.title.toLowerCase().includes("taller"))) ||
         (selectedComponent.id === "lab" && (m.courseId.includes("lab") || m.title.toLowerCase().includes("lab") || m.title.toLowerCase().includes("simula")));
     }
-    const courseMatches = activeCourse.attendanceCourseIds?.includes(m.courseId) || m.courseId === activeCourse.id || m.courseId === activeCourseDbId;
-    return courseMatches;
+    return matchesActiveCourse(m.courseId);
   });
 
   const filteredDBAssignments = assignments.filter(a => {
@@ -745,8 +922,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
         (selectedComponent.id === "tal" && (a.courseId.includes("tal") || a.title.toLowerCase().includes("taller"))) ||
         (selectedComponent.id === "lab" && (a.courseId.includes("lab") || a.title.toLowerCase().includes("lab") || a.title.toLowerCase().includes("simula")));
     }
-    const courseMatches = activeCourse.attendanceCourseIds?.includes(a.courseId) || a.courseId === activeCourse.id || a.courseId === activeCourseDbId;
-    return courseMatches;
+    return matchesActiveCourse(a.courseId);
   });
 
   // Cálculo de puntualidad / antelación de entrega respecto a la fecha límite
@@ -872,7 +1048,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
         return a;
       });
 
-      onUpdateAssignments(updated);
+      await onUpdateAssignments(updated);
       setSimulationHWFiles(prev => ({ ...prev, [asgId]: fileName }));
       setEditingTaskSubmission(prev => ({ ...prev, [asgId]: false }));
       setSelectedTaskFiles(prev => ({ ...prev, [asgId]: null }));
@@ -887,7 +1063,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
     }
   };
 
-  const handleDeleteStudentSubmission = () => {
+  const handleDeleteStudentSubmission = async () => {
     if (!submissionToDelete) return;
     setIsDeletingSubmission(true);
     try {
@@ -900,7 +1076,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
         }
         return a;
       });
-      onUpdateAssignments(updated);
+      await onUpdateAssignments(updated);
       setSimulationHWFiles(prev => {
         const next = { ...prev };
         delete next[asgId];
@@ -1329,144 +1505,220 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="bg-amber-400 text-slate-950 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm inline-block select-none font-mono">
-                      ASIGNATURA: {activeCourse.code} • UNIDAD DIDÁCTICA INTEGRAL
+                      ASIGNATURA: {activeCourse.code} • {courseMultiComponentData.hasMultiple ? "UNIDAD DIDÁCTICA INTEGRAL" : "UNIDAD DIDÁCTICA OFICIAL"}
                     </span>
                     <span className="bg-white/20 text-white text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm inline-block font-mono">
-                      PERIODO 2027-I • 5 CRÉDITOS OFICIALES
+                      PERIODO 2027-I • {courseMultiComponentData.hasMultiple ? 5 : (activeCourse.credits || 4)} CRÉDITOS OFICIALES
                     </span>
                   </div>
                   <h2 className="text-xl md:text-2xl font-black font-display tracking-tight uppercase leading-snug">
                     {activeCourse.name}
                   </h2>
                   <p className="text-xs text-white/85 font-medium font-mono leading-relaxed max-w-2xl">
-                    Consolidado definitivo de calificaciones y fórmula integral de aprobación curricular (3 partes: Teoría 40% + Taller 40% + Laboratorio 20%) ante el Ministerio de Educación (MINEDU).
+                    {courseMultiComponentData.hasMultiple
+                      ? "Consolidado definitivo de calificaciones y fórmula integral de aprobación curricular (3 partes: Teoría 40% + Taller 40% + Laboratorio 20%) ante el Ministerio de Educación (MINEDU)."
+                      : `Consolidado oficial de calificaciones y fórmula curricular vigente (${activeCourse.formula || "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"}) ante el Ministerio de Educación (MINEDU).`}
                   </p>
                 </div>
                 <div className="shrink-0 flex items-center gap-2">
-                  <span className={`font-black text-xs px-4 py-2.5 rounded-xl uppercase tracking-wider shadow-sm font-mono flex items-center gap-2 border ${courseMultiComponentData.isIntegratedApproved
-                    ? "bg-emerald-500 text-white border-emerald-400"
-                    : "bg-amber-400 text-slate-950 border-amber-300"
-                    }`}>
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>{courseMultiComponentData.integralCondition} ({courseMultiComponentData.integralGrade.toFixed(1)})</span>
-                  </span>
+                  {(() => {
+                    const isApp = courseMultiComponentData.hasMultiple
+                      ? courseMultiComponentData.isIntegratedApproved
+                      : officialGradeData.isApproved;
+                    const cond = courseMultiComponentData.hasMultiple
+                      ? courseMultiComponentData.integralCondition
+                      : officialGradeData.condition;
+                    const partialScore = Number(
+                      ((officialGradeData.npa ?? 0) * 0.2 +
+                      (officialGradeData.pc1 ?? 0) * 0.2 +
+                      (officialGradeData.pc2 ?? 0) * 0.2 +
+                      (officialGradeData.exFinal ?? 0) * 0.4).toFixed(1)
+                    );
+                    const val = courseMultiComponentData.hasMultiple
+                      ? courseMultiComponentData.integralGrade
+                      : (officialGradeData.finalGrade ?? partialScore);
+                    return (
+                      <span className={`font-black text-xs px-4 py-2.5 rounded-xl uppercase tracking-wider shadow-sm font-mono flex items-center gap-2 border ${isApp
+                        ? "bg-emerald-500 text-white border-emerald-400"
+                        : "bg-amber-400 text-slate-950 border-amber-300"
+                        }`}>
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>{cond} ({val.toFixed(1)})</span>
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
 
-            {/* SECCIÓN 1: FÓRMULA INTEGRAL DE LA ASIGNATURA (LAS 3 PARTES: TEORÍA + TALLER + LABORATORIO) */}
-            <Card className="border border-slate-200">
-              <CardHeader className="p-5 border-b bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <CardTitle className="text-xs font-black uppercase tracking-wider text-slate-900">
-                    FÓRMULA CURRICULAR INTEGRAL DE APROBACIÓN (3 COMPONENTES)
-                  </CardTitle>
-                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                    Para aprobar la asignatura, la evaluación ministerial consolida las 3 áreas formativas según su peso en créditos.
-                  </p>
-                </div>
-                <span className="text-[10px] font-mono font-bold bg-[#800521]/10 text-[#800521] border border-[#800521]/20 px-3 py-1.5 rounded-lg uppercase self-start sm:self-auto shadow-2xs">
-                  FÓRMULA: {courseMultiComponentData.integralFormulaExpression}
-                </span>
-              </CardHeader>
-
-              <CardContent className="p-5 space-y-4">
-                {/* Grid de las 3 Partes / Componentes */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {courseMultiComponentData.components.map((comp) => (
-                    <div
-                      key={comp.id}
-                      className={`p-4 rounded-xl border transition-all text-left space-y-3 ${(activeCourseComponentId || "teo") === comp.id
-                        ? "bg-rose-50/40 border-[#800521]/40 shadow-xs ring-1 ring-[#800521]/20"
-                        : "bg-white border-slate-200 hover:border-slate-300"
-                        }`}
-                    >
-                      <div className="flex items-center justify-between gap-1.5">
-                        <span className="text-[9px] font-mono font-bold text-slate-500 uppercase bg-slate-100 px-2 py-0.5 rounded whitespace-nowrap">
-                          {comp.code}
-                        </span>
-                        <span className="text-[9px] font-mono font-black text-[#800521] bg-rose-50 border border-rose-200/80 px-2 py-0.5 rounded uppercase whitespace-nowrap">
-                          {comp.weightLabel}
-                        </span>
-                      </div>
-
-                      <div>
-                        <h4 className="text-xs font-black text-slate-900 uppercase">
-                          PARTE {comp.id === "teo" ? "1: TEORÍA" : comp.id === "tal" ? "2: TALLER" : "3: LABORATORIO"}
-                        </h4>
-                        <p className="text-[10px] text-slate-500 font-medium">
-                          Docente: {comp.teacher}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-lg shadow-2xs">
-                        <div>
-                          <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Promedio Parcial</span>
-                          <span className="text-lg font-black font-mono text-slate-900 block leading-tight">
-                            {comp.grade !== null ? comp.grade.toFixed(1) : "NR"}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Aporte a Nota Final</span>
-                          <span className="text-sm font-black font-mono text-[#800521] block leading-tight">
-                            {comp.grade !== null ? `+${comp.weightedContribution.toFixed(2)} pts` : "+0.00 pts"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-150 text-[9.5px] text-slate-600 font-medium space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-slate-400">Condición:</span>
-                          <span className={`font-bold px-1.5 py-0.2 rounded uppercase ${
-                            comp.condition === "APROBADO"
-                              ? "text-emerald-700 bg-emerald-50"
-                              : comp.condition === "PENDIENTE"
-                              ? "text-amber-700 bg-amber-50"
-                              : "text-rose-700 bg-rose-50"
-                          }`}>
-                            {comp.condition}
-                          </span>
-                        </div>
-                        <div className="text-[8.5px] text-slate-500 font-mono tracking-tight leading-relaxed" title={comp.summaryEvaluations}>
-                          {comp.summaryEvaluations}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Hito Integrador: Examen Final del Curso Completo (40%) */}
-                <div className="mt-4 p-4 rounded-xl border border-amber-300 bg-amber-50/70 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
-                  <div className="space-y-0.5">
-                    <span className="text-[9px] font-mono font-black text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded uppercase">
-                      HITO FINAL DEL CURSO • PESO: 40% OFICIAL
-                    </span>
-                    <h4 className="text-xs font-black text-slate-900 uppercase">
-                      Examen Final Integral de la Unidad Didáctica
-                    </h4>
-                    <p className="text-[10px] text-slate-600 font-medium">
-                      Evaluación comprehensiva transversal de toda la asignatura (evalúa conjuntamente Teoría, Taller y Laboratorio).
+            {/* SECCIÓN 1: FÓRMULA INTEGRAL DE LA ASIGNATURA */}
+            {courseMultiComponentData.hasMultiple ? (
+              <Card className="border border-slate-200">
+                <CardHeader className="p-5 border-b bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-xs font-black uppercase tracking-wider text-slate-900">
+                      FÓRMULA CURRICULAR INTEGRAL DE APROBACIÓN (3 COMPONENTES)
+                    </CardTitle>
+                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                      Para aprobar la asignatura, la evaluación ministerial consolida las 3 áreas formativas según su peso en créditos.
                     </p>
                   </div>
-                  <div className="flex items-center gap-4 shrink-0 bg-white px-4 py-2.5 rounded-xl border border-amber-200 shadow-2xs">
-                    <div>
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Nota Examen Final</span>
-                      <span className="text-lg font-black font-mono text-slate-900 block leading-tight">
-                        {courseMultiComponentData.finalExamGrade !== null ? courseMultiComponentData.finalExamGrade.toFixed(1) : "NR"}
+                  <span className="text-[10px] font-mono font-bold bg-[#800521]/10 text-[#800521] border border-[#800521]/20 px-3 py-1.5 rounded-lg uppercase self-start sm:self-auto shadow-2xs">
+                    FÓRMULA: {courseMultiComponentData.integralFormulaExpression}
+                  </span>
+                </CardHeader>
+
+                <CardContent className="p-5 space-y-4">
+                  {/* Grid de las 3 Partes / Componentes */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {courseMultiComponentData.components.map((comp) => (
+                      <div
+                        key={comp.id}
+                        className={`p-4 rounded-xl border transition-all text-left space-y-3 ${(activeCourseComponentId || "teo") === comp.id
+                          ? "bg-rose-50/40 border-[#800521]/40 shadow-xs ring-1 ring-[#800521]/20"
+                          : "bg-white border-slate-200 hover:border-slate-300"
+                          }`}
+                      >
+                        <div className="flex items-center justify-between gap-1.5">
+                          <span className="text-[9px] font-mono font-bold text-slate-500 uppercase bg-slate-100 px-2 py-0.5 rounded whitespace-nowrap">
+                            {comp.code}
+                          </span>
+                          <span className="text-[9px] font-mono font-black text-[#800521] bg-rose-50 border border-rose-200/80 px-2 py-0.5 rounded uppercase whitespace-nowrap">
+                            {comp.weightLabel}
+                          </span>
+                        </div>
+
+                        <div>
+                          <h4 className="text-xs font-black text-slate-900 uppercase">
+                            PARTE {comp.id === "teo" ? "1: TEORÍA" : comp.id === "tal" ? "2: TALLER" : "3: LABORATORIO"}
+                          </h4>
+                          <p className="text-[10px] text-slate-500 font-medium">
+                            Docente: {comp.teacher}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-lg shadow-2xs">
+                          <div>
+                            <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Promedio Parcial</span>
+                            <span className="text-lg font-black font-mono text-slate-900 block leading-tight">
+                              {comp.grade !== null ? comp.grade.toFixed(1) : "NR"}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Aporte a Nota Final</span>
+                            <span className="text-sm font-black font-mono text-[#800521] block leading-tight">
+                              {comp.grade !== null ? `+${comp.weightedContribution.toFixed(2)} pts` : "+0.00 pts"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-150 text-[9.5px] text-slate-600 font-medium space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-400">Condición:</span>
+                            <span className={`font-bold px-1.5 py-0.2 rounded uppercase ${
+                              comp.condition === "APROBADO"
+                                ? "text-emerald-700 bg-emerald-50"
+                                : comp.condition === "PENDIENTE"
+                                ? "text-amber-700 bg-amber-50"
+                                : "text-rose-700 bg-rose-50"
+                            }`}>
+                              {comp.condition}
+                            </span>
+                          </div>
+                          <div className="text-[8.5px] text-slate-500 font-mono tracking-tight leading-relaxed" title={comp.summaryEvaluations}>
+                            {comp.summaryEvaluations}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Hito Integrador: Examen Final del Curso Completo (40%) */}
+                  <div className="mt-4 p-4 rounded-xl border border-amber-300 bg-amber-50/70 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+                    <div className="space-y-0.5">
+                      <span className="text-[9px] font-mono font-black text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded uppercase">
+                        HITO FINAL DEL CURSO • PESO: 40% OFICIAL
                       </span>
+                      <h4 className="text-xs font-black text-slate-900 uppercase">
+                        Examen Final Integral de la Unidad Didáctica
+                      </h4>
+                      <p className="text-[10px] text-slate-600 font-medium">
+                        Evaluación comprehensiva transversal de toda la asignatura (evalúa conjuntamente Teoría, Taller y Laboratorio).
+                      </p>
                     </div>
-                    <div className="text-right border-l pl-3 border-slate-200">
-                      <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Aporte a Nota Final</span>
-                      <span className="text-sm font-black font-mono text-[#800521] block leading-tight">
-                        {courseMultiComponentData.finalExamGrade !== null
-                          ? `+${courseMultiComponentData.finalExamContribution.toFixed(2)} pts`
-                          : "+0.00 pts (Pendiente)"}
-                      </span>
+                    <div className="flex items-center gap-4 shrink-0 bg-white px-4 py-2.5 rounded-xl border border-amber-200 shadow-2xs">
+                      <div>
+                        <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Nota Examen Final</span>
+                        <span className="text-lg font-black font-mono text-slate-900 block leading-tight">
+                          {courseMultiComponentData.finalExamGrade !== null ? courseMultiComponentData.finalExamGrade.toFixed(1) : "NR"}
+                        </span>
+                      </div>
+                      <div className="text-right border-l pl-3 border-slate-200">
+                        <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Aporte a Nota Final</span>
+                        <span className="text-sm font-black font-mono text-[#800521] block leading-tight">
+                          {courseMultiComponentData.finalExamGrade !== null
+                            ? `+${courseMultiComponentData.finalExamContribution.toFixed(2)} pts`
+                            : "+0.00 pts (Pendiente)"}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border border-slate-200">
+                <CardHeader className="p-5 border-b bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-xs font-black uppercase tracking-wider text-slate-900">
+                      FÓRMULA CURRICULAR OFICIAL DE APROBACIÓN ({activeCourse.code})
+                    </CardTitle>
+                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                      Docente titular: <strong className="text-slate-700">{activeCourse.teacherName || "Docente Asignado"}</strong> • Escala vigesimal (0 – 20).
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold bg-[#800521]/10 text-[#800521] border border-[#800521]/20 px-3 py-1.5 rounded-lg uppercase self-start sm:self-auto shadow-2xs">
+                    {activeCourse.formula || "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"}
+                  </span>
+                </CardHeader>
+
+                <CardContent className="p-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { code: "NPA", label: "Participación y Tareas", weight: 0.2, val: officialGradeData.npa },
+                      { code: "PC1", label: "Práctica Calificada 1", weight: 0.2, val: officialGradeData.pc1 },
+                      { code: "PC2", label: "Práctica Calificada 2", weight: 0.2, val: officialGradeData.pc2 },
+                      { code: "EX_FINAL", label: "Examen Final Modular", weight: 0.4, val: officialGradeData.exFinal }
+                    ].map((item) => {
+                      const hasVal = item.val !== null && item.val !== undefined;
+                      const contrib = hasVal ? Number(item.val) * item.weight : 0;
+                      return (
+                        <div key={item.code} className={`p-4 rounded-xl border text-left space-y-3 ${hasVal ? "bg-emerald-50/30 border-emerald-200" : "bg-white border-slate-200"}`}>
+                          <div className="flex items-center justify-between gap-1.5">
+                            <span className="text-[9px] font-mono font-bold text-slate-500 uppercase bg-slate-100 px-2 py-0.5 rounded">{item.code}</span>
+                            <span className="text-[9px] font-mono font-black text-[#800521] bg-rose-50 border border-rose-200/80 px-2 py-0.5 rounded uppercase">Peso: {Math.round(item.weight * 100)}%</span>
+                          </div>
+                          <h4 className="text-xs font-black text-slate-900 uppercase">{item.label}</h4>
+                          <div className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-lg shadow-2xs">
+                            <div>
+                              <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Nota</span>
+                              <span className="text-lg font-black font-mono text-slate-900 block leading-tight">
+                                {hasVal ? Number(item.val).toFixed(1) : "NR"}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[8.5px] font-bold text-slate-400 uppercase block">Aporte</span>
+                              <span className="text-sm font-black font-mono text-[#800521] block leading-tight">
+                                +{contrib.toFixed(2)} pts
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* SECCIÓN 2: RECAPITULACIÓN Y CONDICIÓN FINAL DEL CURSO */}
             <Card className="border border-slate-200">
@@ -1479,76 +1731,99 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                     Resumen consolidado de rendimiento semestral y cumplimiento curricular oficial.
                   </p>
                 </div>
-                <span className={`text-[10px] font-mono font-bold px-3 py-1 rounded-lg uppercase self-start sm:self-auto ${
-                  courseMultiComponentData.isComplete
-                    ? "bg-emerald-100 text-emerald-900 border border-emerald-300"
-                    : "bg-amber-100 text-amber-900 border border-amber-300"
-                }`}>
-                  {courseMultiComponentData.isComplete ? "ESTADO: CONSOLIDADO INTEGRAL CERRADO" : "ESTADO: EN PROCESO DE EVALUACIÓN"}
-                </span>
+                {(() => {
+                  const isClosed = courseMultiComponentData.hasMultiple ? courseMultiComponentData.isComplete : officialGradeData.isComplete;
+                  return (
+                    <span className={`text-[10px] font-mono font-bold px-3 py-1 rounded-lg uppercase self-start sm:self-auto ${
+                      isClosed
+                        ? "bg-emerald-100 text-emerald-900 border border-emerald-300"
+                        : "bg-amber-100 text-amber-900 border border-amber-300"
+                    }`}>
+                      {isClosed ? "ESTADO: CONSOLIDADO INTEGRAL CERRADO" : "ESTADO: EN PROCESO DE EVALUACIÓN"}
+                    </span>
+                  );
+                })()}
               </CardHeader>
               <CardContent className="p-5 space-y-5">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className={`p-4 rounded-xl text-center border ${
-                    !courseMultiComponentData.isComplete
-                      ? "bg-amber-50 text-amber-900 border-amber-200 shadow-2xs"
-                      : courseMultiComponentData.isIntegratedApproved
-                      ? "bg-emerald-50 text-emerald-900 border-emerald-200 shadow-2xs"
-                      : "bg-rose-50 text-rose-950 border-rose-200"
-                    }`}>
-                    <span className="text-[10px] font-black uppercase block tracking-wider text-slate-600">
-                      Situación de Curso
-                    </span>
-                    <span className="text-xl font-black block mt-1 tracking-tight">
-                      {courseMultiComponentData.integralCondition}
-                    </span>
-                    <span className="text-[9px] font-semibold text-slate-500 block mt-0.5">
-                      Logro Curricular MINEDU
-                    </span>
-                  </div>
+                {(() => {
+                  const isClosed = courseMultiComponentData.hasMultiple ? courseMultiComponentData.isComplete : officialGradeData.isComplete;
+                  const isApp = courseMultiComponentData.hasMultiple ? courseMultiComponentData.isIntegratedApproved : officialGradeData.isApproved;
+                  const cond = courseMultiComponentData.hasMultiple ? courseMultiComponentData.integralCondition : officialGradeData.condition;
+                  const partialScore = Number(
+                    ((officialGradeData.npa ?? 0) * 0.2 +
+                    (officialGradeData.pc1 ?? 0) * 0.2 +
+                    (officialGradeData.pc2 ?? 0) * 0.2 +
+                    (officialGradeData.exFinal ?? 0) * 0.4).toFixed(1)
+                  );
+                  const displayGrade = courseMultiComponentData.hasMultiple
+                    ? courseMultiComponentData.integralGrade
+                    : (officialGradeData.finalGrade ?? partialScore);
+                  const creditsCount = courseMultiComponentData.hasMultiple ? 5 : (activeCourse.credits || 4);
 
-                  <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-200 shadow-2xs">
-                    <span className="text-[10px] text-slate-400 font-black uppercase block tracking-wider">
-                      {courseMultiComponentData.isComplete ? "Promedio Ponderado Final" : "Puntaje Parcial Acumulado"}
-                    </span>
-                    <span className="text-xl font-black text-[#800521] block mt-1 font-mono tracking-tight">
-                      {courseMultiComponentData.integralGrade !== null ? courseMultiComponentData.integralGrade.toFixed(1) : "NR"}
-                    </span>
-                    <span className="text-[9px] font-semibold text-slate-500 block mt-0.5">
-                      {courseMultiComponentData.isComplete ? "Escala Vigesimal (0 - 20)" : "Evaluaciones en curso"}
-                    </span>
-                  </div>
+                  return (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className={`p-4 rounded-xl text-center border ${
+                        !isClosed
+                          ? "bg-amber-50 text-amber-900 border-amber-200 shadow-2xs"
+                          : isApp
+                          ? "bg-emerald-50 text-emerald-900 border-emerald-200 shadow-2xs"
+                          : "bg-rose-50 text-rose-950 border-rose-200"
+                        }`}>
+                        <span className="text-[10px] font-black uppercase block tracking-wider text-slate-600">
+                          Situación de Curso
+                        </span>
+                        <span className="text-xl font-black block mt-1 tracking-tight">
+                          {cond}
+                        </span>
+                        <span className="text-[9px] font-semibold text-slate-500 block mt-0.5">
+                          Logro Curricular MINEDU
+                        </span>
+                      </div>
 
-                  <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-200 shadow-2xs">
-                    <span className="text-[10px] text-slate-400 font-black uppercase block tracking-wider">
-                      Asistencia Registrada
-                    </span>
-                    <span className="text-xl font-black text-slate-800 block mt-1 font-mono tracking-tight">
-                      100%
-                    </span>
-                    <span className="text-[9px] font-semibold text-emerald-600 block mt-0.5">
-                      Asistente Regular
-                    </span>
-                  </div>
+                      <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-200 shadow-2xs">
+                        <span className="text-[10px] text-slate-400 font-black uppercase block tracking-wider">
+                          {isClosed ? "Promedio Ponderado Final" : "Puntaje Parcial Acumulado"}
+                        </span>
+                        <span className="text-xl font-black text-[#800521] block mt-1 font-mono tracking-tight">
+                          {displayGrade !== null ? displayGrade.toFixed(1) : "NR"}
+                        </span>
+                        <span className="text-[9px] font-semibold text-slate-500 block mt-0.5">
+                          {isClosed ? "Escala Vigesimal (0 - 20)" : "Evaluaciones en curso"}
+                        </span>
+                      </div>
 
-                  <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-200 shadow-2xs">
-                    <span className="text-[10px] text-slate-400 font-black uppercase block tracking-wider">
-                      Horas de Plan de Estudios
-                    </span>
-                    <span className="text-xl font-black text-slate-800 block mt-1 font-mono tracking-tight">
-                      64 Horas
-                    </span>
-                    <span className="text-[9px] font-semibold text-slate-500 block mt-0.5">
-                      5 Créditos Académicos Otorgados
-                    </span>
-                  </div>
-                </div>
+                      <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-200 shadow-2xs">
+                        <span className="text-[10px] text-slate-400 font-black uppercase block tracking-wider">
+                          Asistencia Registrada
+                        </span>
+                        <span className="text-xl font-black text-slate-800 block mt-1 font-mono tracking-tight">
+                          100%
+                        </span>
+                        <span className="text-[9px] font-semibold text-emerald-600 block mt-0.5">
+                          Asistente Regular
+                        </span>
+                      </div>
 
-                {/* Desglose de Componentes de Evaluación de la Parte Teórica */}
+                      <div className="p-4 bg-slate-50 rounded-xl text-center border border-slate-200 shadow-2xs">
+                        <span className="text-[10px] text-slate-400 font-black uppercase block tracking-wider">
+                          Horas de Plan de Estudios
+                        </span>
+                        <span className="text-xl font-black text-slate-800 block mt-1 font-mono tracking-tight">
+                          64 Horas
+                        </span>
+                        <span className="text-[9px] font-semibold text-slate-500 block mt-0.5">
+                          {creditsCount} Créditos Académicos Otorgados
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Desglose de Componentes de Evaluación */}
                 <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 text-xs space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-black text-slate-800 uppercase text-[11px] tracking-wide">
-                      Desglose de Calificaciones de la Parte Teórica (EIND-101-TEO)
+                      Desglose de Calificaciones ({courseMultiComponentData.hasMultiple ? "EIND-101-TEO" : activeCourse.code})
                     </span>
                     <span className="text-[10px] font-mono text-slate-500 font-bold">
                       MINEDU R.V.M. N° 049-2024
@@ -1587,8 +1862,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
                     {Array.from({ length: COURSE_WEEKS }, (_, i) => i + 1).map((w) => {
                       const weekAssignment = assignments.find(a => {
-                        const courseMatches = activeCourse.attendanceCourseIds?.includes(a.courseId) || a.courseId === activeCourse.id || a.courseId === activeCourseDbId;
-                        return courseMatches && (a.title.includes(`[Semana ${w}]`) || a.title.includes(`Semana ${w}`));
+                        return matchesActiveCourse(a.courseId) && (a.title.includes(`[Semana ${w}]`) || a.title.includes(`Semana ${w}`));
                       });
                       const studentSub = weekAssignment?.submissions?.find((s: any) => s.studentDni === studentDni && s.grade !== undefined);
                       const weekEval = (evaluations || []).find((e: any) => {
@@ -1862,6 +2136,17 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
 
                 {selectedClassWeekOption === "tareas" && (() => {
                   const asgs = filteredDBAssignments;
+                  if (asgs.length === 0 && assignmentsLoading) {
+                    return (
+                      <div className="text-center py-12 px-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 space-y-2.5 font-sans">
+                        <Loader2 className="w-8 h-8 text-[#800521] animate-spin mx-auto" />
+                        <h4 className="text-xs font-bold text-slate-700">Cargando tareas programadas...</h4>
+                        <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                          Sincronizando actividades de la Semana {selectedClassWeek} con el servidor.
+                        </p>
+                      </div>
+                    );
+                  }
                   if (asgs.length === 0) {
                     return (
                       <div className="text-center py-12 px-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 space-y-2 font-sans">
@@ -1890,8 +2175,8 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                           : courseFileUrl('assignments', asg.id);
 
                         const studentFileUrl = prevSub?.fileBase64
-                          ? `data:${prevSub.mimeType || 'application/pdf'};base64,${prevSub.fileBase64}`
-                          : '#';
+                          ? (prevSub.fileBase64.startsWith("data:") ? prevSub.fileBase64 : `data:${prevSub.mimeType || 'application/pdf'};base64,${prevSub.fileBase64}`)
+                          : (prevSub?.fileName ? assignmentSubmissionFileUrl(asg.id, studentDni) : '#');
 
                         const cleanDisplayTitle = asg.title.replace(/^\[Semana\s*\d+\]\s*/i, "").trim();
 
@@ -2275,9 +2560,20 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                         (selectedComponent.id === "tal" && (a.courseId.includes("tal") || a.title.toLowerCase().includes("taller"))) ||
                         (selectedComponent.id === "lab" && (a.courseId.includes("lab") || a.title.toLowerCase().includes("lab")));
                     }
-                    return !activeCourse ? true : (activeCourse.attendanceCourseIds?.includes(a.courseId) || a.courseId === activeCourse.id || a.courseId === activeCourseDbId);
+                    return !activeCourse ? true : matchesActiveCourse(a.courseId);
                   });
 
+                  if (weekEvaluations.length === 0 && assignmentsLoading) {
+                    return (
+                      <div className="text-center py-12 px-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 space-y-2.5 font-sans">
+                        <Loader2 className="w-8 h-8 text-[#800521] animate-spin mx-auto" />
+                        <h4 className="text-xs font-bold text-slate-700">Cargando evaluaciones...</h4>
+                        <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                          Sincronizando criterios y calificaciones de la Semana {selectedClassWeek}.
+                        </p>
+                      </div>
+                    );
+                  }
                   if (weekEvaluations.length === 0) {
                     return (
                       <div className="text-center py-12 px-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 space-y-2 font-sans">

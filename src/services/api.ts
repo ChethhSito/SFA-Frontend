@@ -34,7 +34,9 @@ async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T 
       } catch {
         // Ignored if body not JSON
       }
-      console.warn(`[API] ${errorMsg}`);
+      if (res.status !== 404) {
+        console.warn(`[API] ${errorMsg}`);
+      }
       if (options?.method && options.method !== "GET") {
         throw new Error(errorMsg);
       }
@@ -437,6 +439,10 @@ export async function fileToBase64(file: File): Promise<string> {
 
 export function courseFileUrl(kind: 'materials' | 'evidences' | 'assignments', id: string): string {
   return `${API_BASE_URL}/courses/${kind}/${encodeURIComponent(id)}/file`;
+}
+
+export function assignmentSubmissionFileUrl(assignmentId: string, studentDni: string): string {
+  return `${API_BASE_URL}/courses/assignments/${encodeURIComponent(assignmentId)}/submissions/${encodeURIComponent(studentDni)}/file`;
 }
 
 export async function uploadCourseMaterial(material: { courseId: string; title: string; fileName: string; contentBase64: string; mimeType: string }): Promise<any | null> {

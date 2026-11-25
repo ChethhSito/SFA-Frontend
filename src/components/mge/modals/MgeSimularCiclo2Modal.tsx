@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { GraduationCap, XCircle, CheckCircle2, ShieldCheck, AlertCircle, Award } from "lucide-react";
 import { ProcessedStudent } from "../mgeTypes";
 import { Course, CourseAssignment } from "../../../types";
+import { updateStudentCycleStatuses } from "../../../services/api";
 
 interface MgeSimularCiclo2ModalProps {
   isOpen?: boolean;
@@ -22,8 +23,16 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
 
   if (!isOpen || !student) return null;
 
-  // The 5 official courses for Ciclo II - Electricidad Industrial
-  const ciclo2Courses = [
+  const isContabilidad = student.career?.toLowerCase().includes("contab") || student.dni === "71248596";
+
+  // The 5 official courses for Ciclo II
+  const ciclo2Courses = isContabilidad ? [
+    { code: "CONT-201", name: "Contabilidad General Aplicada", credits: 4, simulatedGrade: 16.5, doc: "Lic. Patricia Elena Benavides Silva" },
+    { code: "CONT-202", name: "Administración de Archivos Contables", credits: 3, simulatedGrade: 17.0, doc: "Lic. Patricia Elena Benavides Silva" },
+    { code: "CONT-203", name: "Sistema de Información Contable I", credits: 3, simulatedGrade: 16.0, doc: "Lic. Fernando Gabriel Díaz Torres" },
+    { code: "CONT-204", name: "Tributación y Legislación Comercial", credits: 3, simulatedGrade: 16.5, doc: "Lic. Carlos Alberto Mendoza Quispe" },
+    { code: "CONT-205", name: "Estadística Aplicada a los Negocios", credits: 3, simulatedGrade: 15.5, doc: "Lic. Jorge Luis Paucar Silva" },
+  ] : [
     { code: "EIND-201", name: "Circuitos Eléctricos en Corriente Alterna", credits: 4, simulatedGrade: 16.5, doc: "Ing. Manuel Ramos Salazar" },
     { code: "EIND-202", name: "Electrónica Analógica y de Potencia Básica", credits: 4, simulatedGrade: 17.0, doc: "Ing. Roberto Chávez Peña" },
     { code: "EIND-203", name: "Mediciones Eléctricas e Instrumentación", credits: 3, simulatedGrade: 16.0, doc: "Ing. Walter Fernández" },
@@ -61,18 +70,14 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
         })),
       };
 
+      const isMateo = studentDni === "74859612";
       // Store in localStorage for multiple key access patterns
       localStorage.setItem(`sfa_simulated_cycle2_${studentDni}`, JSON.stringify(simulationData));
-      localStorage.setItem("sfa_simulated_cycle2_74859612", JSON.stringify(simulationData));
-      localStorage.setItem("sfa_simulated_cycle2", JSON.stringify(simulationData));
 
       // Guarantee Ciclo I is preserved and approved
       localStorage.setItem(`sfa_student_promoted_cycle2_${studentDni}`, "true");
-      localStorage.setItem("sfa_student_promoted_cycle2_74859612", "true");
-      localStorage.setItem("sfa_student_promoted_cycle2", "true");
       localStorage.setItem(`sfa_student_promoted_${studentDni}`, "true");
-      localStorage.setItem("sfa_student_promoted_74859612", "true");
-      localStorage.setItem("sfa_student_promoted", "true");
+
       if (!localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`)) {
         const c1Payload = {
           studentDni,
@@ -81,7 +86,13 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
           period: "2027-I",
           completedAt: new Date().toISOString(),
           weightedAverage: 16.2,
-          courses: [
+          courses: isContabilidad ? [
+            { code: "CONT-101", name: "Fundamentos de Contabilidad y Doctrina Contable", credits: 4, grade: 17.0, approved: true },
+            { code: "CONT-102", name: "Documentación Comercial, Mercantil y Bancaria", credits: 4, grade: 16.5, approved: true },
+            { code: "CONT-103", name: "Matemática Financiera y Comercial", credits: 3, grade: 16.0, approved: true },
+            { code: "CONT-104", name: "Legislación Comercial y Societaria", credits: 3, grade: 15.5, approved: true },
+            { code: "CONT-105", name: "Comunicación y Competencias Digitales", credits: 2, grade: 16.0, approved: true }
+          ] : [
             { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, grade: 16.4, approved: true },
             { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, grade: 16.5, approved: true },
             { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, grade: 17.0, approved: true },
@@ -90,61 +101,91 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
           ]
         };
         localStorage.setItem(`sfa_simulated_cycle1_${studentDni}`, JSON.stringify(c1Payload));
-        localStorage.setItem("sfa_simulated_cycle1_74859612", JSON.stringify(c1Payload));
-        localStorage.setItem("sfa_simulated_cycle1", JSON.stringify(c1Payload));
       }
 
-      // Individual grades for courses including EIND-201
-      const e201Obj = { NPA: 16.0, PC1: 16.0, PC2: 17.0, EX_FINAL: 17.0 };
-      localStorage.setItem(`sfa_grades_EIND-201_${studentDni}`, JSON.stringify(e201Obj));
-      localStorage.setItem("sfa_grades_EIND-201_74859612", JSON.stringify(e201Obj));
-      localStorage.setItem(`sfa_grades_cur_ei_201_${studentDni}`, JSON.stringify(e201Obj));
-      localStorage.setItem("sfa_grades_cur_ei_201_74859612", JSON.stringify(e201Obj));
-      localStorage.setItem("sfa_acta_signed_EIND-201", "true");
-      localStorage.setItem("sfa_acta_signed_cur_ei_201", "true");
-      localStorage.setItem("sfa_acta_signed_EIND-201_date", "20/11/2026 08:30");
-      localStorage.setItem("sfa_acta_signed_cur_ei_201_date", "20/11/2026 08:30");
-      localStorage.setItem(`sfa_course_passed_EIND-201_${studentDni}`, "true");
-      localStorage.setItem("sfa_course_passed_EIND-201_74859612", "true");
-      localStorage.setItem("sfa_course_passed_EIND-201", "true");
+      // Individual grades for courses
+      ciclo2Courses.forEach(c => {
+        const obj = { NPA: 16.0, PC1: 16.0, PC2: 17.0, EX_FINAL: 17.0, finalGrade: c.simulatedGrade };
+        localStorage.setItem(`sfa_grades_${c.code}_${studentDni}`, JSON.stringify(obj));
+      });
 
-      localStorage.setItem(`sfa_grades_EIND-202_${studentDni}`, "17.0");
-      localStorage.setItem("sfa_grades_EIND-202_74859612", "17.0");
-      localStorage.setItem(`sfa_grades_EIND-203_${studentDni}`, "16.0");
-      localStorage.setItem("sfa_grades_EIND-203_74859612", "16.0");
-      localStorage.setItem(`sfa_grades_EIND-204_${studentDni}`, "16.5");
-      localStorage.setItem("sfa_grades_EIND-204_74859612", "16.5");
-      localStorage.setItem(`sfa_grades_EIND-205_${studentDni}`, "15.5");
-      localStorage.setItem("sfa_grades_EIND-205_74859612", "15.5");
-
-      // 16-week attendance consolidation for all cycle 2 courses
+      // Attendance consolidation
       localStorage.setItem(`sfa_attendance_complete_cycle2_${studentDni}`, "true");
-      localStorage.setItem("sfa_attendance_complete_cycle2_74859612", "true");
-      localStorage.setItem("sfa_attendance_complete_cycle2", "true");
       localStorage.setItem(`sfa_attendance_complete_cycle1_${studentDni}`, "true");
-      localStorage.setItem("sfa_attendance_complete_cycle1_74859612", "true");
-      localStorage.setItem("sfa_attendance_complete_cycle1", "true");
-
-      ["EIND-201", "EIND-202", "EIND-203", "EIND-204", "EIND-205", "cur_ei_201", "cur_ei_202", "cur_ei_203", "cur_ei_204", "cur_ei_205"].forEach((cId) => {
-        localStorage.setItem(`sfa_attendance_complete_${cId}`, "true");
-        localStorage.setItem(`sfa_attendance_count_${cId}_${studentDni}`, "16");
-        localStorage.setItem(`sfa_attendance_count_${cId}_74859612`, "16");
+      ciclo2Courses.forEach((c) => {
+        localStorage.setItem(`sfa_attendance_complete_${c.code}`, "true");
+        localStorage.setItem(`sfa_attendance_count_${c.code}_${studentDni}`, "16");
       });
 
       // Mark cycle 2 closed and promote student to Ciclo III
       localStorage.setItem(`sfa_student_promoted_cycle3_${studentDni}`, "true");
-      localStorage.setItem("sfa_student_promoted_cycle3_74859612", "true");
-      localStorage.setItem("sfa_student_promoted_cycle3", "true");
-
-      // Unlock EFSRT Módulo I (Ciclo I + II completed)
       localStorage.setItem(`sfa_efsrt_modulo1_approved_${studentDni}`, "true");
-      localStorage.setItem("sfa_efsrt_modulo1_approved_74859612", "true");
-      localStorage.setItem("sfa_efsrt_modulo1_approved", "true");
+      localStorage.setItem(`sfa_student_cycle_${studentDni}`, "3");
 
-      // Set current active cycle
-      localStorage.setItem(`sfa_student_cycle_${studentDni}`, "2");
-      localStorage.setItem("sfa_student_cycle_74859612", "2");
-      localStorage.setItem("sfa_student_cycle", "2");
+      // Persist Ciclo I + Ciclo II in MongoDB
+      try {
+        const rawC1 = localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`);
+        const parsedC1 = rawC1 ? JSON.parse(rawC1) : null;
+        const c1Entry = parsedC1 && Array.isArray(parsedC1.courses)
+          ? {
+              cycleNumber: 1,
+              year: 2027,
+              status: "Aprobado",
+              average: Number(parsedC1.weightedAverage) || 16.0,
+              credits: parsedC1.courses.reduce((s: number, c: any) => s + (Number(c.credits) || 3), 0) || 16,
+              courses: parsedC1.courses.map((c: any) => ({
+                name: `${c.code}::${c.name}`,
+                grade: Number(c.grade) || 0,
+                approved: Number(c.grade) >= 12.5,
+              })),
+            }
+          : null;
+        const c2Entry = {
+          cycleNumber: 2,
+          year: 2027,
+          status: "Aprobado",
+          average: Number(weightedAverage),
+          credits: totalCredits,
+          courses: ciclo2Courses.map((c) => ({
+            name: `${c.code}::${c.name}`,
+            grade: c.simulatedGrade,
+            approved: c.simulatedGrade >= 12.5,
+          })),
+        };
+        void updateStudentCycleStatuses(studentDni, c1Entry ? [c1Entry, c2Entry] : [c2Entry]);
+      } catch {}
+
+      if (isMateo) {
+        localStorage.setItem("sfa_simulated_cycle2_74859612", JSON.stringify(simulationData));
+        localStorage.setItem("sfa_simulated_cycle2", JSON.stringify(simulationData));
+        localStorage.setItem("sfa_student_promoted_cycle2_74859612", "true");
+        localStorage.setItem("sfa_student_promoted_cycle2", "true");
+        localStorage.setItem("sfa_student_promoted_74859612", "true");
+        localStorage.setItem("sfa_student_promoted", "true");
+        const e201Obj = { NPA: 16.0, PC1: 16.0, PC2: 17.0, EX_FINAL: 17.0 };
+        localStorage.setItem("sfa_grades_EIND-201_74859612", JSON.stringify(e201Obj));
+        localStorage.setItem("sfa_grades_cur_ei_201_74859612", JSON.stringify(e201Obj));
+        localStorage.setItem("sfa_acta_signed_EIND-201", "true");
+        localStorage.setItem("sfa_acta_signed_cur_ei_201", "true");
+        localStorage.setItem("sfa_acta_signed_EIND-201_date", "20/11/2026 08:30");
+        localStorage.setItem("sfa_acta_signed_cur_ei_201_date", "20/11/2026 08:30");
+        localStorage.setItem("sfa_course_passed_EIND-201_74859612", "true");
+        localStorage.setItem("sfa_course_passed_EIND-201", "true");
+        localStorage.setItem("sfa_grades_EIND-202_74859612", "17.0");
+        localStorage.setItem("sfa_grades_EIND-203_74859612", "16.0");
+        localStorage.setItem("sfa_grades_EIND-204_74859612", "16.5");
+        localStorage.setItem("sfa_grades_EIND-205_74859612", "15.5");
+        localStorage.setItem("sfa_attendance_complete_cycle2_74859612", "true");
+        localStorage.setItem("sfa_attendance_complete_cycle2", "true");
+        localStorage.setItem("sfa_attendance_complete_cycle1_74859612", "true");
+        localStorage.setItem("sfa_attendance_complete_cycle1", "true");
+        localStorage.setItem("sfa_student_promoted_cycle3_74859612", "true");
+        localStorage.setItem("sfa_student_promoted_cycle3", "true");
+        localStorage.setItem("sfa_efsrt_modulo1_approved_74859612", "true");
+        localStorage.setItem("sfa_efsrt_modulo1_approved", "true");
+        localStorage.setItem("sfa_student_cycle_74859612", "2");
+        localStorage.setItem("sfa_student_cycle", "2");
+      }
 
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("storage"));

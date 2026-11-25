@@ -59,8 +59,9 @@ export function CierreCurso({
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
   
+  const isContabilidadCourse = course.code?.startsWith("CONT") || course.id?.includes("cont");
   // Simulation Form State
-  const [simTargetDni, setSimTargetDni] = useState("74859612");
+  const [simTargetDni, setSimTargetDni] = useState(isContabilidadCourse ? "71248596" : "74859612");
   const [simNpa, setSimNpa] = useState<number>(16);
   const [simPc1, setSimPc1] = useState<number>(16);
   const [simPc2, setSimPc2] = useState<number>(17);
@@ -70,9 +71,10 @@ export function CierreCurso({
 
   const [localSimGrades, setLocalSimGrades] = useState<Record<string, Record<string, number>>>(() => {
     try {
-      const cCode = course.code || course.id || "EIND-201";
-      const raw = localStorage.getItem(`sfa_grades_${cCode}_74859612`) || localStorage.getItem("sfa_grades_EIND-201_74859612");
-      return raw ? { "74859612": JSON.parse(raw) } : {};
+      const cCode = course.code || course.id || (isContabilidadCourse ? "CONT-101" : "EIND-201");
+      const target = isContabilidadCourse ? "71248596" : "74859612";
+      const raw = localStorage.getItem(`sfa_grades_${cCode}_${target}`) || (target === "74859612" ? localStorage.getItem("sfa_grades_EIND-201_74859612") : null);
+      return raw ? { [target]: JSON.parse(raw) } : {};
     } catch {
       return {};
     }
@@ -87,15 +89,25 @@ export function CierreCurso({
     return Number(total.toFixed(1));
   }, [simNpa, simPc1, simPc2, simExFinal]);
   
+  const isCycle2Course = Boolean(
+    course.cycle === 2 ||
+    (course as any).referenceCycle === 2 ||
+    course.code?.includes("-20") ||
+    course.id?.includes("_20")
+  );
+  const isEind201Course = course.code === "EIND-201" || course.id === "cur_ei_201";
+
   const signedStorageKey = `sfa_acta_signed_${course.code || course.id}`;
   const [isSigned, setIsSigned] = useState<boolean>(() => {
     try {
       return (
         localStorage.getItem(signedStorageKey) === "true" ||
-        localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
-        localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true" ||
-        Boolean(localStorage.getItem("sfa_simulated_cycle2_74859612")) ||
-        Boolean(localStorage.getItem("sfa_simulated_cycle2"))
+        (isEind201Course && (
+          localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
+          localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true" ||
+          Boolean(localStorage.getItem("sfa_simulated_cycle2_74859612")) ||
+          Boolean(localStorage.getItem("sfa_simulated_cycle2"))
+        ))
       );
     } catch {
       return false;
@@ -104,9 +116,9 @@ export function CierreCurso({
 
   const [signedDate, setSignedDate] = useState<string>(() => {
     try {
-      return localStorage.getItem(`${signedStorageKey}_date`) || "20/11/2026 08:30";
+      return localStorage.getItem(`${signedStorageKey}_date`) || (isEind201Course ? "20/11/2026 08:30" : "");
     } catch {
-      return "20/11/2026 08:30";
+      return isEind201Course ? "20/11/2026 08:30" : "";
     }
   });
 
@@ -177,15 +189,27 @@ export function CierreCurso({
         phone: r.phone
       } as StudentPersonalData));
     }
-    // Guarantee Mateo Sebastián Quispe Rojas (74859612) is included
-    if (!list.some((s) => s.dni === "74859612")) {
-      list.unshift({
-        dni: "74859612",
-        name: "Mateo Sebastián",
-        lastName: "Quispe Rojas",
-        email: "mateo.quispe@iestpsfa.edu.pe",
-        phone: "987654321"
-      } as StudentPersonalData);
+    // Guarantee student is included in effective roster depending on course career
+    if (isContabilidadCourse) {
+      if (!list.some((s) => s.dni === "71248596")) {
+        list.unshift({
+          dni: "71248596",
+          name: "Valeria Nicole",
+          lastName: "Ramos Mendoza",
+          email: "valeria.ramos@iestpsfa.edu.pe",
+          phone: "987112233"
+        } as StudentPersonalData);
+      }
+    } else {
+      if (!list.some((s) => s.dni === "74859612")) {
+        list.unshift({
+          dni: "74859612",
+          name: "Mateo Sebastián",
+          lastName: "Quispe Rojas",
+          email: "mateo.quispe@iestpsfa.edu.pe",
+          phone: "987654321"
+        } as StudentPersonalData);
+      }
     }
     return list;
   }, [students]);
@@ -236,12 +260,15 @@ export function CierreCurso({
             val = localSimGrades[std.dni][v.id];
           } else {
             try {
-              const cCode = course.code || course.id || "EIND-201";
+              const cCode = course.code || course.id || (isContabilidadCourse ? "CONT-101" : "EIND-201");
+              const isStdMateo = std.dni === "74859612";
               const simRaw = localStorage.getItem(`sfa_grades_${cCode}_${std.dni}`) ||
-                localStorage.getItem(`sfa_grades_EIND-201_${std.dni}`) ||
-                localStorage.getItem(`sfa_grades_cur_ei_201_${std.dni}`) ||
-                localStorage.getItem(`sfa_grades_${cCode}_74859612`) ||
-                localStorage.getItem("sfa_grades_EIND-201_74859612");
+                (isStdMateo ? (
+                  localStorage.getItem(`sfa_grades_EIND-201_${std.dni}`) ||
+                  localStorage.getItem(`sfa_grades_cur_ei_201_${std.dni}`) ||
+                  localStorage.getItem(`sfa_grades_${cCode}_74859612`) ||
+                  localStorage.getItem("sfa_grades_EIND-201_74859612")
+                ) : null);
               if (simRaw) {
                 if (!isNaN(Number(simRaw))) {
                   val = Number(simRaw);
@@ -448,8 +475,10 @@ export function CierreCurso({
         finalGrade: simCalculatedFinal
       };
       localStorage.setItem(`sfa_grades_${courseIdKey}_${targetDni}`, JSON.stringify(gradeObj));
-      localStorage.setItem(`sfa_grades_EIND-201_${targetDni}`, JSON.stringify(gradeObj));
-      localStorage.setItem(`sfa_grades_cur_ei_201_${targetDni}`, JSON.stringify(gradeObj));
+      if (courseIdKey === "EIND-201" || targetDni === "74859612") {
+        localStorage.setItem(`sfa_grades_EIND-201_${targetDni}`, JSON.stringify(gradeObj));
+        localStorage.setItem(`sfa_grades_cur_ei_201_${targetDni}`, JSON.stringify(gradeObj));
+      }
 
       if (onUpdateAssignments) {
         const otherAssignments = assignments.filter((a) => {
@@ -800,14 +829,16 @@ export function CierreCurso({
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => setShowSimulateModal(true)}
-              className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] px-3.5 py-2 rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 uppercase tracking-wide"
-            >
-              <Sliders className="w-4 h-4 text-slate-950" />
-              <span>Simular Calificaciones Ciclo II</span>
-            </button>
+            {isCycle2Course && (
+              <button
+                type="button"
+                onClick={() => setShowSimulateModal(true)}
+                className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] px-3.5 py-2 rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 uppercase tracking-wide"
+              >
+                <Sliders className="w-4 h-4 text-slate-950" />
+                <span>Simular Calificaciones Ciclo II</span>
+              </button>
+            )}
             <span className={`text-[10px] font-black uppercase px-3.5 py-2 rounded-xl border shadow-sm flex items-center gap-1.5 ${isSigned ? 'bg-emerald-600 text-white border-emerald-400' : 'bg-amber-400 text-slate-950 border-amber-500'}`}>
               {isSigned ? (
                 <>
@@ -948,14 +979,16 @@ export function CierreCurso({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowSimulateModal(true)}
-              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-            >
-              <Sliders className="w-4 h-4 text-slate-950" />
-              <span>Simular / Cargar Calificaciones Ciclo II</span>
-            </button>
+            {isCycle2Course && (
+              <button
+                type="button"
+                onClick={() => setShowSimulateModal(true)}
+                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Sliders className="w-4 h-4 text-slate-950" />
+                <span>Simular / Cargar Calificaciones Ciclo II</span>
+              </button>
+            )}
             <span className="bg-white text-slate-700 border border-slate-200 px-3 py-1.5 rounded-full text-xs font-black font-mono self-start sm:self-auto">
               {studentSummaries.length} {studentSummaries.length === 1 ? "alumno matriculado" : "alumnos matriculados"}
             </span>

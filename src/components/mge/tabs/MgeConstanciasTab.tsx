@@ -16,7 +16,10 @@ import {
   Award,
   RefreshCw,
   ExternalLink,
-  Info
+  Info,
+  ChevronDown,
+  ChevronUp,
+  Search
 } from "lucide-react";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { Graduation, StudentPersonalData } from "../../../types";
@@ -25,7 +28,7 @@ import { graduationSummaryPdf } from "../../../utils/graduationSummaryPdf";
 import { generateOfficialCertificatePdf } from "../../../utils/officialCertificatePdf";
 import { academicToday } from "../../../utils/attendance";
 import CertificateDocuments from "./CertificateDocuments";
-import { ACCREDITED_CURRICULUM_ELECTRICIDAD } from "./MgeHistorialTab";
+import { ACCREDITED_CURRICULUM_ELECTRICIDAD, ACCREDITED_CURRICULUM_CONTABILIDAD } from "./MgeHistorialTab";
 import { fetchServiceRequests } from "../../../services/serviceRequests";
 
 const requirements = {
@@ -340,8 +343,8 @@ function Application({
     const name = student
       ? `${student.name} ${student.lastName}`
       : record.studentDni === "74859612"
-      ? "Mateo Sebastián Quispe Rojas"
-      : `Estudiante (${record.studentDni})`;
+        ? "Mateo Sebastián Quispe Rojas"
+        : `Estudiante (${record.studentDni})`;
     try {
       const pdf = await generateOfficialCertificatePdf({
         studentName: name,
@@ -392,11 +395,18 @@ function Application({
   };
 
   const allRequirementsChecked = Object.values(docs).every((val) => val === true);
+  const [isExpanded, setIsExpanded] = useState<boolean>(
+    () => record.status !== "Apto" && record.status !== "Certificado Emitido"
+  );
 
   return (
-    <article className="border border-slate-200 rounded-3xl bg-white shadow-sm overflow-hidden mb-8 transition-all">
+    <article className="border border-slate-200 rounded-3xl bg-white shadow-sm overflow-hidden mb-4 transition-all">
       {/* Header Institucional del Expediente */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-5 border-b border-slate-700">
+      <div
+        onClick={() => setIsExpanded((prev) => !prev)}
+        className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-5 border-b border-slate-700 cursor-pointer hover:from-slate-800 hover:to-slate-900 transition-colors select-none"
+        title={isExpanded ? "Clic para contraer expediente" : "Clic para expandir y auditar expediente"}
+      >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#800521] to-[#a3072b] flex items-center justify-center font-mono font-black text-white text-base shadow-md border border-white/20 shrink-0">
@@ -433,10 +443,22 @@ function Application({
               }`}>
               {record.status}
             </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded((prev) => !prev);
+              }}
+              className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-white/10 hover:bg-white/20 text-white border border-white/15 flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              <span>{isExpanded ? "Contraer" : "Expandir"}</span>
+            </button>
           </div>
         </div>
       </div>
 
+      {isExpanded && (
       <div className="p-6 space-y-6">
         {/* Banner de Validación Exitosa */}
         {showValidationSuccess && (
@@ -716,7 +738,9 @@ function Application({
                       setIsEfsrtValidated(val);
                       if (typeof window !== "undefined") {
                         localStorage.setItem(`sfa_efsrt_validated_${record.studentDni}`, String(val));
-                        localStorage.setItem(`sfa_efsrt_validated_74859612`, String(val));
+                        if (record.studentDni === "74859612") {
+                          localStorage.setItem("sfa_efsrt_validated_74859612", String(val));
+                        }
                         window.dispatchEvent(new Event("storage"));
                       }
                     }}
@@ -1012,7 +1036,9 @@ function Application({
               {/* Contenido scrolleable con los 6 ciclos */}
               <div className="p-6 overflow-y-auto space-y-5 bg-slate-50 flex-1">
                 {[1, 2, 3, 4, 5, 6].map((cicloNum) => {
-                  const cycleCourses = ACCREDITED_CURRICULUM_ELECTRICIDAD.filter((c) => c.cycle === cicloNum);
+                  const isCont = (student?.programId || program || "").toLowerCase().includes("cont");
+                  const activeCurric = isCont ? ACCREDITED_CURRICULUM_CONTABILIDAD : ACCREDITED_CURRICULUM_ELECTRICIDAD;
+                  const cycleCourses = activeCurric.filter((c) => c.cycle === cicloNum);
                   const cycleCredits = cycleCourses.reduce((acc, c) => acc + c.credits, 0);
                   const cycleAvg = (
                     cycleCourses.reduce((acc, c) => acc + c.grade * c.credits, 0) / (cycleCredits || 1)
@@ -1193,6 +1219,7 @@ function Application({
           />
         </div>
       </div>
+      )}
     </article>
   );
 }
@@ -1205,6 +1232,8 @@ export default function MgeConstanciasTab({
   onSaveDocs
 }: Props) {
   const { programs } = useAcademicCatalog();
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "APPROVED">("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const displayRecords =
     graduations.length > 0
@@ -1337,13 +1366,70 @@ export default function MgeConstanciasTab({
         </select>
       </div>
 
-      {/* Listado de Expedientes */}
-      {!displayRecords.length ? (
-        <div className="border border-slate-200 rounded-3xl bg-white p-12 text-center text-slate-400 font-bold uppercase text-xs">
-          No hay expedientes aperturados en este momento.
+      {/* Filtro de Estado y Búsqueda de Expedientes */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 mr-1">Filtrar estado:</span>
+          {[
+            { id: "ALL" as const, label: `Todos (${displayRecords.length})` },
+            { id: "PENDING" as const, label: `Nuevos / Pendientes (${displayRecords.filter((r) => r.status !== "Apto" && r.status !== "Certificado Emitido").length})` },
+            { id: "APPROVED" as const, label: `Aptos / Emitidos (${aptosEmision})` },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setStatusFilter(tab.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                statusFilter === tab.id
+                  ? "bg-[#800521] text-white border-[#800521] shadow-2xs"
+                  : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-      ) : (
-        displayRecords.map((record) => {
+        <div className="relative min-w-[240px]">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar por DNI o apellidos..."
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-[#800521]"
+          />
+        </div>
+      </div>
+
+      {/* Listado de Expedientes */}
+      {(() => {
+        const q = searchQuery.trim().toLowerCase();
+        const filteredRecords = [...displayRecords]
+          .sort((a, b) => {
+            const aPending = a.status !== "Apto" && a.status !== "Certificado Emitido" ? 0 : 1;
+            const bPending = b.status !== "Apto" && b.status !== "Certificado Emitido" ? 0 : 1;
+            return aPending - bPending;
+          })
+          .filter((record) => {
+            if (statusFilter === "PENDING" && (record.status === "Apto" || record.status === "Certificado Emitido")) return false;
+            if (statusFilter === "APPROVED" && record.status !== "Apto" && record.status !== "Certificado Emitido") return false;
+            if (q) {
+              const st = processedStudents.find((row) => row.dni === record.studentDni);
+              const full = `${st?.lastName || ""} ${st?.name || ""} ${record.studentDni}`.toLowerCase();
+              if (!full.includes(q)) return false;
+            }
+            return true;
+          });
+
+        if (!filteredRecords.length) {
+          return (
+            <div className="border border-slate-200 rounded-3xl bg-white p-12 text-center text-slate-400 font-bold uppercase text-xs">
+              No hay expedientes que coincidan con el filtro seleccionado.
+            </div>
+          );
+        }
+
+        return filteredRecords.map((record) => {
           const student = processedStudents.find((row) => row.dni === record.studentDni);
           const progName =
             programs.find((program) => program.id === student?.programId)?.name ||
@@ -1361,8 +1447,8 @@ export default function MgeConstanciasTab({
               />
             </div>
           );
-        })
-      )}
+        });
+      })()}
     </div>
   );
 }

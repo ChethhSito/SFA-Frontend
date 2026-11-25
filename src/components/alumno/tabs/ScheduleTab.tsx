@@ -63,6 +63,26 @@ const COURSE_CATALOG: Record<string, { code: string; name: string; credits: numb
   "EIND-203": { code: "EIND-203", name: "Taller de Medidas e Instrumentos Eléctricos", credits: 3 },
   "EIND-204": { code: "EIND-204", name: "Dibujo y CAD Electrotécnico (AutoCAD Electrical)", credits: 3 },
   "EIND-205": { code: "EIND-205", name: "Inglés Técnico para Electricidad", credits: 2 },
+  "cur_co_101": { code: "CONT-101", name: "Fundamentos de Contabilidad y Doctrina Contable", credits: 4 },
+  "cur_co_102": { code: "CONT-102", name: "Documentación Comercial, Mercantil y Bancaria", credits: 4 },
+  "cur_co_103": { code: "CONT-103", name: "Matemática Financiera y Comercial", credits: 3 },
+  "cur_co_104": { code: "CONT-104", name: "Legislación Comercial y Societaria", credits: 3 },
+  "cur_co_105": { code: "CONT-105", name: "Comunicación y Competencias Digitales", credits: 2 },
+  "CONT-101": { code: "CONT-101", name: "Fundamentos de Contabilidad y Doctrina Contable", credits: 4 },
+  "CONT-102": { code: "CONT-102", name: "Documentación Comercial, Mercantil y Bancaria", credits: 4 },
+  "CONT-103": { code: "CONT-103", name: "Matemática Financiera y Comercial", credits: 3 },
+  "CONT-104": { code: "CONT-104", name: "Legislación Comercial y Societaria", credits: 3 },
+  "CONT-105": { code: "CONT-105", name: "Comunicación y Competencias Digitales", credits: 2 },
+  "cur_co_201": { code: "CONT-201", name: "Contabilidad General y Plan Contable General Empresarial", credits: 4 },
+  "cur_co_202": { code: "CONT-202", name: "Títulos Valores y Operaciones Financieras", credits: 4 },
+  "cur_co_203": { code: "CONT-203", name: "Estadística Aplicada a la Gestión Contable", credits: 3 },
+  "cur_co_204": { code: "CONT-204", name: "Ofimática Aplicada a los Negocios (Excel Contable)", credits: 3 },
+  "cur_co_205": { code: "CONT-205", name: "Inglés Técnico para Negocios y Finanzas", credits: 2 },
+  "CONT-201": { code: "CONT-201", name: "Contabilidad General y Plan Contable General Empresarial", credits: 4 },
+  "CONT-202": { code: "CONT-202", name: "Títulos Valores y Operaciones Financieras", credits: 4 },
+  "CONT-203": { code: "CONT-203", name: "Estadística Aplicada a la Gestión Contable", credits: 3 },
+  "CONT-204": { code: "CONT-204", name: "Ofimática Aplicada a los Negocios (Excel Contable)", credits: 3 },
+  "CONT-205": { code: "CONT-205", name: "Inglés Técnico para Negocios y Finanzas", credits: 2 },
 };
 
 const TEACHER_CATALOG: Record<string, string> = {
@@ -76,6 +96,9 @@ const TEACHER_CATALOG: Record<string, string> = {
   "42334455": "Ing. Jorge Luis Paucar Silva",
   "43445566": "Lic. Fernando Gabriel Díaz Torres",
   "44556677_old": "Lic. Sofía Lorena Valenzuela Ríos",
+  "22334455": "Lic. Patricia Elena Benavides Silva",
+  "88776655": "Lic. Patricia Elena Benavides Silva",
+  "33445566": "Dr. Roberto Carlos Vega Santos"
 };
 
 const CLASSROOM_CATALOG: Record<string, string> = {
@@ -161,6 +184,11 @@ const THEMES: Record<string, { bg: string; border: string; text: string; sub: st
     sub: "text-purple-800", 
     badge: "bg-purple-100 text-purple-900 border-purple-300" 
   },
+  "CONT-201": { bg: "bg-teal-50/95 hover:bg-teal-100/95", border: "border-teal-300", text: "text-teal-950", sub: "text-teal-800", badge: "bg-teal-100 text-teal-900 border-teal-300" },
+  "CONT-202": { bg: "bg-rose-50/95 hover:bg-rose-100/95", border: "border-rose-300", text: "text-rose-950", sub: "text-rose-800", badge: "bg-rose-100 text-rose-900 border-rose-300" },
+  "CONT-203": { bg: "bg-sky-50/95 hover:bg-sky-100/95", border: "border-sky-300", text: "text-sky-950", sub: "text-sky-800", badge: "bg-sky-100 text-sky-900 border-sky-300" },
+  "CONT-204": { bg: "bg-amber-50/95 hover:bg-amber-100/95", border: "border-amber-300", text: "text-amber-950", sub: "text-amber-800", badge: "bg-amber-100 text-amber-900 border-amber-300" },
+  "CONT-205": { bg: "bg-purple-50/95 hover:bg-purple-100/95", border: "border-purple-300", text: "text-purple-950", sub: "text-purple-800", badge: "bg-purple-100 text-purple-900 border-purple-300" },
 };
 
 const FALLBACK_THEME = { 
@@ -192,6 +220,22 @@ const DEFAULT_C1_TASKS: MpaProgramTask[] = [
   { id: "prog_ei_2_mon", groupId: "EI-I-A", courseId: "cur_ei_102", teacherDni: "44556677", classroomId: "lab_elec_3", dayOfWeek: "Viernes", startTime: "11:00 AM", endTime: "01:00 PM", sessionType: "Laboratorio", pedagogicalHours: 2 }
 ];
 
+const DEFAULT_CONTABILIDAD_C1_TASKS: MpaProgramTask[] = [
+  { id: "prog_co_1", groupId: "CONT-I-A", courseId: "cur_co_101", teacherDni: "22334455", classroomId: "aula_201", sessionType: "Teoría", dayOfWeek: "Lunes", startTime: "08:00 AM", endTime: "09:40 AM", shiftId: "shift_manana", pedagogicalHours: 2 },
+  { id: "prog_co_2", groupId: "CONT-I-A", courseId: "cur_co_102", teacherDni: "88776655", classroomId: "aula_201", sessionType: "Teoría", dayOfWeek: "Martes", startTime: "08:00 AM", endTime: "09:40 AM", shiftId: "shift_manana", pedagogicalHours: 2 },
+  { id: "prog_co_3", groupId: "CONT-I-A", courseId: "cur_co_103", teacherDni: "88990011", classroomId: "aula_201", sessionType: "Teoría", dayOfWeek: "Miércoles", startTime: "08:00 AM", endTime: "09:40 AM", shiftId: "shift_manana", pedagogicalHours: 2 },
+  { id: "prog_co_4", groupId: "CONT-I-A", courseId: "cur_co_104", teacherDni: "33445566", classroomId: "aula_201", sessionType: "Teoría", dayOfWeek: "Jueves", startTime: "08:00 AM", endTime: "09:40 AM", shiftId: "shift_manana", pedagogicalHours: 2 },
+  { id: "prog_co_5", groupId: "CONT-I-A", courseId: "cur_co_105", teacherDni: "77889900", classroomId: "lab_cont_1", sessionType: "Laboratorio", dayOfWeek: "Viernes", startTime: "08:00 AM", endTime: "09:40 AM", shiftId: "shift_manana", pedagogicalHours: 2 }
+];
+
+const DEFAULT_CONTABILIDAD_C2_TASKS: MpaProgramTask[] = [
+  { id: "prog_co2_201", groupId: "CONT-II-A", courseId: "cur_co_201", teacherDni: "88776655", classroomId: "aula_201", dayOfWeek: "Lunes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+  { id: "prog_co2_202", groupId: "CONT-II-A", courseId: "cur_co_202", teacherDni: "41223344", classroomId: "aula_201", dayOfWeek: "Martes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+  { id: "prog_co2_203", groupId: "CONT-II-A", courseId: "cur_co_203", teacherDni: "42334455", classroomId: "aula_201", dayOfWeek: "Miércoles", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+  { id: "prog_co2_204", groupId: "CONT-II-A", courseId: "cur_co_204", teacherDni: "77889900", classroomId: "lab_cont_1", dayOfWeek: "Jueves", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Laboratorio", pedagogicalHours: 2 },
+  { id: "prog_co2_205", groupId: "CONT-II-A", courseId: "cur_co_205", teacherDni: "77889900", classroomId: "aula_201", dayOfWeek: "Viernes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 }
+];
+
 const DEFAULT_C2_TASKS: MpaProgramTask[] = [
   { id: "prog_ei2_202_teo", groupId: "EI-II-A", courseId: "cur_ei_202", teacherDni: "44556677", classroomId: "aula_102", dayOfWeek: "Lunes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
   { id: "prog_ei2_202_lab", groupId: "EI-II-A", courseId: "cur_ei_202", teacherDni: "44556677", classroomId: "lab_elec_3", dayOfWeek: "Lunes", startTime: "11:00 AM", endTime: "01:00 PM", sessionType: "Laboratorio", pedagogicalHours: 2 },
@@ -209,36 +253,98 @@ export function ScheduleTab({ personalData, currentProgram, studentTasks = [], m
   const [viewMode, setViewMode] = useState<"matrix" | "cards">("matrix");
   const [selectedTaskDetail, setSelectedTaskDetail] = useState<MpaProgramTask | null>(null);
 
+  const studentDni = personalData?.dni || "74859612";
+  const isMateo = studentDni === "74859612";
+  const isContabilidad = studentDni === "71248596" || currentProgram?.id === "contabilidad" || currentProgram?.name?.toLowerCase().includes("contab");
+
   const isCycle2 = typeof window !== "undefined" && Boolean(
-    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
-    localStorage.getItem(`sfa_student_cycle_${personalData?.dni || "74859612"}`) === "2" ||
-    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_payment") === "true" ||
-    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-    studentGroup?.cycle === 2 ||
-    studentGroup?.name?.includes("II") ||
-    studentTasks.some((s) => s.courseId?.includes("-20") || s.courseId?.includes("_20") || s.groupId === "EI-II-A")
+    !isMateo && localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) !== "true" && localStorage.getItem(`sfa_student_cycle_${studentDni}`) !== "2"
+      ? false
+      : (
+        localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
+        (isMateo && (
+          localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+          localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+          localStorage.getItem("sfa_cycle2_payment") === "true" ||
+          localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
+          localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+          localStorage.getItem("sfa_student_promoted_74859612") === "true"
+        )) ||
+        (studentGroup?.cycle === 2 && studentGroup?.programId === currentProgram?.id)
+      )
   );
 
-  const [selectedPeriodTab, setSelectedPeriodTab] = useState<"2027-I" | "2027-II">(() => {
-    return isCycle2 ? "2027-II" : "2027-I";
+  const isGraduated = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
+    localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "6" ||
+    localStorage.getItem(`sfa_student_status_${studentDni}`)?.includes("Egresado") ||
+    (isMateo && (
+      localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+      localStorage.getItem("sfa_student_graduated_all") === "true"
+    ))
+  );
+
+  const [selectedPeriodTab, setSelectedPeriodTab] = useState<"2027-I" | "2027-II" | "2029-II">(() => {
+    return isGraduated ? "2029-II" : isCycle2 ? "2027-II" : "2027-I";
   });
 
   const activeSessions = useMemo(() => {
-    if (selectedPeriodTab === "2027-II") {
-      const c2Tasks = studentTasks.filter((t) => t.courseId?.includes("-20") || t.courseId?.includes("_20") || t.groupId === "EI-II-A");
-      if (c2Tasks.length > 0) return c2Tasks;
-      return DEFAULT_C2_TASKS;
+    if (selectedPeriodTab === "2029-II") {
+      const c6Tasks = studentTasks.filter((t) => t.courseId?.includes("-60") || t.courseId?.includes("_60") || t.groupId?.includes("VI"));
+      if (c6Tasks.length > 0) return c6Tasks;
+      const dynamicC6Courses = mpaPlanningData.courses.filter(
+        (c: any) =>
+          c.careerId === currentProgram?.id &&
+          (Number(c.cycle ?? c.referenceCycle) === 6 || Number(c.referenceCycle ?? c.cycle) === 6)
+      );
+      if (dynamicC6Courses.length > 0) {
+        const days: Array<"Lunes" | "Martes" | "Miércoles" | "Jueves" | "Viernes"> = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+        return dynamicC6Courses.slice(0, 5).map((c: any, idx: number) => ({
+          id: `prog_c6_${c.code || idx}`,
+          groupId: `${(currentProgram?.id || "GEN").slice(0, 4).toUpperCase()}-VI-A`,
+          courseId: c.id || c.code,
+          teacherDni: isContabilidad ? "88776655" : "99887766",
+          classroomId: "aula_101",
+          dayOfWeek: days[idx % 5],
+          startTime: "08:00 AM",
+          endTime: "10:00 AM",
+          sessionType: "Teoría",
+          pedagogicalHours: 2,
+        }));
+      }
+      if (isContabilidad) {
+        return [
+          { id: "prog_co6_601", groupId: "CONT-VI-A", courseId: "CONT-601", teacherDni: "88776655", classroomId: "aula_201", dayOfWeek: "Lunes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+          { id: "prog_co6_602", groupId: "CONT-VI-A", courseId: "CONT-602", teacherDni: "41223344", classroomId: "aula_201", dayOfWeek: "Martes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+          { id: "prog_co6_603", groupId: "CONT-VI-A", courseId: "CONT-603", teacherDni: "42334455", classroomId: "aula_201", dayOfWeek: "Miércoles", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+          { id: "prog_co6_604", groupId: "CONT-VI-A", courseId: "CONT-604", teacherDni: "88776655", classroomId: "aula_201", dayOfWeek: "Jueves", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+          { id: "prog_co6_605", groupId: "CONT-VI-A", courseId: "CONT-605", teacherDni: "33445566", classroomId: "aula_201", dayOfWeek: "Viernes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+        ];
+      }
+      return [
+        { id: "prog_ei6_601", groupId: "EI-VI-A", courseId: "EIND-601", teacherDni: "44556677", classroomId: "lab_elec_1", dayOfWeek: "Lunes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Laboratorio", pedagogicalHours: 2 },
+        { id: "prog_ei6_602", groupId: "EI-VI-A", courseId: "EIND-602", teacherDni: "99887766", classroomId: "lab_elec_1", dayOfWeek: "Martes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Laboratorio", pedagogicalHours: 2 },
+        { id: "prog_ei6_603", groupId: "EI-VI-A", courseId: "EIND-603", teacherDni: "66778899", classroomId: "aula_101", dayOfWeek: "Miércoles", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+        { id: "prog_ei6_604", groupId: "EI-VI-A", courseId: "EIND-604", teacherDni: "99887766", classroomId: "lab_elec_2", dayOfWeek: "Jueves", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Taller", pedagogicalHours: 2 },
+        { id: "prog_ei6_605", groupId: "EI-VI-A", courseId: "EIND-605", teacherDni: "77889900", classroomId: "aula_101", dayOfWeek: "Viernes", startTime: "08:00 AM", endTime: "10:00 AM", sessionType: "Teoría", pedagogicalHours: 2 },
+      ];
     }
-    const c1Tasks = studentTasks.filter((t) => !t.courseId?.includes("-20") && !t.courseId?.includes("_20") && t.groupId !== "EI-II-A");
+    if (selectedPeriodTab === "2027-II") {
+      const c2Tasks = studentTasks.filter((t) => t.courseId?.includes("-20") || t.courseId?.includes("_20") || t.groupId?.includes("II"));
+      if (c2Tasks.length > 0) return c2Tasks;
+      return isContabilidad ? DEFAULT_CONTABILIDAD_C2_TASKS : DEFAULT_C2_TASKS;
+    }
+    const c1Tasks = studentTasks.filter((t) => !t.courseId?.includes("-20") && !t.courseId?.includes("_20") && !t.groupId?.includes("II"));
     if (c1Tasks.length > 0) return c1Tasks;
+    if (isContabilidad) return DEFAULT_CONTABILIDAD_C1_TASKS;
     return DEFAULT_C1_TASKS;
-  }, [selectedPeriodTab, studentTasks]);
+  }, [selectedPeriodTab, studentTasks, isContabilidad, mpaPlanningData.courses, currentProgram?.id]);
 
-  const groupName = selectedPeriodTab === "2027-II" ? "EI-II-A" : "EI-I-A";
-  const periodName = selectedPeriodTab === "2027-II" ? "Periodo 2027-II" : "Periodo 2027-I";
+  const defaultGroup = isContabilidad
+    ? (selectedPeriodTab === "2029-II" ? "CONT-VI-A" : selectedPeriodTab === "2027-II" ? "CONT-II-A" : "CONT-I-A")
+    : (selectedPeriodTab === "2029-II" ? "EI-VI-A" : selectedPeriodTab === "2027-II" ? "EI-II-A" : "EI-I-A");
+  const groupName = studentGroup?.name || defaultGroup;
+  const periodName = selectedPeriodTab === "2029-II" ? "Periodo 2029-II (Ciclo VI)" : selectedPeriodTab === "2027-II" ? "Periodo 2027-II" : "Periodo 2027-I";
 
   const getCourseData = (task: MpaProgramTask) => {
     const course = mpaPlanningData.courses.find((item) => item.id === task.courseId || item.code === task.courseId);

@@ -19,6 +19,7 @@ import { academicToday } from "../../../utils/attendance";
 import { MgeSimularCicloModal } from "../modals/MgeSimularCicloModal";
 import { MgeSimularCiclo2Modal } from "../modals/MgeSimularCiclo2Modal";
 import { MgeAcreditarPlanCompletoModal } from "../modals/MgeAcreditarPlanCompletoModal";
+import { updateStudentCycleStatuses } from "../../../services/api";
 
 interface Props {
   processedStudents: ProcessedStudent[];
@@ -74,34 +75,46 @@ export const ACCREDITED_CURRICULUM_ELECTRICIDAD = [
 
 export const ACCREDITED_CURRICULUM_CONTABILIDAD = [
   // Ciclo I
-  { code: "CNT-101", courseName: "Contabilidad General I", credits: 4, count: 1, grade: 16, cycle: 1 },
-  { code: "CNT-102", courseName: "Plan Contable General Empresarial (PCGE)", credits: 3, count: 1, grade: 17, cycle: 1 },
-  { code: "CNT-103", courseName: "Documentación Comercial y Tributaria", credits: 3, count: 1, grade: 16, cycle: 1 },
-  { code: "CNT-104", courseName: "Administración Empresarial y Emprendimiento", credits: 3, count: 1, grade: 15, cycle: 1 },
-  { code: "CNT-105", courseName: "Matemática Financiera I", credits: 3, count: 1, grade: 17, cycle: 1 },
-  { code: "CNT-106", courseName: "Técnicas de Comunicación Oral y Escrita", credits: 2, count: 1, grade: 18, cycle: 1 },
+  { code: "CONT-101", courseName: "Fundamentos de Contabilidad y Doctrina Contable", credits: 4, count: 1, grade: 16.4, cycle: 1 },
+  { code: "CONT-102", courseName: "Documentación Comercial, Mercantil y Bancaria", credits: 4, count: 1, grade: 16.5, cycle: 1 },
+  { code: "CONT-103", courseName: "Matemática Financiera y Comercial", credits: 3, count: 1, grade: 17.0, cycle: 1 },
+  { code: "CONT-104", courseName: "Legislación Comercial y Societaria", credits: 3, count: 1, grade: 15.0, cycle: 1 },
+  { code: "CONT-105", courseName: "Comunicación y Competencias Digitales", credits: 2, count: 1, grade: 16.0, cycle: 1 },
 
   // Ciclo II
-  { code: "CNT-201", courseName: "Contabilidad General II", credits: 4, count: 1, grade: 16, cycle: 2 },
-  { code: "CNT-202", courseName: "Legislación Tributaria I (IGV y Renta)", credits: 3, count: 1, grade: 17, cycle: 2 },
-  { code: "CNT-203", courseName: "Legislación Laboral y Planillas Electrónicas", credits: 3, count: 1, grade: 18, cycle: 2 },
-  { code: "CNT-204", courseName: "Matemática Financiera II", credits: 3, count: 1, grade: 16, cycle: 2 },
+  { code: "CONT-201", courseName: "Contabilidad General y Plan Contable General Empresarial", credits: 4, count: 1, grade: 16.6, cycle: 2 },
+  { code: "CONT-202", courseName: "Títulos Valores y Operaciones Financieras", credits: 4, count: 1, grade: 17.0, cycle: 2 },
+  { code: "CONT-203", courseName: "Estadística Aplicada a la Gestión Contable", credits: 3, count: 1, grade: 16.0, cycle: 2 },
+  { code: "CONT-204", courseName: "Ofimática Aplicada a los Negocios (Excel Contable)", credits: 3, count: 1, grade: 16.5, cycle: 2 },
+  { code: "CONT-205", courseName: "Inglés Técnico para Negocios y Finanzas", credits: 2, count: 1, grade: 15.5, cycle: 2 },
 
   // Ciclo III
-  { code: "CNT-301", courseName: "Contabilidad de Costos I", credits: 4, count: 1, grade: 17, cycle: 3 },
-  { code: "CNT-302", courseName: "Estados Financieros y Notas de Contabilidad", credits: 4, count: 1, grade: 16, cycle: 3 },
+  { code: "CONT-301", courseName: "Contabilidad de Sociedades Mercantiles", credits: 4, count: 1, grade: 17.0, cycle: 3 },
+  { code: "CONT-302", courseName: "Legislación Tributaria I (IGV, Comprobantes y Detracciones)", credits: 4, count: 1, grade: 16.5, cycle: 3 },
+  { code: "CONT-303", courseName: "Costos y Presupuestos Básicos", credits: 3, count: 1, grade: 17.5, cycle: 3 },
+  { code: "CONT-304", courseName: "Contabilidad Computarizada I (Concar / Siigo)", credits: 3, count: 1, grade: 16.0, cycle: 3 },
+  { code: "CONT-305", courseName: "Ética y Deontología Profesional", credits: 2, count: 1, grade: 17.0, cycle: 3 },
 
   // Ciclo IV
-  { code: "CNT-401", courseName: "Contabilidad de Costos II", credits: 4, count: 1, grade: 17, cycle: 4 },
-  { code: "CNT-402", courseName: "Auditoría Financiera y Control Interno I", credits: 4, count: 1, grade: 18, cycle: 4 },
+  { code: "CONT-401", courseName: "Contabilidad de Costos Avanzada por Procesos y Órdenes", credits: 4, count: 1, grade: 17.5, cycle: 4 },
+  { code: "CONT-402", courseName: "Legislación Tributaria II (Impuesto a la Renta de 3ra)", credits: 4, count: 1, grade: 18.0, cycle: 4 },
+  { code: "CONT-403", courseName: "Legislación Laboral, Planillas y T-Registro / PLAME", credits: 3, count: 1, grade: 16.5, cycle: 4 },
+  { code: "CONT-404", courseName: "Contabilidad Computarizada II (Sistemas ERP Integrados)", credits: 3, count: 1, grade: 17.0, cycle: 4 },
+  { code: "CONT-405", courseName: "Gestión Financiera y Flujo de Caja", credits: 2, count: 1, grade: 18.0, cycle: 4 },
 
   // Ciclo V
-  { code: "CNT-501", courseName: "Formulación de Estados Financieros Consolidados", credits: 4, count: 1, grade: 18, cycle: 5 },
-  { code: "CNT-502", courseName: "Normas Internacionales de Información Financiera (NIIF)", credits: 4, count: 1, grade: 17, cycle: 5 },
+  { code: "CONT-501", courseName: "Auditoría Financiera y Procedimientos de Control", credits: 4, count: 1, grade: 18.0, cycle: 5 },
+  { code: "CONT-502", courseName: "Formulación y Presentación de Estados Financieros (NIIF)", credits: 4, count: 1, grade: 17.5, cycle: 5 },
+  { code: "CONT-503", courseName: "Finanzas Corporativas y Valoración de Empresas", credits: 3, count: 1, grade: 18.0, cycle: 5 },
+  { code: "CONT-504", courseName: "Tributación Municipal y Aduanera", credits: 3, count: 1, grade: 16.5, cycle: 5 },
+  { code: "CONT-505", courseName: "Emprendimiento y Plan de Negocios Contables", credits: 2, count: 1, grade: 19.0, cycle: 5 },
 
   // Ciclo VI
-  { code: "CNT-601", courseName: "Peritaje Contable y Judicial", credits: 4, count: 1, grade: 18, cycle: 6 },
-  { code: "CNT-604", courseName: "Proyecto de Fin de Carrera y Titulación EFSRT", credits: 4, count: 1, grade: 19, cycle: 6 },
+  { code: "CONT-601", courseName: "Proyecto Integrador de Gestión Contable y Tributaria", credits: 5, count: 1, grade: 18.5, cycle: 6 },
+  { code: "CONT-602", courseName: "Auditoría Tributaria, Fiscalización y Peritaje Contable", credits: 4, count: 1, grade: 17.0, cycle: 6 },
+  { code: "CONT-603", courseName: "Análisis e Interpretación de Estados Financieros", credits: 3, count: 1, grade: 17.5, cycle: 6 },
+  { code: "CONT-604", courseName: "Control Interno y Gestión Integral de Riesgos (COSO)", credits: 2, count: 1, grade: 19.0, cycle: 6 },
+  { code: "CONT-605", courseName: "Legislación Laboral y Relaciones de Trabajo", credits: 2, count: 1, grade: 18.0, cycle: 6 },
 ];
 
 const inferCycleFromCode = (code: string): number => {
@@ -138,20 +151,65 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
 
   const student = processedStudents.find((row) => row.dni === selectedHistoryDni);
 
+  useEffect(() => {
+    if (!student?.dni || typeof window === "undefined") return;
+    const existingCycles = Array.isArray((student as any).cycleStatuses) ? (student as any).cycleStatuses : [];
+    const hasBackendC1 = existingCycles.some((c: any) => c.cycleNumber === 1 && c.status === "Aprobado");
+    const hasBackendC2 = existingCycles.some((c: any) => c.cycleNumber === 2 && c.status === "Aprobado");
+    const rawSim1 = localStorage.getItem(`sfa_simulated_cycle1_${student.dni}`);
+    const rawSim2 = localStorage.getItem(`sfa_simulated_cycle2_${student.dni}`);
+    if ((rawSim1 && !hasBackendC1) || (rawSim2 && !hasBackendC2)) {
+      try {
+        const nextCycles: any[] = [];
+        const buildEntry = (raw: string | null, cycNum: number) => {
+          if (!raw) return null;
+          const p = JSON.parse(raw);
+          if (!Array.isArray(p?.courses) || p.courses.length === 0) return null;
+          return {
+            cycleNumber: cycNum,
+            year: 2027,
+            status: "Aprobado",
+            average: Number(p.weightedAverage) || 16,
+            credits: p.courses.reduce((s: number, c: any) => s + (Number(c.credits) || 3), 0) || 16,
+            courses: p.courses.map((c: any) => ({
+              name: `${c.code}::${c.name}`,
+              grade: Number(c.grade) || 0,
+              approved: Number(c.grade) >= 12.5,
+            })),
+          };
+        };
+        const e1 = buildEntry(rawSim1, 1) || existingCycles.find((c: any) => c.cycleNumber === 1);
+        const e2 = buildEntry(rawSim2, 2) || existingCycles.find((c: any) => c.cycleNumber === 2);
+        if (e1) nextCycles.push(e1);
+        if (e2) nextCycles.push(e2);
+        if (nextCycles.length > 0) {
+          void updateStudentCycleStatuses(student.dni, nextCycles);
+        }
+      } catch { }
+    }
+  }, [student]);
+
+  const isStudentGraduatedFromStorage = (dni: string) => {
+    const cycleNum = Number(localStorage.getItem(`sfa_student_cycle_${dni}`) || 0);
+    const isGradAll = localStorage.getItem(`sfa_student_graduated_all_${dni}`) === "true";
+    const isPromotedFlag = localStorage.getItem(`sfa_student_promoted_${dni}`) === "true";
+    if (isGradAll || (isPromotedFlag && cycleNum >= 6)) return true;
+    if (dni === "74859612") {
+      const mateoCycle = Number(localStorage.getItem("sfa_student_cycle_74859612") || localStorage.getItem("sfa_student_cycle") || 0);
+      return Boolean(
+        localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+        localStorage.getItem("sfa_student_graduated_all") === "true" ||
+        ((localStorage.getItem("sfa_student_promoted_74859612") === "true" || localStorage.getItem("sfa_student_promoted") === "true") && mateoCycle >= 6)
+      );
+    }
+    return false;
+  };
+
   const [promotedState, setPromotedState] = useState<Record<string, boolean>>(() => {
     try {
       const initial: Record<string, boolean> = {};
       processedStudents.forEach((s) => {
-        initial[s.dni] = Boolean(
-          localStorage.getItem(`sfa_student_promoted_${s.dni}`) === "true" ||
-          localStorage.getItem(`sfa_student_graduated_all_${s.dni}`) === "true" ||
-          (s.dni === "74859612" && (
-            localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-            localStorage.getItem("sfa_student_promoted") === "true" ||
-            localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
-            localStorage.getItem("sfa_student_graduated_all") === "true"
-          ))
-        );
+        initial[s.dni] = isStudentGraduatedFromStorage(s.dni);
       });
       return initial;
     } catch {
@@ -165,16 +223,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
       try {
         const updated: Record<string, boolean> = {};
         processedStudents.forEach((s) => {
-          updated[s.dni] = Boolean(
-            localStorage.getItem(`sfa_student_promoted_${s.dni}`) === "true" ||
-            localStorage.getItem(`sfa_student_graduated_all_${s.dni}`) === "true" ||
-            (s.dni === "74859612" && (
-              localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-              localStorage.getItem("sfa_student_promoted") === "true" ||
-              localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
-              localStorage.getItem("sfa_student_graduated_all") === "true"
-            ))
-          );
+          updated[s.dni] = isStudentGraduatedFromStorage(s.dni);
         });
         setPromotedState(updated);
       } catch { }
@@ -194,20 +243,24 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
     const nextVal = typeof targetVal === "boolean" ? targetVal : !isStudentPromoted;
     setPromotedState((prev) => ({ ...prev, [student.dni]: nextVal }));
     localStorage.setItem(`sfa_student_promoted_${student.dni}`, String(nextVal));
-    localStorage.setItem("sfa_student_promoted_74859612", String(nextVal));
-    localStorage.setItem("sfa_student_promoted", String(nextVal));
+    if (student.dni === "74859612") {
+      localStorage.setItem("sfa_student_promoted_74859612", String(nextVal));
+      localStorage.setItem("sfa_student_promoted", String(nextVal));
+    }
 
     if (!nextVal) {
       localStorage.removeItem(`sfa_student_graduated_all_${student.dni}`);
-      localStorage.removeItem("sfa_student_graduated_all_74859612");
-      localStorage.removeItem("sfa_student_graduated_all");
       localStorage.removeItem(`sfa_titulacion_enabled_${student.dni}`);
-      localStorage.removeItem("sfa_titulacion_enabled_74859612");
       localStorage.setItem(`sfa_student_cycle_${student.dni}`, "2");
-      localStorage.setItem("sfa_student_cycle_74859612", "2");
-      localStorage.setItem("sfa_student_cycle", "2");
       localStorage.setItem(`sfa_student_status_${student.dni}`, "Regular");
-      localStorage.setItem("sfa_student_status_74859612", "Regular");
+      if (student.dni === "74859612") {
+        localStorage.removeItem("sfa_student_graduated_all_74859612");
+        localStorage.removeItem("sfa_student_graduated_all");
+        localStorage.removeItem("sfa_titulacion_enabled_74859612");
+        localStorage.setItem("sfa_student_cycle_74859612", "2");
+        localStorage.setItem("sfa_student_cycle", "2");
+        localStorage.setItem("sfa_student_status_74859612", "Regular");
+      }
     }
 
     if (typeof window !== "undefined") {
@@ -232,19 +285,21 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
     const allCoursesList: any[] = [];
 
     try {
+      const isMateoDni = student?.dni === "74859612";
       const isC1Done = typeof window !== "undefined" && Boolean(
         localStorage.getItem(`sfa_simulated_cycle1_${student?.dni}`) ||
-        localStorage.getItem("sfa_simulated_cycle1_74859612") ||
-        localStorage.getItem("sfa_simulated_cycle1") ||
         localStorage.getItem(`sfa_student_promoted_cycle2_${student?.dni}`) === "true" ||
-        localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-        localStorage.getItem("sfa_student_promoted_cycle2") === "true"
+        (isMateoDni && (
+          localStorage.getItem("sfa_simulated_cycle1_74859612") ||
+          localStorage.getItem("sfa_simulated_cycle1") ||
+          localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+          localStorage.getItem("sfa_student_promoted_cycle2") === "true"
+        ))
       );
 
       const rawSim = typeof window !== "undefined" && student ? (
         localStorage.getItem(`sfa_simulated_cycle1_${student.dni}`) ||
-        localStorage.getItem("sfa_simulated_cycle1_74859612") ||
-        localStorage.getItem("sfa_simulated_cycle1")
+        (isMateoDni ? (localStorage.getItem("sfa_simulated_cycle1_74859612") || localStorage.getItem("sfa_simulated_cycle1")) : null)
       ) : null;
 
       if (rawSim) {
@@ -262,32 +317,41 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
           });
         }
       } else if (isC1Done) {
-        [
+        const isCont = (student?.programId || "").toLowerCase().includes("cont");
+        (isCont ? [
+          { code: "CONT-101", courseName: "Fundamentos de Contabilidad y Doctrina Contable", credits: 4, count: 1, grade: 16.4, cycle: 1 },
+          { code: "CONT-102", courseName: "Documentación Comercial, Mercantil y Bancaria", credits: 4, count: 1, grade: 16.5, cycle: 1 },
+          { code: "CONT-103", courseName: "Matemática Financiera y Comercial", credits: 3, count: 1, grade: 17.0, cycle: 1 },
+          { code: "CONT-104", courseName: "Legislación Comercial y Societaria", credits: 3, count: 1, grade: 15.0, cycle: 1 },
+          { code: "CONT-105", courseName: "Comunicación y Competencias Digitales", credits: 2, count: 1, grade: 16.0, cycle: 1 },
+        ] : [
           { code: "EIND-101", courseName: "Fundamentos de Electricidad y Circuitos CC", credits: 4, count: 1, grade: 16.4, cycle: 1 },
           { code: "EIND-102", courseName: "Instalaciones Eléctricas de Edificaciones", credits: 4, count: 1, grade: 16.5, cycle: 1 },
           { code: "EIND-103", courseName: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, count: 1, grade: 17.0, cycle: 1 },
           { code: "EIND-104", courseName: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, count: 1, grade: 15.0, cycle: 1 },
           { code: "EIND-105", courseName: "Comunicación y Tecnologías Digitales", credits: 2, count: 1, grade: 16.0, cycle: 1 },
-        ].forEach((c) => allCoursesList.push(c));
+        ]).forEach((c) => allCoursesList.push(c));
       }
     } catch { }
 
     try {
+      const isMateoDni = student?.dni === "74859612";
       const isC2Done = typeof window !== "undefined" && Boolean(
         localStorage.getItem(`sfa_simulated_cycle2_${student?.dni}`) ||
-        localStorage.getItem("sfa_simulated_cycle2_74859612") ||
-        localStorage.getItem("sfa_simulated_cycle2") ||
         localStorage.getItem(`sfa_student_promoted_cycle3_${student?.dni}`) === "true" ||
-        localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
-        localStorage.getItem("sfa_student_promoted_cycle3") === "true" ||
-        localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
-        localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true"
+        (isMateoDni && (
+          localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+          localStorage.getItem("sfa_simulated_cycle2") ||
+          localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
+          localStorage.getItem("sfa_student_promoted_cycle3") === "true" ||
+          localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
+          localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true"
+        ))
       );
 
       const rawSim2 = typeof window !== "undefined" && student ? (
         localStorage.getItem(`sfa_simulated_cycle2_${student.dni}`) ||
-        localStorage.getItem("sfa_simulated_cycle2_74859612") ||
-        localStorage.getItem("sfa_simulated_cycle2")
+        (isMateoDni ? (localStorage.getItem("sfa_simulated_cycle2_74859612") || localStorage.getItem("sfa_simulated_cycle2")) : null)
       ) : null;
 
       if (rawSim2) {
@@ -305,13 +369,21 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
           });
         }
       } else if (isC2Done) {
-        [
+        const isContab = Boolean(student?.career?.toLowerCase().includes("contab") || student?.dni === "71248596");
+        const c2Fallback = isContab ? [
+          { code: "CONT-201", courseName: "Contabilidad General y Plan Contable General Empresarial", credits: 4, count: 1, grade: 16.6, cycle: 2 },
+          { code: "CONT-202", courseName: "Títulos Valores y Operaciones Financieras", credits: 4, count: 1, grade: 17.0, cycle: 2 },
+          { code: "CONT-203", courseName: "Estadística Aplicada a la Gestión Contable", credits: 3, count: 1, grade: 16.0, cycle: 2 },
+          { code: "CONT-204", courseName: "Ofimática Aplicada a los Negocios (Excel Contable)", credits: 3, count: 1, grade: 16.5, cycle: 2 },
+          { code: "CONT-205", courseName: "Inglés Técnico para Negocios y Finanzas", credits: 2, count: 1, grade: 15.5, cycle: 2 },
+        ] : [
           { code: "EIND-201", courseName: "Circuitos Eléctricos en Corriente Alterna", credits: 4, count: 1, grade: 16.5, cycle: 2 },
           { code: "EIND-202", courseName: "Electrónica Analógica y de Potencia Básica", credits: 4, count: 1, grade: 17.0, cycle: 2 },
           { code: "EIND-203", courseName: "Taller de Medidas e Instrumentos Eléctricos", credits: 3, count: 1, grade: 16.0, cycle: 2 },
           { code: "EIND-204", courseName: "Dibujo y CAD Electrotécnico (AutoCAD Electrical)", credits: 3, count: 1, grade: 16.5, cycle: 2 },
           { code: "EIND-205", courseName: "Inglés Técnico para Electricidad", credits: 2, count: 1, grade: 15.5, cycle: 2 },
-        ].forEach((c) => allCoursesList.push(c));
+        ];
+        c2Fallback.forEach((c) => allCoursesList.push(c));
       }
     } catch { }
 
@@ -326,7 +398,14 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
       }));
     }
 
-    return [
+    const isContabDefault = Boolean(student?.career?.toLowerCase().includes("contab") || student?.dni === "71248596");
+    return isContabDefault ? [
+      { code: "CONT-101", courseName: "Fundamentos de Contabilidad y Doctrina Contable", credits: 4, count: 0, grade: null, cycle: 1 },
+      { code: "CONT-102", courseName: "Documentación Comercial, Mercantil y Bancaria", credits: 4, count: 0, grade: null, cycle: 1 },
+      { code: "CONT-103", courseName: "Matemática Financiera y Comercial", credits: 3, count: 0, grade: null, cycle: 1 },
+      { code: "CONT-104", courseName: "Legislación Comercial y Societaria", credits: 3, count: 0, grade: null, cycle: 1 },
+      { code: "CONT-105", courseName: "Comunicación y Competencias Digitales", credits: 2, count: 0, grade: null, cycle: 1 },
+    ] : [
       { code: "EIND-101", courseName: "Fundamentos de Electricidad y Circuitos CC", credits: 4, count: 1, grade: 15.5, cycle: 1 },
       { code: "EIND-102", courseName: "Instalaciones Eléctricas de Edificaciones", credits: 4, count: 0, grade: null, cycle: 1 },
       { code: "EIND-103", courseName: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, count: 0, grade: null, cycle: 1 },
@@ -434,12 +513,15 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
     });
 
     const weightedAvg = gradedCredits > 0 ? totalGradePoints / gradedCredits : 0;
+    const isMateoDni = student?.dni === "74859612";
     const hasPracticesValidated = Boolean(
       typeof window !== "undefined" && (
         localStorage.getItem(`sfa_efsrt_validated_${student?.dni}`) === "true" ||
-        localStorage.getItem("sfa_efsrt_validated_74859612") === "true" ||
         localStorage.getItem(`sfa_efsrt_all_approved_${student?.dni}`) === "true" ||
-        localStorage.getItem("sfa_efsrt_all_approved_74859612") === "true"
+        (isMateoDni && (
+          localStorage.getItem("sfa_efsrt_validated_74859612") === "true" ||
+          localStorage.getItem("sfa_efsrt_all_approved_74859612") === "true"
+        ))
       )
     );
     const finalApprovedCredits = isStudentPromoted
@@ -459,9 +541,11 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
   const hasPracticesValidatedGlobal = Boolean(
     typeof window !== "undefined" && (
       localStorage.getItem(`sfa_efsrt_validated_${student?.dni}`) === "true" ||
-      localStorage.getItem("sfa_efsrt_validated_74859612") === "true" ||
       localStorage.getItem(`sfa_efsrt_all_approved_${student?.dni}`) === "true" ||
-      localStorage.getItem("sfa_efsrt_all_approved_74859612") === "true"
+      (student?.dni === "74859612" && (
+        localStorage.getItem("sfa_efsrt_validated_74859612") === "true" ||
+        localStorage.getItem("sfa_efsrt_all_approved_74859612") === "true"
+      ))
     )
   );
   const effectiveStatus = isStudentPromoted
@@ -559,27 +643,37 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-2.5">
                 {(() => {
+                  const isMateoDni = student?.dni === "74859612";
                   const isCycle1Done = typeof window !== "undefined" && Boolean(
                     localStorage.getItem(`sfa_student_promoted_cycle2_${student?.dni}`) === "true" ||
-                    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
                     localStorage.getItem(`sfa_simulated_cycle1_${student?.dni}`) ||
-                    localStorage.getItem("sfa_simulated_cycle1_74859612") ||
-                    localStorage.getItem("sfa_simulated_cycle1")
+                    (isMateoDni && (
+                      localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+                      localStorage.getItem("sfa_simulated_cycle1_74859612") ||
+                      localStorage.getItem("sfa_simulated_cycle1")
+                    ))
                   );
                   const isCycle2Done = typeof window !== "undefined" && Boolean(
                     localStorage.getItem(`sfa_student_promoted_cycle3_${student?.dni}`) === "true" ||
-                    localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
                     localStorage.getItem(`sfa_simulated_cycle2_${student?.dni}`) ||
-                    localStorage.getItem("sfa_simulated_cycle2_74859612") ||
-                    localStorage.getItem("sfa_simulated_cycle2")
+                    (isMateoDni && (
+                      localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
+                      localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+                      localStorage.getItem("sfa_simulated_cycle2")
+                    ))
                   );
                   return (
                     <div className="flex items-center gap-2 flex-wrap">
                       {isCycle1Done ? (
-                        <div className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider font-mono bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 flex items-center gap-1.5 shadow-2xs">
+                        <button
+                          type="button"
+                          onClick={() => setShowSimulateCiclo1Modal(true)}
+                          title="Clic para volver a simular o actualizar las notas del Ciclo I"
+                          className="px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider font-mono bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 text-emerald-300 flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+                        >
                           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                           <span>Ciclo I: Aprobado</span>
-                        </div>
+                        </button>
                       ) : (
                         <button
                           type="button"
@@ -749,7 +843,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
                 </div>
                 <p className="text-[11px] font-medium text-slate-600 mt-2">
                   {isStudentPromoted
-                    ? "Apto para emisión de Título Profesional"
+                    ? (hasPracticesValidatedGlobal ? "Apto para emisión de Título Profesional" : "Egreso lectivo completo • EFSRT pendiente de validación")
                     : metrics.approvedCourses >= 10
                       ? "Apto para Matrícula en Ciclo III (2028-I)"
                       : metrics.approvedCourses >= 5
@@ -759,7 +853,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
               </div>
               <p className="text-[11px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md inline-block font-mono">
                 {isStudentPromoted
-                  ? "EFSRT Concluida"
+                  ? (hasPracticesValidatedGlobal ? "EFSRT Concluida" : "EFSRT Pendiente")
                   : metrics.approvedCourses >= 10
                     ? "Módulo Técnico I Acreditado"
                     : "Turno Mañana"}

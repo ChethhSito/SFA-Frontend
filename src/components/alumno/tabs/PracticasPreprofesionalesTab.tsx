@@ -19,15 +19,53 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
   studentDni = "74859612"
 }) => {
   const currentDni = enrollment?.studentDni || personalData?.dni || studentDni;
+  const isMateo = currentDni === "74859612";
+  const isContabilidad = enrollment?.programId === "contabilidad" || currentDni === "71248596";
   const [, setSync] = useState(0);
 
-  const [companyName, setCompanyName] = useState("LA EMPRESA INDUSTRIAL CONSTRUCTORA Y DE SERVICIOS S.A.C.");
-  const [ruc, setRuc] = useState("20458963211");
-  const [department, setDepartment] = useState("Montaje, Conexionado de Tableros y Mantenimiento de Fuerza y Control");
-  const [supervisor, setSupervisor] = useState("Ing. Carlos Mendoza Quispe — Jefe de Operaciones y Mantenimiento");
-  const [hours, setHours] = useState<number>(480);
-  const [startDate, setStartDate] = useState("2027-02-01");
-  const [endDate, setEndDate] = useState("2027-04-30");
+  const savedEfsrt = (() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem(`sfa_efsrt_${currentDni}`) || (isMateo ? localStorage.getItem("sfa_efsrt_74859612") : null);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const [companyName, setCompanyName] = useState(
+    savedEfsrt?.companyName ?? (
+      isMateo
+        ? "LA EMPRESA INDUSTRIAL CONSTRUCTORA Y DE SERVICIOS S.A.C."
+        : isContabilidad
+          ? "ESTUDIO CONTABLE Y AUDITORÍA INTEGRAL S.A.C."
+          : ""
+    )
+  );
+  const [ruc, setRuc] = useState(
+    savedEfsrt?.ruc ?? (isMateo ? "20458963211" : isContabilidad ? "20548791234" : "")
+  );
+  const [department, setDepartment] = useState(
+    savedEfsrt?.department ?? (
+      isMateo
+        ? "Montaje, Conexionado de Tableros y Mantenimiento de Fuerza y Control"
+        : isContabilidad
+          ? "Contabilidad General, Tributación y Formulación de Estados Financieros"
+          : ""
+    )
+  );
+  const [supervisor, setSupervisor] = useState(
+    savedEfsrt?.supervisor ?? (
+      isMateo
+        ? "Ing. Carlos Mendoza Quispe — Jefe de Operaciones y Mantenimiento"
+        : isContabilidad
+          ? "CPC. María Elena Torres Huamán — Contadora General"
+          : ""
+    )
+  );
+  const [hours, setHours] = useState<number>(savedEfsrt?.hours ?? (isMateo || isContabilidad ? 480 : 360));
+  const [startDate, setStartDate] = useState(savedEfsrt?.startDate ?? (isMateo ? "2027-02-01" : isContabilidad ? "2029-09-01" : ""));
+  const [endDate, setEndDate] = useState(savedEfsrt?.endDate ?? (isMateo ? "2027-04-30" : isContabilidad ? "2029-12-15" : ""));
   const [fileAttachment, setFileAttachment] = useState<File | null>(null);
   const [notice, setNotice] = useState("");
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -35,8 +73,9 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [isDocumentRemoved, setIsDocumentRemoved] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(`sfa_efsrt_file_removed_${currentDni}`) === "true";
+    if (typeof window === "undefined") return !isMateo;
+    if (localStorage.getItem(`sfa_efsrt_file_removed_${currentDni}`) === "true") return true;
+    return !isMateo && !savedEfsrt?.fileName;
   });
 
   const hasDocument = !isDocumentRemoved || Boolean(fileAttachment);
@@ -49,7 +88,7 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (typeof window !== "undefined") {
       localStorage.setItem(`sfa_efsrt_file_removed_${currentDni}`, "true");
-      localStorage.setItem("sfa_efsrt_file_removed_74859612", "true");
+      if (isMateo) localStorage.setItem("sfa_efsrt_file_removed_74859612", "true");
       window.dispatchEvent(new Event("storage"));
     }
     setNotice("Constancia eliminada del expediente. Puede adjuntar un nuevo archivo o restaurar la constancia original cuando lo desee.");
@@ -62,7 +101,7 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (typeof window !== "undefined") {
       localStorage.removeItem(`sfa_efsrt_file_removed_${currentDni}`);
-      localStorage.removeItem("sfa_efsrt_file_removed_74859612");
+      if (isMateo) localStorage.removeItem("sfa_efsrt_file_removed_74859612");
       window.dispatchEvent(new Event("storage"));
     }
     setNotice("Se restauró la constancia oficial predeterminada.");
@@ -93,7 +132,7 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
   const efsrtRecord = (() => {
     if (typeof window === "undefined") return null;
     try {
-      const raw = localStorage.getItem(`sfa_efsrt_${currentDni}`) || localStorage.getItem("sfa_efsrt_74859612");
+      const raw = localStorage.getItem(`sfa_efsrt_${currentDni}`) || (isMateo ? localStorage.getItem("sfa_efsrt_74859612") : null);
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
@@ -102,8 +141,12 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
 
   const isValidatedBySecretaria = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_efsrt_validated_${currentDni}`) === "true" ||
-    localStorage.getItem("sfa_efsrt_validated_74859612") === "true" ||
-    localStorage.getItem("sfa_graduation_docs_74859612_practicas") === "true"
+    localStorage.getItem(`sfa_efsrt_all_approved_${currentDni}`) === "true" ||
+    localStorage.getItem(`sfa_graduation_docs_${currentDni}_practicas`) === "true" ||
+    (isMateo && (
+      localStorage.getItem("sfa_efsrt_validated_74859612") === "true" ||
+      localStorage.getItem("sfa_graduation_docs_74859612_practicas") === "true"
+    ))
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -115,7 +158,7 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
     }
     const payload = {
       studentDni: currentDni,
-      studentName: personalData ? `${personalData.name} ${personalData.lastName}` : "Mateo Sebastián Quispe Rojas",
+      studentName: personalData ? `${personalData.name} ${personalData.lastName}` : "Estudiante",
       companyName,
       ruc,
       department,
@@ -130,10 +173,11 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
 
     if (typeof window !== "undefined") {
       localStorage.setItem(`sfa_efsrt_${currentDni}`, JSON.stringify(payload));
-      localStorage.setItem("sfa_efsrt_74859612", JSON.stringify(payload));
-      // Auto-signal to MGE Pestaña 7 that practices document was provided
       localStorage.setItem(`sfa_efsrt_pending_review_${currentDni}`, "true");
-      localStorage.setItem("sfa_efsrt_pending_review_74859612", "true");
+      if (isMateo) {
+        localStorage.setItem("sfa_efsrt_74859612", JSON.stringify(payload));
+        localStorage.setItem("sfa_efsrt_pending_review_74859612", "true");
+      }
       window.dispatchEvent(new Event("storage"));
     }
 
@@ -145,13 +189,15 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
   const handleValidateBySecretaria = () => {
     if (typeof window !== "undefined") {
       localStorage.setItem(`sfa_efsrt_validated_${currentDni}`, "true");
-      localStorage.setItem("sfa_efsrt_validated_74859612", "true");
       localStorage.setItem(`sfa_efsrt_all_approved_${currentDni}`, "true");
-      localStorage.setItem("sfa_efsrt_all_approved_74859612", "true");
       localStorage.setItem(`sfa_graduation_docs_${currentDni}_practicas`, "true");
-      localStorage.setItem("sfa_graduation_docs_74859612_practicas", "true");
       localStorage.setItem(`sfa_titulacion_enabled_${currentDni}`, "true");
-      localStorage.setItem("sfa_titulacion_enabled_74859612", "true");
+      if (isMateo) {
+        localStorage.setItem("sfa_efsrt_validated_74859612", "true");
+        localStorage.setItem("sfa_efsrt_all_approved_74859612", "true");
+        localStorage.setItem("sfa_graduation_docs_74859612_practicas", "true");
+        localStorage.setItem("sfa_titulacion_enabled_74859612", "true");
+      }
       window.dispatchEvent(new Event("storage"));
     }
     setNotice("Prácticas Preprofesionales (EFSRT) validadas y acreditadas por Secretaría General. Se han sumado los 24 créditos (120/120 cr). Certificado de Prácticas, Bachiller Técnico y Carpeta de Titulación han sido DESBLOQUEADOS en Trámites de Secretaría.");
@@ -162,17 +208,19 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
   const handleReset = () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem(`sfa_efsrt_${currentDni}`);
-      localStorage.removeItem("sfa_efsrt_74859612");
       localStorage.removeItem(`sfa_efsrt_validated_${currentDni}`);
-      localStorage.removeItem("sfa_efsrt_validated_74859612");
       localStorage.removeItem(`sfa_efsrt_all_approved_${currentDni}`);
-      localStorage.removeItem("sfa_efsrt_all_approved_74859612");
       localStorage.removeItem(`sfa_graduation_docs_${currentDni}_practicas`);
-      localStorage.removeItem("sfa_graduation_docs_74859612_practicas");
       localStorage.removeItem(`sfa_titulacion_enabled_${currentDni}`);
-      localStorage.removeItem("sfa_titulacion_enabled_74859612");
       localStorage.removeItem(`sfa_efsrt_pending_review_${currentDni}`);
-      localStorage.removeItem("sfa_efsrt_pending_review_74859612");
+      if (isMateo) {
+        localStorage.removeItem("sfa_efsrt_74859612");
+        localStorage.removeItem("sfa_efsrt_validated_74859612");
+        localStorage.removeItem("sfa_efsrt_all_approved_74859612");
+        localStorage.removeItem("sfa_graduation_docs_74859612_practicas");
+        localStorage.removeItem("sfa_titulacion_enabled_74859612");
+        localStorage.removeItem("sfa_efsrt_pending_review_74859612");
+      }
       localStorage.removeItem(`sfa_efsrt_file_removed_${currentDni}`);
       localStorage.removeItem("sfa_efsrt_file_removed_74859612");
       setIsDocumentRemoved(false);
@@ -244,10 +292,12 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
         <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs space-y-2 border-l-4 border-l-[#800521]">
           <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Módulo Técnico Profesional</span>
           <h4 className="text-sm font-black text-slate-900 leading-snug">
-            Módulo I: Instalaciones Eléctricas y Mantenimiento
+            {isContabilidad ? "Módulo I: Contabilidad General, Tributación y Finanzas" : "Módulo I: Instalaciones Eléctricas y Mantenimiento"}
           </h4>
           <span className="text-xs text-slate-500 font-medium block">
-            Correspondiente a los Ciclos I y II del Plan Curricular oficial de Electricidad Industrial.
+            {isContabilidad
+              ? "Correspondiente al Plan Curricular oficial de Contabilidad (EFSRT)."
+              : "Correspondiente a los Ciclos I y II del Plan Curricular oficial de Electricidad Industrial."}
           </span>
         </div>
 
@@ -314,17 +364,7 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
           </div>
 
           <div className="flex items-center gap-2">
-            {!isValidatedBySecretaria ? (
-              <button
-                type="button"
-                onClick={handleValidateBySecretaria}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
-                title="Acreditar formalmente las prácticas para sumar 24 créditos y desbloquear trámites de egreso pleno"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-200" />
-                <span>Acreditar Prácticas (Secretaría)</span>
-              </button>
-            ) : (
+            {isValidatedBySecretaria && (
               <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-2xs">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 <span>24 Créditos EFSRT Acreditados</span>
@@ -355,7 +395,7 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
                   required
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Ej. ABB Perú S.A."
+                  placeholder={isContabilidad ? "Ej. Estudio Contable & Auditoría Asociados S.A.C." : "Ej. ABB Perú S.A."}
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-3 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-[#800521]"
                 />
               </div>
@@ -387,7 +427,7 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
                 required
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
-                placeholder="Ej. Mantenimiento Eléctrico y Sistemas de Potencia"
+                placeholder={isContabilidad ? "Ej. Contabilidad General, Tributación y Planillas" : "Ej. Mantenimiento Eléctrico y Sistemas de Potencia"}
                 className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-[#800521]"
               />
             </div>
@@ -403,7 +443,7 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
                   required
                   value={supervisor}
                   onChange={(e) => setSupervisor(e.target.value)}
-                  placeholder="Ej. Ing. Roberto Chang — Jefe de Planta"
+                  placeholder={isContabilidad ? "Ej. CPC María Elena Torres — Contadora General" : "Ej. Ing. Roberto Chang — Jefe de Planta"}
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-3 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-[#800521]"
                 />
               </div>
@@ -478,7 +518,7 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
                   setIsDocumentRemoved(false);
                   if (typeof window !== "undefined") {
                     localStorage.removeItem(`sfa_efsrt_file_removed_${currentDni}`);
-                    localStorage.removeItem("sfa_efsrt_file_removed_74859612");
+                    if (isMateo) localStorage.removeItem("sfa_efsrt_file_removed_74859612");
                     window.dispatchEvent(new Event("storage"));
                   }
                   setNotice(`Archivo "${file.name}" cargado. Haga clic en "Ver Vista Previa" para revisarlo.`);
@@ -543,17 +583,17 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
                 </div>
               </div>
             ) : (
-              /* Estado Vacío cuando el usuario ha eliminado la constancia */
-              <div className="border-2 border-dashed border-red-300 bg-red-50/40 rounded-2xl p-5 text-center transition-all space-y-3">
-                <div className="w-10 h-10 rounded-full bg-red-100 text-red-800 flex items-center justify-center mx-auto shadow-2xs">
-                  <Trash2 className="w-5 h-5 text-red-700" />
+              /* Estado Vacío para adjuntar constancia */
+              <div className="border-2 border-dashed border-slate-300 bg-slate-50/70 rounded-2xl p-5 text-center transition-all space-y-3">
+                <div className="w-10 h-10 rounded-full bg-[#800521]/10 text-[#800521] flex items-center justify-center mx-auto shadow-2xs">
+                  <Upload className="w-5 h-5 text-[#800521]" />
                 </div>
                 <div className="space-y-0.5">
                   <p className="text-xs font-black text-slate-800">
-                    Constancia Eliminada • Sin Archivo Adjunto
+                    Adjunte su Constancia de Prácticas (PDF o Imagen)
                   </p>
                   <p className="text-[11px] text-slate-500 font-medium max-w-md mx-auto">
-                    Ha eliminado la constancia laboral. Puede adjuntar un nuevo archivo PDF o imagen de su computadora, o volver a restaurar la constancia original.
+                    Seleccione desde su computadora el certificado o constancia laboral firmada por su centro de prácticas.
                   </p>
                 </div>
                 <div className="flex items-center justify-center gap-2.5 pt-1 flex-wrap">
@@ -563,16 +603,18 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
                     className="bg-[#800521] hover:bg-[#66041a] text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
                   >
                     <Upload className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Adjuntar Nuevo Archivo (PDF / Imagen)</span>
+                    <span>Adjuntar Archivo (PDF / Imagen)</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleRestoreDefaultDocument}
-                    className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-3xs flex items-center gap-1.5"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Restaurar Constancia Original</span>
-                  </button>
+                  {isMateo && (
+                    <button
+                      type="button"
+                      onClick={handleRestoreDefaultDocument}
+                      className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-3xs flex items-center gap-1.5"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Restaurar Constancia Original</span>
+                    </button>
+                  )}
                 </div>
               </div>
             )}

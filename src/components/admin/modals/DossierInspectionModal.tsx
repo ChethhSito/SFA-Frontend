@@ -99,9 +99,6 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
     // Sincronización inmediata al abrir
     syncApplicant();
 
-    // Auto-sync cada 4 segundos en segundo plano mientras el modal está abierto
-    const interval = setInterval(syncApplicant, 4000);
-
     // Sincronización instantánea ante enfoque de ventana o eventos de storage en otra pestaña
     const handleSync = () => syncApplicant();
     window.addEventListener("focus", handleSync);
@@ -109,7 +106,6 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
 
     return () => {
       cancelled = true;
-      clearInterval(interval);
       window.removeEventListener("focus", handleSync);
       window.removeEventListener("storage", handleSync);
     };

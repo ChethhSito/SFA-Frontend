@@ -139,6 +139,7 @@ export function useAppData() {
     studentsData: gradesHook.studentsData,
     studentsLoading: gradesHook.studentsLoading,
     studentsError: gradesHook.studentsError,
+    reloadStudents: gradesHook.reloadStudents,
     setStudentsData: gradesHook.setStudentsData,
     cycleStatuses: gradesHook.cycleStatuses,
     setCycleStatuses: gradesHook.setCycleStatuses,
@@ -184,6 +185,7 @@ export function useAppData() {
     assignments: materialHook.assignments,
     setAssignments: materialHook.setAssignments,
     evaluations: materialHook.evaluations,
+    refreshAssignments: materialHook.refreshAssignments,
     handleUpdateMaterials: materialHook.handleUpdateMaterials,
     handleUpdateAssignments: materialHook.handleUpdateAssignments,
 

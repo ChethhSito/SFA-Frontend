@@ -26,7 +26,7 @@ import { CourseAssignment, StudentPersonalData } from "../../../types";
 import { ROSTER } from "../DocenteTypes";
 import PageHeader from "../../ui/PageHeader";
 import ConfirmModal from "../../ui/ConfirmModal";
-import { courseFileUrl } from "../../../services/api";
+import { courseFileUrl, assignmentSubmissionFileUrl } from "../../../services/api";
 
 interface Props {
   courseId: string;
@@ -92,6 +92,13 @@ export function TareaManager({
     return assignments.find(a => a.id === reviewingAssignment.id) || reviewingAssignment;
   }, [reviewingAssignment, assignments]);
 
+  const isPreviewImage = useMemo(() => {
+    if (!previewPdfUrl) return false;
+    const name = (previewPdfUrl.name || "").toLowerCase();
+    const url = (resolvedPreviewBlobUrl || previewPdfUrl.url || "").toLowerCase();
+    return /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(name) || url.startsWith("data:image/");
+  }, [previewPdfUrl, resolvedPreviewBlobUrl]);
+
   useEffect(() => {
     if (!previewPdfUrl?.url) {
       setResolvedPreviewBlobUrl(null);
@@ -107,13 +114,18 @@ export function TareaManager({
     setPreviewLoading(true);
     fetch(previewPdfUrl.url)
       .then(res => {
-        if (!res.ok) throw new Error("Error cargando PDF");
+        if (!res.ok) throw new Error("Error cargando documento");
         return res.blob();
       })
       .then(blob => {
         if (!active) return;
-        const pdfBlob = new Blob([blob], { type: "application/pdf" });
-        const objectUrl = URL.createObjectURL(pdfBlob);
+        const lowerName = (previewPdfUrl.name || "").toLowerCase();
+        const isImg = /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(lowerName) || blob.type.startsWith("image/");
+        const mimeType = isImg
+          ? (blob.type && blob.type !== "application/octet-stream" ? blob.type : (lowerName.endsWith(".png") ? "image/png" : "image/jpeg"))
+          : "application/pdf";
+        const typedBlob = new Blob([blob], { type: mimeType });
+        const objectUrl = URL.createObjectURL(typedBlob);
         setResolvedPreviewBlobUrl(objectUrl);
       })
       .catch(err => {
@@ -1010,9 +1022,15 @@ export function TareaManager({
                   const isGraded = sub?.grade !== undefined;
                   const isSaving = !!savingGrades[student.dni];
                   const timing = getSubmissionTiming(sub?.submitDate, currentReviewingAssignment.dueDate);
-                  const studentPdfUrl = sub?.fileBase64 
-                    ? `data:${sub.mimeType || 'application/pdf'};base64,${sub.fileBase64}` 
-                    : '#';
+                  const inferredMime = sub?.mimeType || (
+                    sub?.fileName?.toLowerCase().endsWith(".png") ? "image/png" :
+                    /\.(jpe?g)$/i.test(sub?.fileName || "") ? "image/jpeg" :
+                    sub?.fileName?.toLowerCase().endsWith(".webp") ? "image/webp" :
+                    "application/pdf"
+                  );
+                  const studentPdfUrl = sub?.fileBase64
+                    ? (sub.fileBase64.startsWith("data:") ? sub.fileBase64 : `data:${inferredMime};base64,${sub.fileBase64}`)
+                    : (sub?.fileName ? assignmentSubmissionFileUrl(currentReviewingAssignment.id, student.dni) : '#');
 
                   return (
                     <div 
@@ -1080,7 +1098,7 @@ export function TareaManager({
                             </div>
 
                             <div className="flex items-center gap-2">
-                              {sub.fileBase64 && (
+                              {(sub.fileBase64 || sub.fileName) && (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1097,7 +1115,7 @@ export function TareaManager({
                                 </button>
                               )}
 
-                              {sub.fileBase64 && (
+                              {(sub.fileBase64 || sub.fileName) && (
                                 <a
                                   href={studentPdfUrl}
                                   download={sub.fileName}
@@ -1285,11 +1303,21 @@ export function TareaManager({
                   <span className="text-xs font-bold text-slate-700">Cargando documento institucional...</span>
                 </div>
               )}
-              <iframe
-                src={resolvedPreviewBlobUrl || previewPdfUrl.url}
-                title={previewPdfUrl.name}
-                className="w-full flex-1 rounded-xl border border-slate-300 bg-white"
-              />
+              {isPreviewImage ? (
+                <div className="w-full flex-1 rounded-xl border border-slate-300 bg-slate-900/5 flex items-center justify-center overflow-auto p-4">
+                  <img
+                    src={resolvedPreviewBlobUrl || previewPdfUrl.url}
+                    alt={previewPdfUrl.name}
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-sm bg-white"
+                  />
+                </div>
+              ) : (
+                <iframe
+                  src={resolvedPreviewBlobUrl || previewPdfUrl.url}
+                  title={previewPdfUrl.name}
+                  className="w-full flex-1 rounded-xl border border-slate-300 bg-white"
+                />
+              )}
             </div>
 
             {/* Footer */}

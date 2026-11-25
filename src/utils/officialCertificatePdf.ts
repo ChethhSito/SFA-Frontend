@@ -1,5 +1,8 @@
 import { SFA_LOGO_BASE64 } from "./sfaLogo";
-import { ACCREDITED_CURRICULUM_ELECTRICIDAD } from "../components/mge/tabs/MgeHistorialTab";
+import { 
+  ACCREDITED_CURRICULUM_ELECTRICIDAD, 
+  ACCREDITED_CURRICULUM_CONTABILIDAD 
+} from "../components/mge/tabs/MgeHistorialTab";
 
 export interface OfficialCertificateParams {
   studentName: string;
@@ -505,19 +508,28 @@ export async function generateOfficialCertificatePdf(params: OfficialCertificate
   // Construcción de la tabla completa de 30 cursos + 3 EFSRT
   const tableRows: any[] = [];
   let currentMod = 0;
+  const isContabilidad = program?.toLowerCase().includes("contab");
+  const curriculumSource = isContabilidad 
+    ? ACCREDITED_CURRICULUM_CONTABILIDAD 
+    : ACCREDITED_CURRICULUM_ELECTRICIDAD;
 
-  ACCREDITED_CURRICULUM_ELECTRICIDAD.forEach((course) => {
+  curriculumSource.forEach((course) => {
     const cycle = course.cycle || 1;
     const modNum = cycle <= 2 ? 1 : cycle <= 4 ? 2 : 3;
 
     if (modNum !== currentMod) {
       currentMod = modNum;
-      const modName =
-        currentMod === 1
-          ? "MÓDULO TÉCNICO PROFESIONAL I: INSTALACIÓN Y MONTAJE DE SISTEMAS ELÉCTRICOS (Ciclos I y II)"
-          : currentMod === 2
-          ? "MÓDULO TÉCNICO PROFESIONAL II: MANTENIMIENTO DE MÁQUINAS Y REDES ELÉCTRICAS (Ciclos III y IV)"
-          : "MÓDULO TÉCNICO PROFESIONAL III: AUTOMATIZACIÓN Y CONTROL DE SISTEMAS INDUSTRIALES (Ciclos V y VI)";
+      const modName = isContabilidad
+        ? (currentMod === 1
+            ? "MÓDULO TÉCNICO PROFESIONAL I: PROCESOS CONTABLES Y TRIBUTARIOS (Ciclos I y II)"
+            : currentMod === 2
+            ? "MÓDULO TÉCNICO PROFESIONAL II: CONTABILIDAD DE COSTOS Y ESTADOS FINANCIEROS (Ciclos III y IV)"
+            : "MÓDULO TÉCNICO PROFESIONAL III: AUDITORÍA Y CONTROL FINANCIERO (Ciclos V y VI)")
+        : (currentMod === 1
+            ? "MÓDULO TÉCNICO PROFESIONAL I: INSTALACIÓN Y MONTAJE DE SISTEMAS ELÉCTRICOS (Ciclos I y II)"
+            : currentMod === 2
+            ? "MÓDULO TÉCNICO PROFESIONAL II: MANTENIMIENTO DE MÁQUINAS Y REDES ELÉCTRICAS (Ciclos III y IV)"
+            : "MÓDULO TÉCNICO PROFESIONAL III: AUTOMATIZACIÓN Y CONTROL DE SISTEMAS INDUSTRIALES (Ciclos V y VI)");
 
       tableRows.push([
         {

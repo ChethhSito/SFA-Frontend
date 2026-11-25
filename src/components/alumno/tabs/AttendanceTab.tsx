@@ -78,6 +78,114 @@ const CICLO_1_COURSES = [
   }
 ];
 
+// 5 Cursos Oficiales Ciclo I (Contabilidad)
+const CONTABILIDAD_CICLO_1_COURSES = [
+  {
+    id: "cur_co_101",
+    code: "CONT-101",
+    name: "Fundamentos de Contabilidad y Doctrina Contable",
+    credits: 4,
+    group: "CONT-I-A",
+    teacherName: "Lic. Patricia Elena Benavides Silva",
+    classroom: "Aula 201 • Pabellón C",
+    schedule: "Lun 08:00 - 09:40"
+  },
+  {
+    id: "cur_co_102",
+    code: "CONT-102",
+    name: "Documentación Comercial, Mercantil y Bancaria",
+    credits: 4,
+    group: "CONT-I-A",
+    teacherName: "Lic. Patricia Elena Benavides Silva",
+    classroom: "Aula 201 • Pabellón C",
+    schedule: "Mar 08:00 - 09:40"
+  },
+  {
+    id: "cur_co_103",
+    code: "CONT-103",
+    name: "Matemática Financiera y Comercial",
+    credits: 3,
+    group: "CONT-I-A",
+    teacherName: "Lic. Fernando Gabriel Díaz Torres",
+    classroom: "Aula 201 • Pabellón C",
+    schedule: "Mie 08:00 - 09:40"
+  },
+  {
+    id: "cur_co_104",
+    code: "CONT-104",
+    name: "Legislación Comercial y Societaria",
+    credits: 3,
+    group: "CONT-I-A",
+    teacherName: "Lic. Carlos Alberto Mendoza Quispe",
+    classroom: "Aula 201 • Pabellón C",
+    schedule: "Jue 08:00 - 09:40"
+  },
+  {
+    id: "cur_co_105",
+    code: "CONT-105",
+    name: "Comunicación y Competencias Digitales",
+    credits: 2,
+    group: "CONT-I-A",
+    teacherName: "Lic. Jorge Luis Paucar Silva",
+    classroom: "Lab. Contable 1 • Pabellón C",
+    schedule: "Vie 08:00 - 09:40"
+  }
+];
+
+// 5 Cursos Oficiales Ciclo II (Contabilidad)
+const CONTABILIDAD_CICLO_2_COURSES = [
+  {
+    id: "cur_co_201",
+    code: "CONT-201",
+    name: "Contabilidad General Aplicada",
+    credits: 4,
+    group: "CONT-II-A",
+    teacherName: "Lic. Patricia Elena Benavides Silva",
+    classroom: "Aula 201 • Pabellón C",
+    schedule: "Lun 08:00 - 09:40"
+  },
+  {
+    id: "cur_co_202",
+    code: "CONT-202",
+    name: "Administración de Archivos Contables",
+    credits: 3,
+    group: "CONT-II-A",
+    teacherName: "Lic. Patricia Elena Benavides Silva",
+    classroom: "Aula 202 • Pabellón C",
+    schedule: "Mar 08:00 - 09:40"
+  },
+  {
+    id: "cur_co_203",
+    code: "CONT-203",
+    name: "Sistema de Información Contable I",
+    credits: 3,
+    group: "CONT-II-A",
+    teacherName: "Lic. Fernando Gabriel Díaz Torres",
+    classroom: "Lab. Contable 1 • Pabellón C",
+    schedule: "Mie 08:00 - 09:40"
+  },
+  {
+    id: "cur_co_204",
+    code: "CONT-204",
+    name: "Tributación y Legislación Comercial",
+    credits: 3,
+    group: "CONT-II-A",
+    teacherName: "Lic. Carlos Alberto Mendoza Quispe",
+    classroom: "Aula 201 • Pabellón C",
+    schedule: "Jue 08:00 - 09:40"
+  },
+  {
+    id: "cur_co_205",
+    code: "CONT-205",
+    name: "Estadística Aplicada a los Negocios",
+    credits: 3,
+    group: "CONT-II-A",
+    teacherName: "Lic. Jorge Luis Paucar Silva",
+    classroom: "Lab. Contable 1 • Pabellón C",
+    schedule: "Vie 08:00 - 09:40"
+  }
+];
+
 // 5 Cursos Oficiales Ciclo II (Electricidad Industrial)
 const CICLO_2_COURSES = [
   {
@@ -430,30 +538,43 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
     };
   }, []);
 
+  const isMateo = activeDni === "74859612";
+
   const isCycle2 = typeof window !== "undefined" && Boolean(
-    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
-    localStorage.getItem(`sfa_student_cycle_${activeDni}`) === "2" ||
-    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_payment") === "true" ||
-    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-    localStorage.getItem("sfa_simulated_cycle2_74859612") ||
-    studentGroup?.cycle === 2 ||
-    studentGroup?.id?.includes("-II-") ||
-    studentCourses.some((c) => c.code?.includes("-20") || c.code?.includes("201"))
+    !isMateo && enrollment?.academicStatus === "MATRICULADO" && localStorage.getItem(`sfa_student_cycle_${activeDni}`) !== "2"
+      ? false
+      : (
+        localStorage.getItem(`sfa_student_cycle_${activeDni}`) === "2" ||
+        (isMateo && (
+          localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+          localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+          localStorage.getItem("sfa_cycle2_payment") === "true" ||
+          localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
+          localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+          localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+          localStorage.getItem("sfa_simulated_cycle2_74859612")
+        )) ||
+        studentGroup?.cycle === 2 ||
+        (studentGroup?.id?.includes("-II-") && studentGroup?.careerId === enrollment?.programId)
+      )
   );
 
   const isGraduated = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_student_promoted_${activeDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted") === "true" ||
-    localStorage.getItem(`sfa_student_graduated_all_${activeDni}`) === "true" ||
-    localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
-    localStorage.getItem("sfa_student_graduated_all") === "true" ||
-    localStorage.getItem(`sfa_titulacion_enabled_${activeDni}`) === "true" ||
-    localStorage.getItem("sfa_titulacion_enabled_74859612") === "true" ||
-    localStorage.getItem(`sfa_student_status_${activeDni}`) === "Egresado"
+    !isMateo && enrollment?.academicStatus === "MATRICULADO" && localStorage.getItem(`sfa_student_graduated_all_${activeDni}`) !== "true"
+      ? false
+      : (
+        localStorage.getItem(`sfa_student_graduated_all_${activeDni}`) === "true" ||
+        localStorage.getItem(`sfa_titulacion_enabled_${activeDni}`) === "true" ||
+        localStorage.getItem(`sfa_student_status_${activeDni}`) === "Egresado" ||
+        (isMateo && (
+          localStorage.getItem(`sfa_student_promoted_${activeDni}`) === "true" ||
+          localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+          localStorage.getItem("sfa_student_promoted") === "true" ||
+          localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+          localStorage.getItem("sfa_student_graduated_all") === "true" ||
+          localStorage.getItem("sfa_titulacion_enabled_74859612") === "true"
+        ))
+      )
   );
 
   type SemesterKey = "2027-I" | "2027-II" | "2028-I" | "2028-II" | "2029-I" | "2029-II";
@@ -493,14 +614,29 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
     selectedSemester === "2028-I" ? "Periodo 2028-I" :
     selectedSemester === "2027-II" ? "Periodo 2027-II" : "Periodo 2027-I";
 
+  const isContabilidad = enrollment?.programId === "contabilidad" ||
+    activeDni === "71248596" ||
+    studentCourses.some(c => c.code?.startsWith("CONT") || c.name?.toLowerCase().includes("contab"));
+
   // Determinar la lista de cursos del ciclo seleccionado
   const displayCourses = useMemo(() => {
-    const templateCourses = 
-      selectedSemester === "2029-II" ? CICLO_6_COURSES :
-      selectedSemester === "2029-I" ? CICLO_5_COURSES :
-      selectedSemester === "2028-II" ? CICLO_4_COURSES :
-      selectedSemester === "2028-I" ? CICLO_3_COURSES :
-      selectedSemester === "2027-II" ? CICLO_2_COURSES : CICLO_1_COURSES;
+    let templateCourses = CICLO_1_COURSES;
+    if (isContabilidad) {
+      templateCourses = (selectedSemester === "2027-I" || (!isCycle2 && !isGraduated))
+        ? CONTABILIDAD_CICLO_1_COURSES
+        : CONTABILIDAD_CICLO_2_COURSES;
+    } else {
+      templateCourses = 
+        selectedSemester === "2029-II" ? CICLO_6_COURSES :
+        selectedSemester === "2029-I" ? CICLO_5_COURSES :
+        selectedSemester === "2028-II" ? CICLO_4_COURSES :
+        selectedSemester === "2028-I" ? CICLO_3_COURSES :
+        selectedSemester === "2027-II" ? CICLO_2_COURSES : CICLO_1_COURSES;
+    }
+
+    const defaultGroup = isContabilidad
+      ? (selectedSemester === "2027-I" ? "CONT-I-A" : "CONT-II-A")
+      : (selectedSemester === "2027-I" ? "EI-I-A" : "EI-II-A");
 
     return templateCourses.map((tpl) => {
       // Buscar si el curso viene en studentCourses con detalles dinámicos
@@ -516,14 +652,14 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
         code: tpl.code,
         name: tpl.name,
         credits: matched?.credits || tpl.credits,
-        group: matched?.group || tpl.group || (selectedSemester === "2027-I" ? "EI-I-A" : "EI-II-A"),
+        group: matched?.group || tpl.group || defaultGroup,
         teacherName: matched?.teacherName || tpl.teacherName,
         classroom: matched?.classroom || tpl.classroom,
         schedule: matched?.schedule || tpl.schedule,
         attendanceCourseIds: matched?.attendanceCourseIds || [tpl.id, tpl.code]
       };
     });
-  }, [selectedSemester, studentCourses]);
+  }, [selectedSemester, studentCourses, isContabilidad, isCycle2, isGraduated]);
 
   // Cálculo de asistencia con 16 semanas garantizadas para el récord consolidado
   const currentAttendanceCourses = useMemo(() => {

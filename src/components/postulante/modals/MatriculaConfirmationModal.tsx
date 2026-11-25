@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Applicant, Enrollment, Program } from "../../../types";
-import { Award, CheckCircle2, Download, ExternalLink, GraduationCap, Printer, ShieldCheck, X } from "lucide-react";
+import { Award, CheckCircle2, Download, ExternalLink, GraduationCap, Printer, ShieldCheck, X, Clock, Pause, Play } from "lucide-react";
 import Button from "../../ui/Button";
 import { generateMatriculaPdf } from "../../../utils/matriculaPdf";
 
@@ -26,6 +26,30 @@ export const MatriculaConfirmationModal: React.FC<MatriculaConfirmationModalProp
 }) => {
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [countdown, setCountdown] = useState(6);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setCountdown(6);
+      setIsPaused(false);
+      return;
+    }
+    if (isPaused) return;
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          onProceedToAlumno();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isOpen, isPaused, onProceedToAlumno]);
 
   if (!isOpen) return null;
 
@@ -158,16 +182,36 @@ export const MatriculaConfirmationModal: React.FC<MatriculaConfirmationModalProp
         {/* Modal Scrollable Body */}
         <div className="p-6 overflow-y-auto space-y-5">
           
-          {/* Celebratory Banner */}
-          <div className="bg-emerald-50 border border-emerald-200/90 rounded-xl p-4 text-left space-y-2">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-              <h4 className="text-sm font-black text-emerald-900 uppercase tracking-wide">
-                ¡Has sido Matriculado Oficialmente!
-              </h4>
+          {/* Celebratory Banner with Live Institutional Transition Countdown */}
+          <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 text-left space-y-3 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-emerald-600 text-white flex flex-col items-center justify-center font-black shrink-0 text-base shadow-sm animate-pulse font-mono">
+                  <span>{countdown}s</span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-emerald-950 uppercase tracking-wide flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    ¡Matrícula Oficial Acreditada!
+                  </h4>
+                  <p className="text-[11px] text-emerald-800 font-bold">
+                    Cerrando sesión de admisión e ingresando al Portal Estudiantil en <span className="font-mono text-emerald-950 text-xs">{countdown} segundos</span>...
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsPaused(!isPaused)}
+                className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer shadow-3xs"
+              >
+                {isPaused ? <Play className="w-3 h-3 text-emerald-700" /> : <Pause className="w-3 h-3 text-emerald-700" />}
+                <span>{isPaused ? "Reanudar" : "Pausar"}</span>
+              </button>
             </div>
-            <p className="text-xs text-emerald-850 font-medium leading-relaxed">
-              Felicidades, <strong className="font-extrabold text-slate-900">{studentFullName}</strong>. Ha culminado con éxito todas las etapas del proceso. Su matrícula regular para el <strong>Ciclo I</strong> en la carrera de <strong>{currentProgram.name}</strong> ha sido validada y registrada en el padrón oficial del Instituto y ante el Ministerio de Educación.
+
+            <p className="text-xs text-slate-700 font-medium leading-relaxed border-t border-emerald-200/80 pt-2.5">
+              Felicidades, <strong className="font-extrabold text-slate-900">{studentFullName}</strong>. Ha culminado con éxito todas las etapas del proceso de admisión. Su matrícula regular para el <strong>Ciclo I</strong> en la carrera de <strong>{currentProgram.name}</strong> ha sido validada y registrada en el padrón oficial del Instituto y ante el MINEDU.
             </p>
           </div>
 
@@ -326,16 +370,11 @@ export const MatriculaConfirmationModal: React.FC<MatriculaConfirmationModalProp
 
           <button
             type="button"
-            disabled={!hasDownloaded}
             onClick={onProceedToAlumno}
-            className={`w-full sm:w-auto px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-sm ${
-              hasDownloaded
-                ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer hover:shadow-md"
-                : "bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300"
-            }`}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95"
           >
-            <span>Ingresar como Alumno Regular</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Ingresar a la Intranet de Alumno Ahora ({countdown}s)</span>
+            <ExternalLink className="w-4 h-4" />
           </button>
         </div>
 

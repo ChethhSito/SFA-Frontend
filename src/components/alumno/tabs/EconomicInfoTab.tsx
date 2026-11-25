@@ -30,61 +30,68 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
   }, []);
 
   const currentDni = enrollment?.studentDni || personalData?.dni || studentDni;
+  const isMateo = currentDni === "74859612";
 
   const isPromotedCycle2 = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_student_promoted_cycle2_${currentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
     localStorage.getItem(`sfa_student_cycle_${currentDni}`) === "2" ||
-    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
-    localStorage.getItem("sfa_student_cycle") === "2"
+    (isMateo && (
+      localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+      localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
+      localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+      localStorage.getItem("sfa_student_cycle") === "2"
+    ))
   );
 
   const isCycle2Paid = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_cycle2_payment_${currentDni}`) === "true" ||
-    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_payment") === "true"
-  );
-
-  const isCycle2Validated = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_cycle2_validated_${currentDni}`) === "true" ||
-    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_validated") === "true" ||
-    (enrollment?.paymentStatus === "Validado" && (
+    (isMateo && (
       localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-      localStorage.getItem(`sfa_cycle2_payment_${currentDni}`) === "true" ||
       localStorage.getItem("sfa_cycle2_payment") === "true"
     ))
   );
 
+  const isCycle2Validated = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_cycle2_validated_${currentDni}`) === "true" ||
+    (isMateo && (
+      localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
+      localStorage.getItem("sfa_cycle2_validated") === "true"
+    ))
+  );
+
   const isGraduated = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_student_promoted_${currentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted") === "true" ||
-    localStorage.getItem(`sfa_student_graduated_all_${currentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
-    localStorage.getItem("sfa_student_graduated_all") === "true" ||
-    localStorage.getItem(`sfa_titulacion_enabled_${currentDni}`) === "true" ||
-    localStorage.getItem("sfa_titulacion_enabled_74859612") === "true" ||
-    localStorage.getItem(`sfa_student_status_${currentDni}`) === "Egresado"
+    !isMateo && localStorage.getItem(`sfa_student_graduated_all_${currentDni}`) !== "true"
+      ? false
+      : (
+        localStorage.getItem(`sfa_student_graduated_all_${currentDni}`) === "true" ||
+        localStorage.getItem(`sfa_titulacion_enabled_${currentDni}`) === "true" ||
+        localStorage.getItem(`sfa_student_status_${currentDni}`) === "Egresado" ||
+        (isMateo && (
+          localStorage.getItem(`sfa_student_promoted_${currentDni}`) === "true" ||
+          localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+          localStorage.getItem("sfa_student_promoted") === "true" ||
+          localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+          localStorage.getItem("sfa_student_graduated_all") === "true" ||
+          localStorage.getItem("sfa_titulacion_enabled_74859612") === "true"
+        ))
+      )
   );
 
   const cycle2Op = typeof window !== "undefined" ? (
     localStorage.getItem(`sfa_cycle2_operation_${currentDni}`) ||
-    localStorage.getItem("sfa_cycle2_operation_74859612") ||
-    localStorage.getItem("sfa_cycle2_operation") ||
+    (isMateo ? (localStorage.getItem("sfa_cycle2_operation_74859612") || localStorage.getItem("sfa_cycle2_operation")) : null) ||
     "OP-2027-02-BCO-94812"
   ) : "OP-2027-02-BCO-94812";
 
   const cycle2Bank = typeof window !== "undefined" ? (
     localStorage.getItem(`sfa_cycle2_bank_${currentDni}`) ||
-    localStorage.getItem("sfa_cycle2_bank_74859612") ||
+    (isMateo ? (localStorage.getItem("sfa_cycle2_bank_74859612") || localStorage.getItem("sfa_cycle2_bank")) : null) ||
     "Banco de la Nación — Cta. Cte. 00-000-123456"
   ) : "Banco de la Nación — Cta. Cte. 00-000-123456";
 
   const cycle2Date = typeof window !== "undefined" ? (
     localStorage.getItem(`sfa_cycle2_date_${currentDni}`) ||
-    localStorage.getItem("sfa_cycle2_date_74859612") ||
+    (isMateo ? localStorage.getItem("sfa_cycle2_date_74859612") : null) ||
     new Date().toLocaleDateString("es-PE")
   ) : new Date().toLocaleDateString("es-PE");
 
@@ -331,7 +338,7 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                   Banco de la Nación (Cta. Recaudadora)
                 </td>
                 <td className="py-3 px-3 font-mono font-extrabold text-[#800521]">
-                  OP-2027-01-BCO-11842
+                  {enrollment?.paymentOperation || "OP-2027-01-BCO-11842"}
                 </td>
                 <td className="py-3 px-3 text-center font-mono text-slate-600 text-[11px]">
                   15/03/2027
@@ -351,11 +358,11 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                       concept: "Derecho de Matrícula Regular",
                       amount: "S/ 250.00",
                       bank: "Banco de la Nación (Cta. Recaudadora)",
-                      operation: "OP-2027-01-BCO-11842",
+                      operation: enrollment?.paymentOperation || "OP-2027-01-BCO-11842",
                       date: "15/03/2027",
                       status: "Validado por Caja",
-                      dataUrl: "/voucher_ciclo1.png",
-                      fileName: "Voucher_Matricula_2027_I.png"
+                      dataUrl: enrollment?.paymentVoucherUrl || "/voucher_ciclo1.png",
+                      fileName: enrollment?.paymentVoucherFileName || "Voucher_Matricula_2027_I.png"
                     })}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-[#800521] border border-rose-200 font-bold text-[10.5px] transition-colors cursor-pointer shadow-3xs"
                     title="Ver comprobante oficial de pago"

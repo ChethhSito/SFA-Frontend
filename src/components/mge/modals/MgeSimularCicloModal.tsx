@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import { GraduationCap, XCircle, CheckCircle2, ShieldCheck, AlertCircle, Sparkles } from "lucide-react";
 import { ProcessedStudent } from "../mgeTypes";
 import { Course, CourseAssignment } from "../../../types";
+import { getCourseFormula } from "../../../constants/courseFormulas";
+import { updateStudentCycleStatuses } from "../../../services/api";
 
 interface MgeSimularCicloModalProps {
   isOpen?: boolean;
@@ -26,9 +28,100 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
 
   if (!isOpen || !student) return null;
 
-  // Determine Ciclo I courses
-  const ciclo1Courses = [
-    { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, simulatedGrade: 15.5, isManual: true },
+  const isContabilidad = student.career?.toLowerCase().includes("contab") || student.dni === "71248596";
+  const isMateo = student.dni === "74859612";
+  const manualCode = isContabilidad ? "CONT-101" : "EIND-101";
+  const manualId = isContabilidad ? "cur_co_101" : "cur_ei_101";
+
+  // Compute real manual grade for CONT-101 / EIND-101 from assignments + localStorage
+  const computeRealManualCourse = () => {
+    const formula = getCourseFormula(manualCode);
+    const matchIds = new Set<string>([manualCode, manualId, `cur-${manualId}`]);
+    courses.forEach((c: any) => {
+      if (c.code === manualCode || c.code?.startsWith(`${manualCode}-`) || c.id === manualId || c.id === `cur-${manualId}`) {
+        if (c.id) matchIds.add(c.id);
+        if (c._id) matchIds.add(c._id);
+        if (c.code) matchIds.add(c.code);
+      }
+    });
+
+    const courseAssignments = assignments.filter((a) => matchIds.has(a.courseId));
+    const regularHomeworks = courseAssignments.filter((a) =>
+      !a.title.startsWith("[Planilla] ") &&
+      a.kind !== "assessment" &&
+      !a.curricularComponent &&
+      !/\[PC\d+\]|PC\d+|EX_FINAL|EXAMEN|FINAL|TABLEROS|MONTAJE|SIMULACION|MEDICIONES|PRACT_FINAL/i.test(a.title)
+    );
+
+    let localParsed: Record<string, any> | null = null;
+    try {
+      const rawLocal = localStorage.getItem(`sfa_grades_${manualCode}_${student.dni}`) ||
+        localStorage.getItem(`sfa_grades_${manualId}_${student.dni}`) ||
+        localStorage.getItem(`sfa_grades_cur-${manualId}_${student.dni}`);
+      if (rawLocal) localParsed = JSON.parse(rawLocal);
+    } catch {}
+
+    let weightedSum = 0;
+    let gradedCount = 0;
+
+    formula.variables.forEach((v) => {
+      let val: number | null = null;
+      if (v.id === "NPA") {
+        const hwGrades = regularHomeworks
+          .map((a) => a.submissions?.find((s) => s.studentDni === student.dni && typeof s.grade === "number")?.grade)
+          .filter((g): g is number => typeof g === "number");
+        if (hwGrades.length > 0) {
+          val = Number((hwGrades.reduce((a, b) => a + b, 0) / hwGrades.length).toFixed(1));
+        }
+      } else {
+        const matchingAsg = courseAssignments.find((a) =>
+          !a.title.startsWith("[Planilla] ") && (
+            a.curricularComponent === v.id ||
+            a.title.toUpperCase().includes(`[${v.id}]`) ||
+            a.title.toUpperCase().includes(v.id) ||
+            (v.id === "EX_FINAL" && /EX_FINAL|EXAMEN FINAL/i.test(a.title))
+          )
+        );
+        const sub = matchingAsg?.submissions?.find((s) => s.studentDni === student.dni && typeof s.grade === "number");
+        if (sub && typeof sub.grade === "number") {
+          val = sub.grade;
+        } else {
+          const planillaAsg = courseAssignments.find((a) => a.title === `[Planilla] ${v.id}`);
+          const planSub = planillaAsg?.submissions?.find((s) => s.studentDni === student.dni && typeof s.grade === "number");
+          if (planSub && typeof planSub.grade === "number") val = planSub.grade;
+        }
+      }
+
+      if ((val === null || val === undefined) && localParsed && typeof localParsed[v.id] === "number") {
+        val = Number(localParsed[v.id]);
+      }
+
+      if (typeof val === "number" && Number.isFinite(val)) {
+        weightedSum += val * v.weight;
+        gradedCount += 1;
+      }
+    });
+
+    const hasAnyGrade = gradedCount > 0;
+    const hasAllGrades = gradedCount === formula.variables.length;
+    const computedGrade = hasAnyGrade
+      ? Math.round(weightedSum * 10) / 10
+      : (isMateo ? 15.5 : 0);
+
+    return { computedGrade, hasAnyGrade, hasAllGrades };
+  };
+
+  const { computedGrade: manualGrade, hasAnyGrade: hasManualGrade, hasAllGrades: hasAllManualGrades } = computeRealManualCourse();
+
+  // Determine Ciclo I courses dynamically based on career
+  const ciclo1Courses = isContabilidad ? [
+    { code: "CONT-101", name: "Fundamentos de Contabilidad y Doctrina Contable", credits: 4, simulatedGrade: manualGrade, isManual: true },
+    { code: "CONT-102", name: "Documentación Comercial, Mercantil y Bancaria", credits: 4, simulatedGrade: 16.5, isManual: false },
+    { code: "CONT-103", name: "Matemática Financiera y Comercial", credits: 3, simulatedGrade: 16.0, isManual: false },
+    { code: "CONT-104", name: "Legislación Comercial y Societaria", credits: 3, simulatedGrade: 15.5, isManual: false },
+    { code: "CONT-105", name: "Comunicación y Competencias Digitales", credits: 2, simulatedGrade: 16.0, isManual: false },
+  ] : [
+    { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, simulatedGrade: manualGrade, isManual: true },
     { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, simulatedGrade: 16.5, isManual: false },
     { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, simulatedGrade: 17.0, isManual: false },
     { code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, simulatedGrade: 15.0, isManual: false },
@@ -44,6 +137,7 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
     setIsProcessing(true);
 
     try {
+      const isMateo = student.dni === "74859612";
       // 1. Store simulated cycle 1 completion in localStorage
       const simulationData = {
         studentDni: student.dni,
@@ -62,23 +156,41 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
       };
 
       localStorage.setItem(`sfa_simulated_cycle1_${student.dni}`, JSON.stringify(simulationData));
-      localStorage.setItem("sfa_simulated_cycle1_74859612", JSON.stringify(simulationData));
-      localStorage.setItem("sfa_simulated_cycle1", JSON.stringify(simulationData));
-
-      // Attendance records for Ciclo I
       localStorage.setItem(`sfa_attendance_complete_cycle1_${student.dni}`, "true");
-      localStorage.setItem("sfa_attendance_complete_cycle1_74859612", "true");
-      localStorage.setItem("sfa_attendance_complete_cycle1", "true");
-
       localStorage.setItem(`sfa_student_promoted_cycle2_${student.dni}`, "true");
-      localStorage.setItem("sfa_student_promoted_cycle2_74859612", "true");
-      localStorage.setItem("sfa_student_promoted_cycle2", "true");
-      localStorage.setItem(`sfa_student_promoted_${student.dni}`, "true");
-      localStorage.setItem("sfa_student_promoted_74859612", "true");
-      localStorage.setItem("sfa_student_promoted", "true");
       localStorage.setItem(`sfa_student_cycle_${student.dni}`, "2");
-      localStorage.setItem("sfa_student_cycle_74859612", "2");
-      localStorage.setItem("sfa_student_cycle", "2");
+      localStorage.removeItem(`sfa_student_promoted_${student.dni}`);
+      localStorage.removeItem(`sfa_student_graduated_all_${student.dni}`);
+
+      void updateStudentCycleStatuses(student.dni, [
+        {
+          cycleNumber: 1,
+          year: 2027,
+          status: "Aprobado",
+          average: Number(weightedAverage),
+          credits: totalCredits,
+          courses: ciclo1Courses.map((c) => ({
+            name: `${c.code}::${c.name}`,
+            grade: c.simulatedGrade,
+            approved: c.simulatedGrade >= 12.5,
+          })),
+        },
+      ]);
+
+      if (isMateo) {
+        localStorage.setItem("sfa_simulated_cycle1_74859612", JSON.stringify(simulationData));
+        localStorage.setItem("sfa_simulated_cycle1", JSON.stringify(simulationData));
+        localStorage.setItem("sfa_attendance_complete_cycle1_74859612", "true");
+        localStorage.setItem("sfa_attendance_complete_cycle1", "true");
+        localStorage.setItem("sfa_student_promoted_cycle2_74859612", "true");
+        localStorage.setItem("sfa_student_promoted_cycle2", "true");
+        localStorage.setItem("sfa_student_cycle_74859612", "2");
+        localStorage.setItem("sfa_student_cycle", "2");
+        localStorage.removeItem("sfa_student_promoted_74859612");
+        localStorage.removeItem("sfa_student_promoted");
+        localStorage.removeItem("sfa_student_graduated_all_74859612");
+        localStorage.removeItem("sfa_student_graduated_all");
+      }
 
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("storage"));
@@ -197,10 +309,20 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
                     <td className="p-2.5 text-center">
                       <span className={`px-2 py-0.5 rounded text-[9.5px] font-black uppercase font-mono ${
                         c.isManual
-                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                          ? (!hasManualGrade && !isMateo
+                              ? "bg-red-100 text-red-800 border border-red-300"
+                              : !hasAllManualGrades && !isMateo
+                                ? "bg-amber-100 text-amber-800 border border-amber-300"
+                                : "bg-emerald-100 text-emerald-800 border border-emerald-300")
                           : "bg-blue-50 text-blue-800 border border-blue-200"
                       }`}>
-                        {c.isManual ? "Manual Docente" : "Oficial MGE"}
+                        {c.isManual
+                          ? (!hasManualGrade && !isMateo
+                              ? "Manual Docente (Sin notas)"
+                              : !hasAllManualGrades && !isMateo
+                                ? "Manual Docente (Parcial)"
+                                : "Manual Docente")
+                          : "Oficial MGE"}
                       </span>
                     </td>
                   </tr>

@@ -8,6 +8,7 @@ import { COURSE_FORMULAS, CourseFormula, getCourseFormula } from "../../constant
 import { SecurePinModal } from "./evaluaciones/SecurePinModal";
 import { EditGradeModal } from "./evaluaciones/EditGradeModal";
 import { GradeSheetTable, SubcomponentData } from "./evaluaciones/GradeSheetTable";
+import { getDynamicRoster } from "./DocenteTypes";
 
 interface EvaluacionesCursosPrincipalProps {
   courses: Course[];
@@ -122,6 +123,16 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
     }).map((enrollment) => studentsList[enrollment.studentDni]).filter(Boolean);
 
     if (matched.length > 0) return matched;
+    const dynamicFallback = getDynamicRoster(targetProg);
+    if (dynamicFallback.length > 0) {
+      return dynamicFallback.map((r) => ({
+        dni: r.dni,
+        name: r.name,
+        lastName: r.lastName,
+        email: r.email,
+        phone: r.phone
+      })) as any;
+    }
     const allValid = Object.values(studentsList);
     return allValid.length > 0 ? allValid : [];
   }, [enrollments, studentsList, selectedCourse]);
@@ -192,11 +203,12 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
 
       // Ciclo II courses (e.g. EIND-201)
       if (cCode.includes("201") || cCode === "EIND-201" || cCode === "cur_ei_201") {
+        const isMateoDni = dni === "74859612";
         try {
           const raw = localStorage.getItem(`sfa_grades_${cCode}_${dni}`) ||
-            localStorage.getItem("sfa_grades_EIND-201_74859612") ||
+            (isMateoDni ? localStorage.getItem("sfa_grades_EIND-201_74859612") : null) ||
             localStorage.getItem(`sfa_grades_cur_ei_201_${dni}`) ||
-            localStorage.getItem("sfa_grades_cur_ei_201_74859612");
+            (isMateoDni ? localStorage.getItem("sfa_grades_cur_ei_201_74859612") : null);
           if (raw) {
             const p = JSON.parse(raw);
             if (p.NPA !== undefined && (!sheet[`${dni}-NPA`] || Number(sheet[`${dni}-NPA`]) === 0)) sheet[`${dni}-NPA`] = String(p.NPA);
@@ -208,15 +220,17 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
 
         const isCycle2Done = typeof window !== "undefined" && Boolean(
           localStorage.getItem(`sfa_simulated_cycle2_${dni}`) ||
-          localStorage.getItem("sfa_simulated_cycle2_74859612") ||
-          localStorage.getItem("sfa_simulated_cycle2") ||
           localStorage.getItem(`sfa_student_promoted_cycle3_${dni}`) === "true" ||
-          localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
-          localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
-          localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true"
+          (isMateoDni && (
+            localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+            localStorage.getItem("sfa_simulated_cycle2") ||
+            localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true" ||
+            localStorage.getItem("sfa_acta_signed_EIND-201") === "true" ||
+            localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true"
+          ))
         );
 
-        if (isCycle2Done || dni === "74859612") {
+        if (isCycle2Done || isMateoDni) {
           if (!sheet[`${dni}-NPA`] || Number(sheet[`${dni}-NPA`]) === 0) sheet[`${dni}-NPA`] = "16.0";
           if (!sheet[`${dni}-PC1`] || Number(sheet[`${dni}-PC1`]) === 0) sheet[`${dni}-PC1`] = "16.0";
           if (!sheet[`${dni}-PC2`] || Number(sheet[`${dni}-PC2`]) === 0) sheet[`${dni}-PC2`] = "17.0";
@@ -224,8 +238,8 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
         }
       }
 
-      // Ciclo I courses (e.g. EIND-101)
-      if (cCode.includes("101") || cCode === "EIND-101" || cCode === "cur_ei_101") {
+      // Ciclo I courses (solo EIND-101 de Mateo usa defaults históricos si no hay notas reales)
+      if ((cCode === "EIND-101" || cCode === "cur_ei_101") && dni === "74859612") {
         if (!sheet[`${dni}-TEO`] || Number(sheet[`${dni}-TEO`]) === 0) sheet[`${dni}-TEO`] = "17.5";
         if (!sheet[`${dni}-TAL`] || Number(sheet[`${dni}-TAL`]) === 0) sheet[`${dni}-TAL`] = "17.0";
         if (!sheet[`${dni}-LAB`] || Number(sheet[`${dni}-LAB`]) === 0) sheet[`${dni}-LAB`] = "17.0";

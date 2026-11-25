@@ -213,8 +213,9 @@ export const SecretariaTab: React.FC<SecretariaTabProps> = ({
                     const appDocs: any = {};
                     for (const k of docsListKeys) {
                       const d = rawDocs[k];
-                      const hasImg = Boolean(d?.fileDataUrl);
-                      appDocs[k] = hasImg
+                      const storedData = typeof window !== "undefined" ? localStorage.getItem(`sfa_file_data_${app.dni}_${k}`) : null;
+                      const hasDoc = Boolean(d?.fileDataUrl || d?.fileName || storedData || d?.status === "Validado" || d?.status === "Observado" || d?.status === "Pendiente");
+                      appDocs[k] = hasDoc && d
                         ? d
                         : { status: "No Enviado" as const };
                     }

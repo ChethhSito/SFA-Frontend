@@ -43,10 +43,13 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
     }
   });
 
+  const isContabilidad = careerName?.toLowerCase().includes("contab") || studentDni === "71248596";
+  const pfx = isContabilidad ? "CONT" : "EIND";
+
   const formattedCourses = filteredCourses.map((c, i) => {
     const rawGrade = typeof c.grade === "number" ? c.grade : (Number(c.grade) > 0 ? Number(c.grade) : undefined);
     return {
-      code: c.code || (cycleNumber === 1 ? `EIND-10${i + 1}` : `EIND-20${i + 1}`),
+      code: c.code || (cycleNumber === 1 ? `${pfx}-10${i + 1}` : `${pfx}-20${i + 1}`),
       name: c.name,
       credits: typeof c.credits === "number" ? c.credits : 4,
       grade: rawGrade

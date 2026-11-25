@@ -147,22 +147,20 @@ export default function MgeDashboard({
 
   // ── Gestión y Formateo Breve de Periodos Institucionales ───────────────────
   const effectiveAdmissionPeriods = useMemo(() => {
-    // Normalización de los 6 semestres del plan modular de Electricidad Industrial.
-    // Solo el ciclo actual vigente es Activo; los ciclos cursados previos son Concluidos.
+    // Periodos semestrales oficiales: 2027-I es el ciclo regular vigente por defecto.
     return [
-      { id: "period-2027-1", name: "Semestre Académico 2027-I", year: 2027, status: "CONCLUIDO", isActive: false, startDate: "2027-03-15", endDate: "2027-07-16" },
-      { id: "period-2027-2", name: "Semestre Académico 2027-II", year: 2027, status: "CONCLUIDO", isActive: false, startDate: "2027-08-16", endDate: "2027-12-17" },
-      { id: "period-2028-1", name: "Semestre Académico 2028-I", year: 2028, status: "CONCLUIDO", isActive: false, startDate: "2028-03-15", endDate: "2028-07-16" },
-      { id: "period-2028-2", name: "Semestre Académico 2028-II", year: 2028, status: "CONCLUIDO", isActive: false, startDate: "2028-08-16", endDate: "2028-12-17" },
-      { id: "period-2029-1", name: "Semestre Académico 2029-I", year: 2029, status: "CONCLUIDO", isActive: false, startDate: "2029-03-15", endDate: "2029-07-16" },
-      { id: "period-2029-2", name: "Semestre Académico 2029-II", year: 2029, status: "ACTIVO", isActive: true, startDate: "2029-08-16", endDate: "2029-12-17" },
+      { id: "period-2027-1", name: "Semestre Académico 2027-I", year: 2027, status: "ACTIVO", isActive: true, startDate: "2027-03-15", endDate: "2027-07-16" },
+      { id: "period-2027-2", name: "Semestre Académico 2027-II", year: 2027, status: "PLANIFICACION", isActive: false, startDate: "2027-08-16", endDate: "2027-12-17" },
+      { id: "period-2028-1", name: "Semestre Académico 2028-I", year: 2028, status: "PLANIFICACION", isActive: false, startDate: "2028-03-15", endDate: "2028-07-16" },
+      { id: "period-2028-2", name: "Semestre Académico 2028-II", year: 2028, status: "PLANIFICACION", isActive: false, startDate: "2028-08-16", endDate: "2028-12-17" },
+      { id: "period-2029-1", name: "Semestre Académico 2029-I", year: 2029, status: "PLANIFICACION", isActive: false, startDate: "2029-03-15", endDate: "2029-07-16" },
+      { id: "period-2029-2", name: "Semestre Académico 2029-II", year: 2029, status: "PLANIFICACION", isActive: false, startDate: "2029-08-16", endDate: "2029-12-17" },
     ] as any[];
   }, []);
 
   const [internalPeriodId, setInternalPeriodId] = useState<string>(() => {
     if (selectedPeriodId) return selectedPeriodId;
-    const active = effectiveAdmissionPeriods.find((p) => p.status === "ACTIVO" || p.isActive);
-    return active ? active.id : (effectiveAdmissionPeriods[effectiveAdmissionPeriods.length - 1]?.id || "period-2029-2");
+    return "all";
   });
 
   const handlePeriodChange = (id: string) => {
@@ -210,11 +208,13 @@ export default function MgeDashboard({
   const processedStudents = useMemo(() => {
     return Object.values(studentsList)
       .filter((student) => {
-        if (!internalPeriodId || internalPeriodId === "all" || admissionPeriods.length === 0) return true;
+        if (!internalPeriodId || internalPeriodId === "all") return true;
         const applicant = applicants.find((a) => a.dni === student.dni);
         const enrollment = enrollments.find((e) => e.studentDni === student.dni);
 
-        if (student.dni === "74859612") {
+        if (internalPeriodId === "period-2027-1" || internalPeriodId.includes("2027-1") || internalPeriodId.includes("2027-I")) {
+          // Todo estudiante admitido/matriculado pertenece al ciclo inicial 2027-I salvo que explícitamente sea de otro periodo
+          if (applicant?.periodId && applicant.periodId !== internalPeriodId && !applicant.periodId.includes("2027")) return false;
           return true;
         }
 
@@ -222,7 +222,8 @@ export default function MgeDashboard({
           const isCycle2 = typeof window !== "undefined" && Boolean(
             localStorage.getItem(`sfa_student_promoted_cycle2_${student.dni}`) === "true" ||
             localStorage.getItem(`sfa_cycle2_payment_${student.dni}`) === "true" ||
-            localStorage.getItem(`sfa_student_cycle_${student.dni}`) === "2"
+            localStorage.getItem(`sfa_student_cycle_${student.dni}`) === "2" ||
+            localStorage.getItem(`sfa_student_promoted_${student.dni}`) === "true"
           );
           return isCycle2;
         }
@@ -237,11 +238,7 @@ export default function MgeDashboard({
 
         if (applicant?.periodId && applicant.periodId === internalPeriodId) return true;
         if ((enrollment as any)?.periodId && (enrollment as any).periodId === internalPeriodId) return true;
-        if (!applicant?.periodId && !(enrollment as any)?.periodId) {
-          const activeP = admissionPeriods.find((p) => p.isActive || p.status === "APERTURADO" || p.status === "MATRICULA") || admissionPeriods[0];
-          return !activeP || activeP.id === internalPeriodId;
-        }
-        return false;
+        return true;
       })
       .map((student) => {
         const enrollment = enrollments.find((e) => e.studentDni === student.dni);

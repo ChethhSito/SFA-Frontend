@@ -98,6 +98,26 @@ export const COURSE_FORMULAS: Record<string, CourseFormula> = {
       { id: "EX_FINAL", label: "Evaluación Modular Ciclo II", weight: 0.40 },
     ],
   },
+  "CONT-101": {
+    courseCode: "CONT-101",
+    expression: "0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+    variables: [
+      { id: "NPA", label: "Nota de Participación / Informes", weight: 0.20 },
+      { id: "PC1", label: "Práctica Calificada 1 (Doctrina)", weight: 0.20 },
+      { id: "PC2", label: "Práctica Calificada 2 (Libros)", weight: 0.20 },
+      { id: "EX_FINAL", label: "Evaluación Modular Ciclo I", weight: 0.40 },
+    ],
+  },
+  "CONT-201": {
+    courseCode: "CONT-201",
+    expression: "0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+    variables: [
+      { id: "NPA", label: "Nota de Participación / Casos", weight: 0.20 },
+      { id: "PC1", label: "Práctica Calificada 1 (PCGE)", weight: 0.20 },
+      { id: "PC2", label: "Práctica Calificada 2 (Asientos)", weight: 0.20 },
+      { id: "EX_FINAL", label: "Evaluación Modular Ciclo II", weight: 0.40 },
+    ],
+  },
   "default": {
     courseCode: "default",
     expression: "0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",

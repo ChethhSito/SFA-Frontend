@@ -20,6 +20,7 @@ interface AlumnoRouterProps {
   onUpdatePersonal: (studentDni: string, updated: StudentPersonalData) => void;
   onUpdateEnrollment: (enr: Enrollment) => void;
   onUpdateAssignments: (updated: CourseAssignment[]) => void;
+  assignmentsLoading?: boolean;
   onLogout: () => void;
   onGoToPortal?: () => void;
 }
@@ -40,6 +41,7 @@ export default function AlumnoRouter({
   onUpdatePersonal,
   onUpdateEnrollment,
   onUpdateAssignments,
+  assignmentsLoading,
   onLogout,
   onGoToPortal
 }: AlumnoRouterProps) {
@@ -207,6 +209,7 @@ export default function AlumnoRouter({
       onUpdatePersonal={(updated) => onUpdatePersonal(currentDni, updated)}
       onUpdateEnrollment={onUpdateEnrollment}
       onUpdateAssignments={onUpdateAssignments}
+      assignmentsLoading={assignmentsLoading}
       onLogout={onLogout}
       onGoToPortal={onGoToPortal}
     />

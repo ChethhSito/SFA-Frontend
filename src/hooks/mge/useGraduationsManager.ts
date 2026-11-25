@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Graduation } from "../../types";
 import {
   fetchGraduations,
@@ -12,7 +12,7 @@ export function useGraduationsManager() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const reloadGraduations = async () => {
+  const reloadGraduations = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -25,7 +25,7 @@ export function useGraduationsManager() {
       setError("No se pudieron cargar los expedientes. Se necesita una sesión Firebase válida.");
       return false;
     } finally { setLoading(false); }
-  };
+  }, []);
   useEffect(() => { void reloadGraduations(); }, []);
 
   const handleUpdateGraduations = (updatedList: Graduation[]) => {

@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { BookOpen, CheckCircle2, Download, FileText, Printer, ShieldCheck, CreditCard, Building, X, Upload, Clock, AlertCircle, Lock, Eye, Receipt } from 'lucide-react';
 import { Enrollment, MpaAcademicGroup, MpaClassroom, MpaCourse, MpaCurriculumItem, MpaPeriod, MpaProgramTask, MpaShift, Program, StudentPersonalData } from '../../../types';
 import { generateMatriculaPdf, generateManualMatriculaPdf } from '../../../utils/matriculaPdf';
+import { fetchPayments, createPayment, updatePayment } from '../../../services/api';
 
 interface PlanningData {
   periods: MpaPeriod[];
@@ -31,6 +32,7 @@ export default function CourseEnrollmentTab({
   currentProgram
 }: CourseEnrollmentTabProps) {
   const currentStudentDni = enrollment.studentDni || personalData?.dni || "74859612";
+  const isMateo = currentStudentDni === "74859612";
   const [, setStorageSync] = useState(0);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
@@ -38,7 +40,7 @@ export default function CourseEnrollmentTab({
   const [selectedBank, setSelectedBank] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem(`sfa_cycle2_bank_${currentStudentDni}`) ||
-             localStorage.getItem("sfa_cycle2_bank_74859612") ||
+             (isMateo ? localStorage.getItem("sfa_cycle2_bank_74859612") : null) ||
              "Banco de la Nación — Cta. Cte. 00-000-123456";
     }
     return "Banco de la Nación — Cta. Cte. 00-000-123456";
@@ -46,7 +48,7 @@ export default function CourseEnrollmentTab({
   const [operationNumber, setOperationNumber] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem(`sfa_cycle2_operation_${currentStudentDni}`) ||
-             localStorage.getItem("sfa_cycle2_operation_74859612") ||
+             (isMateo ? localStorage.getItem("sfa_cycle2_operation_74859612") : null) ||
              "OP-2027-02-BCO-94812";
     }
     return "OP-2027-02-BCO-94812";
@@ -54,7 +56,7 @@ export default function CourseEnrollmentTab({
   const [paymentDate, setPaymentDate] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem(`sfa_cycle2_date_${currentStudentDni}`) ||
-             localStorage.getItem("sfa_cycle2_date_74859612") ||
+             (isMateo ? localStorage.getItem("sfa_cycle2_date_74859612") : null) ||
              new Date().toISOString().slice(0, 10);
     }
     return new Date().toISOString().slice(0, 10);
@@ -64,46 +66,114 @@ export default function CourseEnrollmentTab({
   const [voucherPreviewUrl, setVoucherPreviewUrl] = useState<string>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem(`sfa_cycle2_voucher_data_${currentStudentDni}`) ||
-             localStorage.getItem("sfa_cycle2_voucher_data_74859612") ||
-             localStorage.getItem("sfa_cycle2_voucher_data") || "";
+             (isMateo ? (localStorage.getItem("sfa_cycle2_voucher_data_74859612") || localStorage.getItem("sfa_cycle2_voucher_data")) : null) || "";
     }
     return "";
   });
 
+  const [backendCycle2Payment, setBackendCycle2Payment] = useState<any | null>(null);
+
   useEffect(() => {
-    const handleSync = () => setStorageSync((v) => v + 1);
-    window.addEventListener("storage", handleSync);
-    window.addEventListener("focus", handleSync);
-    return () => {
-      window.removeEventListener("storage", handleSync);
-      window.removeEventListener("focus", handleSync);
+    let active = true;
+    let lastFetch = 0;
+    const loadBackendPayment = async () => {
+      const now = Date.now();
+      if (now - lastFetch < 5000) return;
+      lastFetch = now;
+      try {
+        const list = await fetchPayments();
+        if (!active || !Array.isArray(list)) return;
+        const found = list.find(
+          (p: any) =>
+            p.paymentId === `PAY-C2-${currentStudentDni}` ||
+            (p.studentDni === currentStudentDni && typeof p.concept === "string" && p.concept.includes("Ciclo II"))
+        );
+        if (found) {
+          setBackendCycle2Payment(found);
+          try {
+            localStorage.setItem(`sfa_cycle2_payment_${currentStudentDni}`, "true");
+            if (found.receiptNumber) localStorage.setItem(`sfa_cycle2_operation_${currentStudentDni}`, found.receiptNumber);
+            if (found.status === "APROBADO") localStorage.setItem(`sfa_cycle2_validated_${currentStudentDni}`, "true");
+            else localStorage.removeItem(`sfa_cycle2_validated_${currentStudentDni}`);
+            if (found.notes) {
+              const parsed = JSON.parse(found.notes);
+              if (parsed?.fileName) localStorage.setItem(`sfa_cycle2_voucher_file_${currentStudentDni}`, parsed.fileName);
+              if (parsed?.voucherDataUrl) setVoucherPreviewUrl((prev) => prev || parsed.voucherDataUrl);
+            }
+          } catch {}
+        } else {
+          // If student already submitted voucher in localStorage before backend sync was added, upload it automatically now
+          try {
+            const localPaid = localStorage.getItem(`sfa_cycle2_payment_${currentStudentDni}`) === "true";
+            if (localPaid) {
+              const localOp = localStorage.getItem(`sfa_cycle2_operation_${currentStudentDni}`) || "OP-2027-02-BCO-94812";
+              const localBank = localStorage.getItem(`sfa_cycle2_bank_${currentStudentDni}`) || "Banco de la Nación — Cta. Cte. 00-000-123456";
+              const localDate = localStorage.getItem(`sfa_cycle2_date_${currentStudentDni}`) || new Date().toISOString().slice(0, 10);
+              const localFile = localStorage.getItem(`sfa_cycle2_voucher_file_${currentStudentDni}`) || "VOUCHER DE PGO.png";
+              const localDataUrl = localStorage.getItem(`sfa_cycle2_voucher_data_${currentStudentDni}`) || "";
+              const localValidated = localStorage.getItem(`sfa_cycle2_validated_${currentStudentDni}`) === "true";
+              const saved = await createPayment({
+                paymentId: `PAY-C2-${currentStudentDni}`,
+                studentDni: currentStudentDni,
+                concept: "Derecho de Matrícula Regular (Ciclo II)",
+                amount: 250,
+                date: localDate,
+                status: localValidated ? "APROBADO" : "PENDIENTE",
+                paymentMethod: localBank,
+                receiptNumber: localOp,
+                notes: JSON.stringify({ fileName: localFile, voucherDataUrl: localDataUrl }),
+              });
+              if (active && saved) setBackendCycle2Payment(saved);
+            }
+          } catch {}
+        }
+      } catch {}
     };
-  }, []);
+    void loadBackendPayment();
+    const handleStorageOnly = () => setStorageSync((v) => v + 1);
+    const handleFocus = () => {
+      setStorageSync((v) => v + 1);
+      void loadBackendPayment();
+    };
+    window.addEventListener("storage", handleStorageOnly);
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      active = false;
+      window.removeEventListener("storage", handleStorageOnly);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [currentStudentDni]);
 
   const isPromotedCycle2 = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_student_promoted_cycle2_${currentStudentDni}`) === "true" ||
-    localStorage.getItem(`sfa_student_promoted_cycle2_${personalData?.dni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-    localStorage.getItem(`sfa_student_cycle_${currentStudentDni}`) === "2" ||
-    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
-    localStorage.getItem("sfa_student_cycle") === "2"
+    !isMateo && enrollment?.academicStatus === "MATRICULADO" && localStorage.getItem(`sfa_student_promoted_cycle2_${currentStudentDni}`) !== "true"
+      ? false
+      : (
+        localStorage.getItem(`sfa_student_promoted_cycle2_${currentStudentDni}`) === "true" ||
+        localStorage.getItem(`sfa_student_cycle_${currentStudentDni}`) === "2" ||
+        (isMateo && (
+          localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+          localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+          localStorage.getItem("sfa_student_cycle") === "2"
+        ))
+      )
   );
 
   const isCycle2Paid = typeof window !== "undefined" && Boolean(
+    backendCycle2Payment ||
     localStorage.getItem(`sfa_cycle2_payment_${currentStudentDni}`) === "true" ||
-    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_payment") === "true"
+    (isMateo && (
+      localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+      localStorage.getItem("sfa_cycle2_payment") === "true"
+    ))
   );
 
   const isCycle2Validated = typeof window !== "undefined" && Boolean(
+    backendCycle2Payment?.status === "APROBADO" ||
     localStorage.getItem(`sfa_cycle2_validated_${currentStudentDni}`) === "true" ||
-    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_validated") === "true" ||
-    localStorage.getItem("sfa_cycle2_status") === "Validado" ||
-    (enrollment?.paymentStatus === "Validado" && (
-      localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-      localStorage.getItem(`sfa_cycle2_payment_${currentStudentDni}`) === "true" ||
-      localStorage.getItem("sfa_cycle2_payment") === "true"
+    (isMateo && (
+      localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
+      localStorage.getItem("sfa_cycle2_validated") === "true" ||
+      localStorage.getItem("sfa_cycle2_status") === "Validado"
     ))
   );
 
@@ -147,10 +217,22 @@ export default function CourseEnrollmentTab({
     "2026-11-23"
   ) : "2026-11-23";
 
-  const cycleNum = isPromotedCycle2 ? 2 : (studentGroup?.cycle || 1);
+  const isGraduated = typeof window !== "undefined" && Boolean(
+    localStorage.getItem(`sfa_student_graduated_all_${currentStudentDni}`) === "true" ||
+    localStorage.getItem(`sfa_student_cycle_${currentStudentDni}`) === "6" ||
+    localStorage.getItem(`sfa_student_status_${currentStudentDni}`)?.includes("Egresado") ||
+    (isMateo && (
+      localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+      localStorage.getItem("sfa_student_graduated_all") === "true"
+    ))
+  );
+
+  const cycleNum = isGraduated ? 6 : isPromotedCycle2 ? 2 : (studentGroup?.cycle || 1);
   const period = data.periods.find((item) => item.id === studentGroup?.periodId);
   const periodLabel = isPromotedCycle2 ? "2027-II" : (period?.name || "2027-I");
-  const studentCode = personalData?.dni ? `202710001` : "202710001";
+  const studentCode = personalData?.dni === "71248596"
+    ? "202710002"
+    : (enrollment as any)?.studentCode || (personalData as any)?.studentCode || (personalData?.dni === "74859612" ? "202710001" : `20271000${personalData?.dni ? personalData.dni.slice(-1) : "1"}`);
   const studentFullName = personalData
     ? `${personalData.lastName || ''}, ${personalData.name || ''}`.trim() || "Quispe Rojas, Mateo Sebastián"
     : "Quispe Rojas, Mateo Sebastián";
@@ -161,43 +243,84 @@ export default function CourseEnrollmentTab({
     const cleanOp = operationNumber.trim() || "OP-2027-02-BCO-94812";
     const fileName = voucherFile ? voucherFile.name : (storedVoucherFileName || "VOUCHER DE PGO.png");
     const finalUrl = voucherPreviewUrl || storedVoucherDataUrl;
+    const isMateoDni = currentStudentDni === "74859612";
 
     if (typeof window !== "undefined") {
-      localStorage.setItem(`sfa_cycle2_payment_${currentStudentDni}`, "true");
-      localStorage.setItem("sfa_cycle2_payment_74859612", "true");
-      localStorage.setItem("sfa_cycle2_payment", "true");
-      localStorage.setItem(`sfa_cycle2_operation_${currentStudentDni}`, cleanOp);
-      localStorage.setItem("sfa_cycle2_operation_74859612", cleanOp);
-      localStorage.setItem("sfa_cycle2_operation", cleanOp);
-      localStorage.setItem(`sfa_cycle2_bank_${currentStudentDni}`, selectedBank);
-      localStorage.setItem("sfa_cycle2_bank_74859612", selectedBank);
-      localStorage.setItem(`sfa_cycle2_date_${currentStudentDni}`, paymentDate);
-      localStorage.setItem("sfa_cycle2_date_74859612", paymentDate);
-      localStorage.setItem(`sfa_cycle2_voucher_file_${currentStudentDni}`, fileName);
-      localStorage.setItem("sfa_cycle2_voucher_file_74859612", fileName);
-      localStorage.setItem("sfa_cycle2_voucher_file", fileName);
-      if (finalUrl) {
-        localStorage.setItem(`sfa_cycle2_voucher_data_${currentStudentDni}`, finalUrl);
-        localStorage.setItem("sfa_cycle2_voucher_data_74859612", finalUrl);
-        localStorage.setItem("sfa_cycle2_voucher_data", finalUrl);
+      try {
+        localStorage.setItem(`sfa_cycle2_payment_${currentStudentDni}`, "true");
+        localStorage.setItem(`sfa_cycle2_operation_${currentStudentDni}`, cleanOp);
+        localStorage.setItem(`sfa_cycle2_bank_${currentStudentDni}`, selectedBank);
+        localStorage.setItem(`sfa_cycle2_date_${currentStudentDni}`, paymentDate);
+        localStorage.setItem(`sfa_cycle2_voucher_file_${currentStudentDni}`, fileName);
+        if (isMateoDni) {
+          localStorage.setItem("sfa_cycle2_payment_74859612", "true");
+          localStorage.setItem("sfa_cycle2_payment", "true");
+          localStorage.setItem("sfa_cycle2_operation_74859612", cleanOp);
+          localStorage.setItem("sfa_cycle2_operation", cleanOp);
+          localStorage.setItem("sfa_cycle2_bank_74859612", selectedBank);
+          localStorage.setItem("sfa_cycle2_date_74859612", paymentDate);
+          localStorage.setItem("sfa_cycle2_voucher_file_74859612", fileName);
+          localStorage.setItem("sfa_cycle2_voucher_file", fileName);
+        }
+        if (finalUrl) {
+          try {
+            localStorage.setItem(`sfa_cycle2_voucher_data_${currentStudentDni}`, finalUrl);
+            if (isMateoDni) {
+              localStorage.setItem("sfa_cycle2_voucher_data_74859612", finalUrl);
+            }
+          } catch {
+            // Ignorar QuotaExceededError si la imagen supera la cuota de localStorage
+          }
+        }
+        window.dispatchEvent(new Event("storage"));
+      } catch (err) {
+        console.warn("Error guardando comprobante en localStorage:", err);
       }
-      window.dispatchEvent(new Event("storage"));
     }
     setShowPaymentModal(false);
     setPaymentNotice(`Voucher ${cleanOp} registrado exitosamente. Ha sido enviado a Caja (Pestaña 3 en Secretaría) para su validación oficial.`);
     setTimeout(() => setPaymentNotice(""), 8000);
     setStorageSync((v) => v + 1);
+
+    // Persist voucher & payment in MongoDB so MGE sees it across any browser/tab
+    const payload = {
+      paymentId: `PAY-C2-${currentStudentDni}`,
+      studentDni: currentStudentDni,
+      concept: "Derecho de Matrícula Regular (Ciclo II)",
+      amount: 250,
+      date: paymentDate,
+      status: "PENDIENTE",
+      paymentMethod: selectedBank,
+      receiptNumber: cleanOp,
+      notes: JSON.stringify({ fileName, voucherDataUrl: finalUrl || "" }),
+    };
+    void (async () => {
+      try {
+        const existingId = backendCycle2Payment?._id || backendCycle2Payment?.paymentId;
+        const saved = existingId
+          ? await updatePayment(existingId, payload)
+          : await createPayment(payload);
+        if (saved) setBackendCycle2Payment(saved);
+      } catch (err) {
+        console.warn("Error sincronizando voucher Ciclo II con MongoDB:", err);
+      }
+    })();
   };
 
   const handleInstantValidation = () => {
+    const isMateoDni = currentStudentDni === "74859612";
     if (typeof window !== "undefined") {
-      localStorage.setItem(`sfa_cycle2_validated_${currentStudentDni}`, "true");
-      localStorage.setItem("sfa_cycle2_validated_74859612", "true");
-      localStorage.setItem("sfa_cycle2_validated", "true");
-      localStorage.setItem(`sfa_cycle2_payment_${currentStudentDni}`, "true");
-      localStorage.setItem("sfa_cycle2_payment_74859612", "true");
-      localStorage.setItem("sfa_cycle2_payment", "true");
-      window.dispatchEvent(new Event("storage"));
+      try {
+        localStorage.setItem(`sfa_cycle2_validated_${currentStudentDni}`, "true");
+        localStorage.setItem(`sfa_cycle2_payment_${currentStudentDni}`, "true");
+        if (isMateoDni) {
+          localStorage.setItem("sfa_cycle2_validated_74859612", "true");
+          localStorage.setItem("sfa_cycle2_validated", "true");
+          localStorage.setItem("sfa_cycle2_payment_74859612", "true");
+          localStorage.setItem("sfa_cycle2_payment", "true");
+        }
+        window.dispatchEvent(new Event("storage"));
+      } catch {}
     }
     setPaymentNotice("¡Matrícula formalmente aprobada y validada por Caja de Secretaría! Su condición actual es Matriculado Activo.");
     setTimeout(() => setPaymentNotice(""), 8000);
@@ -205,22 +328,25 @@ export default function CourseEnrollmentTab({
   };
 
   const handleResetPayment = () => {
+    const isMateoDni = currentStudentDni === "74859612";
     if (typeof window !== "undefined") {
       localStorage.removeItem(`sfa_cycle2_payment_${currentStudentDni}`);
-      localStorage.removeItem("sfa_cycle2_payment_74859612");
-      localStorage.removeItem("sfa_cycle2_payment");
       localStorage.removeItem(`sfa_cycle2_operation_${currentStudentDni}`);
-      localStorage.removeItem("sfa_cycle2_operation_74859612");
-      localStorage.removeItem("sfa_cycle2_operation");
       localStorage.removeItem(`sfa_cycle2_validated_${currentStudentDni}`);
-      localStorage.removeItem("sfa_cycle2_validated_74859612");
-      localStorage.removeItem("sfa_cycle2_validated");
       localStorage.removeItem(`sfa_cycle2_voucher_file_${currentStudentDni}`);
-      localStorage.removeItem("sfa_cycle2_voucher_file_74859612");
-      localStorage.removeItem("sfa_cycle2_voucher_file");
       localStorage.removeItem(`sfa_cycle2_voucher_data_${currentStudentDni}`);
-      localStorage.removeItem("sfa_cycle2_voucher_data_74859612");
-      localStorage.removeItem("sfa_cycle2_voucher_data");
+      if (isMateoDni) {
+        localStorage.removeItem("sfa_cycle2_payment_74859612");
+        localStorage.removeItem("sfa_cycle2_payment");
+        localStorage.removeItem("sfa_cycle2_operation_74859612");
+        localStorage.removeItem("sfa_cycle2_operation");
+        localStorage.removeItem("sfa_cycle2_validated_74859612");
+        localStorage.removeItem("sfa_cycle2_validated");
+        localStorage.removeItem("sfa_cycle2_voucher_file_74859612");
+        localStorage.removeItem("sfa_cycle2_voucher_file");
+        localStorage.removeItem("sfa_cycle2_voucher_data_74859612");
+        localStorage.removeItem("sfa_cycle2_voucher_data");
+      }
       window.dispatchEvent(new Event("storage"));
     }
     setPaymentNotice("Pago restablecido a estado pendiente. Puede ingresar un nuevo voucher manualmente.");
@@ -248,6 +374,7 @@ export default function CourseEnrollmentTab({
     );
 
     const computeStatus = () => {
+      if (isGraduated) return "Matriculado";
       if (!isPromotedCycle2) return "Matriculado";
       if (isCycle2Validated) return "Matriculado";
       if (isCycle2Paid) return "En Trámite";
@@ -256,7 +383,46 @@ export default function CourseEnrollmentTab({
 
     const statusVal = computeStatus();
 
-    if (cycleNum === 2) {
+    if (careerCourses.length > 0) {
+      list = careerCourses.map((c) => ({
+        id: c.id,
+        code: c.code,
+        name: c.name,
+        credits: c.credits || 4,
+        cycle: cycleNum,
+        type: c.type || "Obligatorio",
+        group: studentGroup?.name || (enrollment.programId === "contabilidad" ? (cycleNum === 6 ? "CONT-VI-A" : cycleNum === 2 ? "CONT-II-A" : "CONT-I-A") : (cycleNum === 6 ? "EI-VI-A" : cycleNum === 2 ? "EI-II-A" : "EI-I-A")),
+        sg: 0,
+        tsg: c.labHours && c.labHours > 0 ? (c.theoryHours && c.theoryHours > 0 ? "Teoría / Taller" : "Práctica") : "Teoría",
+        status: statusVal
+      }));
+    } else if (enrollment.programId === "contabilidad") {
+      if (cycleNum === 6) {
+        list = [
+          { id: "cur_co_601", code: "CONT-601", name: "Proyecto Integrador de Gestión Contable y Tributaria", credits: 5, cycle: 6, type: "Obligatorio", group: "CONT-VI-A", sg: 0, tsg: "Teoría / Taller", status: statusVal },
+          { id: "cur_co_602", code: "CONT-602", name: "Auditoría Tributaria, Fiscalización y Peritaje Contable", credits: 4, cycle: 6, type: "Obligatorio", group: "CONT-VI-A", sg: 0, tsg: "Teoría / Taller", status: statusVal },
+          { id: "cur_co_603", code: "CONT-603", name: "Análisis e Interpretación de Estados Financieros", credits: 3, cycle: 6, type: "Obligatorio", group: "CONT-VI-A", sg: 0, tsg: "Teoría", status: statusVal },
+          { id: "cur_co_604", code: "CONT-604", name: "Control Interno y Gestión Integral de Riesgos (COSO)", credits: 2, cycle: 6, type: "Obligatorio", group: "CONT-VI-A", sg: 0, tsg: "Teoría", status: statusVal },
+          { id: "cur_co_605", code: "CONT-605", name: "Legislación Laboral y Relaciones de Trabajo", credits: 2, cycle: 6, type: "General", group: "CONT-VI-A", sg: 0, tsg: "Teoría", status: statusVal },
+        ];
+      } else if (cycleNum === 2) {
+        list = [
+          { id: "cur_co_201", code: "CONT-201", name: "Contabilidad General Aplicada", credits: 4, cycle: 2, type: "Obligatorio", group: "CONT-II-A", sg: 0, tsg: "Teoría / Taller", status: statusVal },
+          { id: "cur_co_202", code: "CONT-202", name: "Administración de Archivos Contables", credits: 3, cycle: 2, type: "Obligatorio", group: "CONT-II-A", sg: 0, tsg: "Teoría / Taller", status: statusVal },
+          { id: "cur_co_203", code: "CONT-203", name: "Sistema de Información Contable I", credits: 3, cycle: 2, type: "Obligatorio", group: "CONT-II-A", sg: 0, tsg: "Laboratorio", status: statusVal },
+          { id: "cur_co_204", code: "CONT-204", name: "Tributación y Legislación Comercial", credits: 2, cycle: 2, type: "Obligatorio", group: "CONT-II-A", sg: 0, tsg: "Teoría", status: statusVal },
+          { id: "cur_co_205", code: "CONT-205", name: "Inglés Técnico para Contabilidad", credits: 2, cycle: 2, type: "General", group: "CONT-II-A", sg: 0, tsg: "Teoría", status: statusVal },
+        ];
+      } else {
+        list = [
+          { id: "cur_co_101", code: "CONT-101", name: "Fundamentos de Contabilidad y Doctrina Contable", credits: 4, cycle: 1, type: "Obligatorio", group: studentGroup?.name || "CONT-I-A", sg: 0, tsg: "Teoría / Taller", status: "Matriculado" },
+          { id: "cur_co_102", code: "CONT-102", name: "Documentación Comercial, Mercantil y Bancaria", credits: 4, cycle: 1, type: "Obligatorio", group: studentGroup?.name || "CONT-I-A", sg: 0, tsg: "Teoría / Taller", status: "Matriculado" },
+          { id: "cur_co_103", code: "CONT-103", name: "Matemática Financiera y Comercial", credits: 3, cycle: 1, type: "General", group: studentGroup?.name || "CONT-I-A", sg: 0, tsg: "Teoría", status: "Matriculado" },
+          { id: "cur_co_104", code: "CONT-104", name: "Legislación Comercial y Societaria", credits: 3, cycle: 1, type: "Obligatorio", group: studentGroup?.name || "CONT-I-A", sg: 0, tsg: "Teoría", status: "Matriculado" },
+          { id: "cur_co_105", code: "CONT-105", name: "Comunicación y Competencias Digitales", credits: 2, cycle: 1, type: "General", group: studentGroup?.name || "CONT-I-A", sg: 0, tsg: "Laboratorio", status: "Matriculado" },
+        ];
+      }
+    } else if (cycleNum === 2) {
       list = [
         { id: "eind-201", code: "EIND-201", name: "Circuitos Eléctricos en Corriente Alterna", credits: 4, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Teoría / Taller", status: statusVal },
         { id: "eind-202", code: "EIND-202", name: "Electrónica Analógica y de Potencia Básica", credits: 4, cycle: 2, type: "Obligatorio", group: "EI-II-A", sg: 0, tsg: "Taller", status: statusVal },
@@ -295,7 +461,7 @@ export default function CourseEnrollmentTab({
       studentCode,
       programName,
       period: periodLabel,
-      cycle: isPromotedCycle2 ? "II" : "I",
+      cycle: isGraduated ? "VI" : isPromotedCycle2 ? "II" : "I",
       shift: enrollment.shift || "Mañana",
       courses: registeredCoursesList.map((c) => ({
         code: c.code,
@@ -787,16 +953,42 @@ export default function CourseEnrollmentTab({
                       if (file && file.type.startsWith("image/")) {
                         const reader = new FileReader();
                         reader.onload = () => {
-                          const result = reader.result as string;
-                          setVoucherPreviewUrl(result);
-                          if (typeof window !== "undefined") {
-                            localStorage.setItem(`sfa_cycle2_voucher_data_${currentStudentDni}`, result);
-                            localStorage.setItem("sfa_cycle2_voucher_data_74859612", result);
-                            localStorage.setItem("sfa_cycle2_voucher_data", result);
-                            localStorage.setItem(`sfa_cycle2_voucher_file_${currentStudentDni}`, file.name);
-                            localStorage.setItem("sfa_cycle2_voucher_file_74859612", file.name);
-                            localStorage.setItem("sfa_cycle2_voucher_file", file.name);
-                            window.dispatchEvent(new Event("storage"));
+                          const rawResult = reader.result as string;
+                          const saveImage = (finalImg: string) => {
+                            setVoucherPreviewUrl(finalImg);
+                            if (typeof window !== "undefined") {
+                              try {
+                                localStorage.setItem(`sfa_cycle2_voucher_file_${currentStudentDni}`, file.name);
+                                localStorage.setItem(`sfa_cycle2_voucher_data_${currentStudentDni}`, finalImg);
+                                if (currentStudentDni === "74859612") {
+                                  localStorage.setItem("sfa_cycle2_voucher_file_74859612", file.name);
+                                  localStorage.setItem("sfa_cycle2_voucher_file", file.name);
+                                  localStorage.setItem("sfa_cycle2_voucher_data_74859612", finalImg);
+                                }
+                                window.dispatchEvent(new Event("storage"));
+                              } catch {}
+                            }
+                          };
+                          if (rawResult.length > 250000) {
+                            const img = new Image();
+                            img.onload = () => {
+                              const maxW = 900;
+                              const scale = img.width > maxW ? maxW / img.width : 1;
+                              const canvas = document.createElement("canvas");
+                              canvas.width = Math.round(img.width * scale);
+                              canvas.height = Math.round(img.height * scale);
+                              const ctx = canvas.getContext("2d");
+                              if (ctx) {
+                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                saveImage(canvas.toDataURL("image/jpeg", 0.72));
+                              } else {
+                                saveImage(rawResult);
+                              }
+                            };
+                            img.onerror = () => saveImage(rawResult);
+                            img.src = rawResult;
+                          } else {
+                            saveImage(rawResult);
                           }
                         };
                         reader.readAsDataURL(file);

@@ -43,6 +43,7 @@ interface AlumnoDashboardProps {
   onUpdatePersonal: (data: StudentPersonalData) => void;
   onUpdateEnrollment: (enroll: Enrollment) => void;
   onUpdateAssignments: (asgs: CourseAssignment[]) => void;
+  assignmentsLoading?: boolean;
   onLogout: () => void;
   onGoToPortal?: () => void;
 }
@@ -64,6 +65,7 @@ export default function AlumnoDashboard({
   onUpdatePersonal,
   onUpdateEnrollment,
   onUpdateAssignments,
+  assignmentsLoading = false,
   onLogout,
   onGoToPortal
 }: AlumnoDashboardProps) {
@@ -93,43 +95,62 @@ export default function AlumnoDashboard({
   }, [enrollment]);
 
   const [, setStorageSync] = useState(0);
+  const isMateo = studentDni === "74859612";
 
   const isCycle2Paid = typeof window !== "undefined" && Boolean(
     localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_payment") === "true" ||
     localStorage.getItem(`sfa_cycle2_validated_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
-    localStorage.getItem("sfa_cycle2_validated") === "true" ||
-    (enrollment?.paymentStatus === "Validado" && (
+    (isMateo && (
       localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-      localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
-      localStorage.getItem("sfa_cycle2_payment") === "true"
+      localStorage.getItem("sfa_cycle2_payment") === "true" ||
+      localStorage.getItem("sfa_cycle2_validated_74859612") === "true" ||
+      localStorage.getItem("sfa_cycle2_validated") === "true"
     ))
   );
 
+  const hasBackendCycle1Approved = Array.isArray(cycleStatuses) && cycleStatuses.some(
+    (c: any) => c.cycleNumber === 1 && c.status === "Aprobado"
+  );
+
   const isPromotedCycle2 = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
-    localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-    localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
-    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
-    localStorage.getItem("sfa_student_cycle") === "2" ||
-    studentDni === "74859612"
+    hasBackendCycle1Approved || (
+      !isMateo && enrollment?.academicStatus === "MATRICULADO" && localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) !== "true"
+        ? false
+        : (
+          localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
+          localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
+          (isMateo && (
+            localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+            localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
+            localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+            localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+            localStorage.getItem("sfa_student_cycle") === "2"
+          ))
+        )
+    )
+  );
+
+  const hasBackendGraduated = Array.isArray(cycleStatuses) && cycleStatuses.some(
+    (c: any) => c.cycleNumber === 6 && c.status === "Aprobado"
   );
 
   const isGraduated = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted") === "true" ||
-    localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
-    localStorage.getItem("sfa_student_graduated_all") === "true" ||
-    localStorage.getItem(`sfa_titulacion_enabled_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_titulacion_enabled_74859612") === "true" ||
-    localStorage.getItem(`sfa_student_status_${studentDni}`) === "Egresado"
+    hasBackendGraduated || (
+      !isMateo && enrollment?.academicStatus === "MATRICULADO" && localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) !== "true"
+        ? false
+        : (
+          localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
+          localStorage.getItem(`sfa_titulacion_enabled_${studentDni}`) === "true" ||
+          localStorage.getItem(`sfa_student_status_${studentDni}`)?.includes("Egresado") ||
+          (isMateo && (
+            localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+            localStorage.getItem("sfa_student_graduated_all") === "true" ||
+            localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+            localStorage.getItem("sfa_student_promoted") === "true" ||
+            localStorage.getItem("sfa_titulacion_enabled_74859612") === "true"
+          ))
+        )
+    )
   );
   useEffect(() => {
     const handleSync = () => setStorageSync((v) => v + 1);
@@ -204,40 +225,67 @@ export default function AlumnoDashboard({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const hasTeacherActa = assignments.some(a =>
-      (a.title?.startsWith("[Planilla]") || a.title?.includes("EX_FINAL") || a.title?.includes("PC1") || a.courseId?.includes("101") || a.courseId === "cur_ei_101") &&
-      a.submissions?.some(s => (s.studentDni === studentDni || s.studentDni === "74859612") && typeof s.grade === "number")
-    );
-    if (hasTeacherActa && !localStorage.getItem("sfa_simulated_cycle1_74859612")) {
-      const simulationPayload = {
-        studentDni: studentDni || "74859612",
-        studentName: personalData?.name ? `${personalData.name} ${personalData.lastName}` : "Mateo Sebastián Quispe Rojas",
-        cycle: 1,
-        completedAt: new Date().toISOString(),
-        weightedAverage: 16.0,
-        courses: [
-          { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, grade: 15.6, isManual: true, approved: true },
-          { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, grade: 16.5, isManual: false, approved: true },
-          { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, grade: 17.0, isManual: false, approved: true },
-          { code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, grade: 15.0, isManual: false, approved: true },
-          { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2, grade: 16.0, isManual: false, approved: true }
-        ]
-      };
-      localStorage.setItem("sfa_simulated_cycle1_74859612", JSON.stringify(simulationPayload));
-      localStorage.setItem(`sfa_simulated_cycle1_${studentDni}`, JSON.stringify(simulationPayload));
-      localStorage.setItem("sfa_simulated_cycle1", JSON.stringify(simulationPayload));
-      localStorage.setItem("sfa_student_promoted_cycle2_74859612", "true");
+    // Sync backend Cycle I approval into localStorage so all tabs reflect it across browsers/incognito
+    const backendC1 = Array.isArray(cycleStatuses)
+      ? cycleStatuses.find((c: any) => c.cycleNumber === 1 && c.status === "Aprobado")
+      : null;
+    if (studentDni && backendC1) {
       localStorage.setItem(`sfa_student_promoted_cycle2_${studentDni}`, "true");
-      localStorage.setItem("sfa_student_promoted_cycle2", "true");
-      localStorage.setItem("sfa_student_promoted_74859612", "true");
-      localStorage.setItem(`sfa_student_promoted_${studentDni}`, "true");
-      localStorage.setItem("sfa_student_promoted", "true");
-      localStorage.setItem("sfa_student_cycle_74859612", "2");
-      localStorage.setItem(`sfa_student_cycle_${studentDni}`, "2");
-      localStorage.setItem("sfa_student_cycle", "2");
-      window.dispatchEvent(new Event("storage"));
+      if (!localStorage.getItem(`sfa_student_cycle_${studentDni}`)) {
+        localStorage.setItem(`sfa_student_cycle_${studentDni}`, "2");
+      }
+      if (!localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) && Array.isArray(backendC1.courses)) {
+        localStorage.setItem(`sfa_simulated_cycle1_${studentDni}`, JSON.stringify({
+          studentDni,
+          cycle: 1,
+          weightedAverage: backendC1.average,
+          courses: backendC1.courses.map((sc: any) => {
+            const parts = typeof sc.name === "string" ? sc.name.split("::") : [];
+            return {
+              code: parts.length > 1 ? parts[0] : (sc.code || ""),
+              name: parts.length > 1 ? parts.slice(1).join("::") : sc.name,
+              grade: sc.grade,
+              approved: sc.approved,
+            };
+          }),
+        }));
+      }
+      setStorageSync((k) => k + 1);
     }
-  }, [assignments, studentDni, personalData]);
+
+    const backendC6 = Array.isArray(cycleStatuses)
+      ? cycleStatuses.find((c: any) => c.cycleNumber === 6 && c.status === "Aprobado")
+      : null;
+    if (studentDni && backendC6) {
+      localStorage.setItem(`sfa_student_promoted_${studentDni}`, "true");
+      localStorage.setItem(`sfa_student_graduated_all_${studentDni}`, "true");
+      localStorage.setItem(`sfa_student_cycle_${studentDni}`, "6");
+      localStorage.setItem(`sfa_student_status_${studentDni}`, "Egresado Lectivo");
+      setStorageSync((k) => k + 1);
+    }
+
+    // Cleanup any cross-contamination if a non-Mateo student (e.g. Valeria) had Electricidad Industrial data accidentally stored
+    if (studentDni && studentDni !== "74859612") {
+      const rawSim = localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`);
+      const isAccidentalElec = rawSim && (rawSim.includes("EIND-101") || rawSim.includes("Electricidad"));
+      const isUnpromotedNewEnrollee = !backendC1 && enrollment?.academicStatus === "MATRICULADO" && localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) !== "true";
+      if (isAccidentalElec || isUnpromotedNewEnrollee) {
+        if (isAccidentalElec) {
+          localStorage.removeItem(`sfa_simulated_cycle1_${studentDni}`);
+        }
+        localStorage.removeItem(`sfa_student_promoted_cycle2_${studentDni}`);
+        localStorage.removeItem(`sfa_student_promoted_${studentDni}`);
+        localStorage.removeItem(`sfa_student_cycle_${studentDni}`);
+        localStorage.removeItem(`sfa_student_status_${studentDni}`);
+        localStorage.removeItem(`sfa_cycle2_payment_${studentDni}`);
+        localStorage.removeItem(`sfa_cycle2_validated_${studentDni}`);
+        localStorage.removeItem(`sfa_student_graduated_all_${studentDni}`);
+        localStorage.removeItem(`sfa_titulacion_enabled_${studentDni}`);
+        localStorage.removeItem(`sfa_grades_EIND-201_${studentDni}`);
+        localStorage.removeItem(`sfa_grades_cur_ei_201_${studentDni}`);
+      }
+    }
+  }, [studentDni, cycleStatuses]);
   const [expandedStudentWeeks, setExpandedStudentWeeks] = useState<Record<number, boolean>>({ 1: true });
 
   useEffect(() => {
@@ -607,41 +655,46 @@ export default function AlumnoDashboard({
     }
   ], []);
 
+  const isContabilidad = enrollment.programId === "contabilidad" || studentDni === "71248596" || currentProgram?.name?.toLowerCase().includes("contab");
+  const isElectricidad = !isContabilidad && (studentDni === "74859612" || enrollment.programId === "electronica" || enrollment.programId === "electricidad_industrial" || currentProgram?.name?.toLowerCase().includes("electricidad"));
+
   // Map student shift and career to find their registered group in MPA
   const studentGroup = useMemo(() => {
-    if (isCycle2Paid || isPromotedCycle2) {
-      return {
-        id: "EI-II-A",
-        name: "EI-II-A",
-        careerId: enrollment.programId,
-        shiftId: "sh_m",
-        cycle: 2,
-        capacity: 35,
-        periodId: "admision-2027-ii"
-      } as any;
-    }
     if (enrollment.groupId) {
       const found = mpaPlanningData.groups.find((g: any) =>
         g.id === enrollment.groupId ||
         (enrollment.groupId.includes("ele") && g.id.includes("electronica")) ||
-        (enrollment.groupId.includes("con") && g.id.includes("contabilidad"))
+        (enrollment.groupId.includes("con") && g.id.includes("contabilidad")) ||
+        (enrollment.groupId.includes("CONT") && g.id.includes("CONT"))
       );
       if (found) return found;
     }
-    const shiftMapped = enrollment.shift === "Mañana" ? "sh_m" : enrollment.shift === "Tarde" ? "sh_t" : "sh_n";
-    return mpaPlanningData.groups.find(
-      (g: any) => g.careerId === enrollment.programId && g.shiftId === shiftMapped && g.cycle === 1
-    ) || mpaPlanningData.groups.find((g: any) => g.careerId === enrollment.programId && g.cycle === 1) || mpaPlanningData.groups[0];
-  }, [enrollment, mpaPlanningData, isCycle2Paid, isPromotedCycle2]);
+    const shiftMapped = enrollment.shift === "Mañana" ? "shift_manana" : enrollment.shift === "Tarde" ? "shift_tarde" : "shift_noche";
+    const foundCareerGroup = mpaPlanningData.groups.find(
+      (g: any) => g.careerId === enrollment.programId && (g.shiftId === shiftMapped || g.shiftId === "sh_m") && g.cycle === (isPromotedCycle2 ? 2 : 1)
+    ) || mpaPlanningData.groups.find((g: any) => g.careerId === enrollment.programId && g.cycle === (isPromotedCycle2 ? 2 : 1));
+
+    if (foundCareerGroup) return foundCareerGroup;
+
+    if (isCycle2Paid || isPromotedCycle2) {
+      return {
+        id: isContabilidad ? "CONT-II-A" : "EI-II-A",
+        name: isContabilidad ? "CONT-II-A" : "EI-II-A",
+        careerId: enrollment.programId,
+        shiftId: "shift_manana",
+        cycle: 2,
+        capacity: 35,
+        periodId: "periodo-2027-ii"
+      } as any;
+    }
+    return mpaPlanningData.groups.find((g: any) => g.careerId === enrollment.programId) || mpaPlanningData.groups[0];
+  }, [enrollment, mpaPlanningData, isCycle2Paid, isPromotedCycle2, isContabilidad]);
 
   // The main group supplies regular courses; individual course assignments may use another shift.
   const studentTasks = useMemo(() => {
-    if (isCycle2Paid || isPromotedCycle2) {
-      return DEFAULT_ELECTRICIDAD_CICLO2_TASKS;
-    }
     let tasks: any[] = [];
     if (studentGroup) {
-      if (enrollment.registeredCourses) {
+      if (enrollment.registeredCourses && enrollment.registeredCourses.length > 0) {
         tasks = mpaPlanningData.tasks.filter((task: any) => enrollment.registeredCourses?.some(
           (item) => item.courseId === task.courseId && item.groupId === task.groupId,
         ));
@@ -653,12 +706,14 @@ export default function AlumnoDashboard({
         );
       }
     }
-    // If tasks are incomplete (fewer than 8 sessions), use the realistic complete morning schedule
-    if (tasks.length < 8) {
-      return DEFAULT_ELECTRICIDAD_TASKS;
+    if (tasks.length > 0) {
+      return tasks;
     }
-    return tasks;
-  }, [studentGroup, mpaPlanningData, enrollment.courseGroupAssignments, enrollment.registeredCourses, DEFAULT_ELECTRICIDAD_TASKS, DEFAULT_ELECTRICIDAD_CICLO2_TASKS, isCycle2Paid, isPromotedCycle2]);
+    if (isElectricidad) {
+      return (isCycle2Paid || isPromotedCycle2) ? DEFAULT_ELECTRICIDAD_CICLO2_TASKS : DEFAULT_ELECTRICIDAD_TASKS;
+    }
+    return [];
+  }, [studentGroup, mpaPlanningData, enrollment.courseGroupAssignments, enrollment.registeredCourses, DEFAULT_ELECTRICIDAD_TASKS, DEFAULT_ELECTRICIDAD_CICLO2_TASKS, isCycle2Paid, isPromotedCycle2, isElectricidad]);
 
   // Build dynamic courses list combining MAMC/MPA Malla and Programación
   const dynamicMpaCourses = useMemo(() => {
@@ -686,7 +741,17 @@ export default function AlumnoDashboard({
         "EIND-103": { name: "Seguridad e Higiene Industrial en Baja Tensión", code: "EIND-103", credits: 3 },
         "EIND-104": { name: "Matemática Aplicada a la Tecnología Eléctrica", code: "EIND-104", credits: 3 },
         "EIND-105": { name: "Comunicación y Tecnologías Digitales", code: "EIND-105", credits: 2 },
-        "EIND-201": { name: "Circuitos Eléctricos en Corriente Alterna", code: "EIND-201", credits: 4 }
+        "EIND-201": { name: "Circuitos Eléctricos en Corriente Alterna", code: "EIND-201", credits: 4 },
+        "cur_co_101": { name: "Fundamentos de Contabilidad y Doctrina Contable", code: "CONT-101", credits: 4 },
+        "cur_co_102": { name: "Documentación Comercial, Mercantil y Bancaria", code: "CONT-102", credits: 4 },
+        "cur_co_103": { name: "Matemática Financiera y Comercial", code: "CONT-103", credits: 3 },
+        "cur_co_104": { name: "Legislación Comercial y Societaria", code: "CONT-104", credits: 3 },
+        "cur_co_105": { name: "Comunicación y Competencias Digitales", code: "CONT-105", credits: 2 },
+        "CONT-101": { name: "Fundamentos de Contabilidad y Doctrina Contable", code: "CONT-101", credits: 4 },
+        "CONT-102": { name: "Documentación Comercial, Mercantil y Bancaria", code: "CONT-102", credits: 4 },
+        "CONT-103": { name: "Matemática Financiera y Comercial", code: "CONT-103", credits: 3 },
+        "CONT-104": { name: "Legislación Comercial y Societaria", code: "CONT-104", credits: 3 },
+        "CONT-105": { name: "Comunicación y Competencias Digitales", code: "CONT-105", credits: 2 }
       };
 
       const teacherFallbackNames: Record<string, string> = {
@@ -698,12 +763,17 @@ export default function AlumnoDashboard({
         "40112233": "Ing. Manuel Ramos Salazar",
         "41223344": "Ing. Carlos Alberto Mendoza Quispe",
         "42334455": "Ing. Jorge Luis Paucar Silva",
-        "43445566": "Lic. Fernando Gabriel Díaz Torres"
+        "43445566": "Lic. Fernando Gabriel Díaz Torres",
+        "22334455": "Lic. Patricia Elena Benavides Silva",
+        "88776655": "Lic. Patricia Elena Benavides Silva",
+        "33445566": "Dr. Roberto Carlos Vega Santos"
       };
 
       const classroomFallbackNames: Record<string, string> = {
         "aula_101": "Aula 101 - Pabellón A",
         "aula_102": "Aula 102 - Pabellón A",
+        "aula_201": "Aula 201 • Pabellón C",
+        "lab_cont_1": "Laboratorio de Contabilidad y Finanzas",
         "lab_elec_1": "Taller de Máquinas Eléctricas y Tableros",
         "lab_elec_2": "Laboratorio de Cómputo y Simulación",
         "lab_elec_3": "Taller de Instalaciones Eléctricas y Redes BT",
@@ -784,11 +854,103 @@ export default function AlumnoDashboard({
         endDate: mpaPlanningData.periods?.find((p: any) => p.id === studentGroup?.periodId)?.endDate || "2027-07-30",
         studentCount: studentGroup?.capacity || 30,
         description: `Unidad didáctica del Ciclo I correspondiente al plan de estudios oficial de ${enrollment.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad"}.`,
-        formula: `NF = ${getCourseFormula(c.code).expression}`
+        formula: `NF = ${getCourseFormula(c.code).expression}`,
+        attendanceCourseIds: Array.from(new Set([c.id, `cur-${c.id}`, c.code].filter(Boolean)))
       }));
   }, [catalogCourses, enrollment.programId, enrollment.shift, studentGroup, mpaPlanningData.periods]);
 
-  const ciclo2Courses = useMemo(() => [
+  const ciclo2Courses = useMemo(() => (isContabilidad ? [
+    {
+      id: "cur_co_201",
+      name: "Contabilidad General y Plan Contable General Empresarial",
+      code: "CONT-201",
+      credits: 4,
+      classroom: "Aula 201 • Pabellón C",
+      schedule: "Lunes y Miércoles 08:00 AM - 11:00 AM",
+      teacherDni: "88776655",
+      teacherName: "Lic. Patricia Elena Benavides Silva",
+      career: "Contabilidad",
+      group: "CONT-II-A",
+      cycle: "Ciclo II",
+      startDate: "2027-08-16",
+      endDate: "2027-12-17",
+      studentCount: 30,
+      description: "Unidad didáctica del Ciclo II. Aplicación integral del PCGE modificado, registro de libros principales y auxiliares.",
+      formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
+    },
+    {
+      id: "cur_co_202",
+      name: "Títulos Valores y Operaciones Financieras",
+      code: "CONT-202",
+      credits: 4,
+      classroom: "Aula 202 • Pabellón C",
+      schedule: "Martes y Jueves 08:00 AM - 11:00 AM",
+      teacherDni: "41223344",
+      teacherName: "Lic. Marco Antonio Paredes Quispe",
+      career: "Contabilidad",
+      group: "CONT-II-A",
+      cycle: "Ciclo II",
+      startDate: "2027-08-16",
+      endDate: "2027-12-17",
+      studentCount: 30,
+      description: "Ley de Títulos Valores, letras de cambio, pagarés, facturas negociables y operaciones bancarias.",
+      formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
+    },
+    {
+      id: "cur_co_203",
+      name: "Estadística Aplicada a la Gestión Contable",
+      code: "CONT-203",
+      credits: 3,
+      classroom: "Aula 203 • Pabellón C",
+      schedule: "Viernes 08:00 AM - 12:00 PM",
+      teacherDni: "42334455",
+      teacherName: "Lic. Carlos Enrique Vásquez Torres",
+      career: "Contabilidad",
+      group: "CONT-II-A",
+      cycle: "Ciclo II",
+      startDate: "2027-08-16",
+      endDate: "2027-12-17",
+      studentCount: 30,
+      description: "Estadística descriptiva e inferencial aplicada al análisis de datos contables y auditoría.",
+      formula: "NF = 0.20*NPA + 0.30*PC1 + 0.50*EX_FINAL"
+    },
+    {
+      id: "cur_co_204",
+      name: "Ofimática Aplicada a los Negocios (Excel Contable)",
+      code: "CONT-204",
+      credits: 3,
+      classroom: "Lab. Contable 1 • Pabellón C",
+      schedule: "Miércoles 02:00 PM - 06:00 PM",
+      teacherDni: "77889900",
+      teacherName: "Lic. Sofía Lorena Valenzuela Ríos",
+      career: "Contabilidad",
+      group: "CONT-II-A",
+      cycle: "Ciclo II",
+      startDate: "2027-08-16",
+      endDate: "2027-12-17",
+      studentCount: 30,
+      description: "Tablas dinámicas, funciones financieras, macros y automatización de reportes contables en Excel.",
+      formula: "NF = 0.30*NPA + 0.30*PROY + 0.40*EX_FINAL"
+    },
+    {
+      id: "cur_co_205",
+      name: "Inglés Técnico para Negocios y Finanzas",
+      code: "CONT-205",
+      credits: 2,
+      classroom: "Aula 205 • Pabellón C",
+      schedule: "Lunes 02:00 PM - 05:00 PM",
+      teacherDni: "55667788",
+      teacherName: "Lic. Carmen Luzardo",
+      career: "Contabilidad",
+      group: "CONT-II-A",
+      cycle: "Ciclo II",
+      startDate: "2027-08-16",
+      endDate: "2027-12-17",
+      studentCount: 30,
+      description: "Terminología contable y financiera en inglés aplicada a normas NIIF y reportes gerenciales.",
+      formula: "NF = 0.30*NPA + 0.30*ORAL + 0.40*EX_FINAL"
+    }
+  ] : [
     {
       id: "cur_ei_201",
       name: "Circuitos Eléctricos en Corriente Alterna",
@@ -879,18 +1041,62 @@ export default function AlumnoDashboard({
       description: "Terminología técnica en inglés aplicada a manuales de equipos, datasheets y normas internacionales.",
       formula: "NF = 0.30*NPA + 0.30*ORAL + 0.40*EX_FINAL"
     }
-  ], []);
+  ]), [isContabilidad]);
 
   const baseStudentCourses = enrollment.registeredCourses ? dynamicMpaCourses : dynamicMpaCourses.length > 0
     ? dynamicMpaCourses
     : (ciclo1Courses.length > 0 ? ciclo1Courses : courses.filter((c: any) => c.careerId === enrollment.programId || c.career === currentProgram?.name));
 
+  const ciclo6Courses = useMemo(() => {
+    const dynamicC6 = catalogCourses.filter(
+      (c: any) =>
+        c.careerId === enrollment.programId &&
+        (Number(c.cycle ?? c.referenceCycle) === 6 || Number(c.referenceCycle ?? c.cycle) === 6)
+    );
+    if (dynamicC6.length > 0) {
+      return dynamicC6.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        code: c.code,
+        credits: c.credits || 3,
+        classroom: isContabilidad ? "Aula 601 • Pabellón C" : "Taller 601 • Pabellón A",
+        schedule: "Lunes a Viernes 08:00 AM - 12:00 PM",
+        teacherDni: isContabilidad ? "88776655" : "08529631",
+        teacherName: isContabilidad ? "Lic. Patricia Elena Benavides Silva" : "Ing. Manuel Ramos Salazar",
+        career: currentProgram?.name || enrollment.programId,
+        group: isContabilidad ? "CONT-VI-A" : "EI-VI-A",
+        cycle: "Ciclo VI",
+        startDate: "2029-08-16",
+        endDate: "2029-12-17",
+        studentCount: 30,
+        description: `Unidad didáctica del Ciclo VI de ${currentProgram?.name || enrollment.programId}.`,
+        formula: "NF = 0.20*EC1 + 0.30*EP + 0.20*EC2 + 0.30*EF"
+      }));
+    }
+    return isContabilidad ? [
+      { id: "cur_co_601", name: "Proyecto Integrador de Gestión Contable y Tributaria", code: "CONT-601", credits: 5, classroom: "Aula 601 • Pabellón C", schedule: "Lunes y Miércoles 08:00 AM - 11:00 AM", teacherDni: "88776655", teacherName: "Lic. Patricia Elena Benavides Silva", career: "Contabilidad", group: "CONT-VI-A", cycle: "Ciclo VI", startDate: "2029-08-16", endDate: "2029-12-17", studentCount: 30, description: "Proyecto integrador final de gestión contable y tributaria.", formula: "NF = 0.20*EC1 + 0.30*EP + 0.20*EC2 + 0.30*EF" },
+      { id: "cur_co_602", name: "Auditoría Tributaria, Fiscalización y Peritaje Contable", code: "CONT-602", credits: 4, classroom: "Aula 602 • Pabellón C", schedule: "Martes y Jueves 08:00 AM - 11:00 AM", teacherDni: "41223344", teacherName: "Lic. Marco Antonio Paredes Quispe", career: "Contabilidad", group: "CONT-VI-A", cycle: "Ciclo VI", startDate: "2029-08-16", endDate: "2029-12-17", studentCount: 30, description: "Fiscalización SUNAT y peritaje contable judicial.", formula: "NF = 0.20*EC1 + 0.30*EP + 0.20*EC2 + 0.30*EF" },
+      { id: "cur_co_603", name: "Análisis e Interpretación de Estados Financieros", code: "CONT-603", credits: 3, classroom: "Aula 603 • Pabellón C", schedule: "Viernes 08:00 AM - 12:00 PM", teacherDni: "42334455", teacherName: "Lic. Carlos Enrique Vásquez Torres", career: "Contabilidad", group: "CONT-VI-A", cycle: "Ciclo VI", startDate: "2029-08-16", endDate: "2029-12-17", studentCount: 30, description: "Ratios financieros, análisis vertical/horizontal y toma de decisiones.", formula: "NF = 0.20*EC1 + 0.30*EP + 0.20*EC2 + 0.30*EF" },
+      { id: "cur_co_604", name: "Control Interno y Gestión Integral de Riesgos (COSO)", code: "CONT-604", credits: 2, classroom: "Aula 604 • Pabellón C", schedule: "Miércoles 02:00 PM - 05:00 PM", teacherDni: "88776655", teacherName: "Lic. Patricia Elena Benavides Silva", career: "Contabilidad", group: "CONT-VI-A", cycle: "Ciclo VI", startDate: "2029-08-16", endDate: "2029-12-17", studentCount: 30, description: "Marco COSO y evaluación de riesgos empresariales.", formula: "NF = 0.20*EC1 + 0.30*EP + 0.20*EC2 + 0.30*EF" },
+      { id: "cur_co_605", name: "Legislación Laboral y Relaciones de Trabajo", code: "CONT-605", credits: 2, classroom: "Aula 605 • Pabellón C", schedule: "Lunes 02:00 PM - 05:00 PM", teacherDni: "33445566", teacherName: "Abg. Rosa María Flores Huamán", career: "Contabilidad", group: "CONT-VI-A", cycle: "Ciclo VI", startDate: "2029-08-16", endDate: "2029-12-17", studentCount: 30, description: "Regímenes laborales especiales y relaciones colectivas.", formula: "NF = 0.20*EC1 + 0.30*EP + 0.20*EC2 + 0.30*EF" }
+    ] : [
+      { id: "cur_ei_601", name: "Integración de Sistemas Automatizados y Robótica", code: "EIND-601", credits: 4, classroom: "Taller Robótica Industrial", schedule: "Lunes y Miércoles 08:00 AM - 11:00 AM", teacherDni: "44556677", teacherName: "Ing. Roberto Chávez Peña", career: "Electricidad Industrial", group: "EI-VI-A", cycle: "Ciclo VI", startDate: "2029-08-16", endDate: "2029-12-17", studentCount: 30, description: "Integración de celdas robotizadas y automatización.", formula: "NF = 0.20*EC1 + 0.30*EP + 0.20*EC2 + 0.30*EF" },
+      { id: "cur_ei_602", name: "Mantenimiento Predictivo y Gestión de Activos Eléctricos", code: "EIND-602", credits: 4, classroom: "Lab. Predictivo 602", schedule: "Martes y Jueves 08:00 AM - 11:00 AM", teacherDni: "08529631", teacherName: "Ing. Manuel Ramos Salazar", career: "Electricidad Industrial", group: "EI-VI-A", cycle: "Ciclo VI", startDate: "2029-08-16", endDate: "2029-12-17", studentCount: 30, description: "Termografía, análisis vibracional y gestión de activos.", formula: "NF = 0.20*EC1 + 0.30*EP + 0.20*EC2 + 0.30*EF" },
+      { id: "cur_ei_603", name: "Proyectos Electromecánicos y Gestión de Obras", code: "EIND-603", credits: 3, classroom: "Aula de Proyectos 603", schedule: "Viernes 08:00 AM - 12:00 PM", teacherDni: "66778899", teacherName: "Ing. Walter Fernández", career: "Electricidad Industrial", group: "EI-VI-A", cycle: "Ciclo VI", startDate: "2029-08-16", endDate: "2029-12-17", studentCount: 30, description: "Elaboración y supervisión de proyectos electromecánicos.", formula: "NF = 0.20*EC1 + 0.30*EP + 0.20*EC2 + 0.30*EF" },
+      { id: "cur_ei_604", name: "Proyecto de Innovación y Titulación EFSRT", code: "EIND-604", credits: 3, classroom: "Taller de Titulación", schedule: "Miércoles 02:00 PM - 05:00 PM", teacherDni: "08529631", teacherName: "Ing. Manuel Ramos Salazar", career: "Electricidad Industrial", group: "EI-VI-A", cycle: "Ciclo VI", startDate: "2029-08-16", endDate: "2029-12-17", studentCount: 30, description: "Proyecto productivo e innovación tecnológica para titulación.", formula: "NF = 0.20*EC1 + 0.30*EP + 0.20*EC2 + 0.30*EF" },
+      { id: "cur_ei_605", name: "Emprendimiento y Gestión Empresarial", code: "EIND-605", credits: 2, classroom: "Aula 605", schedule: "Lunes 02:00 PM - 05:00 PM", teacherDni: "77889900", teacherName: "Lic. Elena Gómez", career: "Electricidad Industrial", group: "EI-VI-A", cycle: "Ciclo VI", startDate: "2029-08-16", endDate: "2029-12-17", studentCount: 30, description: "Planes de negocio y gestión empresarial.", formula: "NF = 0.20*EC1 + 0.30*EP + 0.20*EC2 + 0.30*EF" }
+    ];
+  }, [catalogCourses, enrollment.programId, isContabilidad, currentProgram?.name]);
+
   const studentCourses = useMemo(() => {
+    if (isGraduated) {
+      return ciclo6Courses;
+    }
     if (isCycle2Paid || isPromotedCycle2) {
       return ciclo2Courses;
     }
     return baseStudentCourses;
-  }, [baseStudentCourses, isCycle2Paid, isPromotedCycle2, ciclo2Courses]);
+  }, [baseStudentCourses, isGraduated, ciclo6Courses, isCycle2Paid, isPromotedCycle2, ciclo2Courses]);
 
   const enrichSingleCourse = useCallback((c: any) => {
     let iconType = "BarChart3";
@@ -913,7 +1119,12 @@ export default function AlumnoDashboard({
       (course as any)._id === c.id
     );
 
-    const matchIds = new Set<string>([c.id, c.code]);
+    const matchIds = new Set<string>([
+      c.id,
+      c.id?.replace(/^cur-/, ""),
+      c.code,
+      ...(c.attendanceCourseIds || [])
+    ].filter(Boolean));
     relatedDbCourses.forEach((rc: any) => {
       if (rc.id) matchIds.add(rc.id);
       if (rc._id) matchIds.add(rc._id);
@@ -957,10 +1168,10 @@ export default function AlumnoDashboard({
     // Check if student has simulated cycle 1 completion from MGE
     const simCourse = (() => {
       try {
+        const isMateoDni = studentDni === "74859612";
         const rawSim = typeof window !== "undefined" ? (
           localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) ||
-          localStorage.getItem("sfa_simulated_cycle1_74859612") ||
-          localStorage.getItem("sfa_simulated_cycle1")
+          (isMateoDni ? (localStorage.getItem("sfa_simulated_cycle1_74859612") || localStorage.getItem("sfa_simulated_cycle1")) : null)
         ) : null;
         if (rawSim) {
           const simData = JSON.parse(rawSim);
@@ -969,24 +1180,27 @@ export default function AlumnoDashboard({
         }
 
         const hasTeacherActa = assignments.some(a =>
-          (a.title?.startsWith("[Planilla]") || a.title?.includes("EX_FINAL") || a.title?.includes("PC1") || a.courseId?.includes("101") || a.courseId === "cur_ei_101") &&
-          a.submissions?.some(s => (s.studentDni === studentDni || s.studentDni === "74859612") && typeof s.grade === "number")
+          (a.courseId === c.id || a.courseId === c.code) &&
+          (a.title?.startsWith("[Planilla]") || a.title?.includes("EX_FINAL") || a.title?.includes("PC1")) &&
+          a.submissions?.some(s => (s.studentDni === studentDni || (isMateoDni && s.studentDni === "74859612")) && typeof s.grade === "number")
         );
 
         const isAnyPromotionOrSimulationActive = typeof window !== "undefined" && Boolean(
           hasTeacherActa ||
           localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
-          localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-          localStorage.getItem("sfa_student_promoted") === "true" ||
           localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
-          localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-          localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
           localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
-          localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
-          localStorage.getItem("sfa_student_cycle") === "2" ||
           localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) ||
-          localStorage.getItem("sfa_simulated_cycle1_74859612") ||
-          localStorage.getItem("sfa_simulated_cycle1")
+          (isMateoDni && (
+            localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+            localStorage.getItem("sfa_student_promoted") === "true" ||
+            localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+            localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
+            localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+            localStorage.getItem("sfa_student_cycle") === "2" ||
+            localStorage.getItem("sfa_simulated_cycle1_74859612") ||
+            localStorage.getItem("sfa_simulated_cycle1")
+          ))
         );
 
         if (isAnyPromotionOrSimulationActive) {
@@ -995,7 +1209,12 @@ export default function AlumnoDashboard({
             "EIND-102": 16.5,
             "EIND-103": 17.0,
             "EIND-104": 15.0,
-            "EIND-105": 16.0
+            "EIND-105": 16.0,
+            "CONT-101": 16.4,
+            "CONT-102": 16.5,
+            "CONT-103": 17.0,
+            "CONT-104": 15.0,
+            "CONT-105": 16.0
           };
           if (defaults[c.code]) {
             return { code: c.code, grade: defaults[c.code], isManual: false };
@@ -1475,6 +1694,7 @@ export default function AlumnoDashboard({
                   studentDni={studentDni}
                   personalData={personalData}
                   onUpdateAssignments={onUpdateAssignments}
+                  assignmentsLoading={assignmentsLoading}
                 />
               )}
 
@@ -1552,6 +1772,7 @@ export default function AlumnoDashboard({
                   enrichedCourses={allEnrichedCourses}
                   selectedCourseDetail={selectedCourseDetail}
                   setSelectedCourseDetail={setSelectedCourseDetail}
+                  cycleStatuses={cycleStatuses}
                   studentInfo={{
                     dni: studentDni,
                     name: personalData ? `${personalData.name} ${personalData.lastName}` : "Mateo Sebastián Quispe Rojas",

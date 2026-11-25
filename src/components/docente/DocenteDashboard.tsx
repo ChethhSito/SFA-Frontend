@@ -17,7 +17,7 @@ import AlertBox from "../ui/AlertBox";
 import Sidebar from "../ui/Sidebar";
 
 // Modular Docente Components
-import { ROSTER, getWeekTheme, WeeklyObservation } from "./DocenteTypes";
+import { ROSTER, getDynamicRoster, getWeekTheme, WeeklyObservation } from "./DocenteTypes";
 import SidebarPrincipal from "./SidebarPrincipal";
 import SidebarCurso, { WeekOption, CourseSection } from "./SidebarCurso";
 import {
@@ -53,6 +53,7 @@ interface DocenteDashboardProps {
   enrollments?: Enrollment[];
   onUpdateMaterials: (mats: CourseMaterial[]) => Promise<boolean>;
   onUpdateAssignments: (asgs: CourseAssignment[]) => Promise<boolean>;
+  onRefreshAssignments?: () => Promise<void>;
   onUpdateAttendance: (att: AttendanceRecord[]) => Promise<boolean>;
   onLogout: () => void;
   onGoToPortal?: () => void;
@@ -113,6 +114,7 @@ export default function DocenteDashboard({
   enrollments = [],
   onUpdateMaterials,
   onUpdateAssignments,
+  onRefreshAssignments,
   onUpdateAttendance,
   attendanceLoading,
   attendanceError,
@@ -231,6 +233,14 @@ export default function DocenteDashboard({
   ) || (teacherDni === "docente" || !teacherDni ? (allTeachers.find((t) => t.careerId === "electronica") || allTeachers[0] || null) : null);
 
   const effectiveTeacherDni = currentTeacher?.dni || teacherDni;
+
+  useEffect(() => {
+    if (currentTeacher?.careerId) {
+      try {
+        localStorage.setItem("sfa_docente_teacher_career", currentTeacher.careerId);
+      } catch {}
+    }
+  }, [currentTeacher]);
 
   const isGlobalCycle2Active = typeof window !== "undefined" && Boolean(
     localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
@@ -406,209 +416,167 @@ export default function DocenteDashboard({
     ];
   }, [selectedTeacherPeriod, effectiveTeacherDni, teacherDni, teacherMpaTasks, scheduleData, schedulePeriod]);
 
-  // Filter courses assigned to this specific teacher strictly by selected academic period
+  // Filter courses assigned to this specific teacher strictly by selected academic period and dynamic career MPA planning
   const teacherCourses = useMemo(() => {
-    if (selectedTeacherPeriod === "2027-II") {
-      const isElectricidad = currentTeacher?.careerId === "electronica" || !currentTeacher?.careerId || effectiveTeacherDni === "99887766";
-      if (isElectricidad) {
-        if (effectiveTeacherDni === "99887766" || teacherDni === "docente" || !teacherDni) {
-          return [
-            {
-              id: "cur_ei_201",
-              code: "EIND-201",
-              name: "Circuitos Eléctricos en Corriente Alterna",
-              credits: 4,
-              classroom: "Aula 201 • Pabellón A",
-              schedule: "Martes y Jueves 08:00 AM - 01:00 PM",
-              teacherDni: effectiveTeacherDni,
-              teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Ing. Manuel Ramos Salazar",
-              careerId: "electronica",
-              career: "Electricidad Industrial",
-              group: "EI-II-A",
-              cycle: 2,
-              referenceCycle: 2,
-              startDate: "2027-08-16",
-              endDate: "2027-12-17",
-              studentCount: 1,
-              description: "Unidad didáctica del Ciclo II. Análisis de formas de onda senoidales, fasores, potencia activa, reactiva y aparente en circuitos RLC.",
-              formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
-            } as any
-          ];
-        }
-        if (effectiveTeacherDni === "44556677") {
-          return [
-            {
-              id: "cur_ei_202",
-              code: "EIND-202",
-              name: "Electrónica Analógica y de Potencia Básica",
-              credits: 4,
-              classroom: "Taller de Potencia",
-              schedule: "Lunes y Miércoles 08:00 AM - 01:00 PM",
-              teacherDni: effectiveTeacherDni,
-              teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Ing. Carlos Alberto Mendoza Quispe",
-              careerId: "electronica",
-              career: "Electricidad Industrial",
-              group: "EI-II-A",
-              cycle: 2,
-              referenceCycle: 2,
-              startDate: "2027-08-16",
-              endDate: "2027-12-17",
-              studentCount: 1,
-              description: "Unidad didáctica del Ciclo II. Diodos de potencia, tiristores, transistores BJT/MOSFET y rectificadores controlados.",
-              formula: "NF = 0.20*NPA + 0.20*LAB1 + 0.20*LAB2 + 0.40*EX_FINAL"
-            } as any
-          ];
-        }
-      }
-      const filtered = allCourses.filter((c) => {
-        if (!isCourseCycle2(c)) return false;
-        return c.teacherDni === effectiveTeacherDni || c.teacherDnis?.includes(effectiveTeacherDni) || c.teachers?.some((t: any) => t.dni === effectiveTeacherDni);
+    const teacherCareer = (currentTeacher?.careerId || "").toLowerCase();
+    const periodCycleMap: Record<string, number> = {
+      "2027-I": 1,
+      "2027-II": 2,
+      "2028-I": 3,
+      "2028-II": 4,
+      "2029-I": 5,
+      "2029-II": 6
+    };
+    const targetCycle = periodCycleMap[selectedTeacherPeriod] || (selectedTeacherPeriod.includes("II") ? 2 : 1);
+
+    // 1. First priority: Check MPA schedule tasks assigned directly to this teacher
+    if (scheduleData?.tasks && scheduleData.tasks.length > 0) {
+      const assignedTasks = scheduleData.tasks.filter((t) =>
+        t.teacherDni === effectiveTeacherDni ||
+        (currentTeacher?.dni && t.teacherDni === currentTeacher.dni)
+      );
+
+      // Group tasks by courseId
+      const courseTasksMap: Record<string, typeof assignedTasks> = {};
+      assignedTasks.forEach((t) => {
+        if (!courseTasksMap[t.courseId]) courseTasksMap[t.courseId] = [];
+        courseTasksMap[t.courseId].push(t);
       });
-      if (filtered.length > 0) return filtered;
-      return [
-        {
-          id: "cur_ei_201",
-          code: "EIND-201",
-          name: "Circuitos Eléctricos en Corriente Alterna",
-          credits: 4,
-          classroom: "Aula 201 • Pabellón A",
-          schedule: "Martes y Jueves 08:00 AM - 01:00 PM",
+
+      const mpaAssignedCourses: any[] = [];
+      Object.entries(courseTasksMap).forEach(([cId, tList]) => {
+        const mpaCourse = scheduleData.courses?.find((c) => c.id === cId || c.code === cId);
+        if (!mpaCourse) return;
+
+        // Verify cycle alignment
+        const group = scheduleData.groups?.find((g) => g.id === tList[0].groupId);
+        const courseCycle = mpaCourse.cycle || group?.cycle || 1;
+        if (courseCycle !== targetCycle) return;
+
+        const classroom = scheduleData.classrooms?.find((r) => r.id === tList[0].classroomId)?.name || "Aula 201 • Pabellón C";
+        const scheduleStr = tList.map((t) => `${t.dayOfWeek} ${t.startTime} - ${t.endTime}`).join(" / ");
+        const groupName = group?.name || tList[0].groupId;
+        const careerName = mpaCourse.careerId === "contabilidad" ? "Contabilidad" : "Electricidad Industrial";
+
+        mpaAssignedCourses.push({
+          id: mpaCourse.id,
+          code: mpaCourse.code,
+          name: mpaCourse.name,
+          credits: mpaCourse.credits || 4,
+          classroom,
+          schedule: scheduleStr || "Horario regular de clases",
           teacherDni: effectiveTeacherDni,
           teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Docente Titular",
-          careerId: "electronica",
-          career: "Electricidad Industrial",
-          group: "EI-II-A",
-          cycle: 2,
-          referenceCycle: 2,
-          startDate: "2027-08-16",
-          endDate: "2027-12-17",
+          careerId: mpaCourse.careerId || teacherCareer || "contabilidad",
+          career: careerName,
+          group: groupName,
+          cycle: courseCycle,
+          referenceCycle: courseCycle,
+          startDate: selectedTeacherPeriod.includes("II") ? "2027-08-16" : "2027-03-22",
+          endDate: selectedTeacherPeriod.includes("II") ? "2027-12-17" : "2027-07-30",
           studentCount: 1,
-          description: "Unidad didáctica del Ciclo II. Análisis de formas de onda senoidales, fasores, potencia activa, reactiva y aparente en circuitos RLC.",
+          description: `Unidad didáctica del Ciclo ${courseCycle}. Formación oficial técnica en ${mpaCourse.name}.`,
           formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
-        } as any
-      ];
+        });
+      });
+
+      if (mpaAssignedCourses.length > 0) {
+        return mpaAssignedCourses;
+      }
     }
 
-    if (selectedTeacherPeriod === "2028-I") {
-      return [
-        {
-          id: "cur_ei_301",
-          code: "EIND-301",
-          name: "Máquinas Eléctricas y Transformadores Industriales",
-          credits: 4,
-          classroom: "Aula 301 • Pabellón A",
-          schedule: "Lunes y Miércoles 08:00 AM - 12:00 PM",
-          teacherDni: effectiveTeacherDni,
-          teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Ing. Manuel Ramos Salazar",
-          careerId: "electronica",
-          career: "Electricidad Industrial",
-          group: "EI-III-A",
-          cycle: 3,
-          referenceCycle: 3,
-          startDate: "2028-03-15",
-          endDate: "2028-07-16",
-          studentCount: 1,
-          description: "Unidad didáctica del Ciclo III. Mantenimiento, conexionado trifásico y balance térmico de transformadores y máquinas rotativas.",
-          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
-        } as any
-      ];
-    }
-
-    if (selectedTeacherPeriod === "2028-II") {
-      return [
-        {
-          id: "cur_ei_401",
-          code: "EIND-401",
-          name: "Automatización Industrial y Control con PLC",
-          credits: 4,
-          classroom: "Lab Automatización • Pabellón B",
-          schedule: "Martes y Jueves 08:00 AM - 12:00 PM",
-          teacherDni: effectiveTeacherDni,
-          teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Ing. Manuel Ramos Salazar",
-          careerId: "electronica",
-          career: "Electricidad Industrial",
-          group: "EI-IV-A",
-          cycle: 4,
-          referenceCycle: 4,
-          startDate: "2028-08-16",
-          endDate: "2028-12-17",
-          studentCount: 1,
-          description: "Unidad didáctica del Ciclo IV. Programación en Ladder, Grafcet y cableado de señales analógicas y digitales en PLC Siemens S7-1200.",
-          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
-        } as any
-      ];
-    }
-
-    if (selectedTeacherPeriod === "2029-I") {
-      return [
-        {
-          id: "cur_ei_501",
-          code: "EIND-501",
-          name: "Sistemas Eléctricos de Potencia y Subestaciones",
-          credits: 4,
-          classroom: "Aula 501 • Pabellón A",
-          schedule: "Lunes y Miércoles 08:00 AM - 12:00 PM",
-          teacherDni: effectiveTeacherDni,
-          teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Ing. Manuel Ramos Salazar",
-          careerId: "electronica",
-          career: "Electricidad Industrial",
-          group: "EI-V-A",
-          cycle: 5,
-          referenceCycle: 5,
-          startDate: "2029-03-15",
-          endDate: "2029-07-16",
-          studentCount: 1,
-          description: "Unidad didáctica del Ciclo V. Coordinación de protecciones en media y alta tensión, relevadores y cálculos de cortocircuito.",
-          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
-        } as any
-      ];
-    }
-
-    if (selectedTeacherPeriod === "2029-II") {
-      return [
-        {
-          id: "cur_ei_601",
-          code: "EIND-601",
-          name: "Proyectos de Innovación Electromecánica y Titulación",
-          credits: 4,
-          classroom: "Taller Central • Pabellón A",
-          schedule: "Viernes 08:00 AM - 01:00 PM",
-          teacherDni: effectiveTeacherDni,
-          teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Ing. Manuel Ramos Salazar",
-          careerId: "electronica",
-          career: "Electricidad Industrial",
-          group: "EI-VI-A",
-          cycle: 6,
-          referenceCycle: 6,
-          startDate: "2029-08-16",
-          endDate: "2029-12-17",
-          studentCount: 1,
-          description: "Unidad didáctica del Ciclo VI. Desarrollo y sustentación de proyectos técnicos de titulación para la obtención del Título Profesional Técnico.",
-          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
-        } as any
-      ];
-    }
-
-    // Period 2027-I (Ciclo I only: strictly exclude Ciclo II courses)
-    return allCourses.filter((c) => {
-      if (isCourseCycle2(c)) return false;
+    // 2. Second priority: Filter allCourses matching this teacher and cycle
+    const matchedFromAll = allCourses.filter((c) => {
+      const cycleMatch = targetCycle === 1 ? !isCourseCycle2(c) : isCourseCycle2(c);
+      if (!cycleMatch) return false;
       if (c.teacherDni === effectiveTeacherDni) return true;
       if (c.teacherDnis && c.teacherDnis.includes(effectiveTeacherDni)) return true;
       if (c.teachers && c.teachers.some((t: any) => t.dni === effectiveTeacherDni)) return true;
-      if (teacherDni === "docente" || !teacherDni) {
-        if (currentTeacher) {
-          return (
-            c.teacherDni === currentTeacher.dni ||
-            c.teacherDnis?.includes(currentTeacher.dni) ||
-            c.teachers?.some((t: any) => t.dni === currentTeacher.dni) ||
-            (c.careerId && currentTeacher.careerId && c.careerId === currentTeacher.careerId)
-          );
-        }
-        return true;
-      }
+      if (currentTeacher?.dni && (c.teacherDni === currentTeacher.dni || c.teacherDnis?.includes(currentTeacher.dni))) return true;
       return false;
     });
-  }, [allCourses, effectiveTeacherDni, teacherDni, currentTeacher, selectedTeacherPeriod]);
+
+    if (matchedFromAll.length > 0) {
+      return matchedFromAll;
+    }
+
+    // 3. Fallback per career & cycle: ensure ANY teacher always has their real official curricular course
+    if (teacherCareer.includes("cont") || effectiveTeacherDni === "22334455") {
+      const contSyllabus: Record<number, { code: string; id: string; name: string; credits: number; classroom: string; group: string; schedule: string }> = {
+        1: { code: "CONT-101", id: "cur_co_101", name: "Fundamentos de Contabilidad y Doctrina Contable", credits: 4, classroom: "Aula 201 • Pabellón C", group: "CONT-I-A", schedule: "Lunes 08:00 AM - 09:40 AM" },
+        2: { code: "CONT-201", id: "cur_co_201", name: "Contabilidad General y Plan Contable General Empresarial", credits: 4, classroom: "Aula 201 • Pabellón C", group: "CONT-II-A", schedule: "Martes y Jueves 08:00 AM - 10:00 AM" },
+        3: { code: "CONT-301", id: "cur_co_301", name: "Contabilidad de Sociedades Mercantiles", credits: 4, classroom: "Aula 301 • Pabellón C", group: "CONT-III-A", schedule: "Lunes y Miércoles 08:00 AM - 10:00 AM" },
+        4: { code: "CONT-401", id: "cur_co_401", name: "Contabilidad de Costos Avanzada por Procesos y Órdenes", credits: 4, classroom: "Aula 401 • Pabellón C", group: "CONT-IV-A", schedule: "Martes y Jueves 08:00 AM - 10:00 AM" },
+        5: { code: "CONT-501", id: "cur_co_501", name: "Auditoría Financiera y Procedimientos de Control", credits: 4, classroom: "Aula 501 • Pabellón C", group: "CONT-V-A", schedule: "Lunes y Miércoles 08:00 AM - 10:00 AM" },
+        6: { code: "CONT-601", id: "cur_co_601", name: "Proyecto Integrador de Gestión Contable y Tributaria", credits: 5, classroom: "Aula 601 • Pabellón C", group: "CONT-VI-A", schedule: "Viernes 08:00 AM - 01:00 PM" }
+      };
+      const info = contSyllabus[targetCycle] || contSyllabus[1];
+      return [
+        {
+          id: info.id,
+          code: info.code,
+          name: info.name,
+          credits: info.credits,
+          classroom: info.classroom,
+          schedule: info.schedule,
+          teacherDni: effectiveTeacherDni,
+          teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Lic. Patricia Elena Benavides Silva",
+          careerId: "contabilidad",
+          career: "Contabilidad",
+          group: info.group,
+          cycle: targetCycle,
+          referenceCycle: targetCycle,
+          startDate: targetCycle % 2 === 0 ? "2027-08-16" : "2027-03-22",
+          endDate: targetCycle % 2 === 0 ? "2027-12-17" : "2027-07-30",
+          studentCount: 1,
+          description: `Unidad didáctica oficial del Ciclo ${targetCycle} de Contabilidad.`,
+          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
+        } as any
+      ];
+    }
+
+    // Default Electricidad Industrial fallback per cycle
+    const elecSyllabus: Record<number, { code: string; id: string; name: string; credits: number; classroom: string; group: string; schedule: string }> = {
+      1: { code: "EIND-101", id: "cur_ei_101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, classroom: "Aula 101 • Pabellón A", group: "EI-I-A", schedule: "Lunes 08:00 AM - 01:00 PM" },
+      2: { code: "EIND-201", id: "cur_ei_201", name: "Circuitos Eléctricos en Corriente Alterna", credits: 4, classroom: "Aula 201 • Pabellón A", group: "EI-II-A", schedule: "Martes y Jueves 08:00 AM - 01:00 PM" },
+      3: { code: "EIND-301", id: "cur_ei_301", name: "Máquinas Eléctricas y Transformadores Industriales", credits: 4, classroom: "Aula 301 • Pabellón A", group: "EI-III-A", schedule: "Lunes y Miércoles 08:00 AM - 12:00 PM" },
+      4: { code: "EIND-401", id: "cur_ei_401", name: "Automatización Industrial y Control con PLC", credits: 4, classroom: "Lab Automatización • Pabellón B", group: "EI-IV-A", schedule: "Martes y Jueves 08:00 AM - 12:00 PM" },
+      5: { code: "EIND-501", id: "cur_ei_501", name: "Sistemas Eléctricos de Potencia y Subestaciones", credits: 4, classroom: "Aula 501 • Pabellón A", group: "EI-V-A", schedule: "Lunes y Miércoles 08:00 AM - 12:00 PM" },
+      6: { code: "EIND-601", id: "cur_ei_601", name: "Proyectos de Innovación Electromecánica y Titulación", credits: 4, classroom: "Taller Central • Pabellón A", group: "EI-VI-A", schedule: "Viernes 08:00 AM - 01:00 PM" }
+    };
+    const elecInfo = elecSyllabus[targetCycle] || elecSyllabus[1];
+    return [
+      {
+        id: elecInfo.id,
+        code: elecInfo.code,
+        name: elecInfo.name,
+        credits: elecInfo.credits,
+        classroom: elecInfo.classroom,
+        schedule: elecInfo.schedule,
+        teacherDni: effectiveTeacherDni,
+        teacherName: currentTeacher ? `${currentTeacher.name} ${currentTeacher.lastName}` : "Ing. Manuel Ramos Salazar",
+        careerId: "electronica",
+        career: "Electricidad Industrial",
+        group: elecInfo.group,
+        cycle: targetCycle,
+        referenceCycle: targetCycle,
+        startDate: targetCycle % 2 === 0 ? "2027-08-16" : "2027-03-22",
+        endDate: targetCycle % 2 === 0 ? "2027-12-17" : "2027-07-30",
+        studentCount: 1,
+        description: `Unidad didáctica oficial del Ciclo ${targetCycle} de Electricidad Industrial.`,
+        formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL"
+      } as any
+    ];
+  }, [allCourses, effectiveTeacherDni, currentTeacher, selectedTeacherPeriod, scheduleData, isCourseCycle2]);
+
+  const activeGroupNames = useMemo(() => {
+    const groups = Array.from(new Set(teacherCourses.map((c) => c.group).filter(Boolean)));
+    if (groups.length > 0) return groups.join(", ");
+    if (currentTeacher?.careerId?.includes("cont") || effectiveTeacherDni === "22334455") {
+      return selectedTeacherPeriod === "2027-II" ? "CONT-II-A" : "CONT-I-A";
+    }
+    return selectedTeacherPeriod === "2027-II" ? "EI-II-A" : "EI-I-A";
+  }, [teacherCourses, currentTeacher, effectiveTeacherDni, selectedTeacherPeriod]);
 
   const dashboardPageCount = Math.max(1, Math.ceil(teacherCourses.length / DASHBOARD_COURSES_PER_PAGE));
   const directoryPageCount = Math.max(1, Math.ceil(teacherCourses.length / DIRECTORY_COURSES_PER_PAGE));
@@ -631,6 +599,30 @@ export default function DocenteDashboard({
       localStorage.removeItem("sfa_selected_course_career");
     }
   }, [selectedCourse]);
+
+  const activeCourseStudents = useMemo(() => {
+    const targetProg = (selectedCourse?.careerId || selectedCourse?.career || "").toLowerCase().trim();
+    const matched = (enrollments || [])
+      .filter((e) => {
+        const isMat = e.academicStatus === "MATRICULADO" || e.academicStatus === "ADMITIDO";
+        if (!isMat) return false;
+        if (!targetProg) return true;
+        const prog = (e.programId || "").toLowerCase().trim();
+        return prog.includes(targetProg) || targetProg.includes(prog);
+      })
+      .map((e) => studentsList[e.studentDni])
+      .filter(Boolean);
+
+    if (matched.length > 0) return matched;
+    const rosterFallback = getDynamicRoster(targetProg);
+    return rosterFallback.map((r) => ({
+      dni: r.dni,
+      name: r.name,
+      lastName: r.lastName,
+      email: r.email,
+      phone: r.phone
+    })) as any;
+  }, [enrollments, studentsList, selectedCourse]);
 
   useEffect(() => {
     if (enrollments && enrollments.length > 0) {
@@ -851,9 +843,14 @@ export default function DocenteDashboard({
   // Actions: Refresh assignments from server
   const handleRefreshAssignments = async () => {
     try {
-      const list = await fetchCourseAssignments();
-      if (list && Array.isArray(list)) {
-        await onUpdateAssignments(list);
+      if (onRefreshAssignments) {
+        await onRefreshAssignments();
+        notify("Entregas sincronizadas desde el servidor.", true);
+      } else {
+        const list = await fetchCourseAssignments();
+        if (list && Array.isArray(list)) {
+          await onUpdateAssignments(list);
+        }
       }
     } catch (e) {
       console.warn("Could not refresh assignments:", e);
@@ -943,7 +940,9 @@ export default function DocenteDashboard({
     const realAttendanceRate = attTotal > 0 ? (attPresente / attTotal) * 100 : 0;
 
     const uniqueBaseCourses = new Set(teacherCourses.map((c) => c.code.replace(/-(TEO|TAL|LAB)$/, "")));
-    const uniqueStudents = ROSTER.length;
+    const teacherCareer = currentTeacher?.careerId || teacherCourses[0]?.careerId || (effectiveTeacherDni === "22334455" ? "contabilidad" : "electronica");
+    const currentRoster = getDynamicRoster(teacherCareer);
+    const uniqueStudents = currentRoster.length;
 
     return {
       totalCourses: uniqueBaseCourses.size,
@@ -1299,7 +1298,7 @@ export default function DocenteDashboard({
                       {globalStats.totalStudents} Alumno{globalStats.totalStudents === 1 ? "" : "s"}
                     </span>
                     <span className="text-[10px] text-emerald-600 font-bold block">
-                      Grupo {selectedTeacherPeriod === "2027-II" ? "EI-II-A" : "EI-I-A"} • Matriculado
+                      Grupo {activeGroupNames} • Matriculado
                     </span>
                   </div>
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 border border-blue-100 flex items-center justify-center shrink-0">
@@ -1405,6 +1404,9 @@ export default function DocenteDashboard({
                                 <button
                                   onClick={() => {
                                     setSelectedCourseId(c.id);
+                                    try {
+                                      localStorage.setItem("sfa_selected_course_career", c.careerId || c.career || "");
+                                    } catch {}
                                     setActiveSection("general");
                                     setActiveTab("curso");
                                     setShowMobileSidebarCurso(false);
@@ -1655,6 +1657,9 @@ export default function DocenteDashboard({
                         <button
                           onClick={() => {
                             setSelectedCourseId(c.id);
+                            try {
+                              localStorage.setItem("sfa_selected_course_career", c.careerId || c.career || "");
+                            } catch {}
                             setActiveSection("general");
                             setActiveTab("curso");
                             setShowMobileSidebarCurso(false);
@@ -1690,7 +1695,19 @@ export default function DocenteDashboard({
           {selectedCourseId === null && activeTab === "control_asistencia" && (
             <PageTransition id="control-asistencia-general-tab">
               <ControlAsistenciaPrincipal
-                students={Object.values(studentsList)}
+                students={
+                  (() => {
+                    const teacherCareer = currentTeacher?.careerId || teacherCourses[0]?.careerId || (effectiveTeacherDni === "22334455" ? "contabilidad" : "electronica");
+                    const dynamicStudents = getDynamicRoster(teacherCareer);
+                    return dynamicStudents.map((r) => ({
+                      dni: r.dni,
+                      name: r.name,
+                      lastName: r.lastName,
+                      email: r.email,
+                      phone: r.phone
+                    })) as any;
+                  })()
+                }
                 loading={attendanceLoading}
                 error={attendanceError}
                 onReload={onReloadAttendance}
@@ -1863,7 +1880,7 @@ export default function DocenteDashboard({
                         loading={attendanceLoading}
                         error={attendanceError}
                         onReload={onReloadAttendance}
-                        students={enrollments.filter((enrollment) => enrollment.academicStatus === "MATRICULADO" && enrollment.programId === (selectedCourse?.careerId || selectedCourse?.career)).map((enrollment) => studentsList[enrollment.studentDni]).filter(Boolean)}
+                        students={activeCourseStudents}
                         courseId={selectedCourseId}
                         week={selectedWeek}
                         attendanceRecords={attendance}
@@ -1888,7 +1905,7 @@ export default function DocenteDashboard({
                         courseId={selectedCourseId}
                         week={selectedWeek}
                         assignments={getFilteredAssignments()}
-                        students={enrollments.filter((enrollment) => enrollment.academicStatus === "MATRICULADO" && enrollment.programId === (selectedCourse?.careerId || selectedCourse?.career)).map((enrollment) => studentsList[enrollment.studentDni]).filter(Boolean)}
+                        students={activeCourseStudents}
                         onPublishAssignment={handlePublishAssignment}
                         onEditAssignment={handleEditAssignment}
                         onDeleteAssignment={handleDeleteAssignment}
@@ -1903,7 +1920,7 @@ export default function DocenteDashboard({
                         courseId={selectedCourseId}
                         courseCode={selectedCourse?.code}
                         week={selectedWeek}
-                        students={enrollments.filter((enrollment) => enrollment.academicStatus === "MATRICULADO" && enrollment.programId === (selectedCourse?.careerId || selectedCourse?.career)).map((enrollment) => studentsList[enrollment.studentDni]).filter(Boolean)}
+                        students={activeCourseStudents}
                         assignments={assignments}
                         onUpdateAssignments={onUpdateAssignments}
                       />
@@ -1939,17 +1956,7 @@ export default function DocenteDashboard({
                     weeksCount={16}
                     {...getCourseAggregates(selectedCourseId)}
                     assignments={assignments}
-                    students={
-                      (() => {
-                        const filtered = enrollments
-                          .filter((e) => e.academicStatus === "MATRICULADO" && (!selectedCourse?.careerId || e.programId === selectedCourse.careerId || e.programId === selectedCourse.career))
-                          .map((e) => studentsList[e.studentDni])
-                          .filter(Boolean);
-                        if (filtered.length > 0) return filtered;
-                        if (studentsList && Object.keys(studentsList).length > 0) return Object.values(studentsList);
-                        return ROSTER as any;
-                      })()
-                    }
+                    students={activeCourseStudents}
                     teacherDni={teacherDni}
                     onUpdateAssignments={onUpdateAssignments}
                     onUpdateAttendance={onUpdateAttendance}

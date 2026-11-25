@@ -18,6 +18,7 @@ interface DocenteRouterProps {
   enrollments?: Enrollment[];
   onUpdateMaterials: (updated: CourseMaterial[]) => Promise<boolean>;
   onUpdateAssignments: (updated: CourseAssignment[]) => Promise<boolean>;
+  onRefreshAssignments?: () => Promise<void>;
   onUpdateAttendance: (updated: AttendanceRecord[]) => Promise<boolean>;
   onLogout: () => void;
   onGoToPortal?: () => void;
@@ -34,6 +35,7 @@ export default function DocenteRouter({
   enrollments = [],
   onUpdateMaterials,
   onUpdateAssignments,
+  onRefreshAssignments,
   onUpdateAttendance,
   attendanceLoading,
   attendanceError,
@@ -100,6 +102,7 @@ export default function DocenteRouter({
       enrollments={enrollments}
       onUpdateMaterials={onUpdateMaterials}
       onUpdateAssignments={onUpdateAssignments}
+      onRefreshAssignments={onRefreshAssignments}
       onUpdateAttendance={onUpdateAttendance}
       onLogout={onLogout}
       onGoToPortal={onGoToPortal}

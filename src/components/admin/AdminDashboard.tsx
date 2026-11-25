@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Calendar, CreditCard, Users, GraduationCap, CheckSquare, Compass, FileText, CheckCircle2, Coins
 } from "lucide-react";
@@ -97,6 +97,10 @@ export default function AdminDashboard({
   const [selectedMatriculaDni, setSelectedMatriculaDni] = useState<string | null>(null);
   const [selectedFichaDni, setSelectedFichaDni] = useState<string | null>(null);
   const [selectedDossierAppDni, setSelectedDossierAppDni] = useState<string | null>(null);
+  const applicantsRef = useRef(applicants);
+  useEffect(() => {
+    applicantsRef.current = applicants;
+  }, [applicants]);
   const [individualDocObs, setIndividualDocObs] = useState<{ [key: string]: string }>({});
   const [prepostulantesCareerFilter, setPrepostulantesCareerFilter] = useState<string>("all");
   const [postulantesCareerFilter, setPostulantesCareerFilter] = useState<string>("all");
@@ -348,6 +352,7 @@ export default function AdminDashboard({
       }
       try {
         localStorage.setItem("sfa_enrollments", JSON.stringify(updated));
+        window.dispatchEvent(new Event("sfa_sync_event"));
       } catch (e) {
         console.warn(e);
       }
@@ -591,7 +596,8 @@ export default function AdminDashboard({
     status: "Validado" | "Observado" | "Pendiente",
     observations?: string
   ) => {
-    const updated = applicants.map((app) => {
+    const currentList = applicantsRef.current;
+    const updated = currentList.map((app) => {
       if (app.dni === applicantDni) {
         const docsObj = app.docs || {
           dniFile: { status: "No Enviado" as const },
@@ -616,10 +622,10 @@ export default function AdminDashboard({
         };
 
         const allDocsValidated = 
-          updatedDocs.dniFile.status === "Validado" && 
-          updatedDocs.certificadoFile.status === "Validado" && 
-          (!updatedDocs.partidaFile || updatedDocs.partidaFile.status === "Validado" || updatedDocs.partidaFile.status === "No Enviado") && 
-          updatedDocs.fotoFile.status === "Validado";
+          updatedDocs.dniFile?.status === "Validado" && 
+          updatedDocs.certificadoFile?.status === "Validado" && 
+          (!updatedDocs.partidaFile || updatedDocs.partidaFile?.status === "Validado" || updatedDocs.partidaFile?.status === "No Enviado") && 
+          updatedDocs.fotoFile?.status === "Validado";
 
         return {
           ...app,
@@ -630,6 +636,7 @@ export default function AdminDashboard({
       return app;
     });
 
+    applicantsRef.current = updated;
     onUpdateApplicants(updated);
   };
 
@@ -643,7 +650,8 @@ export default function AdminDashboard({
       return;
     }
 
-    const updated = applicants.map((app) => {
+    const currentList = applicantsRef.current;
+    const updated = currentList.map((app) => {
       if (app.dni === applicantDni) {
         const isAdmitted = status === "Enrolled" || ((app.admitted === "ADMITIDO" || app.admitted === true) && !!app.examClassroom);
         
@@ -679,6 +687,7 @@ export default function AdminDashboard({
       return app;
     });
 
+    applicantsRef.current = updated;
     onUpdateApplicants(updated);
     notify(`Expediente del postulante con DNI ${applicantDni} actualizado a estado: ${status === "Approved" ? "COMPLETADO (APROBADO)" : status}.`, "success");
   };

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   fetchEnrollments,
   createEnrollment as apiCreateEnrollment,
@@ -34,7 +34,7 @@ export function useStudentEnrollment() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const reloadEnrollments = () => {
+  const reloadEnrollments = useCallback(() => {
     setLoading(true);
     return fetchEnrollments()
       .then((apiEnrolls) => {
@@ -54,7 +54,7 @@ export function useStudentEnrollment() {
         setError("Error al cargar matrículas.");
       })
       .finally(() => setLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
     void reloadEnrollments();
@@ -67,6 +67,7 @@ export function useStudentEnrollment() {
     enrollmentsRef.current = normalized;
     try {
       localStorage.setItem("sfa_enrollments", JSON.stringify(normalized));
+      window.dispatchEvent(new Event("sfa_sync_event"));
     } catch (e) {
       console.warn("[localStorage] Could not save sfa_enrollments:", e);
     }

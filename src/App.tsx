@@ -45,6 +45,7 @@ export default function App() {
     reloadAdmissionPeriods,
     reloadApplicants,
     reloadEnrollments,
+    reloadStudents,
     handleUpdateApplicantsFromAdmin,
     handleUpdateEnrollments,
     handleCreateEnrollment,
@@ -59,6 +60,7 @@ export default function App() {
     handleUpdateCourses,
     handleUpdateMaterials,
     handleUpdateAssignments,
+    refreshAssignments,
     handleUpdateAttendance,
     handleUpdateGraduations,
     handleLogout,
@@ -69,7 +71,10 @@ export default function App() {
     void reloadApplicants?.();
     void reloadAdmissionPeriods?.();
     void reloadEnrollments?.();
-  }, [currentUser.role, reloadApplicants, reloadAdmissionPeriods]);
+    void reloadStudents?.();
+    void reloadGraduations?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser.role]);
 
   const handleEnterIntranet = () => {
     const roles = ["superadmin", "administrador", "postulante", "alumno", "docente", "mpa", "mge", "maf"];
@@ -211,6 +216,7 @@ export default function App() {
           courses={courses}
           materials={materials}
           assignments={assignments}
+          assignmentsLoading={assignmentsLoading}
           evaluations={evaluations}
           attendance={attendance}
           cycleStatuses={cycleStatuses}
@@ -233,12 +239,14 @@ export default function App() {
           courses={courses}
           materials={materials}
           assignments={assignments}
+          assignmentsLoading={assignmentsLoading}
           evaluations={evaluations}
           attendance={attendance}
           studentsList={studentsData}
           enrollments={enrollments}
           onUpdateMaterials={handleUpdateMaterials}
           onUpdateAssignments={handleUpdateAssignments}
+          onRefreshAssignments={refreshAssignments}
           onUpdateAttendance={handleUpdateAttendance}
           onLogout={handleLogout}
           onGoToPortal={handleGoPortal}

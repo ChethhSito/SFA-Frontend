@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { updateStudentCycleStatuses } from "../../../services/api";
 import {
   GraduationCap,
   XCircle,
@@ -22,6 +23,62 @@ interface Props {
   program: string;
   onConfirm: () => void;
 }
+
+// Cursos formativos completos de los 6 ciclos (Contabilidad)
+const CONT_FULL_CURRICULUM_COURSES: Record<number, Array<{
+  code: string;
+  name: string;
+  credits: number;
+  doc: string;
+  grade: number;
+  status: "APROBADO";
+  asis: string;
+  isReal: boolean;
+  notes?: string;
+}>> = {
+  1: [
+    { code: "CONT-101", name: "Fundamentos de Contabilidad y Doctrina Contable", credits: 4, doc: "Lic. Patricia Elena Benavides Silva", grade: 16.4, status: "APROBADO", asis: "16/16 (100%)", isReal: true, notes: "Acta Consolidada" },
+    { code: "CONT-102", name: "Documentación Comercial, Mercantil y Bancaria", credits: 4, doc: "Lic. Marco Antonio Paredes Quispe", grade: 16.5, status: "APROBADO", asis: "16/16 (100%)", isReal: true, notes: "Acta Consolidada" },
+    { code: "CONT-103", name: "Matemática Financiera y Comercial", credits: 3, doc: "Lic. Carlos Enrique Vásquez Torres", grade: 17.0, status: "APROBADO", asis: "16/16 (100%)", isReal: true, notes: "Acta Consolidada" },
+    { code: "CONT-104", name: "Legislación Comercial y Societaria", credits: 3, doc: "Abg. Rosa María Flores Huamán", grade: 15.0, status: "APROBADO", asis: "16/16 (100%)", isReal: true, notes: "Acta Consolidada" },
+    { code: "CONT-105", name: "Comunicación y Competencias Digitales", credits: 2, doc: "Lic. Sofía Lorena Valenzuela Ríos", grade: 16.0, status: "APROBADO", asis: "16/16 (100%)", isReal: true, notes: "Acta Consolidada" },
+  ],
+  2: [
+    { code: "CONT-201", name: "Contabilidad General y Plan Contable General Empresarial", credits: 4, doc: "Lic. Patricia Elena Benavides Silva", grade: 16.6, status: "APROBADO", asis: "16/16 (100%)", isReal: true, notes: "Acta Consolidada" },
+    { code: "CONT-202", name: "Títulos Valores y Operaciones Financieras", credits: 4, doc: "Lic. Marco Antonio Paredes Quispe", grade: 17.0, status: "APROBADO", asis: "16/16 (100%)", isReal: true, notes: "Acta Consolidada" },
+    { code: "CONT-203", name: "Estadística Aplicada a la Gestión Contable", credits: 3, doc: "Lic. Carlos Enrique Vásquez Torres", grade: 16.0, status: "APROBADO", asis: "16/16 (100%)", isReal: true, notes: "Acta Consolidada" },
+    { code: "CONT-204", name: "Ofimática Aplicada a los Negocios (Excel Contable)", credits: 3, doc: "Lic. Sofía Lorena Valenzuela Ríos", grade: 16.5, status: "APROBADO", asis: "16/16 (100%)", isReal: true, notes: "Acta Consolidada" },
+    { code: "CONT-205", name: "Inglés Técnico para Negocios y Finanzas", credits: 2, doc: "Lic. Carmen Luzardo", grade: 15.5, status: "APROBADO", asis: "16/16 (100%)", isReal: true, notes: "Acta Consolidada" },
+  ],
+  3: [
+    { code: "CONT-301", name: "Contabilidad de Sociedades Mercantiles", credits: 4, doc: "Lic. Patricia Elena Benavides Silva", grade: 17.0, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-302", name: "Legislación Tributaria I (IGV, Comprobantes y Detracciones)", credits: 4, doc: "Abg. Rosa María Flores Huamán", grade: 16.5, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-303", name: "Costos y Presupuestos Básicos", credits: 3, doc: "Lic. Marco Antonio Paredes Quispe", grade: 17.5, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-304", name: "Contabilidad Computarizada I (Concar / Siigo)", credits: 3, doc: "Lic. Sofía Lorena Valenzuela Ríos", grade: 16.0, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-305", name: "Ética y Deontología Profesional", credits: 2, doc: "Lic. Carmen Luzardo", grade: 17.0, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+  ],
+  4: [
+    { code: "CONT-401", name: "Contabilidad de Costos Avanzada por Procesos y Órdenes", credits: 4, doc: "Lic. Patricia Elena Benavides Silva", grade: 17.5, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-402", name: "Legislación Tributaria II (Impuesto a la Renta de 3ra)", credits: 4, doc: "Abg. Rosa María Flores Huamán", grade: 18.0, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-403", name: "Legislación Laboral, Planillas y T-Registro / PLAME", credits: 3, doc: "Abg. Rosa María Flores Huamán", grade: 16.5, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-404", name: "Contabilidad Computarizada II (Sistemas ERP Integrados)", credits: 3, doc: "Lic. Sofía Lorena Valenzuela Ríos", grade: 17.0, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-405", name: "Gestión Financiera y Flujo de Caja", credits: 2, doc: "Lic. Carlos Enrique Vásquez Torres", grade: 18.0, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+  ],
+  5: [
+    { code: "CONT-501", name: "Auditoría Financiera y Procedimientos de Control", credits: 4, doc: "Lic. Patricia Elena Benavides Silva", grade: 18.0, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-502", name: "Formulación y Presentación de Estados Financieros (NIIF)", credits: 4, doc: "Lic. Marco Antonio Paredes Quispe", grade: 17.5, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-503", name: "Finanzas Corporativas y Valoración de Empresas", credits: 3, doc: "Lic. Carlos Enrique Vásquez Torres", grade: 18.0, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-504", name: "Tributación Municipal y Aduanera", credits: 3, doc: "Abg. Rosa María Flores Huamán", grade: 16.5, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-505", name: "Emprendimiento y Plan de Negocios Contables", credits: 2, doc: "Lic. Elena Gómez", grade: 19.0, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+  ],
+  6: [
+    { code: "CONT-601", name: "Proyecto Integrador de Gestión Contable y Tributaria", credits: 5, doc: "Lic. Patricia Elena Benavides Silva", grade: 18.5, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-602", name: "Auditoría Tributaria, Fiscalización y Peritaje Contable", credits: 4, doc: "Lic. Marco Antonio Paredes Quispe", grade: 17.0, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-603", name: "Análisis e Interpretación de Estados Financieros", credits: 3, doc: "Lic. Carlos Enrique Vásquez Torres", grade: 17.5, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-604", name: "Control Interno y Gestión Integral de Riesgos (COSO)", credits: 2, doc: "Lic. Patricia Elena Benavides Silva", grade: 19.0, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+    { code: "CONT-605", name: "Legislación Laboral y Relaciones de Trabajo", credits: 2, doc: "Abg. Rosa María Flores Huamán", grade: 18.0, status: "APROBADO", asis: "16/16 (100%)", isReal: false, notes: "A Consolidar" },
+  ],
+};
 
 // Cursos formativos completos de los 6 ciclos (Electricidad Industrial)
 const FULL_CURRICULUM_COURSES: Record<number, Array<{
@@ -101,58 +158,94 @@ export const MgeAcreditarPlanCompletoModal: React.FC<Props> = ({
   if (!isOpen || !student) return null;
 
   const studentDni = student.dni || "74859612";
+  const isContabilidad = (program || student.programId || "").toLowerCase().includes("cont");
+  const activeCurriculum = isContabilidad ? CONT_FULL_CURRICULUM_COURSES : FULL_CURRICULUM_COURSES;
 
   const handleExecuteConsolidation = () => {
     setIsProcessing(true);
+    const isMateo = studentDni === "74859612";
     try {
       // 1. Activar estado de promoción total y egreso
       localStorage.setItem(`sfa_student_promoted_${studentDni}`, "true");
-      localStorage.setItem("sfa_student_promoted_74859612", "true");
-      localStorage.setItem("sfa_student_promoted", "true");
-
       localStorage.setItem(`sfa_student_graduated_all_${studentDni}`, "true");
-      localStorage.setItem("sfa_student_graduated_all_74859612", "true");
-      localStorage.setItem("sfa_student_graduated_all", "true");
-
       localStorage.setItem(`sfa_student_cycle_${studentDni}`, "6");
-      localStorage.setItem("sfa_student_cycle_74859612", "6");
-      localStorage.setItem("sfa_student_cycle", "6");
-
       localStorage.setItem(`sfa_student_status_${studentDni}`, "Egresado Lectivo");
-      localStorage.setItem("sfa_student_status_74859612", "Egresado Lectivo");
+
+      if (isMateo) {
+        localStorage.setItem("sfa_student_promoted_74859612", "true");
+        localStorage.setItem("sfa_student_promoted", "true");
+        localStorage.setItem("sfa_student_graduated_all_74859612", "true");
+        localStorage.setItem("sfa_student_graduated_all", "true");
+        localStorage.setItem("sfa_student_cycle_74859612", "6");
+        localStorage.setItem("sfa_student_cycle", "6");
+        localStorage.setItem("sfa_student_status_74859612", "Egresado Lectivo");
+      }
 
       // Las Prácticas Preprofesionales (EFSRT) quedan PENDIENTES de trámite y validación por Secretaría
       // NO se auto-acreditan aquí para respetar el flujo ministerial estricto
       localStorage.removeItem(`sfa_efsrt_validated_${studentDni}`);
-      localStorage.removeItem("sfa_efsrt_validated_74859612");
       localStorage.removeItem(`sfa_efsrt_all_approved_${studentDni}`);
-      localStorage.removeItem("sfa_efsrt_all_approved_74859612");
       localStorage.removeItem(`sfa_titulacion_enabled_${studentDni}`);
-      localStorage.removeItem("sfa_titulacion_enabled_74859612");
+
+      if (isMateo) {
+        localStorage.removeItem("sfa_efsrt_validated_74859612");
+        localStorage.removeItem("sfa_efsrt_all_approved_74859612");
+        localStorage.removeItem("sfa_titulacion_enabled_74859612");
+      }
 
       // 3. Registrar notas oficiales y 16 semanas de asistencia para cada asignatura de Ciclos III, IV, V y VI
       [3, 4, 5, 6].forEach((cycNum) => {
-        const coursesInCyc = FULL_CURRICULUM_COURSES[cycNum];
+        const coursesInCyc = activeCurriculum[cycNum];
         coursesInCyc.forEach((c) => {
           // Notas
           localStorage.setItem(`sfa_grades_${c.code}_${studentDni}`, String(c.grade));
-          localStorage.setItem(`sfa_grades_${c.code}_74859612`, String(c.grade));
-          localStorage.setItem(`sfa_acta_signed_${c.code}`, "true");
-          localStorage.setItem(`sfa_acta_signed_${c.code}_date`, "20/11/2026 12:00");
+          localStorage.setItem(`sfa_acta_signed_${c.code}_${studentDni}`, "true");
+          localStorage.setItem(`sfa_acta_signed_${c.code}_date_${studentDni}`, "20/11/2026 12:00");
 
           // Asistencias (16 semanas completas = 100%)
-          localStorage.setItem(`sfa_attendance_complete_${c.code}`, "true");
+          localStorage.setItem(`sfa_attendance_complete_${c.code}_${studentDni}`, "true");
           localStorage.setItem(`sfa_attendance_count_${c.code}_${studentDni}`, "16");
-          localStorage.setItem(`sfa_attendance_count_${c.code}_74859612`, "16");
+
+          if (isMateo) {
+            localStorage.setItem(`sfa_grades_${c.code}_74859612`, String(c.grade));
+            localStorage.setItem(`sfa_acta_signed_${c.code}`, "true");
+            localStorage.setItem(`sfa_acta_signed_${c.code}_date`, "20/11/2026 12:00");
+            localStorage.setItem(`sfa_attendance_complete_${c.code}`, "true");
+            localStorage.setItem(`sfa_attendance_count_${c.code}_74859612`, "16");
+          }
         });
       });
 
       // Asistencias globales de ciclo
       ["cycle3", "cycle4", "cycle5", "cycle6"].forEach((cycKey) => {
         localStorage.setItem(`sfa_attendance_complete_${cycKey}_${studentDni}`, "true");
-        localStorage.setItem(`sfa_attendance_complete_${cycKey}_74859612`, "true");
-        localStorage.setItem(`sfa_attendance_complete_${cycKey}`, "true");
+        if (isMateo) {
+          localStorage.setItem(`sfa_attendance_complete_${cycKey}_74859612`, "true");
+          localStorage.setItem(`sfa_attendance_complete_${cycKey}`, "true");
+        }
       });
+
+      // 4. Persistir los 6 ciclos en MongoDB para sincronización entre navegadores/pestañas
+      try {
+        const allCycleEntries = [1, 2, 3, 4, 5, 6].map((cycNum) => {
+          const coursesInCyc = activeCurriculum[cycNum] || [];
+          const meta = CYCLE_META[cycNum];
+          const totalCr = coursesInCyc.reduce((sum, c) => sum + c.credits, 0);
+          return {
+            cycleNumber: cycNum,
+            year: cycNum <= 2 ? 2027 : cycNum <= 4 ? 2028 : 2029,
+            status: "Aprobado",
+            average: meta?.avg || 17.0,
+            credits: totalCr || 16,
+            courses: coursesInCyc.map((c) => ({
+              name: `${c.code}::${c.name}`,
+              grade: c.grade,
+              approved: true,
+            })),
+          };
+        });
+        void updateStudentCycleStatuses(studentDni, allCycleEntries);
+      } catch {}
 
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("storage"));
@@ -169,7 +262,7 @@ export const MgeAcreditarPlanCompletoModal: React.FC<Props> = ({
     }
   };
 
-  const activeCourses = FULL_CURRICULUM_COURSES[activeCycleTab] || [];
+  const activeCourses = activeCurriculum[activeCycleTab] || [];
   const activeMeta = CYCLE_META[activeCycleTab] || CYCLE_META[2];
 
   return (
@@ -433,7 +526,7 @@ export const MgeAcreditarPlanCompletoModal: React.FC<Props> = ({
             {activeCycleTab === 2 && (
               <div className="bg-amber-50/80 border border-amber-300/80 rounded-lg p-2.5 text-xs text-amber-950 flex items-center justify-between">
                 <span>
-                  Asignatura evaluada por docente: <strong>EIND-201 (Ing. Manuel Ramos Salazar)</strong>
+                  Asignatura evaluada por docente: <strong>{isContabilidad ? "CONT-201 (Lic. Patricia Elena Benavides Silva)" : "EIND-201 (Ing. Manuel Ramos Salazar)"}</strong>
                 </span>
                 <span className="font-mono font-bold text-amber-900 bg-white px-2 py-0.5 rounded border border-amber-200">
                   Fórmula: 0.2*NPA + 0.2*PC1 + 0.2*PC2 + 0.4*EX_FINAL = 16.6

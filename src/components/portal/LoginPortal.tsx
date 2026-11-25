@@ -192,12 +192,12 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     const activeApps = apiApps || [];
     if (apiApps) setLocalApplicants(apiApps);
     let matchedApp = activeApps.find(a => 
-      a.dni?.toLowerCase() === uTrim || 
-      a.applicantCode?.toLowerCase() === uTrim || 
-      a.email?.toLowerCase() === uTrim
+      String(a.dni || '').toLowerCase() === uTrim || 
+      String(a.applicantCode || '').toLowerCase() === uTrim || 
+      String(a.email || '').toLowerCase() === uTrim
     );
 
-    if (!matchedApp && /^\d{8}$/.test(uTrim) && (!apiApps || apiApps.length === 0)) {
+    if (!matchedApp && /^\d{8,12}$/.test(uTrim)) {
       try {
         const singleApp = await fetchApplicantByDni(uTrim);
         if (singleApp) {
@@ -341,38 +341,9 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
       detectedIdentifier = "mge";
     }
     // 2. Check Docente
-    else if (!detectedRole) {
-      const teacherDniMap: Record<string, string> = {
-        "docente": "99887766",
-        "mramos@iestpsfa.edu.pe": "99887766",
-        "99887766": "99887766",
-        "cmendoza@iestpsfa.edu.pe": "44556677",
-        "44556677": "44556677",
-        "jpaucar@iestpsfa.edu.pe": "66778899",
-        "66778899": "66778899",
-        "fdiaz@iestpsfa.edu.pe": "88990011",
-        "88990011": "88990011",
-        "svalenzuela@iestpsfa.edu.pe": "77889900",
-        "77889900": "77889900",
-        "rvega@iestpsfa.edu.pe": "55667788",
-        "55667788": "55667788",
-        "cmorales@iestpsfa.edu.pe": "88776655",
-        "88776655": "88776655",
-        "dalarcon@iestpsfa.edu.pe": "33445566",
-        "33445566": "33445566",
-        "pbenavides@iestpsfa.edu.pe": "22334455",
-        "22334455": "22334455",
-        "hestrada@iestpsfa.edu.pe": "11223344",
-        "11223344": "11223344",
-        "enrique.gomez@iestpsfa.edu.pe": "20202020",
-        "20202020": "20202020",
-        "rosa.paredes@iestpsfa.edu.pe": "44567891",
-        "44567891": "44567891",
-      };
-      if (teacherDniMap[uTrim]) {
-        detectedRole = "docente";
-        detectedIdentifier = teacherDniMap[uTrim];
-      }
+    else if (!detectedRole && teacherDniMap[uTrim]) {
+      detectedRole = "docente";
+      detectedIdentifier = teacherDniMap[uTrim];
     }
     // 3. Check Alumno (dynamic lookup in localStudents - ONLY IF MATRICULADO)
     else if (isInputStudentMatriculado && (uTrim === "alumno" || uTrim === "luis.castillo@iestpsfa.edu.pe" || studentRecords[uTrim] || Object.values(studentRecords).some((st: any) => st.dni === uTrim || st.email?.toLowerCase() === uTrim))) {
@@ -387,15 +358,15 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
       detectedIdentifier = matchedSt.dni;
     }
     // 4. Check Postulante (dynamic lookup in activeApps)
-    else if (uTrim === "postulante" || matchedApp || activeApps.some(a => a.dni?.toLowerCase() === uTrim || a.applicantCode?.toLowerCase() === uTrim || a.email?.toLowerCase() === uTrim)) {
+    else if (uTrim === "postulante" || matchedApp || activeApps.some(a => String(a.dni || '').toLowerCase() === uTrim || String(a.applicantCode || '').toLowerCase() === uTrim || String(a.email || '').toLowerCase() === uTrim)) {
       if (activeApps.length === 0 && !matchedApp) {
         setIsSubmitting(false);
         setErrorMessage("No existen postulantes registrados en el sistema actualmente. Regístrese como postulante primero.");
         return;
       }
-      const app = matchedApp || activeApps.find(a => a.dni?.toLowerCase() === uTrim || a.applicantCode?.toLowerCase() === uTrim || a.email?.toLowerCase() === uTrim);
+      const app = matchedApp || activeApps.find(a => String(a.dni || '').toLowerCase() === uTrim || String(a.applicantCode || '').toLowerCase() === uTrim || String(a.email || '').toLowerCase() === uTrim);
       detectedRole = "postulante";
-      detectedIdentifier = app ? (app.id || app.uid || app.applicantCode || app.dni) : (activeApps[0]?.id || activeApps[0]?.uid || activeApps[0]?.dni || uTrim);
+      detectedIdentifier = app ? (app.dni || app.applicantCode || app.id || app.uid) : (activeApps[0]?.dni || activeApps[0]?.applicantCode || uTrim);
     }
     // 5. Check if it's an 8-digit DNI or code
     else if (/^\d{8,12}$/.test(uTrim)) {
@@ -448,9 +419,9 @@ export default function LoginPortal({ onBack, onLoginSuccess }: LoginPortalProps
     // 6. DB-verified login for applicant (Postulante)
     if (detectedRole === "postulante") {
       const app = matchedApp || activeApps.find(a => 
-        a.dni?.toLowerCase() === uTrim || 
-        a.applicantCode?.toLowerCase() === uTrim || 
-        a.email?.toLowerCase() === uTrim
+        String(a.dni || '').toLowerCase() === uTrim || 
+        String(a.applicantCode || '').toLowerCase() === uTrim || 
+        String(a.email || '').toLowerCase() === uTrim
       );
 
       if (!app) {

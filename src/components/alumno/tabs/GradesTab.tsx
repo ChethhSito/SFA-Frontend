@@ -7,6 +7,7 @@ interface GradesTabProps {
   enrichedCourses: any[];
   selectedCourseDetail: string;
   setSelectedCourseDetail: React.Dispatch<React.SetStateAction<string>>;
+  cycleStatuses?: any[];
   studentInfo?: {
     dni?: string;
     name?: string;
@@ -65,28 +66,57 @@ export const GradesTab: React.FC<GradesTabProps> = ({
   enrichedCourses,
   selectedCourseDetail,
   setSelectedCourseDetail,
+  cycleStatuses = [],
   studentInfo
 }) => {
   const studentDni = studentInfo?.dni || "74859612";
+  const isMateo = studentDni === "74859612";
+
+  const hasBackendGraduated = Array.isArray(cycleStatuses) && cycleStatuses.some(
+    (c: any) => c.cycleNumber === 6 && c.status === "Aprobado"
+  );
 
   const isGraduated = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted") === "true" ||
-    localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
-    localStorage.getItem("sfa_student_graduated_all") === "true" ||
-    localStorage.getItem(`sfa_titulacion_enabled_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_titulacion_enabled_74859612") === "true" ||
-    localStorage.getItem(`sfa_student_status_${studentDni}`) === "Egresado"
+    hasBackendGraduated || (
+      !isMateo && localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) !== "true"
+        ? false
+        : (
+          localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
+          localStorage.getItem(`sfa_titulacion_enabled_${studentDni}`) === "true" ||
+          localStorage.getItem(`sfa_student_status_${studentDni}`) === "Egresado" ||
+          (isMateo && (
+            localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
+            localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+            localStorage.getItem("sfa_student_promoted") === "true" ||
+            localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+            localStorage.getItem("sfa_student_graduated_all") === "true" ||
+            localStorage.getItem("sfa_titulacion_enabled_74859612") === "true"
+          ))
+        )
+    )
+  );
+
+  const hasBackendCycle1Approved = Array.isArray(cycleStatuses) && cycleStatuses.some(
+    (c: any) => c.cycleNumber === 1 && c.status === "Aprobado"
   );
 
   const isPromotedCycle2 = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
-    localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-    localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
-    localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
-    localStorage.getItem("sfa_student_promoted_74859612") === "true"
+    hasBackendCycle1Approved || (
+      !isMateo &&
+        localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) !== "true" &&
+        localStorage.getItem(`sfa_student_cycle_${studentDni}`) !== "2"
+        ? false
+        : (
+          localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
+          localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
+          (isMateo && (
+            localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+            localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+            localStorage.getItem("sfa_cycle2_payment_74859612") === "true" ||
+            localStorage.getItem("sfa_student_promoted_74859612") === "true"
+          ))
+        )
+    )
   );
 
   const [storageSyncKey, setStorageSyncKey] = useState(0);
@@ -103,10 +133,289 @@ export const GradesTab: React.FC<GradesTabProps> = ({
 
   const [showBoletaModal, setShowBoletaModal] = useState(false);
   const [selectedSemester, setSelectedSemester] = useState<"2027-I" | "2027-II" | "2028-I" | "2028-II" | "2029-I" | "2029-II">(() => {
-    return isGraduated ? "2027-II" : isPromotedCycle2 ? "2027-II" : "2027-I";
+    return isGraduated ? "2029-II" : isPromotedCycle2 ? "2027-II" : "2027-I";
   });
 
+  useEffect(() => {
+    if (isGraduated) {
+      setSelectedSemester((prev) => (prev === "2027-I" || prev === "2027-II" ? "2029-II" : prev));
+    }
+  }, [isGraduated]);
+
+  const isContabilidad = studentInfo?.career?.toLowerCase().includes("contab") ||
+    studentDni === "71248596" ||
+    enrichedCourses.some(c => c.code?.startsWith("CONT") || c.career?.toLowerCase().includes("contab"));
+
   const semesterCourses = React.useMemo(() => {
+    // 0. Contabilidad
+    if (isContabilidad) {
+      if (selectedSemester === "2027-I") {
+        const getGrades = (code: string) => {
+          try {
+            const raw = localStorage.getItem(`sfa_grades_${code}_${studentDni}`) ||
+              localStorage.getItem(`sfa_grades_${code.toLowerCase()}_${studentDni}`);
+            if (raw) return JSON.parse(raw);
+          } catch {}
+          return null;
+        };
+
+        const g101 = getGrades("CONT-101");
+        const g102 = getGrades("CONT-102");
+        const g103 = getGrades("CONT-103");
+        const g104 = getGrades("CONT-104");
+        const g105 = getGrades("CONT-105");
+
+        const findEnriched = (code: string) =>
+          enrichedCourses.find((x: any) =>
+            x.code === code ||
+            x.id === `cur_${code.toLowerCase().replace("cont-", "co_")}` ||
+            x.id === `cur-cur_${code.toLowerCase().replace("cont-", "co_")}`
+          );
+
+        const simCycle1Map: Record<string, number> = {};
+        try {
+          if (Array.isArray(cycleStatuses)) {
+            const backendC1 = cycleStatuses.find((c: any) => c.cycleNumber === 1 && c.status === "Aprobado");
+            if (backendC1 && Array.isArray(backendC1.courses)) {
+              backendC1.courses.forEach((sc: any) => {
+                const codePart = sc?.code || (typeof sc?.name === "string" && sc.name.includes("::") ? sc.name.split("::")[0] : "");
+                if (codePart && typeof sc.grade === "number") {
+                  simCycle1Map[codePart] = sc.grade;
+                }
+              });
+            }
+          }
+          const rawSim1 = localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) ||
+            (isMateo ? (localStorage.getItem("sfa_simulated_cycle1_74859612") || localStorage.getItem("sfa_simulated_cycle1")) : null);
+          if (rawSim1) {
+            const parsed = JSON.parse(rawSim1);
+            if (Array.isArray(parsed?.courses)) {
+              parsed.courses.forEach((sc: any) => {
+                if (sc?.code && typeof sc.grade === "number") {
+                  simCycle1Map[sc.code] = sc.grade;
+                }
+              });
+            }
+          }
+        } catch {}
+
+        const resolveEvalGrade = (code: string, prefix: string, localVal: any, mateoFallback: number) => {
+          const ec = findEnriched(code);
+          const ecEval = ec?.evaluations?.find((ev: any) => ev.prefix === prefix || ev.id === prefix);
+          if (ecEval && typeof ecEval.grade === "number") return ecEval.grade;
+          if (localVal !== undefined) return Number(localVal);
+          if (code !== "CONT-101" && simCycle1Map[code] !== undefined) return simCycle1Map[code];
+          return isMateo ? mateoFallback : undefined;
+        };
+
+        return [
+          {
+            id: "cur_co_101",
+            code: "CONT-101",
+            name: "Fundamentos de Contabilidad y Doctrina Contable",
+            credits: 4,
+            cycle: "Ciclo I",
+            classroom: "Aula 201 • Pabellón C",
+            iconType: "Zap",
+            formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+            weeklyTasks: findEnriched("CONT-101")?.weeklyTasks || [],
+            evaluations: [
+              { id: "NPA", name: "Nota de Participación Activa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: resolveEvalGrade("CONT-101", "NPA", g101?.NPA, 16.0), isCurricular: true },
+              { id: "PC1", name: "Práctica Calificada 1 (Doctrina)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: resolveEvalGrade("CONT-101", "PC1", g101?.PC1, 15.0), isCurricular: true },
+              { id: "PC2", name: "Práctica Calificada 2 (Partida Doble)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: resolveEvalGrade("CONT-101", "PC2", g101?.PC2, 16.0), isCurricular: true },
+              { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveEvalGrade("CONT-101", "EX_FINAL", g101?.EX_FINAL, 16.0), isCurricular: true }
+            ]
+          },
+          {
+            id: "cur_co_102",
+            code: "CONT-102",
+            name: "Documentación Comercial, Mercantil y Bancaria",
+            credits: 4,
+            cycle: "Ciclo I",
+            classroom: "Aula 201 • Pabellón C",
+            iconType: "Sliders",
+            formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+            evaluations: [
+              { id: "NPA", name: "Nota de Participación Activa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: resolveEvalGrade("CONT-102", "NPA", g102?.NPA, 16.0), isCurricular: true },
+              { id: "PC1", name: "Práctica Calificada 1 (Comprobantes)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: resolveEvalGrade("CONT-102", "PC1", g102?.PC1, 16.0), isCurricular: true },
+              { id: "PC2", name: "Práctica Calificada 2 (Títulos Valores)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: resolveEvalGrade("CONT-102", "PC2", g102?.PC2, 17.0), isCurricular: true },
+              { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveEvalGrade("CONT-102", "EX_FINAL", g102?.EX_FINAL, 17.0), isCurricular: true }
+            ]
+          },
+          {
+            id: "cur_co_103",
+            code: "CONT-103",
+            name: "Matemática Financiera y Comercial",
+            credits: 3,
+            cycle: "Ciclo I",
+            classroom: "Aula 201 • Pabellón C",
+            iconType: "Cpu",
+            formula: "NF = 0.20*NPA + 0.30*PC1 + 0.50*EX_FINAL",
+            evaluations: [
+              { id: "NPA", name: "Participación y Casos", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: resolveEvalGrade("CONT-103", "NPA", g103?.NPA, 17.0), isCurricular: true },
+              { id: "PC1", name: "Práctica 1 (Interés y Tasas)", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: resolveEvalGrade("CONT-103", "PC1", g103?.PC1, 17.0), isCurricular: true },
+              { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "50%", weightDecimal: 0.5, grade: resolveEvalGrade("CONT-103", "EX_FINAL", g103?.EX_FINAL, 17.0), isCurricular: true }
+            ]
+          },
+          {
+            id: "cur_co_104",
+            code: "CONT-104",
+            name: "Legislación Comercial y Societaria",
+            credits: 3,
+            cycle: "Ciclo I",
+            classroom: "Aula 201 • Pabellón C",
+            iconType: "Award",
+            formula: "NF = 0.30*PC1 + 0.30*PC2 + 0.40*EX_FINAL",
+            evaluations: [
+              { id: "PC1", name: "Práctica 1 (Ley General Sociedades)", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: resolveEvalGrade("CONT-104", "PC1", g104?.PC1, 15.0), isCurricular: true },
+              { id: "PC2", name: "Práctica 2 (Contratos Mercantiles)", prefix: "PC2", weight: "30%", weightDecimal: 0.3, grade: resolveEvalGrade("CONT-104", "PC2", g104?.PC2, 15.0), isCurricular: true },
+              { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveEvalGrade("CONT-104", "EX_FINAL", g104?.EX_FINAL, 16.0), isCurricular: true }
+            ]
+          },
+          {
+            id: "cur_co_105",
+            code: "CONT-105",
+            name: "Comunicación y Competencias Digitales",
+            credits: 2,
+            cycle: "Ciclo I",
+            classroom: "Lab. Contable 1 • Pabellón C",
+            iconType: "Award",
+            formula: "NF = 0.30*ACT + 0.30*ORAL + 0.40*EX_FINAL",
+            evaluations: [
+              { id: "ACT", name: "Hojas de Cálculo y Software", prefix: "ACT", weight: "30%", weightDecimal: 0.3, grade: resolveEvalGrade("CONT-105", "ACT", g105?.ACT, 16.0), isCurricular: true },
+              { id: "ORAL", name: "Presentación de Informes", prefix: "ORAL", weight: "30%", weightDecimal: 0.3, grade: resolveEvalGrade("CONT-105", "ORAL", g105?.ORAL, 16.0), isCurricular: true },
+              { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveEvalGrade("CONT-105", "EX_FINAL", g105?.EX_FINAL, 16.0), isCurricular: true }
+            ]
+          }
+        ];
+      }
+
+      const simCycle2Map: Record<string, number> = {};
+      try {
+        if (Array.isArray(cycleStatuses)) {
+          const backendC2 = cycleStatuses.find((c: any) => c.cycleNumber === 2 && c.status === "Aprobado");
+          if (backendC2 && Array.isArray(backendC2.courses)) {
+            backendC2.courses.forEach((sc: any) => {
+              const codePart = sc?.code || (typeof sc?.name === "string" && sc.name.includes("::") ? sc.name.split("::")[0] : "");
+              if (codePart && typeof sc.grade === "number") {
+                simCycle2Map[codePart] = sc.grade;
+              }
+            });
+          }
+        }
+        const rawSim2 = localStorage.getItem(`sfa_simulated_cycle2_${studentDni}`) ||
+          (isMateo ? (localStorage.getItem("sfa_simulated_cycle2_74859612") || localStorage.getItem("sfa_simulated_cycle2")) : null);
+        if (rawSim2) {
+          const parsed2 = JSON.parse(rawSim2);
+          if (Array.isArray(parsed2?.courses)) {
+            parsed2.courses.forEach((sc: any) => {
+              if (sc?.code && typeof sc.grade === "number" && simCycle2Map[sc.code] === undefined) {
+                simCycle2Map[sc.code] = sc.grade;
+              }
+            });
+          }
+        }
+      } catch {}
+
+      const getCont2Grades = (code: string) => {
+        try {
+          const raw = localStorage.getItem(`sfa_grades_${code}_${studentDni}`);
+          if (raw) return JSON.parse(raw);
+        } catch {}
+        return null;
+      };
+      const resolveCont2 = (code: string, comp: string, localObj: any) => {
+        if (localObj?.[comp] !== undefined) return Number(localObj[comp]);
+        if (simCycle2Map[code] !== undefined) return simCycle2Map[code];
+        return undefined;
+      };
+      const g201 = getCont2Grades("CONT-201");
+      const g202 = getCont2Grades("CONT-202");
+      const g203 = getCont2Grades("CONT-203");
+      const g204 = getCont2Grades("CONT-204");
+      const g205 = getCont2Grades("CONT-205");
+
+      return [
+        {
+          id: "cur_co_201",
+          code: "CONT-201",
+          name: "Contabilidad General y Plan Contable General Empresarial",
+          credits: 4,
+          cycle: "Ciclo II",
+          classroom: "Aula 201 • Pabellón C",
+          iconType: "BarChart3",
+          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+          evaluations: [
+            { id: "NPA", name: "Nota de Participación Activa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: resolveCont2("CONT-201", "NPA", g201), isCurricular: true },
+            { id: "PC1", name: "Práctica Calificada 1 (PCGE)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: resolveCont2("CONT-201", "PC1", g201), isCurricular: true },
+            { id: "PC2", name: "Práctica Calificada 2 (Libros Contables)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: resolveCont2("CONT-201", "PC2", g201), isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveCont2("CONT-201", "EX_FINAL", g201), isCurricular: true }
+          ]
+        },
+        {
+          id: "cur_co_202",
+          code: "CONT-202",
+          name: "Títulos Valores y Operaciones Financieras",
+          credits: 4,
+          cycle: "Ciclo II",
+          classroom: "Aula 202 • Pabellón C",
+          iconType: "Sliders",
+          formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+          evaluations: [
+            { id: "NPA", name: "Nota de Participación Activa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: resolveCont2("CONT-202", "NPA", g202), isCurricular: true },
+            { id: "PC1", name: "Práctica Calificada 1", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: resolveCont2("CONT-202", "PC1", g202), isCurricular: true },
+            { id: "PC2", name: "Práctica Calificada 2", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: resolveCont2("CONT-202", "PC2", g202), isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveCont2("CONT-202", "EX_FINAL", g202), isCurricular: true }
+          ]
+        },
+        {
+          id: "cur_co_203",
+          code: "CONT-203",
+          name: "Estadística Aplicada a la Gestión Contable",
+          credits: 3,
+          cycle: "Ciclo II",
+          classroom: "Aula 203 • Pabellón C",
+          iconType: "Cpu",
+          formula: "NF = 0.20*NPA + 0.30*PC1 + 0.50*EX_FINAL",
+          evaluations: [
+            { id: "NPA", name: "Participación y Casos", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: resolveCont2("CONT-203", "NPA", g203), isCurricular: true },
+            { id: "PC1", name: "Práctica Calificada 1", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: resolveCont2("CONT-203", "PC1", g203), isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "50%", weightDecimal: 0.5, grade: resolveCont2("CONT-203", "EX_FINAL", g203), isCurricular: true }
+          ]
+        },
+        {
+          id: "cur_co_204",
+          code: "CONT-204",
+          name: "Ofimática Aplicada a los Negocios (Excel Contable)",
+          credits: 3,
+          cycle: "Ciclo II",
+          classroom: "Lab. Contable 1 • Pabellón C",
+          iconType: "Sliders",
+          formula: "NF = 0.30*NPA + 0.30*PROY + 0.40*EX_FINAL",
+          evaluations: [
+            { id: "NPA", name: "Participación y Talleres", prefix: "NPA", weight: "30%", weightDecimal: 0.3, grade: resolveCont2("CONT-204", "NPA", g204), isCurricular: true },
+            { id: "PROY", name: "Proyecto Excel Contable", prefix: "PROY", weight: "30%", weightDecimal: 0.3, grade: resolveCont2("CONT-204", "PROY", g204), isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveCont2("CONT-204", "EX_FINAL", g204), isCurricular: true }
+          ]
+        },
+        {
+          id: "cur_co_205",
+          code: "CONT-205",
+          name: "Inglés Técnico para Negocios y Finanzas",
+          credits: 2,
+          cycle: "Ciclo II",
+          classroom: "Aula 205 • Pabellón C",
+          iconType: "Award",
+          formula: "NF = 0.30*NPA + 0.30*ORAL + 0.40*EX_FINAL",
+          evaluations: [
+            { id: "NPA", name: "Participación Activa", prefix: "NPA", weight: "30%", weightDecimal: 0.3, grade: resolveCont2("CONT-205", "NPA", g205), isCurricular: true },
+            { id: "ORAL", name: "Exposición en Inglés", prefix: "ORAL", weight: "30%", weightDecimal: 0.3, grade: resolveCont2("CONT-205", "ORAL", g205), isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveCont2("CONT-205", "EX_FINAL", g205), isCurricular: true }
+          ]
+        }
+      ];
+    }
+
     // 1. Ciclo I oficial
     if (selectedSemester === "2027-I") {
       return [
@@ -302,10 +611,21 @@ export const GradesTab: React.FC<GradesTabProps> = ({
       iconType: string,
       baseGrade: number
     ) => {
-      let finalGrade = baseGrade;
+      let finalGrade: number | undefined = (isMateo || isGraduated) ? baseGrade : undefined;
       try {
+        if (Array.isArray(cycleStatuses)) {
+          for (const cyc of cycleStatuses) {
+            const found = cyc?.courses?.find((sc: any) =>
+              sc?.code === code || (typeof sc?.name === "string" && sc.name.startsWith(`${code}::`))
+            );
+            if (found && typeof found.grade === "number") {
+              finalGrade = found.grade;
+              break;
+            }
+          }
+        }
         const stored = localStorage.getItem(`sfa_grades_${code}_${studentDni}`) ||
-          localStorage.getItem(`sfa_grades_${code}_74859612`);
+          (isMateo ? localStorage.getItem(`sfa_grades_${code}_74859612`) : null);
         if (stored) finalGrade = Number(stored);
       } catch {}
 
@@ -328,6 +648,15 @@ export const GradesTab: React.FC<GradesTabProps> = ({
     };
 
     if (selectedSemester === "2028-I") {
+      if (isContabilidad) {
+        return [
+          buildCourse("cur_co_301", "CONT-301", "Contabilidad de Sociedades Mercantiles", 4, "Ciclo III", "Aula 301 • Pabellón C", "BarChart3", 17.0),
+          buildCourse("cur_co_302", "CONT-302", "Legislación Tributaria I (IGV, Comprobantes y Detracciones)", 4, "Ciclo III", "Aula 302 • Pabellón C", "Sliders", 16.5),
+          buildCourse("cur_co_303", "CONT-303", "Costos y Presupuestos Básicos", 3, "Ciclo III", "Aula 303 • Pabellón C", "Cpu", 17.5),
+          buildCourse("cur_co_304", "CONT-304", "Contabilidad Computarizada I (Concar / Siigo)", 3, "Ciclo III", "Lab. Contable 1", "Sliders", 16.0),
+          buildCourse("cur_co_305", "CONT-305", "Ética y Deontología Profesional", 2, "Ciclo III", "Aula 305 • Pabellón C", "Award", 17.0)
+        ];
+      }
       return [
         buildCourse("cur_ei_301", "EIND-301", "Máquinas Eléctricas Rotativas y Generadores", 4, "Ciclo III", "Lab. Máquinas Eléctricas", "Zap", 17.0),
         buildCourse("cur_ei_302", "EIND-302", "Instalaciones Eléctricas Industriales en Media Tensión", 4, "Ciclo III", "Taller de MT 302", "Cpu", 16.5),
@@ -338,6 +667,15 @@ export const GradesTab: React.FC<GradesTabProps> = ({
     }
 
     if (selectedSemester === "2028-II") {
+      if (isContabilidad) {
+        return [
+          buildCourse("cur_co_401", "CONT-401", "Contabilidad de Costos Avanzada por Procesos y Órdenes", 4, "Ciclo IV", "Aula 401 • Pabellón C", "BarChart3", 17.5),
+          buildCourse("cur_co_402", "CONT-402", "Legislación Tributaria II (Impuesto a la Renta de 3ra)", 4, "Ciclo IV", "Aula 402 • Pabellón C", "Sliders", 18.0),
+          buildCourse("cur_co_403", "CONT-403", "Legislación Laboral, Planillas y T-Registro / PLAME", 3, "Ciclo IV", "Aula 403 • Pabellón C", "Cpu", 16.5),
+          buildCourse("cur_co_404", "CONT-404", "Contabilidad Computarizada II (Sistemas ERP Integrados)", 3, "Ciclo IV", "Lab. Contable 2", "Sliders", 17.0),
+          buildCourse("cur_co_405", "CONT-405", "Gestión Financiera y Flujo de Caja", 2, "Ciclo IV", "Aula 405 • Pabellón C", "Award", 18.0)
+        ];
+      }
       return [
         buildCourse("cur_ei_401", "EIND-401", "Control de Motores y Arranque Electrónico", 4, "Ciclo IV", "Taller Motores 401", "Zap", 17.5),
         buildCourse("cur_ei_402", "EIND-402", "Automatización con Controladores Lógicos Programables (PLC I)", 4, "Ciclo IV", "Lab. Automatización PLC", "Cpu", 18.0),
@@ -348,6 +686,15 @@ export const GradesTab: React.FC<GradesTabProps> = ({
     }
 
     if (selectedSemester === "2029-I") {
+      if (isContabilidad) {
+        return [
+          buildCourse("cur_co_501", "CONT-501", "Auditoría Financiera y Procedimientos de Control", 4, "Ciclo V", "Aula 501 • Pabellón C", "BarChart3", 18.0),
+          buildCourse("cur_co_502", "CONT-502", "Formulación y Presentación de Estados Financieros (NIIF)", 4, "Ciclo V", "Aula 502 • Pabellón C", "Sliders", 17.5),
+          buildCourse("cur_co_503", "CONT-503", "Finanzas Corporativas y Valoración de Empresas", 3, "Ciclo V", "Aula 503 • Pabellón C", "Cpu", 18.0),
+          buildCourse("cur_co_504", "CONT-504", "Tributación Municipal y Aduanera", 3, "Ciclo V", "Aula 504 • Pabellón C", "Sliders", 16.5),
+          buildCourse("cur_co_505", "CONT-505", "Emprendimiento y Plan de Negocios Contables", 2, "Ciclo V", "Aula 505 • Pabellón C", "Award", 19.0)
+        ];
+      }
       return [
         buildCourse("cur_ei_501", "EIND-501", "Automatización Avanzada PLC II y Redes Industriales", 4, "Ciclo V", "Lab. Redes Industriales", "Cpu", 18.0),
         buildCourse("cur_ei_502", "EIND-502", "Sistemas de Supervisión SCADA y Pantallas HMI", 4, "Ciclo V", "Centro de Cómputo SCADA", "Sliders", 17.5),
@@ -358,6 +705,15 @@ export const GradesTab: React.FC<GradesTabProps> = ({
     }
 
     // Default: 2029-II (Ciclo VI)
+    if (isContabilidad) {
+      return [
+        buildCourse("cur_co_601", "CONT-601", "Proyecto Integrador de Gestión Contable y Tributaria", 5, "Ciclo VI", "Aula 601 • Pabellón C", "BarChart3", 18.5),
+        buildCourse("cur_co_602", "CONT-602", "Auditoría Tributaria, Fiscalización y Peritaje Contable", 4, "Ciclo VI", "Aula 602 • Pabellón C", "Sliders", 17.0),
+        buildCourse("cur_co_603", "CONT-603", "Análisis e Interpretación de Estados Financieros", 3, "Ciclo VI", "Aula 603 • Pabellón C", "Cpu", 17.5),
+        buildCourse("cur_co_604", "CONT-604", "Control Interno y Gestión Integral de Riesgos (COSO)", 2, "Ciclo VI", "Aula 604 • Pabellón C", "Award", 19.0),
+        buildCourse("cur_co_605", "CONT-605", "Legislación Laboral y Relaciones de Trabajo", 2, "Ciclo VI", "Aula 605 • Pabellón C", "Award", 18.0)
+      ];
+    }
     return [
       buildCourse("cur_ei_601", "EIND-601", "Integración de Sistemas Automatizados y Robótica", 4, "Ciclo VI", "Taller Robótica Industrial", "Cpu", 18.5),
       buildCourse("cur_ei_602", "EIND-602", "Mantenimiento Predictivo y Gestión de Activos Eléctricos", 4, "Ciclo VI", "Lab. Predictivo 602", "Sliders", 17.0),
@@ -365,7 +721,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
       buildCourse("cur_ei_604", "EIND-604", "Proyecto de Innovación y Titulación EFSRT", 3, "Ciclo VI", "Taller de Titulación", "Award", 19.0),
       buildCourse("cur_ei_605", "EIND-605", "Emprendimiento y Gestión Empresarial", 2, "Ciclo VI", "Aula 605", "Award", 18.0)
     ];
-  }, [selectedSemester, studentDni, storageSyncKey]);
+  }, [selectedSemester, studentDni, storageSyncKey, enrichedCourses, isContabilidad, isMateo, cycleStatuses]);
 
   const activeCourse = semesterCourses.find(c => c.name === selectedCourseDetail || c.id === selectedCourseDetail || c.code === selectedCourseDetail) || semesterCourses[0];
 
