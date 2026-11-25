@@ -93,6 +93,8 @@ const getCyclePaymentMeta = (periodName?: string) => {
   };
 };
 
+let cachedCycle2PaymentsByDni: Record<string, any> | null = null;
+
 export default function MgePagosTab({
   processedStudents,
   enrollments,
@@ -105,7 +107,8 @@ export default function MgePagosTab({
   const [auditingIsCycle2, setAuditingIsCycle2] = useState(false);
   const [obsReason, setObsReason] = useState<string>("Importe arancelario no coincide con el tarifario oficial (S/ 250.00)");
   const [, setStorageSync] = useState(0);
-  const [cycle2PaymentsByDni, setCycle2PaymentsByDni] = useState<Record<string, any>>({});
+  const [cycle2PaymentsByDni, setCycle2PaymentsByDni] = useState<Record<string, any>>(() => cachedCycle2PaymentsByDni || {});
+  const [loadingCycle2Payments, setLoadingCycle2Payments] = useState<boolean>(() => cachedCycle2PaymentsByDni === null);
 
   const cycleMeta = useMemo(() => getCyclePaymentMeta(currentPeriodName), [currentPeriodName]);
 
@@ -142,8 +145,11 @@ export default function MgePagosTab({
             map[p.studentDni] = p;
           }
         });
+        cachedCycle2PaymentsByDni = map;
         setCycle2PaymentsByDni(map);
-      } catch {}
+      } catch {} finally {
+        if (active) setLoadingCycle2Payments(false);
+      }
     };
     void loadCycle2Payments();
     const handleStorageOnly = () => setStorageSync((v) => v + 1);
@@ -389,7 +395,13 @@ export default function MgePagosTab({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {paymentRows.map(({ student: st, isCycle2Row }) => {
+              {loadingCycle2Payments ? (
+                <tr>
+                  <td colSpan={5} className="px-5 py-10 text-center text-slate-400 font-semibold text-xs">
+                    Sincronizando comprobantes y pagos registrados...
+                  </td>
+                </tr>
+              ) : paymentRows.map(({ student: st, isCycle2Row }) => {
                 const enrollment = enrollments.find((item) => item.studentDni === st.dni);
                 const backendC2 = cycle2PaymentsByDni[st.dni];
                 const hasCycle2Payment = Boolean(backendC2) || (typeof window !== "undefined" && (

@@ -230,7 +230,7 @@ function Application({
           try {
             localStorage.setItem(`sfa_fut_registered_${record.studentDni}`, "true");
             localStorage.setItem(`sfa_fut_id_${record.studentDni}`, req.id);
-          } catch {}
+          } catch { }
 
           if (req.paymentOperation || req.status === 'En Proceso' || req.status === 'En Revisión' || req.status === 'Validado') {
             setHasFeePaid(true);
@@ -245,7 +245,7 @@ function Application({
               if (req.paymentDate) localStorage.setItem(`sfa_fee_date_${record.studentDni}`, req.paymentDate);
               if (reqVoucherUrl) localStorage.setItem(`sfa_fee_voucher_file_${record.studentDni}`, reqVoucherUrl);
               localStorage.setItem(`sfa_fee_validated_${record.studentDni}`, String(req.status === 'Validado'));
-            } catch {}
+            } catch { }
             setDocs((prev) => ({ ...prev, pagoDerecho: req.status === 'Validado' }));
           } else {
             setHasFeePaid(false);
@@ -255,7 +255,7 @@ function Application({
             try {
               localStorage.removeItem(`sfa_fee_paid_${record.studentDni}`);
               localStorage.removeItem(`sfa_fee_validated_${record.studentDni}`);
-            } catch {}
+            } catch { }
           }
         } else {
           // Si no hay solicitudes en backend, MongoDB es la fuente de verdad: reiniciar FUT y Pago y limpiar caché local
@@ -276,7 +276,7 @@ function Application({
             localStorage.removeItem(`sfa_fee_date_${record.studentDni}`);
             localStorage.removeItem(`sfa_fee_voucher_file_${record.studentDni}`);
             localStorage.removeItem(`sfa_fee_voucher_name_${record.studentDni}`);
-          } catch {}
+          } catch { }
         }
 
         // 2. Sincronización de EFSRT y Comprobante de Voucher
@@ -296,8 +296,8 @@ function Application({
 
         const vUrl = req
           ? (reqVoucherUrl ||
-              localStorage.getItem(`sfa_fee_voucher_file_${record.studentDni}`) ||
-              (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null))
+            localStorage.getItem(`sfa_fee_voucher_file_${record.studentDni}`) ||
+            (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null))
           : null;
         if (vUrl) {
           setFeeVoucherUrl(vUrl);
@@ -361,7 +361,7 @@ function Application({
               const parsed = JSON.parse(found.notes);
               setEfsrtData(parsed);
               localStorage.setItem(`sfa_efsrt_${record.studentDni}`, JSON.stringify(parsed));
-            } catch {}
+            } catch { }
           }
           if (found.status === "APROBADO") {
             setIsEfsrtValidated(true);
@@ -369,7 +369,7 @@ function Application({
             localStorage.setItem(`sfa_efsrt_validated_${record.studentDni}`, "true");
           }
         }
-      } catch {}
+      } catch { }
     };
     void loadBackendEfsrt();
     const handleFocus = () => void loadBackendEfsrt();
@@ -396,7 +396,7 @@ function Application({
       window.dispatchEvent(new Event("storage"));
     }
 
-    void updatePayment(`EFSRT-${record.studentDni}`, { status: "APROBADO" }).catch(() => {});
+    void updatePayment(`EFSRT-${record.studentDni}`, { status: "APROBADO" }).catch(() => { });
 
     onSaveDocs(
       record.studentDni,
@@ -482,7 +482,7 @@ function Application({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#800521] to-[#a3072b] flex items-center justify-center font-mono font-black text-white text-base shadow-md border border-white/20 shrink-0">
-              {student ? `${student.name.charAt(0)}${student.lastName.charAt(0)}` : "MQ"}
+              {student ? `${student.name.charAt(0)}${student.lastName.charAt(0)}` : record.studentDni.slice(0, 2)}
             </div>
             <div>
               <div className="flex items-center gap-2.5 flex-wrap">
@@ -531,422 +531,494 @@ function Application({
       </div>
 
       {isExpanded && (
-      <div className="p-6 space-y-6">
-        {/* Banner de Validación Exitosa */}
-        {showValidationSuccess && (
-          <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-4 flex items-center gap-3 text-emerald-900 animate-fadeIn">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-            <div className="text-xs">
-              <strong className="block text-emerald-800 font-black uppercase tracking-wider">¡Prácticas EFSRT Validadas Exitosamente!</strong>
-              <span>
-                Se asignaron los 24 créditos reglamentarios al estudiante {student ? `${student.name} ${student.lastName}` : (record.studentDni === "74859612" ? "Mateo Sebastián Quispe Rojas" : `DNI ${record.studentDni}`)}. El total acumulado es 120/120 créditos (Condición: Egresado Pleno).
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Sección Destacada: Expediente de Prácticas Preprofesionales (EFSRT) */}
-        <section className="bg-slate-50 border border-slate-200 rounded-2xl p-5 relative overflow-hidden">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-4 mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0">
-                <Building2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="font-extrabold text-sm text-slate-900 uppercase tracking-wide">
-                  Expediente de Prácticas Preprofesionales (EFSRT)
-                </h4>
-                <p className="text-[11px] text-slate-500 font-medium">
-                  Requisito Formativo Obligatorio para Titulación • Equivalente a 24 Créditos Formativos
-                </p>
+        <div className="p-6 space-y-6">
+          {/* Banner de Validación Exitosa */}
+          {showValidationSuccess && (
+            <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-4 flex items-center gap-3 text-emerald-900 animate-fadeIn">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <div className="text-xs">
+                <strong className="block text-emerald-800 font-black uppercase tracking-wider">¡Prácticas EFSRT Validadas Exitosamente!</strong>
+                <span>
+                  Se asignaron los 24 créditos reglamentarios al estudiante {student ? `${student.name} ${student.lastName}` : (record.studentDni === "74859612" ? "Mateo Sebastián Quispe Rojas" : `DNI ${record.studentDni}`)}. El total acumulado es 120/120 créditos (Condición: Egresado Pleno).
+                </span>
               </div>
             </div>
+          )}
 
-            <div className="flex items-center gap-2 flex-wrap">
-              {!(isEfsrtValidated || docs.practicasPre) ? (
+          {/* Sección Destacada: Expediente de Prácticas Preprofesionales (EFSRT) */}
+          <section className="bg-slate-50 border border-slate-200 rounded-2xl p-5 relative overflow-hidden">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-4 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-sm text-slate-900 uppercase tracking-wide">
+                    Expediente de Prácticas Preprofesionales (EFSRT)
+                  </h4>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Requisito Formativo Obligatorio para Titulación • Equivalente a 24 Créditos Formativos
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                {!(isEfsrtValidated || docs.practicasPre) ? (
+                  <button
+                    type="button"
+                    disabled={!hasEfsrtSubmitted}
+                    onClick={handleValidateEFSRT}
+                    className={`inline-flex items-center gap-2 font-black text-xs uppercase tracking-wider px-4 py-2 rounded-xl shadow-sm transition-all ${hasEfsrtSubmitted
+                      ? "bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer"
+                      : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                      }`}
+                  >
+                    <Check className="w-4 h-4" />
+                    Acreditar y Validar Prácticas EFSRT (24 Créditos)
+                  </button>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 font-black text-xs px-3 py-1.5 rounded-xl border border-emerald-300 shadow-2xs font-mono uppercase">
+                    <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                    EFSRT Validado y Acreditado (+24 Cr.)
+                  </span>
+                )}
+
                 <button
                   type="button"
                   disabled={!hasEfsrtSubmitted}
-                  onClick={handleValidateEFSRT}
-                  className={`inline-flex items-center gap-2 font-black text-xs uppercase tracking-wider px-4 py-2 rounded-xl shadow-sm transition-all ${
-                    hasEfsrtSubmitted
-                      ? "bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer"
-                      : "bg-slate-200 text-slate-400 cursor-not-allowed"
-                  }`}
-                >
-                  <Check className="w-4 h-4" />
-                  Acreditar y Validar Prácticas EFSRT (24 Créditos)
-                </button>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 font-black text-xs px-3 py-1.5 rounded-xl border border-emerald-300 shadow-2xs font-mono uppercase">
-                  <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                  EFSRT Validado y Acreditado (+24 Cr.)
-                </span>
-              )}
-
-              <button
-                type="button"
-                disabled={!hasEfsrtSubmitted}
-                onClick={() => hasEfsrtSubmitted && setPreviewPdfOpen(true)}
-                className={`inline-flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-sm transition-all ${
-                  hasEfsrtSubmitted
+                  onClick={() => hasEfsrtSubmitted && setPreviewPdfOpen(true)}
+                  className={`inline-flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-sm transition-all ${hasEfsrtSubmitted
                     ? "bg-slate-800 hover:bg-slate-900 text-white cursor-pointer"
                     : "bg-slate-200 text-slate-400 cursor-not-allowed"
-                }`}
-              >
-                <Eye className={`w-4 h-4 ${hasEfsrtSubmitted ? "text-amber-300" : "text-slate-400"}`} />
-                {hasEfsrtSubmitted ? "Ver Constancia PDF" : "Sin Constancia Adjunta"}
-              </button>
-            </div>
-          </div>
-
-          {/* Tarjeta con los datos de la empresa y supervisor */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-            <div className="bg-white p-3.5 rounded-xl border border-slate-200">
-              <span className="text-[10px] font-black uppercase text-slate-600 block mb-1">Empresa Receptora</span>
-              <p className="font-bold text-slate-900 leading-tight">{efsrtCompany}</p>
-              <p className="text-[11px] font-mono text-slate-500 mt-1">RUC: {efsrtRuc}</p>
-            </div>
-
-            <div className="bg-white p-3.5 rounded-xl border border-slate-200">
-              <span className="text-[10px] font-black uppercase text-slate-600 block mb-1">Horas Formativas</span>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-xl font-extrabold text-[#800521] font-mono">{efsrtHours}</span>
-                <span className="text-slate-500 text-[11px] font-bold">/ 350 hrs mín.</span>
-              </div>
-              <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
-                <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: "100%" }}></div>
-              </div>
-              <span className="text-[9.5px] font-bold text-emerald-700 mt-1 block">137% del mínimo legal cumplido</span>
-            </div>
-
-            <div className="bg-white p-3.5 rounded-xl border border-slate-200">
-              <span className="text-[10px] font-black uppercase text-slate-600 block mb-1">Supervisor en Empresa</span>
-              <p className="font-bold text-slate-900 leading-tight">{efsrtSupervisor}</p>
-              <p className="text-[11px] text-slate-500 mt-1">{efsrtDepartment}</p>
-            </div>
-
-            <div className="bg-white p-3.5 rounded-xl border border-slate-200">
-              <span className="text-[10px] font-black uppercase text-slate-600 block mb-1">Documento Sustentatorio</span>
-              <div className="flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-[#800521] shrink-0" />
-                <span className="font-mono text-xs font-bold text-slate-800 truncate" title={efsrtFile}>
-                  {efsrtFile}
-                </span>
-              </div>
-              <span className="text-[10px] text-slate-600 font-semibold block mt-1.5">
-                Suscrito con firma y sello oficial
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* Modal de Vista Previa del PDF Real de Prácticas */}
-        {previewPdfOpen && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
-            <div className="bg-white rounded-3xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-300 my-auto">
-              <div className="bg-[#800521] text-white px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-amber-300" />
-                  <div>
-                    <h3 className="font-extrabold text-sm uppercase tracking-wider">
-                      Auditoría de Constancia EFSRT • {record.studentDni}
-                    </h3>
-                    <p className="text-[11px] text-amber-200">
-                      {efsrtCompany} • {efsrtHours} Horas Formativas
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPreviewPdfOpen(false)}
-                  className="text-white hover:text-amber-300 p-2 rounded-xl hover:bg-white/10 transition-all cursor-pointer"
-                  title="Cerrar vista previa"
+                    }`}
                 >
-                  <X className="w-5 h-5" />
+                  <Eye className={`w-4 h-4 ${hasEfsrtSubmitted ? "text-amber-300" : "text-slate-400"}`} />
+                  {hasEfsrtSubmitted ? "Ver Constancia PDF" : "Sin Constancia Adjunta"}
                 </button>
               </div>
+            </div>
 
-              <div className="flex-1 bg-slate-100 p-2 relative">
-                <iframe
-                  src="/documentos/Constancia_EFSRT_Practicas_Preprofesionales.pdf#toolbar=1"
-                  title="Constancia EFSRT Oficial"
-                  className="w-full h-full rounded-xl border border-slate-300 bg-white shadow-inner"
-                />
+            {/* Tarjeta con los datos de la empresa y supervisor */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200">
+                <span className="text-[10px] font-black uppercase text-slate-600 block mb-1">Empresa Receptora</span>
+                <p className="font-bold text-slate-900 leading-tight">{efsrtCompany}</p>
+                <p className="text-[11px] font-mono text-slate-500 mt-1">RUC: {efsrtRuc}</p>
               </div>
 
-              <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2 text-slate-600 font-medium">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>Documento verificado con firma de Ing. Carlos Mendoza Quispe y sello institucional.</span>
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200">
+                <span className="text-[10px] font-black uppercase text-slate-600 block mb-1">Horas Formativas</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-xl font-extrabold text-[#800521] font-mono">{efsrtHours}</span>
+                  <span className="text-slate-500 text-[11px] font-bold">/ 350 hrs mín.</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  {!isEfsrtValidated && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleValidateEFSRT();
-                        setPreviewPdfOpen(false);
-                      }}
-                      className="bg-emerald-700 hover:bg-emerald-800 text-white font-black uppercase text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
-                    >
-                      Aprobar y Convalidar Ahora
-                    </button>
-                  )}
+                <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+                  <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: "100%" }}></div>
+                </div>
+                <span className="text-[9.5px] font-bold text-emerald-700 mt-1 block">137% del mínimo legal cumplido</span>
+              </div>
+
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200">
+                <span className="text-[10px] font-black uppercase text-slate-600 block mb-1">Supervisor en Empresa</span>
+                <p className="font-bold text-slate-900 leading-tight">{efsrtSupervisor}</p>
+                <p className="text-[11px] text-slate-500 mt-1">{efsrtDepartment}</p>
+              </div>
+
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200">
+                <span className="text-[10px] font-black uppercase text-slate-600 block mb-1">Documento Sustentatorio</span>
+                <div className="flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-[#800521] shrink-0" />
+                  <span className="font-mono text-xs font-bold text-slate-800 truncate" title={efsrtFile}>
+                    {efsrtFile}
+                  </span>
+                </div>
+                <span className="text-[10px] text-slate-600 font-semibold block mt-1.5">
+                  Suscrito con firma y sello oficial
+                </span>
+              </div>
+            </div>
+          </section>
+
+          {/* Modal de Vista Previa del PDF Real de Prácticas */}
+          {previewPdfOpen && (
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
+              <div className="bg-white rounded-3xl w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-300 my-auto">
+                <div className="bg-[#800521] text-white px-6 py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-5 h-5 text-amber-300" />
+                    <div>
+                      <h3 className="font-extrabold text-sm uppercase tracking-wider">
+                        Auditoría de Constancia EFSRT • {record.studentDni}
+                      </h3>
+                      <p className="text-[11px] text-amber-200">
+                        {efsrtCompany} • {efsrtHours} Horas Formativas
+                      </p>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setPreviewPdfOpen(false)}
-                    className="bg-slate-800 hover:bg-slate-900 text-white font-bold uppercase text-xs px-4 py-2 rounded-xl transition-all cursor-pointer"
+                    className="text-white hover:text-amber-300 p-2 rounded-xl hover:bg-white/10 transition-all cursor-pointer"
+                    title="Cerrar vista previa"
                   >
-                    Cerrar
+                    <X className="w-5 h-5" />
                   </button>
+                </div>
+
+                <div className="flex-1 bg-slate-100 p-2 relative">
+                  <iframe
+                    src="/documentos/Constancia_EFSRT_Practicas_Preprofesionales.pdf#toolbar=1"
+                    title="Constancia EFSRT Oficial"
+                    className="w-full h-full rounded-xl border border-slate-300 bg-white shadow-inner"
+                  />
+                </div>
+
+                <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 text-slate-600 font-medium">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Documento verificado con firma de Ing. Carlos Mendoza Quispe y sello institucional.</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!isEfsrtValidated && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleValidateEFSRT();
+                          setPreviewPdfOpen(false);
+                        }}
+                        className="bg-emerald-700 hover:bg-emerald-800 text-white font-black uppercase text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+                      >
+                        Aprobar y Convalidar Ahora
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPreviewPdfOpen(false)}
+                      className="bg-slate-800 hover:bg-slate-900 text-white font-bold uppercase text-xs px-4 py-2 rounded-xl transition-all cursor-pointer"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Checklist de Requisitos Institucionales */}
-        <fieldset className="bg-slate-50/70 border border-slate-200 rounded-2xl p-5 space-y-3">
-          <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
-            <legend className="font-extrabold text-xs text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <FileCheck2 className="w-4 h-4 text-[#800521]" />
-              Requisitos Institucionales Evaluados por Secretaría Académica
-            </legend>
-            <span className="text-[11px] font-bold text-slate-500 font-mono">
-              {Object.values(docs).filter(Boolean).length} de 4 requisitos acreditados
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-            {/* 1. Solicitud Única de Trámite (FUT) */}
-            <div className={`p-4 rounded-2xl border transition-all ${docs.solicitud ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
-              }`}>
-              <div className="flex items-start justify-between gap-3">
-                <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
-                  <input
-                    type="checkbox"
-                    checked={docs.solicitud === true}
-                    onChange={(e) => setDocs((prev) => ({ ...prev, solicitud: e.target.checked }))}
-                    className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer"
-                  />
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">1. Solicitud Única de Trámite (FUT)</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5 font-mono">
-                      {hasFut ? `Expediente Digital N° EXP-2029-${record.studentDni}-CER` : "Sin solicitud registrada en Portal del Estudiante"}
-                    </p>
-                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${docs.solicitud ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
-                      }`}>
-                      {docs.solicitud
-                        ? "Conforme • Solicitud FUT Acreditada"
-                        : hasFut
-                          ? "FUT Registrado • Pendiente de Validación"
-                          : "Pendiente de Registro por el Estudiante"}
-                    </span>
-                  </div>
-                </label>
-                {hasFut ? (
-                  <button
-                    type="button"
-                    onClick={() => setPreviewFutOpen(true)}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1 shrink-0"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-slate-600" />
-                    Ver FUT
-                  </button>
-                ) : (
-                  <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded-lg shrink-0 select-none">
-                    No Registrado
-                  </span>
-                )}
-              </div>
+          {/* Checklist de Requisitos Institucionales */}
+          <fieldset className="bg-slate-50/70 border border-slate-200 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
+              <legend className="font-extrabold text-xs text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                <FileCheck2 className="w-4 h-4 text-[#800521]" />
+                Requisitos Institucionales Evaluados por Secretaría Académica
+              </legend>
+              <span className="text-[11px] font-bold text-slate-500 font-mono">
+                {Object.values(docs).filter(Boolean).length} de 4 requisitos acreditados
+              </span>
             </div>
 
-            {/* 2. Constancia de Egresado (96 créditos concluidos) */}
-            <div className={`p-4 rounded-2xl border transition-all ${docs.constanciaEgresado ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
-              }`}>
-              <div className="flex items-start justify-between gap-3">
-                <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
-                  <input
-                    type="checkbox"
-                    checked={docs.constanciaEgresado === true}
-                    onChange={(e) => setDocs((prev) => ({ ...prev, constanciaEgresado: e.target.checked }))}
-                    className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer"
-                  />
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">2. Constancia de Egresado (96 créditos concluidos)</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Auditoría Curricular: 6 de 6 ciclos aprobados (100% malla modular concluida)
-                    </p>
-                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${docs.constanciaEgresado ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
-                      }`}>
-                      {docs.constanciaEgresado ? "Conforme • 96/96 Créditos Acreditados" : "Pendiente de Verificación Curricular"}
-                    </span>
-                  </div>
-                </label>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setPreviewTranscriptOpen(true)}
-                    className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-                  >
-                    <Eye className="w-3.5 h-3.5 text-slate-600" />
-                    Ver Récord (6 Ciclos)
-                  </button>
-                  {!docs.constanciaEgresado && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              {/* 1. Solicitud Única de Trámite (FUT) */}
+              <div className={`p-4 rounded-2xl border transition-all ${docs.solicitud ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
+                }`}>
+                <div className="flex items-start justify-between gap-3">
+                  <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
+                    <input
+                      type="checkbox"
+                      checked={docs.solicitud === true}
+                      onChange={(e) => setDocs((prev) => ({ ...prev, solicitud: e.target.checked }))}
+                      className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer"
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">1. Solicitud Única de Trámite (FUT)</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 font-mono">
+                        {hasFut ? `Expediente Digital N° EXP-2029-${record.studentDni}-CER` : "Sin solicitud registrada en Portal del Estudiante"}
+                      </p>
+                      <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${docs.solicitud ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
+                        }`}>
+                        {docs.solicitud
+                          ? "Conforme • Solicitud FUT Acreditada"
+                          : hasFut
+                            ? "FUT Registrado • Pendiente de Validación"
+                            : "Pendiente de Registro por el Estudiante"}
+                      </span>
+                    </div>
+                  </label>
+                  {hasFut ? (
                     <button
                       type="button"
-                      onClick={() => setDocs((prev) => ({ ...prev, constanciaEgresado: true }))}
-                      className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+                      onClick={() => setPreviewFutOpen(true)}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1 shrink-0"
                     >
-                      Acreditar
+                      <Eye className="w-3.5 h-3.5 text-slate-600" />
+                      Ver FUT
                     </button>
+                  ) : (
+                    <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded-lg shrink-0 select-none">
+                      No Registrado
+                    </span>
                   )}
                 </div>
               </div>
-            </div>
 
-            {/* 3. Prácticas Preprofesionales EFSRT (24 créditos formativos) */}
-            <div className={`p-4 rounded-2xl border transition-all ${
-              docs.practicasPre
+              {/* 2. Constancia de Egresado (96 créditos concluidos) */}
+              <div className={`p-4 rounded-2xl border transition-all ${docs.constanciaEgresado ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
+                }`}>
+                <div className="flex items-start justify-between gap-3">
+                  <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
+                    <input
+                      type="checkbox"
+                      checked={docs.constanciaEgresado === true}
+                      onChange={(e) => setDocs((prev) => ({ ...prev, constanciaEgresado: e.target.checked }))}
+                      className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer"
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">2. Constancia de Egresado (96 créditos concluidos)</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Auditoría Curricular: 6 de 6 ciclos aprobados (100% malla modular concluida)
+                      </p>
+                      <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${docs.constanciaEgresado ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
+                        }`}>
+                        {docs.constanciaEgresado ? "Conforme • 96/96 Créditos Acreditados" : "Pendiente de Verificación Curricular"}
+                      </span>
+                    </div>
+                  </label>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTranscriptOpen(true)}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-600" />
+                      Ver Récord (6 Ciclos)
+                    </button>
+                    {!docs.constanciaEgresado && (
+                      <button
+                        type="button"
+                        onClick={() => setDocs((prev) => ({ ...prev, constanciaEgresado: true }))}
+                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+                      >
+                        Acreditar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Prácticas Preprofesionales EFSRT (24 créditos formativos) */}
+              <div className={`p-4 rounded-2xl border transition-all ${docs.practicasPre
                 ? "bg-emerald-50/40 border-emerald-300 shadow-2xs"
                 : hasEfsrtSubmitted
                   ? "bg-blue-50/70 border-blue-300 shadow-2xs"
                   : "bg-slate-50/70 border-slate-200"
-            }`}>
-              <div className="flex items-start justify-between gap-3">
-                <label className={`flex items-start gap-3 select-none flex-1 ${hasEfsrtSubmitted || docs.practicasPre ? "cursor-pointer" : "cursor-not-allowed opacity-75"}`}>
-                  <input
-                    type="checkbox"
-                    disabled={!hasEfsrtSubmitted && !docs.practicasPre}
-                    checked={docs.practicasPre === true}
-                    onChange={(e) => {
-                      const val = e.target.checked;
-                      setDocs((prev) => ({ ...prev, practicasPre: val }));
-                      setIsEfsrtValidated(val);
-                      if (typeof window !== "undefined") {
-                        localStorage.setItem(`sfa_efsrt_validated_${record.studentDni}`, String(val));
-                        if (record.studentDni === "74859612") {
-                          localStorage.setItem("sfa_efsrt_validated_74859612", String(val));
+                }`}>
+                <div className="flex items-start justify-between gap-3">
+                  <label className={`flex items-start gap-3 select-none flex-1 ${hasEfsrtSubmitted || docs.practicasPre ? "cursor-pointer" : "cursor-not-allowed opacity-75"}`}>
+                    <input
+                      type="checkbox"
+                      disabled={!hasEfsrtSubmitted && !docs.practicasPre}
+                      checked={docs.practicasPre === true}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        setDocs((prev) => ({ ...prev, practicasPre: val }));
+                        setIsEfsrtValidated(val);
+                        if (typeof window !== "undefined") {
+                          localStorage.setItem(`sfa_efsrt_validated_${record.studentDni}`, String(val));
+                          if (record.studentDni === "74859612") {
+                            localStorage.setItem("sfa_efsrt_validated_74859612", String(val));
+                          }
+                          window.dispatchEvent(new Event("storage"));
                         }
-                        window.dispatchEvent(new Event("storage"));
-                      }
-                      void updatePayment(`EFSRT-${record.studentDni}`, { status: val ? "APROBADO" : "PENDIENTE" }).catch(() => {});
-                    }}
-                    className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer disabled:cursor-not-allowed"
-                  />
-                  <div>
-                    <p className="text-xs font-bold text-slate-900">3. Prácticas Preprofesionales EFSRT (24 créditos)</p>
-                    <p className="text-[11px] text-slate-600 mt-0.5 leading-snug break-words" title={efsrtCompany}>
-                      {hasEfsrtSubmitted ? `${efsrtCompany} (${efsrtHours} hrs)` : "Sin constancia enviada por el estudiante"}
-                    </p>
-                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block px-2 py-0.5 rounded border ${
-                      docs.practicasPre
+                        void updatePayment(`EFSRT-${record.studentDni}`, { status: val ? "APROBADO" : "PENDIENTE" }).catch(() => { });
+                      }}
+                      className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer disabled:cursor-not-allowed"
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">3. Prácticas Preprofesionales EFSRT (24 créditos)</p>
+                      <p className="text-[11px] text-slate-600 mt-0.5 leading-snug break-words" title={efsrtCompany}>
+                        {hasEfsrtSubmitted ? `${efsrtCompany} (${efsrtHours} hrs)` : "Sin constancia enviada por el estudiante"}
+                      </p>
+                      <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block px-2 py-0.5 rounded border ${docs.practicasPre
                         ? "text-emerald-700 bg-emerald-50 border-emerald-200"
                         : hasEfsrtSubmitted
                           ? "text-blue-800 bg-blue-100 border-blue-300"
                           : "text-amber-700 bg-amber-50 border-amber-200"
-                    }`}>
-                      {docs.practicasPre
-                        ? `Conforme • ${efsrtHours} Horas Acreditadas (+24 Cr.)`
-                        : hasEfsrtSubmitted
-                          ? "En Revisión • Pendiente de Validar"
-                          : "Pendiente de Envío por Estudiante"}
-                    </span>
-                  </div>
-                </label>
-                {hasEfsrtSubmitted ? (
-                  <button
-                    type="button"
-                    onClick={() => setPreviewPdfOpen(true)}
-                    className={`${
-                      docs.practicasPre
+                        }`}>
+                        {docs.practicasPre
+                          ? `Conforme • ${efsrtHours} Horas Acreditadas (+24 Cr.)`
+                          : hasEfsrtSubmitted
+                            ? "En Revisión • Pendiente de Validar"
+                            : "Pendiente de Envío por Estudiante"}
+                      </span>
+                    </div>
+                  </label>
+                  {hasEfsrtSubmitted ? (
+                    <button
+                      type="button"
+                      onClick={() => setPreviewPdfOpen(true)}
+                      className={`${docs.practicasPre
                         ? "bg-slate-100 hover:bg-slate-200 text-slate-800"
                         : "bg-blue-600 hover:bg-blue-700 text-white shadow-2xs"
-                    } text-[10.5px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1 shrink-0`}
-                  >
-                    <Eye className={`w-3.5 h-3.5 ${docs.practicasPre ? "text-slate-600" : "text-white"}`} />
-                    <span>{docs.practicasPre ? "Ver PDF" : "Ver y Validar"}</span>
-                  </button>
-                ) : (
-                  <span className="bg-slate-200/80 text-slate-500 text-[10.5px] font-bold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 shrink-0 cursor-not-allowed select-none">
-                    <AlertTriangle className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Bloqueado</span>
-                  </span>
-                )}
+                        } text-[10.5px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1 shrink-0`}
+                    >
+                      <Eye className={`w-3.5 h-3.5 ${docs.practicasPre ? "text-slate-600" : "text-white"}`} />
+                      <span>{docs.practicasPre ? "Ver PDF" : "Ver y Validar"}</span>
+                    </button>
+                  ) : (
+                    <span className="bg-slate-200/80 text-slate-500 text-[10.5px] font-bold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 shrink-0 cursor-not-allowed select-none">
+                      <AlertTriangle className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Bloqueado</span>
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* 4. Pago de Tasa de Certificación (Banco de la Nación) */}
-            <div className={`p-4 rounded-2xl border transition-all ${
-              docs.pagoDerecho
+              {/* 4. Pago de Tasa de Certificación (Banco de la Nación) */}
+              <div className={`p-4 rounded-2xl border transition-all ${docs.pagoDerecho
                 ? "bg-emerald-50/40 border-emerald-300 shadow-2xs"
                 : hasFeePaid
                   ? "bg-blue-50/70 border-blue-300 shadow-2xs"
                   : "bg-slate-50/70 border-slate-200"
-            }`}>
-              <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
-                <label className={`flex items-start gap-3 select-none flex-1 min-w-0 ${hasFeePaid || docs.pagoDerecho ? "cursor-pointer" : "cursor-not-allowed opacity-75"}`}>
-                  <input
-                    type="checkbox"
-                    disabled={!hasFeePaid && !docs.pagoDerecho}
-                    checked={docs.pagoDerecho === true}
-                    onChange={(e) => {
-                      const val = e.target.checked;
-                      const nextDocs = { ...docs, pagoDerecho: val };
-                      setDocs(nextDocs);
-                      if (typeof window !== "undefined") {
-                        localStorage.setItem(`sfa_fee_validated_${record.studentDni}`, String(val));
-                      }
-                      if (futId) {
-                        void updateServiceRequestPayment(futId, { status: val ? "Validado" : "En Proceso" }).catch(() => {});
-                      }
-                      onSaveDocs(record.studentDni, nextDocs, obs);
-                    }}
-                    className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer disabled:cursor-not-allowed"
-                  />
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-900">4. Pago de Tasa de Certificación (Banco de la Nación)</p>
-                    <p className="text-[11px] text-slate-600 mt-0.5 font-mono break-words">
-                      {hasFeePaid
-                        ? `Arancel S/ ${Number(feeAmount || 50).toFixed(2)} • N° Op: ${feeOpNumber || "—"}`
-                        : "Sin comprobante de abono registrado en Banco de la Nación"}
-                    </p>
-                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block px-2 py-0.5 rounded border ${
-                      docs.pagoDerecho
+                }`}>
+                <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
+                  <label className={`flex items-start gap-3 select-none flex-1 min-w-0 ${hasFeePaid || docs.pagoDerecho ? "cursor-pointer" : "cursor-not-allowed opacity-75"}`}>
+                    <input
+                      type="checkbox"
+                      disabled={!hasFeePaid && !docs.pagoDerecho}
+                      checked={docs.pagoDerecho === true}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        const nextDocs = { ...docs, pagoDerecho: val };
+                        setDocs(nextDocs);
+                        if (typeof window !== "undefined") {
+                          localStorage.setItem(`sfa_fee_validated_${record.studentDni}`, String(val));
+                        }
+                        if (futId) {
+                          void updateServiceRequestPayment(futId, { status: val ? "Validado" : "En Proceso" }).catch(() => { });
+                        }
+                        onSaveDocs(record.studentDni, nextDocs, obs);
+                      }}
+                      className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer disabled:cursor-not-allowed"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-900">4. Pago de Tasa de Certificación (Banco de la Nación)</p>
+                      <p className="text-[11px] text-slate-600 mt-0.5 font-mono break-words">
+                        {hasFeePaid
+                          ? `Arancel S/ ${Number(feeAmount || 50).toFixed(2)} • N° Op: ${feeOpNumber || "—"}`
+                          : "Sin comprobante de abono registrado en Banco de la Nación"}
+                      </p>
+                      <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block px-2 py-0.5 rounded border ${docs.pagoDerecho
                         ? "text-emerald-700 bg-emerald-50 border-emerald-200"
                         : hasFeePaid
                           ? "text-blue-800 bg-blue-100 border-blue-300"
                           : "text-amber-700 bg-amber-50 border-amber-200"
-                    }`}>
-                      {docs.pagoDerecho
-                        ? "Conforme • Tasa S/ 50.00 Conciliada en Caja"
-                        : hasFeePaid
-                          ? "En Revisión • Pendiente de Validar"
-                          : "Pendiente de Pago en Tesorería / Banco"}
-                    </span>
-                  </div>
-                </label>
-                <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
-                  {hasFeePaid ? (
-                    <button
-                      type="button"
-                      onClick={() => setPreviewVoucherOpen(true)}
-                      className={`${
-                        docs.pagoDerecho
+                        }`}>
+                        {docs.pagoDerecho
+                          ? "Conforme • Tasa S/ 50.00 Conciliada en Caja"
+                          : hasFeePaid
+                            ? "En Revisión • Pendiente de Validar"
+                            : "Pendiente de Pago en Tesorería / Banco"}
+                      </span>
+                    </div>
+                  </label>
+                  <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                    {hasFeePaid ? (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewVoucherOpen(true)}
+                        className={`${docs.pagoDerecho
                           ? "bg-slate-100 hover:bg-slate-200 text-slate-800"
                           : "bg-blue-600 hover:bg-blue-700 text-white shadow-2xs"
-                      } text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1`}
-                    >
-                      <Eye className={`w-3.5 h-3.5 ${docs.pagoDerecho ? "text-slate-600" : "text-white"}`} />
-                      <span>{docs.pagoDerecho ? "Ver Voucher" : "Ver y Validar"}</span>
-                    </button>
-                  ) : (
-                    <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded-lg select-none">
-                      Sin Voucher
-                    </span>
-                  )}
-                  {!docs.pagoDerecho && hasFeePaid && (
+                          } text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1`}
+                      >
+                        <Eye className={`w-3.5 h-3.5 ${docs.pagoDerecho ? "text-slate-600" : "text-white"}`} />
+                        <span>{docs.pagoDerecho ? "Ver Voucher" : "Ver y Validar"}</span>
+                      </button>
+                    ) : (
+                      <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded-lg select-none">
+                        Sin Voucher
+                      </span>
+                    )}
+                    {!docs.pagoDerecho && hasFeePaid && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextDocs = { ...docs, pagoDerecho: true };
+                          setDocs(nextDocs);
+                          if (typeof window !== "undefined") {
+                            localStorage.setItem(`sfa_fee_validated_${record.studentDni}`, "true");
+                          }
+                          if (futId) {
+                            void updateServiceRequestPayment(futId, { status: "Validado" }).catch(() => { });
+                          }
+                          onSaveDocs(record.studentDni, nextDocs, obs);
+                        }}
+                        className="bg-emerald-700 hover:bg-emerald-800 text-white text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-xs"
+                      >
+                        Acreditar Pago
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          {/* Modal de Vista Previa del Voucher de Pago Bancario */}
+          {previewVoucherOpen && (
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
+              <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-300 my-auto">
+                <div className="bg-[#800521] text-white px-5 py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <FileText className="w-5 h-5 text-amber-300" />
+                    <div>
+                      <h3 className="font-extrabold text-xs uppercase tracking-wider">
+                        Auditoría de Comprobante de Pago • Banco de la Nación
+                      </h3>
+                      <p className="text-[10px] text-amber-200 font-mono">
+                        Derecho de Certificado de Estudios Oficial (S/ 50.00)
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewVoucherOpen(false)}
+                    className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="p-5 space-y-4 bg-slate-50">
+                  <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col items-center justify-center shadow-inner">
+                    <img
+                      src={feeVoucherUrl || "/voucher_ciclo2.png"}
+                      alt="Voucher Banco de la Nación"
+                      className="max-h-[240px] w-auto object-contain rounded-lg border border-slate-300 shadow-xs"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs bg-white p-3.5 rounded-2xl border border-slate-200 font-mono">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">N° Operación</span>
+                      <strong className="text-slate-900 font-extrabold">{feeOpNumber || "OP-2029-BN-49102"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Importe Cancelado</span>
+                      <strong className="text-[#800521] font-extrabold">S/ {Number(feeAmount || 50).toFixed(2)}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Fecha de Abono</span>
+                      <span className="text-slate-700 font-bold">{feeDate || "24/11/2026"}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Estado de Caja</span>
+                      <span className="text-emerald-700 font-black">Conciliado • Conforme</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
+                  {!docs.pagoDerecho && (
                     <button
                       type="button"
                       onClick={() => {
@@ -956,310 +1028,19 @@ function Application({
                           localStorage.setItem(`sfa_fee_validated_${record.studentDni}`, "true");
                         }
                         if (futId) {
-                          void updateServiceRequestPayment(futId, { status: "Validado" }).catch(() => {});
+                          void updateServiceRequestPayment(futId, { status: "Validado" }).catch(() => { });
                         }
                         onSaveDocs(record.studentDni, nextDocs, obs);
+                        setPreviewVoucherOpen(false);
                       }}
-                      className="bg-emerald-700 hover:bg-emerald-800 text-white text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-xs"
+                      className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
                     >
-                      Acreditar Pago
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </fieldset>
-
-        {/* Modal de Vista Previa del Voucher de Pago Bancario */}
-        {previewVoucherOpen && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
-            <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-300 my-auto">
-              <div className="bg-[#800521] text-white px-5 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <FileText className="w-5 h-5 text-amber-300" />
-                  <div>
-                    <h3 className="font-extrabold text-xs uppercase tracking-wider">
-                      Auditoría de Comprobante de Pago • Banco de la Nación
-                    </h3>
-                    <p className="text-[10px] text-amber-200 font-mono">
-                      Derecho de Certificado de Estudios Oficial (S/ 50.00)
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPreviewVoucherOpen(false)}
-                  className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="p-5 space-y-4 bg-slate-50">
-                <div className="bg-white p-3 rounded-2xl border border-slate-200 flex flex-col items-center justify-center shadow-inner">
-                  <img
-                    src={feeVoucherUrl || "/voucher_ciclo2.png"}
-                    alt="Voucher Banco de la Nación"
-                    className="max-h-[240px] w-auto object-contain rounded-lg border border-slate-300 shadow-xs"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 text-xs bg-white p-3.5 rounded-2xl border border-slate-200 font-mono">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-500 block">N° Operación</span>
-                    <strong className="text-slate-900 font-extrabold">{feeOpNumber || "OP-2029-BN-49102"}</strong>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Importe Cancelado</span>
-                    <strong className="text-[#800521] font-extrabold">S/ {Number(feeAmount || 50).toFixed(2)}</strong>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Fecha de Abono</span>
-                    <span className="text-slate-700 font-bold">{feeDate || "24/11/2026"}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Estado de Caja</span>
-                    <span className="text-emerald-700 font-black">Conciliado • Conforme</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white px-5 py-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
-                {!docs.pagoDerecho && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextDocs = { ...docs, pagoDerecho: true };
-                      setDocs(nextDocs);
-                      if (typeof window !== "undefined") {
-                        localStorage.setItem(`sfa_fee_validated_${record.studentDni}`, "true");
-                      }
-                      if (futId) {
-                        void updateServiceRequestPayment(futId, { status: "Validado" }).catch(() => {});
-                      }
-                      onSaveDocs(record.studentDni, nextDocs, obs);
-                      setPreviewVoucherOpen(false);
-                    }}
-                    className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
-                  >
-                    Validar y Conciliar Pago
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setPreviewVoucherOpen(false)}
-                  className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal de Vista Previa del FUT Digital */}
-        {previewFutOpen && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
-            <div className="bg-white rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl border border-slate-300 my-auto">
-              <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b-2 border-amber-500">
-                <div className="flex items-center gap-2.5">
-                  <FileText className="w-5 h-5 text-amber-400" />
-                  <div>
-                    <h3 className="font-extrabold text-xs uppercase tracking-wider font-mono">
-                      Formulario Único de Trámite (FUT) • Mesa de Partes
-                    </h3>
-                    <p className="text-[10px] text-slate-300">
-                      Expediente Digital N° EXP-2029-{record.studentDni}-CER
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPreviewFutOpen(false)}
-                  className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="p-6 space-y-4 bg-slate-50 text-xs">
-                <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2.5">
-                  <div className="flex justify-between border-b border-slate-100 pb-2">
-                    <span className="text-slate-500 font-bold uppercase text-[10px]">Administrado Solicitante:</span>
-                    <strong className="text-slate-900">{student ? `${student.name} ${student.lastName}` : "Quispe Rojas, Mateo Sebastián"}</strong>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-2">
-                    <span className="text-slate-500 font-bold uppercase text-[10px]">Documento de Identidad:</span>
-                    <strong className="text-slate-900 font-mono">DNI {record.studentDni}</strong>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-2">
-                    <span className="text-slate-500 font-bold uppercase text-[10px]">Programa de Estudios:</span>
-                    <strong className="text-slate-900">{program}</strong>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 font-bold uppercase text-[10px]">Petitorio Concreto:</span>
-                    <strong className="text-[#800521]">Emisión de Certificado de Estudios Oficial y Carpeta de Titulación</strong>
-                  </div>
-                </div>
-
-                <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-3 text-[11px] text-emerald-900 flex items-center gap-2 font-medium">
-                  <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-                  <span>Suscrito electrónicamente mediante autenticación segura en Portal del Estudiante IESTP SFA.</span>
-                </div>
-              </div>
-
-              <div className="bg-white px-6 py-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
-                {!docs.solicitud && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDocs((prev) => ({ ...prev, solicitud: true }));
-                      setPreviewFutOpen(false);
-                    }}
-                    className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
-                  >
-                    Validar y Dar Conforme
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setPreviewFutOpen(false)}
-                  className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal de Vista Previa del Récord de Notas (6 Ciclos / 96 Créditos) */}
-        {previewTranscriptOpen && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
-            <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-300 my-auto">
-              <div className="bg-gradient-to-r from-[#800521] via-[#5c0317] to-slate-900 text-white px-6 py-4 flex items-center justify-between border-b-2 border-amber-500 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-300 font-bold">
-                    96
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-sm uppercase tracking-wide flex items-center gap-2">
-                      Récord Académico Integral • 6 Ciclos Modulares
-                      <span className="bg-emerald-500/30 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full border border-emerald-400/40 font-mono">
-                        100% Concluido
-                      </span>
-                    </h3>
-                    <p className="text-[11px] text-slate-300">
-                      IESTP San Francisco de Asís • Programa: {program} • DNI: {record.studentDni}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPreviewTranscriptOpen(false)}
-                  className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Encabezado del Estudiante */}
-              <div className="bg-slate-100 px-6 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs font-mono shrink-0">
-                <div>
-                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Estudiante Egresado</span>
-                  <strong className="text-slate-900 text-sm font-sans">{student ? `${student.name} ${student.lastName}` : "Quispe Rojas, Mateo Sebastián"}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Créditos Acumulados</span>
-                  <span className="text-emerald-700 font-extrabold text-sm">96 / 96 Créditos (30 Cursos)</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Promedio Ponderado</span>
-                  <span className="text-indigo-900 font-extrabold text-sm">17.13 / 20.00</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Condición Curricular</span>
-                  <span className="bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2 py-0.5 rounded-md border border-emerald-300">
-                    EGRESADO REGULAR
-                  </span>
-                </div>
-              </div>
-
-              {/* Contenido scrolleable con los 6 ciclos */}
-              <div className="p-6 overflow-y-auto space-y-5 bg-slate-50 flex-1">
-                {[1, 2, 3, 4, 5, 6].map((cicloNum) => {
-                  const isCont = (student?.programId || program || "").toLowerCase().includes("cont");
-                  const activeCurric = isCont ? ACCREDITED_CURRICULUM_CONTABILIDAD : ACCREDITED_CURRICULUM_ELECTRICIDAD;
-                  const cycleCourses = activeCurric.filter((c) => c.cycle === cicloNum);
-                  const cycleCredits = cycleCourses.reduce((acc, c) => acc + c.credits, 0);
-                  const cycleAvg = (
-                    cycleCourses.reduce((acc, c) => acc + c.grade * c.credits, 0) / (cycleCredits || 1)
-                  ).toFixed(1);
-
-                  return (
-                    <div key={cicloNum} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
-                      <div className="bg-slate-900 text-white px-4 py-2 flex items-center justify-between text-xs font-mono">
-                        <div className="flex items-center gap-2">
-                          <strong className="uppercase font-bold tracking-wider">Ciclo Modular 0{cicloNum}</strong>
-                          <span className="text-slate-400 text-[11px]">({cycleCredits} Créditos Académicos)</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-amber-300 font-semibold text-[11px]">Prom. Ciclo: {cycleAvg}</span>
-                          <span className="bg-emerald-600/30 text-emerald-300 text-[10px] px-2 py-0.5 rounded border border-emerald-500/40">
-                            Aprobado
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="divide-y divide-slate-100">
-                        {cycleCourses.map((c) => (
-                          <div key={c.code} className="px-4 py-2.5 flex items-center justify-between text-xs hover:bg-slate-50/80 transition-colors">
-                            <div className="flex items-center gap-3 flex-1 min-w-0 pr-4">
-                              <span className="font-mono text-[11px] text-slate-500 font-bold bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
-                                {c.code}
-                              </span>
-                              <span className="text-slate-800 font-medium truncate">{c.courseName}</span>
-                            </div>
-                            <div className="flex items-center gap-4 shrink-0 font-mono text-[11px]">
-                              <span className="text-slate-500">{c.credits} cr.</span>
-                              <span className="text-emerald-700 font-extrabold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-xs min-w-[34px] text-center">
-                                {c.grade.toFixed(1)}
-                              </span>
-                              <span className="text-[10px] text-emerald-700 font-bold uppercase">
-                                Aprobado
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Footer con Acciones */}
-              <div className="bg-white px-6 py-3.5 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
-                <div className="text-[11px] text-slate-500 font-medium">
-                  Auditoría automática de plan de estudios aprobada por Dirección Académica.
-                </div>
-                <div className="flex items-center gap-2">
-                  {!docs.constanciaEgresado && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDocs((prev) => ({ ...prev, constanciaEgresado: true }));
-                        setPreviewTranscriptOpen(false);
-                      }}
-                      className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5"
-                    >
-                      <Check className="w-4 h-4" />
-                      Validar y Acreditar Egresado
+                      Validar y Conciliar Pago
                     </button>
                   )}
                   <button
                     type="button"
-                    onClick={() => setPreviewTranscriptOpen(false)}
+                    onClick={() => setPreviewVoucherOpen(false)}
                     className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer"
                   >
                     Cerrar
@@ -1267,119 +1048,330 @@ function Application({
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Modal de Vista Previa del FUT Digital */}
+          {previewFutOpen && (
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
+              <div className="bg-white rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl border border-slate-300 my-auto">
+                <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b-2 border-amber-500">
+                  <div className="flex items-center gap-2.5">
+                    <FileText className="w-5 h-5 text-amber-400" />
+                    <div>
+                      <h3 className="font-extrabold text-xs uppercase tracking-wider font-mono">
+                        Formulario Único de Trámite (FUT) • Mesa de Partes
+                      </h3>
+                      <p className="text-[10px] text-slate-300">
+                        Expediente Digital N° EXP-2029-{record.studentDni}-CER
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewFutOpen(false)}
+                    className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-4 bg-slate-50 text-xs">
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2.5">
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                      <span className="text-slate-500 font-bold uppercase text-[10px]">Administrado Solicitante:</span>
+                      <strong className="text-slate-900">{student ? `${student.name} ${student.lastName}` : "Quispe Rojas, Mateo Sebastián"}</strong>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                      <span className="text-slate-500 font-bold uppercase text-[10px]">Documento de Identidad:</span>
+                      <strong className="text-slate-900 font-mono">DNI {record.studentDni}</strong>
+                    </div>
+                    <div className="flex justify-between border-b border-slate-100 pb-2">
+                      <span className="text-slate-500 font-bold uppercase text-[10px]">Programa de Estudios:</span>
+                      <strong className="text-slate-900">{program}</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 font-bold uppercase text-[10px]">Petitorio Concreto:</span>
+                      <strong className="text-[#800521]">Emisión de Certificado de Estudios Oficial y Carpeta de Titulación</strong>
+                    </div>
+                  </div>
+
+                  <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-3 text-[11px] text-emerald-900 flex items-center gap-2 font-medium">
+                    <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+                    <span>Suscrito electrónicamente mediante autenticación segura en Portal del Estudiante IESTP SFA.</span>
+                  </div>
+                </div>
+
+                <div className="bg-white px-6 py-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
+                  {!docs.solicitud && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDocs((prev) => ({ ...prev, solicitud: true }));
+                        setPreviewFutOpen(false);
+                      }}
+                      className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+                    >
+                      Validar y Dar Conforme
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setPreviewFutOpen(false)}
+                    className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal de Vista Previa del Récord de Notas (6 Ciclos / 96 Créditos) */}
+          {previewTranscriptOpen && (
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
+              <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-300 my-auto">
+                <div className="bg-gradient-to-r from-[#800521] via-[#5c0317] to-slate-900 text-white px-6 py-4 flex items-center justify-between border-b-2 border-amber-500 shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-300 font-bold">
+                      96
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-sm uppercase tracking-wide flex items-center gap-2">
+                        Récord Académico Integral • 6 Ciclos Modulares
+                        <span className="bg-emerald-500/30 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full border border-emerald-400/40 font-mono">
+                          100% Concluido
+                        </span>
+                      </h3>
+                      <p className="text-[11px] text-slate-300">
+                        IESTP San Francisco de Asís • Programa: {program} • DNI: {record.studentDni}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTranscriptOpen(false)}
+                    className="text-white hover:text-amber-300 p-1.5 rounded-lg hover:bg-white/10 cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Encabezado del Estudiante */}
+                <div className="bg-slate-100 px-6 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs font-mono shrink-0">
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Estudiante Egresado</span>
+                    <strong className="text-slate-900 text-sm font-sans">{student ? `${student.name} ${student.lastName}` : "Quispe Rojas, Mateo Sebastián"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Créditos Acumulados</span>
+                    <span className="text-emerald-700 font-extrabold text-sm">96 / 96 Créditos (30 Cursos)</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Promedio Ponderado</span>
+                    <span className="text-indigo-900 font-extrabold text-sm">17.13 / 20.00</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase font-bold">Condición Curricular</span>
+                    <span className="bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2 py-0.5 rounded-md border border-emerald-300">
+                      EGRESADO REGULAR
+                    </span>
+                  </div>
+                </div>
+
+                {/* Contenido scrolleable con los 6 ciclos */}
+                <div className="p-6 overflow-y-auto space-y-5 bg-slate-50 flex-1">
+                  {[1, 2, 3, 4, 5, 6].map((cicloNum) => {
+                    const isCont = (student?.programId || program || "").toLowerCase().includes("cont");
+                    const activeCurric = isCont ? ACCREDITED_CURRICULUM_CONTABILIDAD : ACCREDITED_CURRICULUM_ELECTRICIDAD;
+                    const cycleCourses = activeCurric.filter((c) => c.cycle === cicloNum);
+                    const cycleCredits = cycleCourses.reduce((acc, c) => acc + c.credits, 0);
+                    const cycleAvg = (
+                      cycleCourses.reduce((acc, c) => acc + c.grade * c.credits, 0) / (cycleCredits || 1)
+                    ).toFixed(1);
+
+                    return (
+                      <div key={cicloNum} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
+                        <div className="bg-slate-900 text-white px-4 py-2 flex items-center justify-between text-xs font-mono">
+                          <div className="flex items-center gap-2">
+                            <strong className="uppercase font-bold tracking-wider">Ciclo Modular 0{cicloNum}</strong>
+                            <span className="text-slate-400 text-[11px]">({cycleCredits} Créditos Académicos)</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-amber-300 font-semibold text-[11px]">Prom. Ciclo: {cycleAvg}</span>
+                            <span className="bg-emerald-600/30 text-emerald-300 text-[10px] px-2 py-0.5 rounded border border-emerald-500/40">
+                              Aprobado
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="divide-y divide-slate-100">
+                          {cycleCourses.map((c) => (
+                            <div key={c.code} className="px-4 py-2.5 flex items-center justify-between text-xs hover:bg-slate-50/80 transition-colors">
+                              <div className="flex items-center gap-3 flex-1 min-w-0 pr-4">
+                                <span className="font-mono text-[11px] text-slate-500 font-bold bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
+                                  {c.code}
+                                </span>
+                                <span className="text-slate-800 font-medium truncate">{c.courseName}</span>
+                              </div>
+                              <div className="flex items-center gap-4 shrink-0 font-mono text-[11px]">
+                                <span className="text-slate-500">{c.credits} cr.</span>
+                                <span className="text-emerald-700 font-extrabold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-xs min-w-[34px] text-center">
+                                  {c.grade.toFixed(1)}
+                                </span>
+                                <span className="text-[10px] text-emerald-700 font-bold uppercase">
+                                  Aprobado
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Footer con Acciones */}
+                <div className="bg-white px-6 py-3.5 border-t border-slate-200 flex items-center justify-between gap-3 shrink-0">
+                  <div className="text-[11px] text-slate-500 font-medium">
+                    Auditoría automática de plan de estudios aprobada por Dirección Académica.
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!docs.constanciaEgresado && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDocs((prev) => ({ ...prev, constanciaEgresado: true }));
+                          setPreviewTranscriptOpen(false);
+                        }}
+                        className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+                      >
+                        <Check className="w-4 h-4" />
+                        Validar y Acreditar Egresado
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTranscriptOpen(false)}
+                      className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Observaciones de Secretaría Académica */}
+          <div>
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5 flex items-center justify-between">
+              <span>Observaciones y Dictamen de Secretaría Académica</span>
+              <span className="text-[10px] text-slate-400 font-mono font-normal">Máx. 2000 caracteres</span>
+            </label>
+            <textarea
+              value={obs}
+              onChange={(event) => setObs(event.target.value)}
+              maxLength={2000}
+              rows={3}
+              placeholder="Ingrese anotaciones, número de resolución directoral o especificaciones del trámite..."
+              className="block border border-slate-300 rounded-xl p-3 w-full text-xs text-slate-800 font-medium focus:ring-1 focus:ring-[#800521] focus:outline-none bg-slate-50/50"
+            />
           </div>
-        )}
 
-        {/* Observaciones de Secretaría Académica */}
-        <div>
-          <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5 flex items-center justify-between">
-            <span>Observaciones y Dictamen de Secretaría Académica</span>
-            <span className="text-[10px] text-slate-400 font-mono font-normal">Máx. 2000 caracteres</span>
-          </label>
-          <textarea
-            value={obs}
-            onChange={(event) => setObs(event.target.value)}
-            maxLength={2000}
-            rows={3}
-            placeholder="Ingrese anotaciones, número de resolución directoral o especificaciones del trámite..."
-            className="block border border-slate-300 rounded-xl p-3 w-full text-xs text-slate-800 font-medium focus:ring-1 focus:ring-[#800521] focus:outline-none bg-slate-50/50"
-          />
-        </div>
-
-        {/* Barra de Acciones del Expediente */}
-        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100">
-          <button
-            type="button"
-            disabled={!dirty}
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                localStorage.setItem(`sfa_fee_validated_${record.studentDni}`, String(Boolean(docs.pagoDerecho)));
-              }
-              if (futId) {
-                void updateServiceRequestPayment(futId, { status: docs.pagoDerecho ? "Validado" : "En Proceso" }).catch(() => {});
-              }
-              onSaveDocs(record.studentDni, docs, obs);
-            }}
-            className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2.5 disabled:opacity-40 transition-all cursor-pointer shadow-xs inline-flex items-center gap-2"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Guardar Revisión
-          </button>
-
-          <button
-            type="button"
-            disabled={!allRequirementsChecked || record.status === "Apto" || record.status === "Certificado Emitido"}
-            onClick={() => onIssuerUpdate(record.studentDni, true)}
-            className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2.5 disabled:opacity-40 transition-all cursor-pointer shadow-xs inline-flex items-center gap-2"
-          >
-            <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-            Marcar Apto para Emisión
-          </button>
-
-          <button
-            type="button"
-            disabled={dirty}
-            onClick={() => onIssuerUpdate(record.studentDni, false)}
-            className="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2.5 disabled:opacity-40 transition-all cursor-pointer shadow-xs inline-flex items-center gap-2"
-          >
-            <AlertTriangle className="w-3.5 h-3.5" />
-            Observar Expediente
-          </button>
-
-          <div className="flex items-center gap-2 ml-auto">
+          {/* Barra de Acciones del Expediente */}
+          <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-100">
             <button
               type="button"
-              disabled={downloading}
-              onClick={() => { void downloadSummary(); }}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl px-3 py-2.5 disabled:opacity-40 transition-all cursor-pointer border border-slate-300 inline-flex items-center gap-1.5"
-              title="Descargar dictamen interno de auditoría y expediente"
+              disabled={!dirty}
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  localStorage.setItem(`sfa_fee_validated_${record.studentDni}`, String(Boolean(docs.pagoDerecho)));
+                }
+                if (futId) {
+                  void updateServiceRequestPayment(futId, { status: docs.pagoDerecho ? "Validado" : "En Proceso" }).catch(() => { });
+                }
+                onSaveDocs(record.studentDni, docs, obs);
+              }}
+              className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2.5 disabled:opacity-40 transition-all cursor-pointer shadow-xs inline-flex items-center gap-2"
             >
-              <FileText className="w-3.5 h-3.5 text-slate-500" />
-              <span>Resumen / Dictamen</span>
+              <RefreshCw className="w-3.5 h-3.5" />
+              Guardar Revisión
             </button>
 
             <button
               type="button"
-              disabled={downloading}
-              onClick={() => { void downloadCertificate(); }}
-              className="bg-[#800521] hover:bg-[#66041a] text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2.5 disabled:opacity-40 transition-all cursor-pointer shadow-xs inline-flex items-center gap-2"
-              title="Descargar Certificado Oficial de Estudios (MINEDU) a 2 páginas con récord académico y firmas"
+              disabled={!allRequirementsChecked || record.status === "Apto" || record.status === "Certificado Emitido"}
+              onClick={() => onIssuerUpdate(record.studentDni, true)}
+              className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2.5 disabled:opacity-40 transition-all cursor-pointer shadow-xs inline-flex items-center gap-2"
             >
-              <Download className="w-4 h-4" />
-              {downloading ? "Generando Certificado..." : "Descargar Certificado Oficial de Estudios"}
+              <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+              Marcar Apto para Emisión
             </button>
+
+            <button
+              type="button"
+              disabled={dirty}
+              onClick={() => onIssuerUpdate(record.studentDni, false)}
+              className="bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2.5 disabled:opacity-40 transition-all cursor-pointer shadow-xs inline-flex items-center gap-2"
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Observar Expediente
+            </button>
+
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                type="button"
+                disabled={downloading}
+                onClick={() => { void downloadSummary(); }}
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl px-3 py-2.5 disabled:opacity-40 transition-all cursor-pointer border border-slate-300 inline-flex items-center gap-1.5"
+                title="Descargar dictamen interno de auditoría y expediente"
+              >
+                <FileText className="w-3.5 h-3.5 text-slate-500" />
+                <span>Resumen / Dictamen</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={downloading}
+                onClick={() => { void downloadCertificate(); }}
+                className="bg-[#800521] hover:bg-[#66041a] text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2.5 disabled:opacity-40 transition-all cursor-pointer shadow-xs inline-flex items-center gap-2"
+                title="Descargar Certificado Oficial de Estudios (MINEDU) a 2 páginas con récord académico y firmas"
+              >
+                <Download className="w-4 h-4" />
+                {downloading ? "Generando Certificado..." : "Descargar Certificado Oficial de Estudios"}
+              </button>
+            </div>
+          </div>
+
+          {dirty && (
+            <p className="text-xs text-amber-800 font-bold bg-amber-50 border border-amber-200 p-2.5 rounded-xl">
+              Tiene cambios pendientes sin guardar en este expediente. Haga clic en Guardar Revisión para persistir los requisitos y observaciones.
+            </p>
+          )}
+
+          {downloadError && (
+            <p role="alert" className="text-rose-700 text-xs font-bold bg-rose-50 border border-rose-200 p-2.5 rounded-xl">
+              {downloadError}
+            </p>
+          )}
+
+          {/* Emisión y Custodia Digital del Certificado Oficial */}
+          <div className="pt-2">
+            <CertificateDocuments
+              dni={record.studentDni}
+              ready={!dirty && (record.status === "Apto" || record.status === "Certificado Emitido" || allRequirementsChecked)}
+              studentName={student ? `${student.name} ${student.lastName}` : (record.studentDni === "74859612" ? "Mateo Sebastián Quispe Rojas" : `Estudiante DNI ${record.studentDni}`)}
+              program={program}
+              record={record}
+              extra={{
+                efsrtData,
+                feeOpNumber,
+                feeAmount,
+                futId,
+              }}
+            />
           </div>
         </div>
-
-        {dirty && (
-          <p className="text-xs text-amber-800 font-bold bg-amber-50 border border-amber-200 p-2.5 rounded-xl">
-            Tiene cambios pendientes sin guardar en este expediente. Haga clic en Guardar Revisión para persistir los requisitos y observaciones.
-          </p>
-        )}
-
-        {downloadError && (
-          <p role="alert" className="text-rose-700 text-xs font-bold bg-rose-50 border border-rose-200 p-2.5 rounded-xl">
-            {downloadError}
-          </p>
-        )}
-
-        {/* Emisión y Custodia Digital del Certificado Oficial */}
-        <div className="pt-2">
-          <CertificateDocuments
-            dni={record.studentDni}
-            ready={!dirty && (record.status === "Apto" || record.status === "Certificado Emitido" || allRequirementsChecked)}
-            studentName={student ? `${student.name} ${student.lastName}` : (record.studentDni === "74859612" ? "Mateo Sebastián Quispe Rojas" : `Estudiante DNI ${record.studentDni}`)}
-            program={program}
-            record={record}
-            extra={{
-              efsrtData,
-              feeOpNumber,
-              feeAmount,
-              futId,
-            }}
-          />
-        </div>
-      </div>
       )}
     </article>
   );
@@ -1396,23 +1388,8 @@ export default function MgeConstanciasTab({
   const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "APPROVED">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const displayRecords =
-    graduations.length > 0
-      ? graduations
-      : [
-        {
-          studentDni: "74859612",
-          step: "Revisión Documentaria",
-          status: "En Proceso" as const,
-          docsChecked: {
-            solicitud: false,
-            constanciaEgresado: true,
-            practicasPre: false,
-            pagoDerecho: false
-          },
-          obs: "Expediente curricular de titulación en trámite. 96 créditos lectivos culminados. Prácticas EFSRT registradas y pendientes de convalidación."
-        }
-      ];
+  const isWaitingForStudents = graduations.length > 0 && processedStudents.length === 0;
+  const displayRecords = graduations;
 
   // Métricas del Módulo de Secretaría
   const totalExpedientes = displayRecords.length;
@@ -1540,11 +1517,10 @@ export default function MgeConstanciasTab({
               key={tab.id}
               type="button"
               onClick={() => setStatusFilter(tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                statusFilter === tab.id
-                  ? "bg-[#800521] text-white border-[#800521] shadow-2xs"
-                  : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-              }`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${statusFilter === tab.id
+                ? "bg-[#800521] text-white border-[#800521] shadow-2xs"
+                : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                }`}
             >
               {tab.label}
             </button>
@@ -1563,7 +1539,11 @@ export default function MgeConstanciasTab({
       </div>
 
       {/* Listado de Expedientes */}
-      {(() => {
+      {isWaitingForStudents ? (
+        <div className="border border-slate-200 rounded-3xl bg-white p-10 text-center text-slate-400 font-bold text-xs">
+          Sincronizando expedientes y padrón estudiantil...
+        </div>
+      ) : (() => {
         const q = searchQuery.trim().toLowerCase();
         const filteredRecords = [...displayRecords]
           .sort((a, b) => {
