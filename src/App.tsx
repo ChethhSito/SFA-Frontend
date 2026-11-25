@@ -3,20 +3,30 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect } from "react";
+import React, { Suspense, lazy, useEffect } from "react";
 import { AlertCircle } from "lucide-react";
 import { useAppData } from "./hooks/useAppData";
 import { PortalHome, LoginPortal } from "./components/portal";
 import { NotFoundPage } from "./components/ui";
-import AdminRouter from "./components/routers/AdminRouter";
-import SuperAdminRouter from "./components/routers/SuperAdminRouter";
-import MpaRouter from "./components/routers/MpaRouter";
-import MgeRouter from "./components/routers/MgeRouter";
-import MafRouter from "./components/routers/MafRouter";
-import PostulanteRouter from "./components/routers/PostulanteRouter";
-import AlumnoRouter from "./components/routers/AlumnoRouter";
-import DocenteRouter from "./components/routers/DocenteRouter";
-import SFABot from "./components/bot/SFABot";
+
+const AdminRouter = lazy(() => import("./components/routers/AdminRouter"));
+const SuperAdminRouter = lazy(() => import("./components/routers/SuperAdminRouter"));
+const MpaRouter = lazy(() => import("./components/routers/MpaRouter"));
+const MgeRouter = lazy(() => import("./components/routers/MgeRouter"));
+const MafRouter = lazy(() => import("./components/routers/MafRouter"));
+const PostulanteRouter = lazy(() => import("./components/routers/PostulanteRouter"));
+const AlumnoRouter = lazy(() => import("./components/routers/AlumnoRouter"));
+const DocenteRouter = lazy(() => import("./components/routers/DocenteRouter"));
+const SFABot = lazy(() => import("./components/bot/SFABot"));
+
+const RouteLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-slate-100">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-4 border-[#9F062A]/20 border-t-[#9F062A] rounded-full animate-spin" />
+      <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Cargando módulo...</span>
+    </div>
+  </div>
+);
 
 export default function App() {
   const {
@@ -192,6 +202,7 @@ export default function App() {
       )}
 
       {/* 3. Applicant workspace */}
+      <Suspense fallback={<RouteLoader />}>
       {currentUser.role === "postulante" && (
         <PostulanteRouter
           applicants={applicants}
@@ -345,6 +356,7 @@ export default function App() {
       {!["portal", "login", "postulante", "alumno", "docente", "superadmin", "administrador", "mpa", "mge", "maf"].includes(currentUser.role) && (
         <NotFoundPage onGoToPortal={() => setCurrentUser({ role: "portal", identifier: "" })} />
       )}
+      </Suspense>
 
       {/* Custom Global Alert Dialog */}
       {customAlert.show && (
@@ -376,7 +388,11 @@ export default function App() {
       )}
 
       {/* Floating Virtual Assistant SFABot - Solo activo en el landing */}
-      {currentUser.role === "portal" && <SFABot />}
+      {currentUser.role === "portal" && (
+        <Suspense fallback={null}>
+          <SFABot />
+        </Suspense>
+      )}
     </div>
   );
 }

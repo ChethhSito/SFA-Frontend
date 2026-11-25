@@ -137,7 +137,6 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
     setIsProcessing(true);
 
     try {
-      const isMateo = student.dni === "74859612";
       // 1. Store simulated cycle 1 completion in localStorage
       const simulationData = {
         studentDni: student.dni,
@@ -176,21 +175,6 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
           })),
         },
       ]);
-
-      if (isMateo) {
-        localStorage.setItem("sfa_simulated_cycle1_74859612", JSON.stringify(simulationData));
-        localStorage.setItem("sfa_simulated_cycle1", JSON.stringify(simulationData));
-        localStorage.setItem("sfa_attendance_complete_cycle1_74859612", "true");
-        localStorage.setItem("sfa_attendance_complete_cycle1", "true");
-        localStorage.setItem("sfa_student_promoted_cycle2_74859612", "true");
-        localStorage.setItem("sfa_student_promoted_cycle2", "true");
-        localStorage.setItem("sfa_student_cycle_74859612", "2");
-        localStorage.setItem("sfa_student_cycle", "2");
-        localStorage.removeItem("sfa_student_promoted_74859612");
-        localStorage.removeItem("sfa_student_promoted");
-        localStorage.removeItem("sfa_student_graduated_all_74859612");
-        localStorage.removeItem("sfa_student_graduated_all");
-      }
 
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("storage"));

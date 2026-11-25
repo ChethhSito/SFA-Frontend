@@ -70,7 +70,6 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
         })),
       };
 
-      const isMateo = studentDni === "74859612";
       // Store in localStorage for multiple key access patterns
       localStorage.setItem(`sfa_simulated_cycle2_${studentDni}`, JSON.stringify(simulationData));
 
@@ -154,38 +153,6 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
         };
         void updateStudentCycleStatuses(studentDni, c1Entry ? [c1Entry, c2Entry] : [c2Entry]);
       } catch {}
-
-      if (isMateo) {
-        localStorage.setItem("sfa_simulated_cycle2_74859612", JSON.stringify(simulationData));
-        localStorage.setItem("sfa_simulated_cycle2", JSON.stringify(simulationData));
-        localStorage.setItem("sfa_student_promoted_cycle2_74859612", "true");
-        localStorage.setItem("sfa_student_promoted_cycle2", "true");
-        localStorage.setItem("sfa_student_promoted_74859612", "true");
-        localStorage.setItem("sfa_student_promoted", "true");
-        const e201Obj = { NPA: 16.0, PC1: 16.0, PC2: 17.0, EX_FINAL: 17.0 };
-        localStorage.setItem("sfa_grades_EIND-201_74859612", JSON.stringify(e201Obj));
-        localStorage.setItem("sfa_grades_cur_ei_201_74859612", JSON.stringify(e201Obj));
-        localStorage.setItem("sfa_acta_signed_EIND-201", "true");
-        localStorage.setItem("sfa_acta_signed_cur_ei_201", "true");
-        localStorage.setItem("sfa_acta_signed_EIND-201_date", "20/11/2026 08:30");
-        localStorage.setItem("sfa_acta_signed_cur_ei_201_date", "20/11/2026 08:30");
-        localStorage.setItem("sfa_course_passed_EIND-201_74859612", "true");
-        localStorage.setItem("sfa_course_passed_EIND-201", "true");
-        localStorage.setItem("sfa_grades_EIND-202_74859612", "17.0");
-        localStorage.setItem("sfa_grades_EIND-203_74859612", "16.0");
-        localStorage.setItem("sfa_grades_EIND-204_74859612", "16.5");
-        localStorage.setItem("sfa_grades_EIND-205_74859612", "15.5");
-        localStorage.setItem("sfa_attendance_complete_cycle2_74859612", "true");
-        localStorage.setItem("sfa_attendance_complete_cycle2", "true");
-        localStorage.setItem("sfa_attendance_complete_cycle1_74859612", "true");
-        localStorage.setItem("sfa_attendance_complete_cycle1", "true");
-        localStorage.setItem("sfa_student_promoted_cycle3_74859612", "true");
-        localStorage.setItem("sfa_student_promoted_cycle3", "true");
-        localStorage.setItem("sfa_efsrt_modulo1_approved_74859612", "true");
-        localStorage.setItem("sfa_efsrt_modulo1_approved", "true");
-        localStorage.setItem("sfa_student_cycle_74859612", "2");
-        localStorage.setItem("sfa_student_cycle", "2");
-      }
 
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("storage"));

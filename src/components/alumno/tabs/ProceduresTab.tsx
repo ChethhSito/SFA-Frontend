@@ -337,12 +337,6 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
         localStorage.setItem(`sfa_fut_concept_${studentDni}`, created.conceptName);
         localStorage.removeItem(`sfa_fee_paid_${studentDni}`);
         localStorage.removeItem(`sfa_fee_validated_${studentDni}`);
-        if (studentDni === "74859612") {
-          localStorage.setItem("sfa_fut_registered_74859612", "true");
-          localStorage.setItem("sfa_fut_id_74859612", created.id);
-          localStorage.removeItem("sfa_fee_paid_74859612");
-          localStorage.removeItem("sfa_fee_validated_74859612");
-        }
         window.dispatchEvent(new CustomEvent("sfa_service_requests_changed"));
         window.dispatchEvent(new Event("storage"));
       }
@@ -390,16 +384,6 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
         if (voucherFile?.url) {
           safeStorageSet(`sfa_fee_voucher_file_${studentDni}`, voucherFile.url);
           safeStorageSet(`sfa_fee_voucher_name_${studentDni}`, voucherFile.name);
-        }
-        if (studentDni === "74859612") {
-          safeStorageSet("sfa_fee_paid_74859612", "true");
-          safeStorageSet("sfa_fee_op_74859612", voucher.operationNumber.trim());
-          safeStorageSet("sfa_fee_amount_74859612", String(voucher.amountPaid));
-          safeStorageSet("sfa_fee_date_74859612", voucher.paymentDate);
-          if (voucherFile?.url) {
-            safeStorageSet("sfa_fee_voucher_file_74859612", voucherFile.url);
-            safeStorageSet("sfa_fee_voucher_name_74859612", voucherFile.name);
-          }
         }
         window.dispatchEvent(new CustomEvent("sfa_service_requests_changed"));
         window.dispatchEvent(new Event("storage"));
@@ -453,18 +437,6 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       localStorage.removeItem(`sfa_fee_date_${studentDni}`);
       localStorage.removeItem(`sfa_fee_voucher_file_${studentDni}`);
       localStorage.removeItem(`sfa_fee_voucher_name_${studentDni}`);
-
-      if (studentDni === "74859612") {
-        localStorage.removeItem("sfa_fut_registered_74859612");
-        localStorage.removeItem("sfa_fut_id_74859612");
-        localStorage.removeItem("sfa_fut_concept_74859612");
-        localStorage.removeItem("sfa_fee_paid_74859612");
-        localStorage.removeItem("sfa_fee_op_74859612");
-        localStorage.removeItem("sfa_fee_amount_74859612");
-        localStorage.removeItem("sfa_fee_date_74859612");
-        localStorage.removeItem("sfa_fee_voucher_file_74859612");
-        localStorage.removeItem("sfa_fee_voucher_name_74859612");
-      }
 
       window.dispatchEvent(new CustomEvent("sfa_service_requests_changed"));
       window.dispatchEvent(new Event("storage"));

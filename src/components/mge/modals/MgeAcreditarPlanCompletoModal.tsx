@@ -163,35 +163,18 @@ export const MgeAcreditarPlanCompletoModal: React.FC<Props> = ({
 
   const handleExecuteConsolidation = () => {
     setIsProcessing(true);
-    const isMateo = studentDni === "74859612";
     try {
-      // 1. Activar estado de promoción total y egreso
+      // 1. Activar estado de promoción total y egreso (dinámico por DNI)
       localStorage.setItem(`sfa_student_promoted_${studentDni}`, "true");
       localStorage.setItem(`sfa_student_graduated_all_${studentDni}`, "true");
       localStorage.setItem(`sfa_student_cycle_${studentDni}`, "6");
       localStorage.setItem(`sfa_student_status_${studentDni}`, "Egresado Lectivo");
-
-      if (isMateo) {
-        localStorage.setItem("sfa_student_promoted_74859612", "true");
-        localStorage.setItem("sfa_student_promoted", "true");
-        localStorage.setItem("sfa_student_graduated_all_74859612", "true");
-        localStorage.setItem("sfa_student_graduated_all", "true");
-        localStorage.setItem("sfa_student_cycle_74859612", "6");
-        localStorage.setItem("sfa_student_cycle", "6");
-        localStorage.setItem("sfa_student_status_74859612", "Egresado Lectivo");
-      }
 
       // Las Prácticas Preprofesionales (EFSRT) quedan PENDIENTES de trámite y validación por Secretaría
       // NO se auto-acreditan aquí para respetar el flujo ministerial estricto
       localStorage.removeItem(`sfa_efsrt_validated_${studentDni}`);
       localStorage.removeItem(`sfa_efsrt_all_approved_${studentDni}`);
       localStorage.removeItem(`sfa_titulacion_enabled_${studentDni}`);
-
-      if (isMateo) {
-        localStorage.removeItem("sfa_efsrt_validated_74859612");
-        localStorage.removeItem("sfa_efsrt_all_approved_74859612");
-        localStorage.removeItem("sfa_titulacion_enabled_74859612");
-      }
 
       // 3. Registrar notas oficiales y 16 semanas de asistencia para cada asignatura de Ciclos III, IV, V y VI
       [3, 4, 5, 6].forEach((cycNum) => {
@@ -205,24 +188,12 @@ export const MgeAcreditarPlanCompletoModal: React.FC<Props> = ({
           // Asistencias (16 semanas completas = 100%)
           localStorage.setItem(`sfa_attendance_complete_${c.code}_${studentDni}`, "true");
           localStorage.setItem(`sfa_attendance_count_${c.code}_${studentDni}`, "16");
-
-          if (isMateo) {
-            localStorage.setItem(`sfa_grades_${c.code}_74859612`, String(c.grade));
-            localStorage.setItem(`sfa_acta_signed_${c.code}`, "true");
-            localStorage.setItem(`sfa_acta_signed_${c.code}_date`, "20/11/2026 12:00");
-            localStorage.setItem(`sfa_attendance_complete_${c.code}`, "true");
-            localStorage.setItem(`sfa_attendance_count_${c.code}_74859612`, "16");
-          }
         });
       });
 
       // Asistencias globales de ciclo
       ["cycle3", "cycle4", "cycle5", "cycle6"].forEach((cycKey) => {
         localStorage.setItem(`sfa_attendance_complete_${cycKey}_${studentDni}`, "true");
-        if (isMateo) {
-          localStorage.setItem(`sfa_attendance_complete_${cycKey}_74859612`, "true");
-          localStorage.setItem(`sfa_attendance_complete_${cycKey}`, "true");
-        }
       });
 
       // 4. Persistir los 6 ciclos en MongoDB para sincronización entre navegadores/pestañas
