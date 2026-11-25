@@ -8,7 +8,7 @@ import {
 import { 
   createServiceRequest, fetchServiceRequests, ServiceRequest, 
   StudentProcedureCode, submitServiceRequestVoucher, serviceRequestResultUrl,
-  deleteServiceRequest
+  deleteServiceRequest, fetchServiceRequestVoucher
 } from '../../../services/serviceRequests';
 import { readMafState } from '../../../services/mafState';
 import { fetchCertificates, fetchGraduations } from '../../../services/api';
@@ -983,14 +983,20 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                       </div>
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
+                          let remote: { voucherUrl: string; voucherFileName: string } | null = null;
+                          if (!item.voucherUrl && item.hasVoucher) {
+                            remote = await fetchServiceRequestVoucher(item.id, studentDni).catch(() => null);
+                          }
                           const url =
                             item.voucherUrl ||
+                            remote?.voucherUrl ||
                             localStorage.getItem(`sfa_fee_voucher_file_${studentDni}`) ||
                             (studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null) ||
                             "/voucher_ciclo2.png";
                           const name =
                             item.voucherFileName ||
+                            remote?.voucherFileName ||
                             localStorage.getItem(`sfa_fee_voucher_name_${studentDni}`) ||
                             (studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_name_74859612") : null) ||
                             "VOUCHER_DE_PAGO.png";

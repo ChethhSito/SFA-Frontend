@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   FileText,
   CheckCircle2,
@@ -30,7 +30,7 @@ import { fetchPayments, updatePayment } from "../../../services/api";
 import { academicToday } from "../../../utils/attendance";
 import CertificateDocuments from "./CertificateDocuments";
 import { ACCREDITED_CURRICULUM_ELECTRICIDAD, ACCREDITED_CURRICULUM_CONTABILIDAD } from "./MgeHistorialTab";
-import { fetchServiceRequests, updateServiceRequestPayment } from "../../../services/serviceRequests";
+import { fetchServiceRequests, fetchServiceRequestVoucher, updateServiceRequestPayment } from "../../../services/serviceRequests";
 
 const requirements = {
   solicitud: "Solicitud Única de Trámite (FUT)",
@@ -195,6 +195,9 @@ function Application({
     }
   });
 
+  // Caché en memoria de la imagen del voucher por solicitud (el listado ya no la incluye)
+  const voucherCacheRef = useRef<Record<string, string>>({});
+
   useEffect(() => {
     let mounted = true;
 
@@ -205,6 +208,20 @@ function Application({
         if (!mounted) return;
 
         const req = (backendRequests || []).find((r) => r.conceptCode === 'CER01' || r.conceptCode === 'TIT01') || backendRequests?.[0];
+
+        // El listado no trae la imagen del voucher: se pide una sola vez por solicitud y se reutiliza.
+        let reqVoucherUrl = '';
+        if (req) {
+          reqVoucherUrl = req.voucherUrl || voucherCacheRef.current[req.id] || '';
+          if (!reqVoucherUrl && req.hasVoucher) {
+            const remote = await fetchServiceRequestVoucher(req.id).catch(() => null);
+            if (!mounted) return;
+            if (remote?.voucherUrl) {
+              voucherCacheRef.current[req.id] = remote.voucherUrl;
+              reqVoucherUrl = remote.voucherUrl;
+            }
+          }
+        }
 
         if (req) {
           setHasFut(true);
@@ -220,13 +237,13 @@ function Application({
             setFeeOpNumber(req.paymentOperation || '');
             if (req.amountPaid || req.amount) setFeeAmount(String(req.amountPaid || req.amount));
             if (req.paymentDate) setFeeDate(req.paymentDate);
-            if (req.voucherUrl) setFeeVoucherUrl(req.voucherUrl);
+            if (reqVoucherUrl) setFeeVoucherUrl(reqVoucherUrl);
             try {
               localStorage.setItem(`sfa_fee_paid_${record.studentDni}`, "true");
               if (req.paymentOperation) localStorage.setItem(`sfa_fee_op_${record.studentDni}`, req.paymentOperation);
               if (req.amountPaid || req.amount) localStorage.setItem(`sfa_fee_amount_${record.studentDni}`, String(req.amountPaid || req.amount));
               if (req.paymentDate) localStorage.setItem(`sfa_fee_date_${record.studentDni}`, req.paymentDate);
-              if (req.voucherUrl) localStorage.setItem(`sfa_fee_voucher_file_${record.studentDni}`, req.voucherUrl);
+              if (reqVoucherUrl) localStorage.setItem(`sfa_fee_voucher_file_${record.studentDni}`, reqVoucherUrl);
               localStorage.setItem(`sfa_fee_validated_${record.studentDni}`, String(req.status === 'Validado'));
             } catch {}
             setDocs((prev) => ({ ...prev, pagoDerecho: req.status === 'Validado' }));
@@ -278,7 +295,7 @@ function Application({
         }
 
         const vUrl = req
-          ? (req.voucherUrl ||
+          ? (reqVoucherUrl ||
               localStorage.getItem(`sfa_fee_voucher_file_${record.studentDni}`) ||
               (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null))
           : null;
@@ -298,7 +315,7 @@ function Application({
     // Polling ligero cada 1.5s para sincronización en tiempo real sin recargar
     const pollInterval = setInterval(() => {
       void syncState();
-    }, 1500);
+    }, 3000);
 
     const handleSyncEvent = () => {
       void syncState();

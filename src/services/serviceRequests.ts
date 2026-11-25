@@ -24,8 +24,8 @@ export interface ServiceRequest {
   deliveryStatus?: 'Pendiente' | 'Emitido';
   resultFileName?: string;
   voucherUrl?: string;
+  hasVoucher?: boolean;
   voucherFileName?: string;
-  createdAt: string;
   updatedAt?: string;
   voucherRegisteredAt?: string;
 }
@@ -45,6 +45,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export function fetchServiceRequests(studentDni?: string, teacherDni?: string): Promise<ServiceRequest[]> {
   const query = studentDni ? `?studentDni=${encodeURIComponent(studentDni)}` : teacherDni ? `?teacherDni=${encodeURIComponent(teacherDni)}` : '';
   return request<ServiceRequest[]>(`/service-requests${query}`);
+}
+
+/** Los listados no traen la imagen del voucher (pesa mucho); se pide solo cuando se va a mostrar. */
+export function fetchServiceRequestVoucher(id: string, dni?: string): Promise<{ voucherUrl: string; voucherFileName: string }> {
+  const query = dni ? `?dni=${encodeURIComponent(dni)}` : '';
+  return request<{ voucherUrl: string; voucherFileName: string }>(`/service-requests/${encodeURIComponent(id)}/voucher${query}`);
 }
 
 export function createServiceRequest(input: {

@@ -1,21 +1,50 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   fetchApplicants,
+  fetchApplicantByDni,
   createApplicant as apiCreateApplicant,
   updateApplicant as apiUpdateApplicant,
   deleteApplicant as apiDeleteApplicant,
   sendTransactionalWelcomeEmail
 } from "../../services/api";
 
+const DOC_KEYS = ["dniFile", "certificadoFile", "partidaFile", "fotoFile"] as const;
+
+/** El listado del backend no trae las imágenes (hasFile / hasPaymentVoucher); indica si faltan por descargar. */
+function needsBinaries(app: any): boolean {
+  return (
+    DOC_KEYS.some((key) => app.docs?.[key]?.hasFile && !app.docs?.[key]?.fileDataUrl) ||
+    Boolean(app.hasPaymentVoucher && !app.paymentVoucherUrl)
+  );
+}
+
+/** Copia al postulante actual las imágenes descargadas del detalle, sin pisar el resto de sus datos. */
+function mergeFullBinaries(current: any, full: any): any {
+  const docs: any = { ...(current.docs || {}) };
+  for (const key of DOC_KEYS) {
+    const cur = current.docs?.[key];
+    const fullDoc = full.docs?.[key];
+    if (cur && fullDoc?.fileDataUrl && !cur.fileDataUrl && cur.fileName === fullDoc.fileName) {
+      docs[key] = { ...cur, fileDataUrl: fullDoc.fileDataUrl };
+    }
+  }
+  return {
+    ...current,
+    docs,
+    paymentVoucherUrl: current.paymentVoucherUrl || full.paymentVoucherUrl,
+  };
+}
+
 export function stripFileDataUrls(applicantsList: any[]): any[] {
   return applicantsList.map((app) => {
-    if (!app.docs) return app;
+    const { paymentVoucherUrl, ...restApp } = app;
+    if (!restApp.docs) return restApp;
     const strippedDocs: any = {};
-    for (const [key, val] of Object.entries(app.docs)) {
+    for (const [key, val] of Object.entries(restApp.docs)) {
       const doc = val as any;
       strippedDocs[key] = { ...doc, fileDataUrl: undefined };
     }
-    return { ...app, docs: strippedDocs };
+    return { ...restApp, docs: strippedDocs };
   });
 }
 
@@ -33,7 +62,8 @@ function preserveExistingDocBinaries(prevApp: any, nextApp: any): any {
         fileDataUrl:
           nextDoc.status === "No Enviado"
             ? undefined
-            : nextDoc.fileDataUrl || prevDoc?.fileDataUrl,
+            : nextDoc.fileDataUrl ||
+              (prevDoc && prevDoc.fileName === nextDoc.fileName ? prevDoc.fileDataUrl : undefined),
       };
     }
   }
@@ -66,6 +96,16 @@ function buildDeltaPatchPayload(prevApp: any, nextApp: any): any {
     ...nextApp,
     docs: patchDocs,
   };
+  // Marcadores del listado liviano: son solo de lectura, no se guardan en la base de datos
+  delete payload.hasPaymentVoucher;
+  if (payload.docs) {
+    for (const key of DOC_KEYS) {
+      if (payload.docs[key]) {
+        payload.docs[key] = { ...payload.docs[key] };
+        delete payload.docs[key].hasFile;
+      }
+    }
+  }
   if (
     prevApp.paymentVoucherUrl &&
     nextApp.paymentVoucherUrl &&
@@ -124,15 +164,40 @@ export function useApplicantsManager(
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const reloadApplicants = useCallback(() => {
-    setLoading(true);
+  const hydrationRunRef = useRef(0);
+
+  /** Descarga las imágenes en segundo plano (de a 3), sin bloquear la pantalla ni el listado. */
+  const hydrateBinaries = useCallback(async (list: any[]) => {
+    const run = ++hydrationRunRef.current;
+    const targets = list.filter(needsBinaries);
+    for (let i = 0; i < targets.length; i += 3) {
+      const chunk = targets.slice(i, i + 3);
+      const fulls = await Promise.all(chunk.map((app) => fetchApplicantByDni(app.dni).catch(() => null)));
+      if (run !== hydrationRunRef.current) return;
+      setApplicants((prev) => {
+        const next = prev.map((p) => {
+          const idx = chunk.findIndex((c) => c.dni === p.dni);
+          const full = idx >= 0 ? fulls[idx] : null;
+          return full ? mergeFullBinaries(p, full) : p;
+        });
+        applicantsRef.current = next;
+        return next;
+      });
+    }
+  }, []);
+
+  const reloadApplicants = useCallback((silent = false) => {
+    if (!silent) setLoading(true);
     return fetchApplicants()
       .then((apiApps) => {
         if (!apiApps) throw new Error("No se pudo consultar postulantes");
-        setApplicants(apiApps);
-        applicantsRef.current = apiApps;
+        const prevByDni = new Map(applicantsRef.current.map((a) => [a.dni, a]));
+        const merged = apiApps.map((app) => preserveExistingDocBinaries(prevByDni.get(app.dni), app));
+        setApplicants(merged);
+        applicantsRef.current = merged;
+        void hydrateBinaries(merged);
         try {
-          localStorage.setItem("sfa_applicants", JSON.stringify(stripFileDataUrls(apiApps)));
+          localStorage.setItem("sfa_applicants", JSON.stringify(stripFileDataUrls(merged)));
           for (const key of Object.keys(localStorage)) {
             if (key.startsWith("sfa_doc_status_") || key.startsWith("sfa_payment_status_")) {
               localStorage.removeItem(key);
@@ -149,23 +214,37 @@ export function useApplicantsManager(
         console.error("Error fetching REST API applicants:", err);
         setError("Error al cargar postulantes desde el servidor.");
       })
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => {
+        if (!silent) setLoading(false);
+      });
+  }, [hydrateBinaries]);
 
   useEffect(() => {
-    void reloadApplicants();
+    void reloadApplicants(false);
 
-    // Sincronización cuando otra pestaña escribe en storage
+    // Sincronización silenciosa cuando otra pestaña escribe o al volver a enfocar la ventana
+    let lastFocusSync = Date.now();
     const handleSync = (e: StorageEvent) => {
       if (e.key && e.key.startsWith("sfa_applicants")) {
-        void reloadApplicants();
+        void reloadApplicants(true);
       }
+    };
+    const handleFocusSync = () => {
+      if (document.visibilityState === "hidden") return;
+      const now = Date.now();
+      if (now - lastFocusSync < 5000) return;
+      lastFocusSync = now;
+      void reloadApplicants(true);
     };
 
     window.addEventListener("storage", handleSync);
+    window.addEventListener("focus", handleFocusSync);
+    document.addEventListener("visibilitychange", handleFocusSync);
 
     return () => {
       window.removeEventListener("storage", handleSync);
+      window.removeEventListener("focus", handleFocusSync);
+      document.removeEventListener("visibilitychange", handleFocusSync);
     };
   }, [reloadApplicants]);
 
