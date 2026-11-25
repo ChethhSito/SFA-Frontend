@@ -952,7 +952,7 @@ export default function MgeDashboard({
           )}
 
           {activeSubTab === "constancias" && (
-            sourceLoading || graduationsLoading ? (
+            (graduationsLoading && graduations.length === 0) ? (
               <div className="flex flex-col items-center justify-center py-24 gap-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs text-center p-6 my-2">
                 <Loader2 className="w-10 h-10 text-[#800521] animate-spin" />
                 <span className="text-xs font-black text-slate-800 uppercase tracking-widest font-mono">

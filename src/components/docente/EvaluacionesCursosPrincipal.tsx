@@ -685,7 +685,7 @@ export default function EvaluacionesCursosPrincipal({ courses, assignments, stud
             <BookOpen className="w-4 h-4 text-amber-300 shrink-0" />
             <div>
               <span className="text-[10px] uppercase font-bold text-white/60 block">Asignatura Activa</span>
-              <span className="font-extrabold text-white truncate max-w-[150px] block">{selectedCourse?.name || 'Seleccione'}</span>
+              <span className="font-extrabold text-white leading-snug block">{selectedCourse?.name || 'Seleccione'}</span>
             </div>
           </div>
           <div className="flex items-center gap-2 text-white/90">

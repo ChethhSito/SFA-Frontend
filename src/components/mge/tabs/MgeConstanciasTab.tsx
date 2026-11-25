@@ -26,10 +26,11 @@ import { Graduation, StudentPersonalData } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
 import { graduationSummaryPdf } from "../../../utils/graduationSummaryPdf";
 import { generateOfficialCertificatePdf } from "../../../utils/officialCertificatePdf";
+import { fetchPayments, updatePayment } from "../../../services/api";
 import { academicToday } from "../../../utils/attendance";
 import CertificateDocuments from "./CertificateDocuments";
 import { ACCREDITED_CURRICULUM_ELECTRICIDAD, ACCREDITED_CURRICULUM_CONTABILIDAD } from "./MgeHistorialTab";
-import { fetchServiceRequests } from "../../../services/serviceRequests";
+import { fetchServiceRequests, updateServiceRequestPayment } from "../../../services/serviceRequests";
 
 const requirements = {
   solicitud: "Solicitud Única de Trámite (FUT)",
@@ -132,16 +133,16 @@ function Application({
       localStorage.getItem(`sfa_fut_registered_${record.studentDni}`) === "true" ||
       (record.studentDni === "74859612" && localStorage.getItem("sfa_fut_registered_74859612") === "true")
     );
-    const isFee = typeof window !== "undefined" && (
-      localStorage.getItem(`sfa_fee_paid_${record.studentDni}`) === "true" ||
-      (record.studentDni === "74859612" && localStorage.getItem("sfa_fee_paid_74859612") === "true")
+    const isFeeValidated = record.docsChecked.pagoDerecho === true || (
+      typeof window !== "undefined" &&
+      localStorage.getItem(`sfa_fee_validated_${record.studentDni}`) === "true"
     );
 
     return {
-      solicitud: isFut,
-      constanciaEgresado: isEgresado96Credits,
+      solicitud: record.docsChecked.solicitud === true || isFut,
+      constanciaEgresado: record.docsChecked.constanciaEgresado === true || isEgresado96Credits,
       practicasPre: record.docsChecked.practicasPre === true,
-      pagoDerecho: isFee
+      pagoDerecho: isFeeValidated
     };
   });
 
@@ -209,43 +210,56 @@ function Application({
           setHasFut(true);
           setFutId(req.id);
           setDocs((prev) => ({ ...prev, solicitud: true }));
+          try {
+            localStorage.setItem(`sfa_fut_registered_${record.studentDni}`, "true");
+            localStorage.setItem(`sfa_fut_id_${record.studentDni}`, req.id);
+          } catch {}
 
-          if (req.paymentOperation || req.status === 'En Proceso' || req.status === 'Validado') {
+          if (req.paymentOperation || req.status === 'En Proceso' || req.status === 'En Revisión' || req.status === 'Validado') {
             setHasFeePaid(true);
             setFeeOpNumber(req.paymentOperation || '');
             if (req.amountPaid || req.amount) setFeeAmount(String(req.amountPaid || req.amount));
             if (req.paymentDate) setFeeDate(req.paymentDate);
             if (req.voucherUrl) setFeeVoucherUrl(req.voucherUrl);
-            setDocs((prev) => ({ ...prev, pagoDerecho: true }));
+            try {
+              localStorage.setItem(`sfa_fee_paid_${record.studentDni}`, "true");
+              if (req.paymentOperation) localStorage.setItem(`sfa_fee_op_${record.studentDni}`, req.paymentOperation);
+              if (req.amountPaid || req.amount) localStorage.setItem(`sfa_fee_amount_${record.studentDni}`, String(req.amountPaid || req.amount));
+              if (req.paymentDate) localStorage.setItem(`sfa_fee_date_${record.studentDni}`, req.paymentDate);
+              if (req.voucherUrl) localStorage.setItem(`sfa_fee_voucher_file_${record.studentDni}`, req.voucherUrl);
+              localStorage.setItem(`sfa_fee_validated_${record.studentDni}`, String(req.status === 'Validado'));
+            } catch {}
+            setDocs((prev) => ({ ...prev, pagoDerecho: req.status === 'Validado' }));
           } else {
             setHasFeePaid(false);
             setFeeOpNumber('');
             setFeeVoucherUrl('');
+            setDocs((prev) => ({ ...prev, pagoDerecho: false }));
+            try {
+              localStorage.removeItem(`sfa_fee_paid_${record.studentDni}`);
+              localStorage.removeItem(`sfa_fee_validated_${record.studentDni}`);
+            } catch {}
           }
         } else {
-          // Si no hay solicitudes en backend ni en localStorage, reiniciar requisitos
-          const hasFutVal =
-            localStorage.getItem(`sfa_fut_registered_${record.studentDni}`) === "true" ||
-            (record.studentDni === "74859612" && localStorage.getItem("sfa_fut_registered_74859612") === "true");
-          setHasFut(hasFutVal);
-          if (!hasFutVal) {
-            setFutId('');
-            setDocs((prev) => ({ ...prev, solicitud: false }));
-          } else {
-            setDocs((prev) => ({ ...prev, solicitud: true }));
-          }
-
-          const hasFeeVal =
-            localStorage.getItem(`sfa_fee_paid_${record.studentDni}`) === "true" ||
-            (record.studentDni === "74859612" && localStorage.getItem("sfa_fee_paid_74859612") === "true");
-          setHasFeePaid(hasFeeVal);
-          if (!hasFeeVal) {
-            setFeeOpNumber('');
-            setFeeVoucherUrl('');
-            setDocs((prev) => ({ ...prev, pagoDerecho: false }));
-          } else {
-            setDocs((prev) => ({ ...prev, pagoDerecho: true }));
-          }
+          // Si no hay solicitudes en backend, MongoDB es la fuente de verdad: reiniciar FUT y Pago y limpiar caché local
+          setHasFut(false);
+          setFutId('');
+          setHasFeePaid(false);
+          setFeeOpNumber('');
+          setFeeVoucherUrl('');
+          setDocs((prev) => ({ ...prev, solicitud: false, pagoDerecho: false }));
+          try {
+            localStorage.removeItem(`sfa_fut_registered_${record.studentDni}`);
+            localStorage.removeItem(`sfa_fut_id_${record.studentDni}`);
+            localStorage.removeItem(`sfa_fut_concept_${record.studentDni}`);
+            localStorage.removeItem(`sfa_fee_paid_${record.studentDni}`);
+            localStorage.removeItem(`sfa_fee_validated_${record.studentDni}`);
+            localStorage.removeItem(`sfa_fee_op_${record.studentDni}`);
+            localStorage.removeItem(`sfa_fee_amount_${record.studentDni}`);
+            localStorage.removeItem(`sfa_fee_date_${record.studentDni}`);
+            localStorage.removeItem(`sfa_fee_voucher_file_${record.studentDni}`);
+            localStorage.removeItem(`sfa_fee_voucher_name_${record.studentDni}`);
+          } catch {}
         }
 
         // 2. Sincronización de EFSRT y Comprobante de Voucher
@@ -263,13 +277,14 @@ function Application({
           setDocs((prev) => ({ ...prev, practicasPre: true }));
         }
 
-        const vUrl =
-          req?.voucherUrl ||
-          localStorage.getItem(`sfa_fee_voucher_file_${record.studentDni}`) ||
-          (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null);
+        const vUrl = req
+          ? (req.voucherUrl ||
+              localStorage.getItem(`sfa_fee_voucher_file_${record.studentDni}`) ||
+              (record.studentDni === "74859612" ? localStorage.getItem("sfa_fee_voucher_file_74859612") : null))
+          : null;
         if (vUrl) {
           setFeeVoucherUrl(vUrl);
-        } else if (!req?.paymentOperation) {
+        } else {
           setFeeVoucherUrl('');
         }
       } catch (err) {
@@ -303,12 +318,50 @@ function Application({
   }, [record.studentDni]);
 
   // Normalized EFSRT Accessors
-  const efsrtCompany = efsrtData?.companyName || "LA EMPRESA INDUSTRIAL CONSTRUCTORA Y DE SERVICIOS S.A.C.";
-  const efsrtRuc = efsrtData?.ruc || "20458963211";
-  const efsrtHours = Number(efsrtData?.hours || efsrtData?.totalHours || 480);
-  const efsrtSupervisor = efsrtData?.supervisor || efsrtData?.supervisorName || "Ing. Carlos Mendoza Quispe — Jefe de Operaciones y Mantenimiento";
-  const efsrtDepartment = efsrtData?.department || "Montaje, Conexionado de Tableros y Mantenimiento de Fuerza y Control";
-  const efsrtFile = efsrtData?.fileName || efsrtData?.certificateFileName || "Constancia_EFSRT_Practicas_Preprofesionales.pdf";
+  const hasEfsrtSubmitted = Boolean(efsrtData);
+  const isMateoRecord = record.studentDni === "74859612";
+  const efsrtCompany = efsrtData?.companyName || (isMateoRecord ? "LA EMPRESA INDUSTRIAL CONSTRUCTORA Y DE SERVICIOS S.A.C." : "Sin constancia registrada");
+  const efsrtRuc = efsrtData?.ruc || (isMateoRecord ? "20458963211" : "—");
+  const efsrtHours = Number(efsrtData?.hours || efsrtData?.totalHours || (isMateoRecord ? 480 : 0));
+  const efsrtSupervisor = efsrtData?.supervisor || efsrtData?.supervisorName || (isMateoRecord ? "Ing. Carlos Mendoza Quispe — Jefe de Operaciones y Mantenimiento" : "Pendiente de registro por el estudiante");
+  const efsrtDepartment = efsrtData?.department || (isMateoRecord ? "Montaje, Conexionado de Tableros y Mantenimiento de Fuerza y Control" : "—");
+  const efsrtFile = efsrtData?.fileName || efsrtData?.certificateFileName || (isMateoRecord ? "Constancia_EFSRT_Practicas_Preprofesionales.pdf" : "");
+
+  useEffect(() => {
+    let active = true;
+    let lastFetch = 0;
+    const loadBackendEfsrt = async () => {
+      const now = Date.now();
+      if (now - lastFetch < 5000) return;
+      lastFetch = now;
+      try {
+        const list = await fetchPayments();
+        if (!active || !Array.isArray(list)) return;
+        const found = list.find((p: any) => p.paymentId === `EFSRT-${record.studentDni}`);
+        if (found) {
+          if (found.notes) {
+            try {
+              const parsed = JSON.parse(found.notes);
+              setEfsrtData(parsed);
+              localStorage.setItem(`sfa_efsrt_${record.studentDni}`, JSON.stringify(parsed));
+            } catch {}
+          }
+          if (found.status === "APROBADO") {
+            setIsEfsrtValidated(true);
+            setDocs((prev) => ({ ...prev, practicasPre: true }));
+            localStorage.setItem(`sfa_efsrt_validated_${record.studentDni}`, "true");
+          }
+        }
+      } catch {}
+    };
+    void loadBackendEfsrt();
+    const handleFocus = () => void loadBackendEfsrt();
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [record.studentDni]);
 
   const handleValidateEFSRT = () => {
     setDocs((prev) => ({ ...prev, practicasPre: true }));
@@ -325,6 +378,8 @@ function Application({
       }
       window.dispatchEvent(new Event("storage"));
     }
+
+    void updatePayment(`EFSRT-${record.studentDni}`, { status: "APROBADO" }).catch(() => {});
 
     onSaveDocs(
       record.studentDni,
@@ -491,29 +546,39 @@ function Application({
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              {isEfsrtValidated || docs.practicasPre ? (
-                <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 font-black text-xs px-3 py-1.5 rounded-xl border border-emerald-300 shadow-2xs font-mono uppercase">
-                  <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                  EFSRT Validado y Acreditado (+24 Cr.)
-                </span>
-              ) : (
+              {!(isEfsrtValidated || docs.practicasPre) ? (
                 <button
                   type="button"
+                  disabled={!hasEfsrtSubmitted}
                   onClick={handleValidateEFSRT}
-                  className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs uppercase tracking-wider px-4 py-2 rounded-xl shadow-sm transition-all cursor-pointer"
+                  className={`inline-flex items-center gap-2 font-black text-xs uppercase tracking-wider px-4 py-2 rounded-xl shadow-sm transition-all ${
+                    hasEfsrtSubmitted
+                      ? "bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer"
+                      : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                  }`}
                 >
                   <Check className="w-4 h-4" />
                   Acreditar y Validar Prácticas EFSRT (24 Créditos)
                 </button>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 font-black text-xs px-3 py-1.5 rounded-xl border border-emerald-300 shadow-2xs font-mono uppercase">
+                  <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                  EFSRT Validado y Acreditado (+24 Cr.)
+                </span>
               )}
 
               <button
                 type="button"
-                onClick={() => setPreviewPdfOpen(true)}
-                className="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-sm transition-all cursor-pointer"
+                disabled={!hasEfsrtSubmitted}
+                onClick={() => hasEfsrtSubmitted && setPreviewPdfOpen(true)}
+                className={`inline-flex items-center gap-1.5 font-bold text-xs uppercase tracking-wider px-3.5 py-2 rounded-xl shadow-sm transition-all ${
+                  hasEfsrtSubmitted
+                    ? "bg-slate-800 hover:bg-slate-900 text-white cursor-pointer"
+                    : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                }`}
               >
-                <Eye className="w-4 h-4 text-amber-300" />
-                Ver Constancia PDF
+                <Eye className={`w-4 h-4 ${hasEfsrtSubmitted ? "text-amber-300" : "text-slate-400"}`} />
+                {hasEfsrtSubmitted ? "Ver Constancia PDF" : "Sin Constancia Adjunta"}
               </button>
             </div>
           </div>
@@ -571,7 +636,7 @@ function Application({
                       Auditoría de Constancia EFSRT • {record.studentDni}
                     </h3>
                     <p className="text-[11px] text-amber-200">
-                      LA EMPRESA INDUSTRIAL CONSTRUCTORA Y DE SERVICIOS S.A.C. • 480 Horas Formativas
+                      {efsrtCompany} • {efsrtHours} Horas Formativas
                     </p>
                   </div>
                 </div>
@@ -725,12 +790,18 @@ function Application({
             </div>
 
             {/* 3. Prácticas Preprofesionales EFSRT (24 créditos formativos) */}
-            <div className={`p-4 rounded-2xl border transition-all ${docs.practicasPre ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
-              }`}>
+            <div className={`p-4 rounded-2xl border transition-all ${
+              docs.practicasPre
+                ? "bg-emerald-50/40 border-emerald-300 shadow-2xs"
+                : hasEfsrtSubmitted
+                  ? "bg-blue-50/70 border-blue-300 shadow-2xs"
+                  : "bg-slate-50/70 border-slate-200"
+            }`}>
               <div className="flex items-start justify-between gap-3">
-                <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
+                <label className={`flex items-start gap-3 select-none flex-1 ${hasEfsrtSubmitted || docs.practicasPre ? "cursor-pointer" : "cursor-not-allowed opacity-75"}`}>
                   <input
                     type="checkbox"
+                    disabled={!hasEfsrtSubmitted && !docs.practicasPre}
                     checked={docs.practicasPre === true}
                     onChange={(e) => {
                       const val = e.target.checked;
@@ -743,78 +814,135 @@ function Application({
                         }
                         window.dispatchEvent(new Event("storage"));
                       }
+                      void updatePayment(`EFSRT-${record.studentDni}`, { status: val ? "APROBADO" : "PENDIENTE" }).catch(() => {});
                     }}
-                    className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer"
+                    className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer disabled:cursor-not-allowed"
                   />
                   <div>
                     <p className="text-xs font-bold text-slate-900">3. Prácticas Preprofesionales EFSRT (24 créditos)</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5 truncate max-w-[260px]" title={efsrtCompany}>
-                      {efsrtCompany} ({efsrtHours} hrs)
+                    <p className="text-[11px] text-slate-600 mt-0.5 leading-snug break-words" title={efsrtCompany}>
+                      {hasEfsrtSubmitted ? `${efsrtCompany} (${efsrtHours} hrs)` : "Sin constancia enviada por el estudiante"}
                     </p>
-                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${docs.practicasPre ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
-                      }`}>
-                      {docs.practicasPre ? "Conforme • 480 Horas Acreditadas (+24 Cr.)" : "Pendiente de Validación Laboral"}
+                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block px-2 py-0.5 rounded border ${
+                      docs.practicasPre
+                        ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                        : hasEfsrtSubmitted
+                          ? "text-blue-800 bg-blue-100 border-blue-300"
+                          : "text-amber-700 bg-amber-50 border-amber-200"
+                    }`}>
+                      {docs.practicasPre
+                        ? `Conforme • ${efsrtHours} Horas Acreditadas (+24 Cr.)`
+                        : hasEfsrtSubmitted
+                          ? "En Revisión • Pendiente de Validar"
+                          : "Pendiente de Envío por Estudiante"}
                     </span>
                   </div>
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setPreviewPdfOpen(true)}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1 shrink-0"
-                >
-                  <Eye className="w-3.5 h-3.5 text-slate-600" />
-                  Ver PDF
-                </button>
+                {hasEfsrtSubmitted ? (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewPdfOpen(true)}
+                    className={`${
+                      docs.practicasPre
+                        ? "bg-slate-100 hover:bg-slate-200 text-slate-800"
+                        : "bg-blue-600 hover:bg-blue-700 text-white shadow-2xs"
+                    } text-[10.5px] font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1 shrink-0`}
+                  >
+                    <Eye className={`w-3.5 h-3.5 ${docs.practicasPre ? "text-slate-600" : "text-white"}`} />
+                    <span>{docs.practicasPre ? "Ver PDF" : "Ver y Validar"}</span>
+                  </button>
+                ) : (
+                  <span className="bg-slate-200/80 text-slate-500 text-[10.5px] font-bold px-2.5 py-1 rounded-lg inline-flex items-center gap-1 shrink-0 cursor-not-allowed select-none">
+                    <AlertTriangle className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Bloqueado</span>
+                  </span>
+                )}
               </div>
             </div>
 
             {/* 4. Pago de Tasa de Certificación (Banco de la Nación) */}
-            <div className={`p-4 rounded-2xl border transition-all ${docs.pagoDerecho ? "bg-white border-emerald-300 shadow-2xs" : "bg-white border-slate-200 hover:border-slate-300"
-              }`}>
-              <div className="flex items-start justify-between gap-3">
-                <label className="flex items-start gap-3 cursor-pointer select-none flex-1">
+            <div className={`p-4 rounded-2xl border transition-all ${
+              docs.pagoDerecho
+                ? "bg-emerald-50/40 border-emerald-300 shadow-2xs"
+                : hasFeePaid
+                  ? "bg-blue-50/70 border-blue-300 shadow-2xs"
+                  : "bg-slate-50/70 border-slate-200"
+            }`}>
+              <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
+                <label className={`flex items-start gap-3 select-none flex-1 min-w-0 ${hasFeePaid || docs.pagoDerecho ? "cursor-pointer" : "cursor-not-allowed opacity-75"}`}>
                   <input
                     type="checkbox"
+                    disabled={!hasFeePaid && !docs.pagoDerecho}
                     checked={docs.pagoDerecho === true}
-                    onChange={(e) => setDocs((prev) => ({ ...prev, pagoDerecho: e.target.checked }))}
-                    className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer"
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      const nextDocs = { ...docs, pagoDerecho: val };
+                      setDocs(nextDocs);
+                      if (typeof window !== "undefined") {
+                        localStorage.setItem(`sfa_fee_validated_${record.studentDni}`, String(val));
+                      }
+                      if (futId) {
+                        void updateServiceRequestPayment(futId, { status: val ? "Validado" : "En Proceso" }).catch(() => {});
+                      }
+                      onSaveDocs(record.studentDni, nextDocs, obs);
+                    }}
+                    className="mt-0.5 w-4 h-4 rounded text-[#800521] focus:ring-[#800521] border-slate-300 cursor-pointer disabled:cursor-not-allowed"
                   />
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-bold text-slate-900">4. Pago de Tasa de Certificación (Banco de la Nación)</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5 font-mono">
+                    <p className="text-[11px] text-slate-600 mt-0.5 font-mono break-words">
                       {hasFeePaid
-                        ? `Arancel S/ ${Number(feeAmount || 50).toFixed(2)} • N° Op: ${feeOpNumber || "OP-2029-BN-49102"}`
+                        ? `Arancel S/ ${Number(feeAmount || 50).toFixed(2)} • N° Op: ${feeOpNumber || "—"}`
                         : "Sin comprobante de abono registrado en Banco de la Nación"}
                     </p>
-                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block ${docs.pagoDerecho ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200" : "text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"
-                      }`}>
+                    <span className={`text-[10px] font-mono uppercase font-bold mt-1.5 inline-block px-2 py-0.5 rounded border ${
+                      docs.pagoDerecho
+                        ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                        : hasFeePaid
+                          ? "text-blue-800 bg-blue-100 border-blue-300"
+                          : "text-amber-700 bg-amber-50 border-amber-200"
+                    }`}>
                       {docs.pagoDerecho
                         ? "Conforme • Tasa S/ 50.00 Conciliada en Caja"
                         : hasFeePaid
-                          ? "Voucher Adjuntado • Pendiente de Validación"
+                          ? "En Revisión • Pendiente de Validar"
                           : "Pendiente de Pago en Tesorería / Banco"}
                     </span>
                   </div>
                 </label>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
                   {hasFeePaid ? (
                     <button
                       type="button"
                       onClick={() => setPreviewVoucherOpen(true)}
-                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1"
+                      className={`${
+                        docs.pagoDerecho
+                          ? "bg-slate-100 hover:bg-slate-200 text-slate-800"
+                          : "bg-blue-600 hover:bg-blue-700 text-white shadow-2xs"
+                      } text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer inline-flex items-center gap-1`}
                     >
-                      <Eye className="w-3.5 h-3.5 text-slate-600" />
-                      Ver Voucher
+                      <Eye className={`w-3.5 h-3.5 ${docs.pagoDerecho ? "text-slate-600" : "text-white"}`} />
+                      <span>{docs.pagoDerecho ? "Ver Voucher" : "Ver y Validar"}</span>
                     </button>
                   ) : (
                     <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-1 rounded-lg select-none">
                       Sin Voucher
                     </span>
                   )}
-                  {!docs.pagoDerecho && (
+                  {!docs.pagoDerecho && hasFeePaid && (
                     <button
                       type="button"
-                      onClick={() => setDocs((prev) => ({ ...prev, pagoDerecho: true }))}
+                      onClick={() => {
+                        const nextDocs = { ...docs, pagoDerecho: true };
+                        setDocs(nextDocs);
+                        if (typeof window !== "undefined") {
+                          localStorage.setItem(`sfa_fee_validated_${record.studentDni}`, "true");
+                        }
+                        if (futId) {
+                          void updateServiceRequestPayment(futId, { status: "Validado" }).catch(() => {});
+                        }
+                        onSaveDocs(record.studentDni, nextDocs, obs);
+                      }}
                       className="bg-emerald-700 hover:bg-emerald-800 text-white text-[10.5px] font-bold px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-xs"
                     >
                       Acreditar Pago
@@ -885,7 +1013,15 @@ function Application({
                   <button
                     type="button"
                     onClick={() => {
-                      setDocs((prev) => ({ ...prev, pagoDerecho: true }));
+                      const nextDocs = { ...docs, pagoDerecho: true };
+                      setDocs(nextDocs);
+                      if (typeof window !== "undefined") {
+                        localStorage.setItem(`sfa_fee_validated_${record.studentDni}`, "true");
+                      }
+                      if (futId) {
+                        void updateServiceRequestPayment(futId, { status: "Validado" }).catch(() => {});
+                      }
+                      onSaveDocs(record.studentDni, nextDocs, obs);
                       setPreviewVoucherOpen(false);
                     }}
                     className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase px-4 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
@@ -1138,7 +1274,15 @@ function Application({
           <button
             type="button"
             disabled={!dirty}
-            onClick={() => onSaveDocs(record.studentDni, docs, obs)}
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                localStorage.setItem(`sfa_fee_validated_${record.studentDni}`, String(Boolean(docs.pagoDerecho)));
+              }
+              if (futId) {
+                void updateServiceRequestPayment(futId, { status: docs.pagoDerecho ? "Validado" : "En Proceso" }).catch(() => {});
+              }
+              onSaveDocs(record.studentDni, docs, obs);
+            }}
             className="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs uppercase tracking-wider rounded-xl px-4 py-2.5 disabled:opacity-40 transition-all cursor-pointer shadow-xs inline-flex items-center gap-2"
           >
             <RefreshCw className="w-3.5 h-3.5" />

@@ -167,43 +167,59 @@ function drawOfficialSignaturesAndSeal(
   pdf.text("Director General - IESTP SFA", sig2X + sigWidth / 2, sigY + 17.2, { align: "center" });
   pdf.text("R.D. N° 0458-2005-ED • MINEDU", sig2X + sigWidth / 2, sigY + 19.8, { align: "center" });
 
-  // 4. CÓDIGO QR Y HASH CRIPTOGRÁFICO DE SEGURIDAD
-  const qrX = width - margin - 22;
-  const qrY = sigY - 14;
-  const qrSize = 19;
+  // 4. CÓDIGO QR Y HASH CRIPTOGRÁFICO DE SEGURIDAD (debajo de las firmas para evitar superposición)
+  const qrSize = 23;
+  const qrX = width - margin - qrSize - 2;
+  const qrY = sigY + 23;
 
   pdf.setFillColor(255, 255, 255);
   pdf.setDrawColor(203, 213, 225);
-  pdf.setLineWidth(0.3);
-  pdf.roundedRect(qrX, qrY, qrSize, qrSize, 1.2, 1.2, "FD");
+  pdf.setLineWidth(0.35);
+  pdf.roundedRect(qrX - 1.5, qrY - 1.5, qrSize + 3, qrSize + 3, 1.4, 1.4, "FD");
 
-  // Patrones QR de esquinas
-  const drawQrCorner = (px: number, py: number, s: number) => {
+  // Matriz QR realista 21x21 con patrones de búsqueda (7x7) y módulos determinísticos
+  const grid = 21;
+  const cell = qrSize / grid;
+  const isFinder = (r: number, c: number) =>
+    (r < 7 && c < 7) || (r < 7 && c >= grid - 7) || (r >= grid - 7 && c < 7);
+
+  const drawFinder = (r0: number, c0: number) => {
     pdf.setFillColor(15, 23, 42);
-    pdf.rect(px, py, s, s, "F");
+    pdf.rect(qrX + c0 * cell, qrY + r0 * cell, 7 * cell, 7 * cell, "F");
     pdf.setFillColor(255, 255, 255);
-    pdf.rect(px + s * 0.16, py + s * 0.16, s * 0.68, s * 0.68, "F");
+    pdf.rect(qrX + (c0 + 1) * cell, qrY + (r0 + 1) * cell, 5 * cell, 5 * cell, "F");
     pdf.setFillColor(15, 23, 42);
-    pdf.rect(px + s * 0.32, py + s * 0.32, s * 0.36, s * 0.36, "F");
+    pdf.rect(qrX + (c0 + 2) * cell, qrY + (r0 + 2) * cell, 3 * cell, 3 * cell, "F");
   };
+  drawFinder(0, 0);
+  drawFinder(0, grid - 7);
+  drawFinder(grid - 7, 0);
 
-  const cornerSize = 4.8;
-  drawQrCorner(qrX + 1.2, qrY + 1.2, cornerSize);
-  drawQrCorner(qrX + qrSize - 1.2 - cornerSize, qrY + 1.2, cornerSize);
-  drawQrCorner(qrX + 1.2, qrY + qrSize - 1.2 - cornerSize, cornerSize);
-
-  // Módulos interiores simulados
+  let seed = 0;
+  for (let i = 0; i < hashText.length; i++) {
+    seed = ((seed * 31) + hashText.charCodeAt(i)) >>> 0;
+  }
   pdf.setFillColor(15, 23, 42);
-  pdf.rect(qrX + 8, qrY + 2.5, 3, 2, "F");
-  pdf.rect(qrX + 8, qrY + 6.5, 3, 4, "F");
-  pdf.rect(qrX + 12.5, qrY + 8, 4.5, 2.5, "F");
-  pdf.rect(qrX + 8, qrY + 12.5, 4, 3, "F");
-  pdf.rect(qrX + 13.5, qrY + 13, 3, 3, "F");
+  for (let r = 0; r < grid; r++) {
+    for (let c = 0; c < grid; c++) {
+      if (isFinder(r, c)) continue;
+      if ((r === 7 && c < 8) || (c === 7 && r < 8) || (r === 7 && c >= grid - 8) || (c === grid - 8 && r < 8) || (r === grid - 8 && c < 8) || (c === 7 && r >= grid - 8)) {
+        continue;
+      }
+      const isTiming = (r === 6 && c >= 8 && c <= grid - 9) || (c === 6 && r >= 8 && r <= grid - 9);
+      const bit = isTiming
+        ? (r + c) % 2 === 0
+        : (((seed ^ (r * 73856093) ^ (c * 19349663)) >>> ((r + c) % 7)) & 1) === 1;
+      if (bit) {
+        pdf.rect(qrX + c * cell, qrY + r * cell, cell * 0.96, cell * 0.96, "F");
+      }
+    }
+  }
 
   pdf.setFont("courier", "bold");
-  pdf.setFontSize(4.2);
+  pdf.setFontSize(4.8);
   pdf.setTextColor(71, 85, 105);
-  pdf.text(`HASH: ${hashText.slice(0, 16)}...`, qrX + qrSize / 2, qrY + qrSize + 2.6, { align: "center" });
+  pdf.text(`VERIFICACIÓN: ${hashText.slice(0, 16)}`, qrX + qrSize / 2, qrY + qrSize + 4.2, { align: "center" });
 }
 
 /**

@@ -209,10 +209,10 @@ export default function Sidebar({
             )}
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <h4 className="text-[11px] font-black text-slate-800 leading-tight block truncate" title={userName}>
+                <h4 className="text-[11px] font-black text-slate-800 leading-snug block break-words" title={userName}>
                   {userName}
                 </h4>
-                <span className="text-[9px] text-slate-500 font-bold block truncate mt-0.5" title={userRole}>
+                <span className="text-[9px] text-slate-500 font-bold leading-snug block break-words mt-0.5" title={userRole}>
                   {userRole}
                 </span>
               </div>

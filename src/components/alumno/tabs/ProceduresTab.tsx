@@ -11,7 +11,7 @@ import {
   deleteServiceRequest
 } from '../../../services/serviceRequests';
 import { readMafState } from '../../../services/mafState';
-import { fetchCertificates } from '../../../services/api';
+import { fetchCertificates, fetchGraduations } from '../../../services/api';
 import { generateOfficialCertificatePdf } from '../../../utils/officialCertificatePdf';
 import { academicToday } from '../../../utils/attendance';
 import { Pagination, usePagination } from '../../ui/Pagination';
@@ -227,6 +227,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
     : "Periodo 2027-I";
 
   const [items, setItems] = useState<ServiceRequest[]>([]);
+  const [isGraduationApto, setIsGraduationApto] = useState(false);
   const [rates, setRates] = useState<Record<string, number>>({});
   const [selected, setSelected] = useState<StudentProcedureCode>('CON01');
   const [reason, setReason] = useState('');
@@ -251,14 +252,17 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
   const sortedItems = [...items].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   const pagination = usePagination(sortedItems, 5, sortedItems[0]?.id, 'sfa_student_requests_page_size');
 
-  const reload = async () => {
-    setLoading(true);
+  const reload = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
-      const [reqs, certs] = await Promise.all([
+      const [reqs, certs, grads] = await Promise.all([
         fetchServiceRequests(studentDni),
         fetchCertificates(studentDni).catch(() => []),
+        fetchGraduations().catch(() => []),
       ]);
-      const hasActiveCert = Array.isArray(certs) && certs.some(c => c.active);
+      const gradRecord = Array.isArray(grads) ? grads.find(g => g.studentDni === studentDni) : undefined;
+      setIsGraduationApto(gradRecord?.status === 'Apto' || gradRecord?.status === 'Certificado Emitido');
+      const hasActiveCert = (Array.isArray(certs) && certs.some(c => c.active)) || gradRecord?.status === 'Certificado Emitido';
       const mapped = (reqs || []).map(r => {
         if ((r.conceptCode === 'CER01' || r.conceptCode === 'TIT01') && hasActiveCert) {
           return { ...r, status: 'Validado', deliveryStatus: 'Emitido' as const };
@@ -270,18 +274,30 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudieron consultar las solicitudes.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => { 
-    void reload(); 
-    const handleSync = () => { void reload(); };
+    void reload(false); 
+    let lastFocusSync = Date.now();
+    const handleSync = () => { void reload(true); };
+    const handleFocusSync = () => {
+      if (document.visibilityState === "hidden") return;
+      const now = Date.now();
+      if (now - lastFocusSync < 4000) return;
+      lastFocusSync = now;
+      void reload(true);
+    };
     window.addEventListener("sfa_service_requests_changed", handleSync);
     window.addEventListener("storage", handleSync);
+    window.addEventListener("focus", handleFocusSync);
+    document.addEventListener("visibilitychange", handleFocusSync);
     return () => {
       window.removeEventListener("sfa_service_requests_changed", handleSync);
       window.removeEventListener("storage", handleSync);
+      window.removeEventListener("focus", handleFocusSync);
+      document.removeEventListener("visibilitychange", handleFocusSync);
     };
   }, [studentDni]);
   useEffect(() => { 
@@ -319,9 +335,13 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
         localStorage.setItem(`sfa_fut_registered_${studentDni}`, "true");
         localStorage.setItem(`sfa_fut_id_${studentDni}`, created.id);
         localStorage.setItem(`sfa_fut_concept_${studentDni}`, created.conceptName);
+        localStorage.removeItem(`sfa_fee_paid_${studentDni}`);
+        localStorage.removeItem(`sfa_fee_validated_${studentDni}`);
         if (studentDni === "74859612") {
           localStorage.setItem("sfa_fut_registered_74859612", "true");
           localStorage.setItem("sfa_fut_id_74859612", created.id);
+          localStorage.removeItem("sfa_fee_paid_74859612");
+          localStorage.removeItem("sfa_fee_validated_74859612");
         }
         window.dispatchEvent(new CustomEvent("sfa_service_requests_changed"));
         window.dispatchEvent(new Event("storage"));
@@ -363,6 +383,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       setItems(current => current.map(item => item.id === saved.id ? saved : item));
       if (typeof window !== "undefined") {
         safeStorageSet(`sfa_fee_paid_${studentDni}`, "true");
+        localStorage.removeItem(`sfa_fee_validated_${studentDni}`);
         safeStorageSet(`sfa_fee_op_${studentDni}`, voucher.operationNumber.trim());
         safeStorageSet(`sfa_fee_amount_${studentDni}`, String(voucher.amountPaid));
         safeStorageSet(`sfa_fee_date_${studentDni}`, voucher.paymentDate);
@@ -385,7 +406,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       }
       setVoucher({ requestId: '', operationNumber: '', paymentDate: '', amountPaid: '' });
       setVoucherFile(null);
-      setVoucherFeedback('Comprobante de pago verificado y enviado a Tesorería MAF. Su trámite pasará a firma digital y emisión.');
+      setVoucherFeedback('Comprobante de pago enviado a Tesorería y Secretaría Académica para su validación.');
     } catch (e) {
       setVoucherError(e instanceof Error ? e.message : 'No se pudo registrar el voucher.');
     } finally {
@@ -426,6 +447,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
       localStorage.removeItem(`sfa_fut_id_${studentDni}`);
       localStorage.removeItem(`sfa_fut_concept_${studentDni}`);
       localStorage.removeItem(`sfa_fee_paid_${studentDni}`);
+      localStorage.removeItem(`sfa_fee_validated_${studentDni}`);
       localStorage.removeItem(`sfa_fee_op_${studentDni}`);
       localStorage.removeItem(`sfa_fee_amount_${studentDni}`);
       localStorage.removeItem(`sfa_fee_date_${studentDni}`);
@@ -452,7 +474,7 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
     setTimeout(() => setVoucherFeedback(""), 5000);
   };
 
-  const getStatusBadge = (status: string, deliveryStatus?: string) => {
+  const getStatusBadge = (status: string, deliveryStatus?: string, conceptCode?: string) => {
     if (deliveryStatus === 'Emitido') {
       return (
         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-black text-emerald-700 shadow-2xs">
@@ -461,11 +483,19 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
         </span>
       );
     }
+    if (status === 'Validado' && (conceptCode === 'CER01' || conceptCode === 'TIT01') && isGraduationApto) {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-black text-emerald-700 shadow-2xs">
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+          Aprobado • Apto para Emisión
+        </span>
+      );
+    }
     if (status === 'Validado') {
       return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-3 py-1 text-xs font-black text-purple-700 shadow-2xs">
-          <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-          Pago Validado • En Firma Digital
+        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-xs font-black text-blue-700 shadow-2xs">
+          <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+          Pago Validado • Pendiente de Emisión
         </span>
       );
     }
@@ -894,24 +924,42 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
               <p className="text-[11px]">Selecciona un certificado o constancia para iniciar tu solicitud formal.</p>
             </div>
           ) : (
-            <ul className="divide-y divide-slate-150">
-              {pagination.items.map((item) => (
-                <li key={item.id} className="py-4 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black font-mono bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
-                          #{item.id}
+            <ul className="space-y-3">
+              {pagination.items.map((item) => {
+                const shortCode = `SOL-${String(item.id || "").replace(/^SOL-/i, "").slice(0, 8).toUpperCase()}`;
+                const isEmitted = item.deliveryStatus === 'Emitido';
+                const isAptoCer = item.status === 'Validado' && (item.conceptCode === 'CER01' || item.conceptCode === 'TIT01') && isGraduationApto;
+                const cardClass = isEmitted
+                  ? 'border-emerald-300 bg-emerald-50/35 shadow-xs'
+                  : isAptoCer
+                    ? 'border-emerald-300 bg-emerald-50/25'
+                    : item.status === 'Validado'
+                      ? 'border-blue-200 bg-blue-50/20'
+                      : 'border-slate-200 bg-white';
+                return (
+                <li key={item.id} className={`rounded-2xl border p-4 space-y-3 transition-all ${cardClass}`}>
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          title={item.id}
+                          className={`text-[10.5px] font-black font-mono px-2.5 py-0.5 rounded-md border shrink-0 ${
+                            isEmitted
+                              ? 'bg-emerald-100/70 text-emerald-900 border-emerald-200'
+                              : 'bg-slate-100 text-slate-800 border-slate-200'
+                          }`}
+                        >
+                          #{shortCode}
                         </span>
-                        <h4 className="font-black text-slate-900 text-sm">{item.conceptName}</h4>
+                        <h4 className="font-black text-slate-900 text-sm leading-snug">{item.conceptName}</h4>
                       </div>
-                      <p className="text-xs text-slate-500 font-medium mt-1">
+                      <p className="text-xs text-slate-500 font-medium">
                         Tasa: <span className="font-bold text-slate-800 font-mono">S/ {item.amount.toFixed(2)}</span> • Fecha: {new Date(item.createdAt).toLocaleDateString("es-PE")}
                       </p>
                     </div>
 
-                    <div className="shrink-0 flex items-center gap-2">
-                      {getStatusBadge(item.status, item.deliveryStatus)}
+                    <div className="shrink-0 flex items-center gap-2 self-start">
+                      {getStatusBadge(item.status, item.deliveryStatus, item.conceptCode)}
                       {item.deliveryStatus !== 'Emitido' && (
                         <button
                           type="button"
@@ -926,7 +974,9 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                   </div>
 
                   {item.paymentOperation && (
-                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 font-medium flex items-center justify-between gap-3">
+                    <div className={`p-2.5 border rounded-xl text-xs text-slate-600 font-medium flex items-center justify-between gap-3 ${
+                      isEmitted ? 'bg-white/90 border-emerald-200' : 'bg-slate-50 border-slate-200'
+                    }`}>
                       <div>
                         <span>Voucher registrado: <strong className="font-mono text-slate-800">{item.paymentOperation}</strong></span>
                         <span className="text-[10px] text-slate-500 ml-2">({item.paymentDate})</span>
@@ -968,8 +1018,8 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                         onClick={async () => {
                           if (item.conceptCode === 'CER01' || item.conceptCode === 'TIT01') {
                             try {
-                              let sName = studentDni === '74859612' ? 'Mateo Sebastián Quispe Rojas' : `Estudiante (${studentDni})`;
-                              let sProgram = item.program || 'Electricidad Industrial';
+                              let sName = item.studentName || `Estudiante (${studentDni})`;
+                              let sProgram = item.program || 'Contabilidad';
                               try {
                                 const raw = localStorage.getItem('sfa_students');
                                 if (raw) {
@@ -999,9 +1049,9 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                           }
                           window.open(serviceRequestResultUrl(item.id, studentDni), '_blank');
                         }}
-                        className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2 px-4 rounded-xl shadow-xs transition-all cursor-pointer"
+                        className="inline-flex items-center gap-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-[13px] py-2.5 px-5 rounded-xl shadow-sm transition-all cursor-pointer"
                       >
-                        <Download className="w-3.5 h-3.5" />
+                        <Download className="w-4 h-4" />
                         <span>Descargar Documento Oficial (PDF con Firma y Sello)</span>
                       </button>
                     ) : (
@@ -1021,6 +1071,24 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                           <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-900 border border-amber-200 text-xs font-semibold px-3 py-1.5 rounded-xl">
                             <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                             <span>Comprobante en auditoría por Tesorería y Secretaría Académica</span>
+                          </div>
+                        )}
+                        {item.status === 'Validado' && (
+                          <div className={`inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-xl border ${
+                            (item.conceptCode === 'CER01' || item.conceptCode === 'TIT01') && isGraduationApto
+                              ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                              : 'bg-blue-50 text-blue-900 border-blue-200'
+                          }`}>
+                            <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${
+                              (item.conceptCode === 'CER01' || item.conceptCode === 'TIT01') && isGraduationApto
+                                ? 'text-emerald-700'
+                                : 'text-blue-700'
+                            }`} />
+                            <span>
+                              {(item.conceptCode === 'CER01' || item.conceptCode === 'TIT01') && isGraduationApto
+                                ? 'Expediente aprobado (Apto) • Pendiente de registro del certificado oficial por Secretaría Académica'
+                                : 'Pago validado por Tesorería • Pendiente de aprobación para emisión'}
+                            </span>
                           </div>
                         )}
                       </>
@@ -1151,31 +1219,30 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                                 accept="image/*,application/pdf"
                                 className="hidden"
                                 onChange={async (e) => {
-                                  const file = e.target.files?.[0];
+                                  const inputEl = e.currentTarget;
+                                  const file = inputEl.files?.[0];
                                   if (!file) return;
-                                  const compressedUrl = await compressImageFile(file);
-                                  setVoucherFile({
-                                    name: file.name,
-                                    url: compressedUrl,
-                                    size: `${(file.size / 1024).toFixed(0)} KB`
-                                  });
+                                  if (file.size > 5 * 1024 * 1024) {
+                                    setVoucherError("El archivo supera el máximo permitido de 5 MB.");
+                                    inputEl.value = "";
+                                    return;
+                                  }
+                                  setVoucherError("");
+                                  try {
+                                    const compressedUrl = await compressImageFile(file);
+                                    setVoucherFile({
+                                      name: file.name,
+                                      url: compressedUrl,
+                                      size: `${(file.size / 1024).toFixed(0)} KB`
+                                    });
+                                  } catch {
+                                    setVoucherError("No se pudo leer el archivo seleccionado.");
+                                  } finally {
+                                    inputEl.value = "";
+                                  }
                                 }}
                               />
                             </label>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setVoucherFile({
-                                  name: "VOUCHER_BN_49102.png",
-                                  url: "/voucher_ciclo2.png",
-                                  size: "184 KB"
-                                });
-                              }}
-                              className="shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold px-3 py-2 rounded-xl transition-all cursor-pointer border border-slate-200 flex items-center gap-1.5"
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Usar comprobante Banco de la Nación</span>
-                            </button>
                           </div>
                         )}
                       </div>
@@ -1202,7 +1269,8 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
                     </form>
                   )}
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
 

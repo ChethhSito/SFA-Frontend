@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import PageTransition from "../../ui/PageTransition";
 import { StudentPersonalData, Enrollment } from "../../../types";
+import { fetchPayments, createPayment, updatePayment } from "../../../services/api";
 
 interface PracticasPreprofesionalesTabProps {
   personalData?: StudentPersonalData;
@@ -119,14 +120,62 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
   }, [fileAttachment]);
 
   useEffect(() => {
-    const handleSync = () => setSync((v) => v + 1);
-    window.addEventListener("storage", handleSync);
-    window.addEventListener("focus", handleSync);
-    return () => {
-      window.removeEventListener("storage", handleSync);
-      window.removeEventListener("focus", handleSync);
+    let active = true;
+    let lastFetch = 0;
+    const syncEfsrtWithBackend = async () => {
+      const now = Date.now();
+      if (now - lastFetch < 5000) return;
+      lastFetch = now;
+      try {
+        const list = await fetchPayments();
+        if (!active || !Array.isArray(list)) return;
+        const found = list.find((p: any) => p.paymentId === `EFSRT-${currentDni}`);
+        if (found) {
+          if (found.status === "APROBADO") {
+            localStorage.setItem(`sfa_efsrt_validated_${currentDni}`, "true");
+            localStorage.setItem(`sfa_efsrt_all_approved_${currentDni}`, "true");
+            localStorage.setItem(`sfa_graduation_docs_${currentDni}_practicas`, "true");
+            localStorage.setItem(`sfa_titulacion_enabled_${currentDni}`, "true");
+          }
+          if (found.notes) {
+            try {
+              const parsed = JSON.parse(found.notes);
+              localStorage.setItem(`sfa_efsrt_${currentDni}`, JSON.stringify(parsed));
+            } catch {}
+          }
+          setSync((v) => v + 1);
+        } else {
+          const rawLocal = localStorage.getItem(`sfa_efsrt_${currentDni}`);
+          if (rawLocal) {
+            const isVal = localStorage.getItem(`sfa_efsrt_validated_${currentDni}`) === "true";
+            await createPayment({
+              paymentId: `EFSRT-${currentDni}`,
+              studentDni: currentDni,
+              concept: "EFSRT_EXPEDIENTE",
+              amount: 0,
+              date: new Date().toISOString().slice(0, 10),
+              status: isVal ? "APROBADO" : "PENDIENTE",
+              receiptNumber: `EFSRT-${currentDni}`,
+              notes: rawLocal,
+            });
+          }
+        }
+      } catch {}
     };
-  }, []);
+    void syncEfsrtWithBackend();
+    const handleStorageOnly = () => setSync((v) => v + 1);
+    const handleFocus = () => {
+      setSync((v) => v + 1);
+      void syncEfsrtWithBackend();
+    };
+    window.addEventListener("storage", handleStorageOnly);
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      active = false;
+      window.removeEventListener("storage", handleStorageOnly);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [currentDni]);
 
   // Check saved EFSRT record in localStorage
   const efsrtRecord = (() => {
@@ -172,14 +221,39 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
     };
 
     if (typeof window !== "undefined") {
-      localStorage.setItem(`sfa_efsrt_${currentDni}`, JSON.stringify(payload));
-      localStorage.setItem(`sfa_efsrt_pending_review_${currentDni}`, "true");
-      if (isMateo) {
-        localStorage.setItem("sfa_efsrt_74859612", JSON.stringify(payload));
-        localStorage.setItem("sfa_efsrt_pending_review_74859612", "true");
-      }
-      window.dispatchEvent(new Event("storage"));
+      try {
+        localStorage.setItem(`sfa_efsrt_${currentDni}`, JSON.stringify(payload));
+        localStorage.setItem(`sfa_efsrt_pending_review_${currentDni}`, "true");
+        if (isMateo) {
+          localStorage.setItem("sfa_efsrt_74859612", JSON.stringify(payload));
+          localStorage.setItem("sfa_efsrt_pending_review_74859612", "true");
+        }
+        window.dispatchEvent(new Event("storage"));
+      } catch {}
     }
+
+    // Persist EFSRT submission in MongoDB so MGE sees it across any browser/tab
+    void (async () => {
+      try {
+        const list = await fetchPayments();
+        const existing = Array.isArray(list) ? list.find((p: any) => p.paymentId === `EFSRT-${currentDni}`) : null;
+        const body = {
+          paymentId: `EFSRT-${currentDni}`,
+          studentDni: currentDni,
+          concept: "EFSRT_EXPEDIENTE",
+          amount: 0,
+          date: new Date().toISOString().slice(0, 10),
+          status: "PENDIENTE",
+          receiptNumber: `EFSRT-${currentDni}`,
+          notes: JSON.stringify(payload),
+        };
+        if (existing) {
+          await updatePayment(existing._id || existing.paymentId, body);
+        } else {
+          await createPayment(body);
+        }
+      } catch {}
+    })();
 
     setNotice("Expediente de Prácticas Preprofesionales (EFSRT) enviado exitosamente a Secretaría Académica para su validación.");
     setTimeout(() => setNotice(""), 8000);
@@ -314,7 +388,13 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
           </span>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs space-y-2 border-l-4 border-l-emerald-600">
+        <div className={`rounded-2xl border p-5 shadow-2xs space-y-2 border-l-4 ${
+          isValidatedBySecretaria
+            ? "bg-emerald-50/70 border-emerald-300 border-l-emerald-600"
+            : efsrtRecord
+              ? "bg-blue-50/50 border-blue-200 border-l-blue-600"
+              : "bg-white border-slate-200/90 border-l-amber-500"
+        }`}>
           <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Estado de Validación en MGE</span>
           <div className="pt-0.5">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase font-mono border ${
@@ -351,33 +431,32 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
       </div>
 
       {/* Formulario de Registro o Detalle de Prácticas */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl shadow-3xs p-6 space-y-5">
+      <div className={`border rounded-2xl shadow-3xs p-6 space-y-5 ${
+        isValidatedBySecretaria ? "bg-emerald-50/30 border-emerald-300" : "bg-white border-slate-200/90"
+      }`}>
         <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
           <div>
             <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-[#800521]" />
-              {efsrtRecord ? "Expediente de Prácticas Registrado" : "Registrar Prácticas Preprofesionales (EFSRT)"}
+              {isValidatedBySecretaria
+                ? "Expediente EFSRT Validado y Acreditado"
+                : efsrtRecord
+                  ? "Expediente de Prácticas Registrado"
+                  : "Registrar Prácticas Preprofesionales (EFSRT)"}
             </h3>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Ingrese los datos de la empresa y adjunte su constancia laboral debidamente firmada.
+              {isValidatedBySecretaria
+                ? "Sus prácticas preprofesionales fueron auditadas y aprobadas oficialmente por Secretaría Académica (MGE)."
+                : "Ingrese los datos de la empresa y adjunte su constancia laboral debidamente firmada."}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             {isValidatedBySecretaria && (
-              <span className="text-xs bg-emerald-50 text-emerald-800 border border-emerald-300 font-extrabold px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-2xs">
+              <span className="text-xs bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-2xs">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 <span>24 Créditos EFSRT Acreditados</span>
               </span>
-            )}
-            {(efsrtRecord || isValidatedBySecretaria) && (
-              <button
-                type="button"
-                onClick={handleReset}
-                className="text-slate-500 hover:text-slate-800 text-xs font-bold underline cursor-pointer ml-1"
-              >
-                Restablecer a Pendiente
-              </button>
             )}
           </div>
         </div>
@@ -561,25 +640,29 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
                     <span>Ver Vista Previa</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer shadow-3xs flex items-center gap-1.5"
-                    title="Seleccionar otro archivo PDF o imagen de su computadora"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Cambiar Archivo</span>
-                  </button>
+                  {!isValidatedBySecretaria && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer shadow-3xs flex items-center gap-1.5"
+                        title="Seleccionar otro archivo PDF o imagen de su computadora"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Cambiar Archivo</span>
+                      </button>
 
-                  <button
-                    type="button"
-                    onClick={handleDeleteDocument}
-                    className="bg-white hover:bg-red-50 text-red-700 border border-red-300 hover:border-red-400 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer shadow-3xs flex items-center gap-1.5"
-                    title="Eliminar esta constancia del expediente"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-red-600" />
-                    <span>Eliminar</span>
-                  </button>
+                      <button
+                        type="button"
+                        onClick={handleDeleteDocument}
+                        className="bg-white hover:bg-red-50 text-red-700 border border-red-300 hover:border-red-400 font-bold text-xs px-3 py-2 rounded-xl transition-all cursor-pointer shadow-3xs flex items-center gap-1.5"
+                        title="Eliminar esta constancia del expediente"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                        <span>Eliminar</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ) : (
@@ -621,13 +704,25 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
           </div>
 
           <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
-            <button
-              type="submit"
-              className="px-6 py-2.5 text-xs font-black uppercase tracking-wider bg-[#800521] hover:bg-[#66041a] text-white rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2"
-            >
-              <CheckCircle2 className="w-4 h-4 text-amber-300" />
-              <span>{efsrtRecord ? "Actualizar y Reenviar Expediente EFSRT" : "Enviar Expediente a Secretaría"}</span>
-            </button>
+            {isValidatedBySecretaria ? (
+              <div className="w-full bg-emerald-100/80 border border-emerald-300 text-emerald-900 rounded-xl px-4 py-3 text-xs font-bold flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span>Prácticas Preprofesionales Validadas y Acreditadas (+24 Créditos). Tu expediente está aprobado oficialmente.</span>
+                </div>
+                <span className="font-mono text-[10px] uppercase bg-white text-emerald-800 px-2.5 py-1 rounded-lg border border-emerald-300 shrink-0">
+                  Aprobado
+                </span>
+              </div>
+            ) : (
+              <button
+                type="submit"
+                className="px-6 py-2.5 text-xs font-black uppercase tracking-wider bg-[#800521] hover:bg-[#66041a] text-white rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4 text-amber-300" />
+                <span>{efsrtRecord ? "Actualizar y Reenviar Expediente EFSRT" : "Enviar Expediente a Secretaría"}</span>
+              </button>
+            )}
           </div>
         </form>
       </div>
