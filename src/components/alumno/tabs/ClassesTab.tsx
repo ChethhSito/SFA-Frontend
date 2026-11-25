@@ -7,7 +7,7 @@ import {
   Users, Upload, Plus, AlertCircle, FileText, CheckCircle, Calendar, Bookmark, MapPin, GraduationCap,
   Eye, Download, Trash2, Pencil, X, MessageSquare, Send, Check, ExternalLink, Loader2
 } from "lucide-react";
-import { CourseMaterial, CourseAssignment, CourseEvaluation, AcademicProgram, StudentPersonalData } from "../../../types";
+import { CourseMaterial, CourseAssignment, CourseEvaluation, AcademicProgram, StudentPersonalData, CycleStatus } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
 import Toast, { ToastNotice } from "../../ui/Toast";
 import { Card, CardHeader, CardTitle, CardContent } from "../../ui/Card";
@@ -45,6 +45,8 @@ interface ClassesTabProps {
   assignmentsLoading?: boolean;
   activeCourseComponentId?: string | null;
   setActiveCourseComponentId?: React.Dispatch<React.SetStateAction<string | null>>;
+  cycleStatuses?: CycleStatus[];
+  isGraduated?: boolean;
 }
 
 export const ClassesTab: React.FC<ClassesTabProps> = ({
@@ -73,29 +75,102 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   onUpdateAssignments,
   assignmentsLoading = false,
   activeCourseComponentId: propActiveCourseComponentId,
-  setActiveCourseComponentId: propSetActiveCourseComponentId
+  setActiveCourseComponentId: propSetActiveCourseComponentId,
+  cycleStatuses = [],
+  isGraduated: propIsGraduated = false
 }) => {
   const isMateo = studentDni === "74859612";
-  const isPromotedCycle2 = typeof window !== "undefined" && Boolean(
-    localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
-    localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
-    localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
-    (isMateo && (
-      localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
-      localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
-      localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
-      localStorage.getItem("sfa_student_cycle") === "2" ||
-      localStorage.getItem("sfa_cycle2_payment_74859612") === "true"
+  const isGraduatedAll = Boolean(
+    propIsGraduated ||
+    cycleStatuses?.some((c) => c.cycleNumber === 6 && c.status === "Aprobado") ||
+    (typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
+      localStorage.getItem(`sfa_student_status_${studentDni}`) === "Egresado" ||
+      (isMateo && localStorage.getItem("sfa_student_graduated_all_74859612") === "true")
+    ))
+  );
+  const isCiclo2Completed = Boolean(
+    isGraduatedAll ||
+    cycleStatuses?.some((c) => c.cycleNumber === 2 && c.status === "Aprobado") ||
+    (typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_simulated_cycle2_${studentDni}`) ||
+      localStorage.getItem(`sfa_student_promoted_cycle3_${studentDni}`) === "true" ||
+      (isMateo && (
+        localStorage.getItem("sfa_simulated_cycle2_74859612") ||
+        localStorage.getItem("sfa_student_promoted_cycle3_74859612") === "true"
+      ))
+    ))
+  );
+  const isPromotedCycle2 = Boolean(
+    isGraduatedAll ||
+    isCiclo2Completed ||
+    cycleStatuses?.some((c) => c.cycleNumber === 1 && c.status === "Aprobado") ||
+    (typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) === "true" ||
+      localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "2" ||
+      localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
+      (isMateo && (
+        localStorage.getItem("sfa_student_promoted_cycle2_74859612") === "true" ||
+        localStorage.getItem("sfa_student_promoted_cycle2") === "true" ||
+        localStorage.getItem("sfa_student_cycle_74859612") === "2" ||
+        localStorage.getItem("sfa_student_cycle") === "2" ||
+        localStorage.getItem("sfa_cycle2_payment_74859612") === "true"
+      ))
     ))
   );
 
-  const [selectedClassesPeriod, setSelectedClassesPeriod] = useState<"2027-II" | "2027-I">(() => {
-    return isPromotedCycle2 ? "2027-II" : "2027-I";
+  const [selectedClassesPeriod, setSelectedClassesPeriod] = useState<"2029-II" | "2029-I" | "2028-II" | "2028-I" | "2027-II" | "2027-I">(() => {
+    return isGraduatedAll ? "2029-II" : isPromotedCycle2 ? "2027-II" : "2027-I";
   });
 
-  const isContabilidad = personalData?.dni === "71248596" || enrichedCourses.some(c => c.career?.toLowerCase().includes("contab") || c.code?.includes("CONT"));
+  useEffect(() => {
+    if (isGraduatedAll && (selectedClassesPeriod === "2027-I" || selectedClassesPeriod === "2027-II")) {
+      setSelectedClassesPeriod("2029-II");
+    }
+  }, [isGraduatedAll]);
+
+  const isContabilidad = currentProgram?.name?.toLowerCase().includes("contab") ||
+    enrichedCourses.some(c => c.career?.toLowerCase().includes("contab") || c.code?.includes("CONT"));
 
   const classesCoursesData = useMemo(() => {
+    const periodToCycleNumber: Record<string, number> = {
+      "2027-I": 1,
+      "2027-II": 2,
+      "2028-I": 3,
+      "2028-II": 4,
+      "2029-I": 5,
+      "2029-II": 6
+    };
+    const romanMap: Record<number, string> = { 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI" };
+    const selectedCycleNum = periodToCycleNumber[selectedClassesPeriod] || 1;
+
+    if (selectedCycleNum >= 3) {
+      const roman = romanMap[selectedCycleNum];
+      const backendCycle = cycleStatuses?.find((c) => c.cycleNumber === selectedCycleNum);
+      const prefix = isContabilidad ? "CONT" : "EIND";
+      const pabellon = isContabilidad ? "Pabellón C" : "Pabellón A";
+      if (backendCycle && Array.isArray(backendCycle.courses) && backendCycle.courses.length > 0) {
+        return backendCycle.courses.map((sc: any, idx: number) => {
+          const hasDelim = typeof sc.name === "string" && sc.name.includes("::");
+          const code = sc.code || (hasDelim ? sc.name.split("::")[0] : `${prefix}-${selectedCycleNum}0${idx + 1}`);
+          const name = hasDelim ? sc.name.split("::")[1] : sc.name;
+          return {
+            id: `cur_${isContabilidad ? "co" : "ei"}_${selectedCycleNum}0${idx + 1}`,
+            code,
+            name,
+            credits: idx < 2 ? 4 : idx < 4 ? 3 : 2,
+            classroom: `Aula ${selectedCycleNum}0${idx + 1} • ${pabellon}`,
+            schedule: "Horario Regular Culminado",
+            teacherName: "Docente Oficial de Carrera",
+            group: `${prefix}-${roman}-A`,
+            cycle: `Ciclo ${roman}`,
+            cycleStatusGrade: typeof sc.grade === "number" ? sc.grade : undefined
+          };
+        });
+      }
+      return [];
+    }
+
     if (selectedClassesPeriod === "2027-II") {
       const c2 = enrichedCourses.filter(c => c.code?.includes("-20") || c.cycle === "Ciclo II" || c.cycle === 2 || c.group?.includes("II"));
       if (c2.length > 0 && !c2.some(c => isContabilidad && c.code?.includes("EIND"))) {
@@ -351,7 +426,7 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
         return found ? { ...def, ...found } : def;
       });
     }
-  }, [enrichedCourses, selectedClassesPeriod, isContabilidad]);
+  }, [enrichedCourses, selectedClassesPeriod, isContabilidad, cycleStatuses]);
 
   const activeCourse = classesCoursesData.find(c => c.name === selectedCourseDetail || c.code === selectedCourseDetail || c.id === selectedCourseDetail);
   const [toastNotice, setToastNotice] = useState<ToastNotice | null>(null);
@@ -571,8 +646,18 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   }}
                   className="bg-transparent text-white font-black text-xs border-0 outline-none cursor-pointer pr-1 font-mono"
                 >
+                  {isGraduatedAll && (
+                    <>
+                      <option value="2029-II" className="bg-slate-900 text-white font-bold">2029-II • Ciclo VI (Concluido)</option>
+                      <option value="2029-I" className="bg-slate-900 text-white font-bold">2029-I • Ciclo V (Concluido)</option>
+                      <option value="2028-II" className="bg-slate-900 text-white font-bold">2028-II • Ciclo IV (Concluido)</option>
+                      <option value="2028-I" className="bg-slate-900 text-white font-bold">2028-I • Ciclo III (Concluido)</option>
+                    </>
+                  )}
                   {isPromotedCycle2 && (
-                    <option value="2027-II" className="bg-slate-900 text-white font-bold">2027-II • Ciclo II (Activo)</option>
+                    <option value="2027-II" className="bg-slate-900 text-white font-bold">
+                      {isCiclo2Completed ? "2027-II • Ciclo II (Concluido)" : "2027-II • Ciclo II (Activo)"}
+                    </option>
                   )}
                   <option value="2027-I" className="bg-slate-900 text-white font-bold">
                     {isPromotedCycle2 ? "2027-I • Ciclo I (Concluido)" : "2027-I • Ciclo I (Activo)"}
@@ -594,12 +679,29 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
             const averageGrade = grades.length ? (grades.reduce((sum, grade) => sum + grade, 0) / grades.length).toFixed(1) : "NR";
 
             const isCiclo1 = selectedClassesPeriod === "2027-I";
-            const isMateo = studentDni === "74859612";
-            const isRealCiclo1Simulated = typeof window !== "undefined" && Boolean(
-              localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) ||
-              (isMateo && (localStorage.getItem("sfa_simulated_cycle1_74859612") || localStorage.getItem("sfa_simulated_cycle1")))
+            const isCiclo2 = selectedClassesPeriod === "2027-II";
+            const periodCycleNumMap: Record<string, number> = {
+              "2027-I": 1, "2027-II": 2, "2028-I": 3, "2028-II": 4, "2029-I": 5, "2029-II": 6
+            };
+            const currentCycleNum = periodCycleNumMap[selectedClassesPeriod] || 1;
+            const backendCycleData = cycleStatuses?.find((c) => c.cycleNumber === currentCycleNum);
+            const backendCourseEntry = backendCycleData?.courses?.find((sc: any) => {
+              const codePart = sc?.code || (typeof sc?.name === "string" && sc.name.includes("::") ? sc.name.split("::")[0] : "");
+              return codePart === courseItem.code || sc?.name === courseItem.name;
+            });
+            const backendCourseGrade = typeof (courseItem as any).cycleStatusGrade === "number"
+              ? (courseItem as any).cycleStatusGrade
+              : (typeof backendCourseEntry?.grade === "number" ? backendCourseEntry.grade : undefined);
+
+            const isRealCiclo1Simulated = Boolean(
+              backendCycleData?.status === "Aprobado" ||
+              (typeof window !== "undefined" && (
+                localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) ||
+                (isMateo && (localStorage.getItem("sfa_simulated_cycle1_74859612") || localStorage.getItem("sfa_simulated_cycle1")))
+              ))
             );
             const isCiclo2AllSimulated = Boolean(
+              isCiclo2Completed ||
               localStorage.getItem(`sfa_simulated_cycle2_${studentDni}`) ||
               (isMateo && (
                 localStorage.getItem("sfa_simulated_cycle2_74859612") ||
@@ -612,11 +714,13 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
               localStorage.getItem("sfa_acta_signed_cur_ei_201") === "true" ||
               localStorage.getItem("sfa_course_passed_EIND-201_74859612") === "true" ||
               Boolean(localStorage.getItem("sfa_grades_EIND-201_74859612"))
-            )) || isCiclo2AllSimulated;
-            const isApproved = (isCiclo1 && (isMateo || isRealCiclo1Simulated)) || isCiclo2Passed;
+            )) || (isCiclo2 && isCiclo2AllSimulated);
+            const isApproved = isGraduatedAll || backendCycleData?.status === "Aprobado" || (isCiclo1 && (isMateo || isRealCiclo1Simulated)) || isCiclo2Passed;
 
             let displayGrade = averageGrade;
-            if (isCiclo1 && (isMateo || isRealCiclo1Simulated)) {
+            if (typeof backendCourseGrade === "number") {
+              displayGrade = backendCourseGrade.toFixed(1);
+            } else if (isCiclo1 && (isMateo || isRealCiclo1Simulated)) {
               const c1Defaults: Record<string, string> = {
                 "EIND-101": "16.4",
                 "EIND-102": "16.5",
@@ -630,13 +734,18 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                 "CONT-105": "16.0"
               };
               displayGrade = c1Defaults[courseItem.code] || (averageGrade !== "NR" ? averageGrade : "16.0");
-            } else if (isCiclo2AllSimulated) {
+            } else if (isCiclo2 && isCiclo2AllSimulated) {
               const c2Defaults: Record<string, string> = {
                 "EIND-201": "16.5",
                 "EIND-202": "17.0",
                 "EIND-203": "16.0",
                 "EIND-204": "16.5",
-                "EIND-205": "15.5"
+                "EIND-205": "15.5",
+                "CONT-201": "16.5",
+                "CONT-202": "17.0",
+                "CONT-203": "16.0",
+                "CONT-204": "16.5",
+                "CONT-205": "15.5"
               };
               displayGrade = c2Defaults[courseItem.code] || "16.5";
             } else if (courseItem.code === "EIND-201" && isMateo) {
@@ -900,7 +1009,8 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   };
 
   const filteredDBMaterials = materials.filter(m => {
-    const weekMatches = m.title.includes(`[Semana ${selectedClassWeek}]`) || m.title.includes(`Semana ${selectedClassWeek}`);
+    const weekRegex = new RegExp(`(?:\\[Semana\\s+${selectedClassWeek}\\]|\\bSemana\\s+${selectedClassWeek}\\b)`, "i");
+    const weekMatches = weekRegex.test(m.title);
     if (!weekMatches) return false;
     if (selectedComponent) {
       return m.courseId === selectedComponent.dbCourseId ||
@@ -913,7 +1023,8 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
   });
 
   const filteredDBAssignments = assignments.filter(a => {
-    const weekMatches = a.kind !== "assessment" && (a.title.includes(`[Semana ${selectedClassWeek}]`) || a.title.includes(`Semana ${selectedClassWeek}`));
+    const weekRegex = new RegExp(`(?:\\[Semana\\s+${selectedClassWeek}\\]|\\bSemana\\s+${selectedClassWeek}\\b)`, "i");
+    const weekMatches = a.kind !== "assessment" && weekRegex.test(a.title);
     if (!weekMatches) return false;
     if (selectedComponent) {
       return a.courseId === selectedComponent.dbCourseId ||
@@ -1862,7 +1973,8 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
                     {Array.from({ length: COURSE_WEEKS }, (_, i) => i + 1).map((w) => {
                       const weekAssignment = assignments.find(a => {
-                        return matchesActiveCourse(a.courseId) && (a.title.includes(`[Semana ${w}]`) || a.title.includes(`Semana ${w}`));
+                        const weekRegex = new RegExp(`(?:\\[Semana\\s+${w}\\]|\\bSemana\\s+${w}\\b)`, "i");
+                        return matchesActiveCourse(a.courseId) && weekRegex.test(a.title);
                       });
                       const studentSub = weekAssignment?.submissions?.find((s: any) => s.studentDni === studentDni && s.grade !== undefined);
                       const weekEval = (evaluations || []).find((e: any) => {
@@ -2549,7 +2661,8 @@ export const ClassesTab: React.FC<ClassesTabProps> = ({
                   const weekEvaluations = assignments.filter((a) => {
                     if (a.kind !== "assessment") return false;
                     if (a.title.startsWith("[Planilla] ")) return false;
-                    const weekMatches = a.title.includes(`[Semana ${selectedClassWeek}]`) || a.title.includes(`Semana ${selectedClassWeek}`);
+                    const weekRegex = new RegExp(`(?:\\[Semana\\s+${selectedClassWeek}\\]|\\bSemana\\s+${selectedClassWeek}\\b)`, "i");
+                    const weekMatches = weekRegex.test(a.title);
                     if (!weekMatches) return false;
                     if (selectedComponent) {
                       return a.courseId === selectedComponent.dbCourseId ||

@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../..
 import PageHeader from "../../ui/PageHeader";
 import PageTransition from "../../ui/PageTransition";
 import Button from "../../ui/Button";
+import { fetchEnrollmentByDni } from "../../../services/api";
 
 interface CajaRegularTabProps {
   enrollments: Enrollment[];
@@ -167,7 +168,12 @@ export const CajaRegularTab: React.FC<CajaRegularTabProps> = ({
                                 {hasPaymentSubmitted && (
                                   <button
                                     type="button"
-                                    onClick={() =>
+                                    onClick={async () => {
+                                      let resolvedUrl = effectiveVoucherUrl;
+                                      if (!resolvedUrl && hasVoucherFile) {
+                                        const full = await fetchEnrollmentByDni(enr.studentDni).catch(() => null);
+                                        resolvedUrl = full?.paymentVoucherUrl || undefined;
+                                      }
                                       triggerAdminPreview(
                                         "Voucher Matrícula - " + displayName,
                                         voucherFileName,
@@ -182,14 +188,14 @@ export const CajaRegularTab: React.FC<CajaRegularTabProps> = ({
                                           amount: "S/. 250.00",
                                           date: (enr as any).enrollmentDate || new Date().toISOString().split("T")[0],
                                           concept: "Derecho de Matrícula Regular e Inscripción",
-                                          fileDataUrl: effectiveVoucherUrl,
+                                          fileDataUrl: resolvedUrl,
                                           fileName: voucherFileName,
                                           docLabel: "Comprobante de Pago de Matrícula Regular",
                                           paymentStatus: effectivePaymentStatus,
                                           isVoucher: true,
                                         }
-                                      )
-                                    }
+                                      );
+                                    }}
                                     className="group inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-[#9F062A] via-[#B31238] to-[#9F062A] hover:from-[#800521] hover:to-[#9F062A] text-white text-[10px] font-black uppercase tracking-wider rounded-lg shadow-xs hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer border border-[#800521]/30 shrink-0 select-none"
                                   >
                                     <Eye className="w-3.5 h-3.5 text-rose-200 group-hover:text-white transition-colors" />

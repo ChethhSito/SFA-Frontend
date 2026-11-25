@@ -143,7 +143,6 @@ export const GradesTab: React.FC<GradesTabProps> = ({
   }, [isGraduated]);
 
   const isContabilidad = studentInfo?.career?.toLowerCase().includes("contab") ||
-    studentDni === "71248596" ||
     enrichedCourses.some(c => c.code?.startsWith("CONT") || c.career?.toLowerCase().includes("contab"));
 
   const semesterCourses = React.useMemo(() => {

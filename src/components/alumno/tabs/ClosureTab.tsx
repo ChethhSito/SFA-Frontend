@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Printer, Download, Award, CheckCircle2, Mail, FileText, ClipboardList } from "lucide-react";
+import { Printer, Download, Award, CheckCircle2, Mail, FileText, ClipboardList, Clock } from "lucide-react";
 import { StudentPersonalData, Enrollment, AcademicProgram, CycleStatus, Course, CourseAssignment } from "../../../types";
 import PageTransition from "../../ui/PageTransition";
 import Toast, { ToastNotice } from "../../ui/Toast";
 import { generateMatriculaPdf, generateCurriculumPlanPdf, generateBoletaNotasPdf } from "../../../utils/matriculaPdf";
+import { fetchPayments } from "../../../services/api";
 import { computeCourseStats } from "./GradesTab";
 
 interface ClosureTabProps {
@@ -71,16 +72,18 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
   const CORE_PLAN_COURSES: Record<string, Record<string, Array<{ code: string; name: string; type: string; credits: number; status: string; teo: number; pr: number }>>> = {
     "52": {
       "I": [
-        { code: "CO-101", name: "Introducción a la Contabilidad", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "CO-102", name: "Matemática Financiera", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 2, pr: 2 },
-        { code: "CO-103", name: "Documentación Comercial y SUNAT", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "CO-104", name: "Comunicación y Redacción", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
+        { code: "CONT-101", name: "Fundamentos de Contabilidad y Doctrina Contable", type: "Especialidad", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "CONT-102", name: "Documentación Comercial, Mercantil y Bancaria", type: "Especialidad", credits: 4, status: "Matriculado", teo: 2, pr: 4 },
+        { code: "CONT-103", name: "Matemática Financiera y Comercial", type: "General", credits: 3, status: "Matriculado", teo: 2, pr: 2 },
+        { code: "CONT-104", name: "Legislación Comercial y Societaria", type: "General", credits: 3, status: "Matriculado", teo: 2, pr: 2 },
+        { code: "CONT-105", name: "Comunicación y Competencias Digitales", type: "General", credits: 2, status: "Matriculado", teo: 1, pr: 2 }
       ],
       "II": [
-        { code: "CO-201", name: "Contabilidad General Aplicada", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
-        { code: "CO-202", name: "Administración de Archivos Contables", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "CO-203", name: "Sistema de Información Contable I", type: "Obligatorio", credits: 3, status: "Aprobado", teo: 1, pr: 4 },
-        { code: "CO-204", name: "Tributación y Legislación Comercial", type: "Obligatorio", credits: 2, status: "Aprobado", teo: 1, pr: 2 }
+        { code: "CONT-201", name: "Contabilidad General y Plan Contable General Empresarial", type: "Especialidad", credits: 4, status: "Pendiente", teo: 2, pr: 4 },
+        { code: "CONT-202", name: "Títulos Valores y Operaciones Financieras", type: "Especialidad", credits: 4, status: "Pendiente", teo: 2, pr: 4 },
+        { code: "CONT-203", name: "Estadística Aplicada a la Gestión Contable", type: "General", credits: 3, status: "Pendiente", teo: 2, pr: 2 },
+        { code: "CONT-204", name: "Ofimática Aplicada a los Negocios (Excel Contable)", type: "Especialidad", credits: 3, status: "Pendiente", teo: 1, pr: 4 },
+        { code: "CONT-205", name: "Inglés Técnico para Negocios y Finanzas", type: "General", credits: 2, status: "Pendiente", teo: 1, pr: 2 }
       ],
       "III": [
         { code: "CO-301", name: "Contabilidad de Costos Industriales", type: "Obligatorio", credits: 4, status: "Aprobado", teo: 2, pr: 4 },
@@ -155,6 +158,31 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
 
   const studentDni = personalData?.dni || enrollment?.studentDni || "74859612";
   const isMateo = studentDni === "74859612";
+  const [backendCycle2Payment, setBackendCycle2Payment] = useState<any | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const loadPayment = async () => {
+      try {
+        const list = await fetchPayments();
+        if (!active || !Array.isArray(list)) return;
+        const found = list.find(
+          (p: any) =>
+            p.paymentId === `PAY-C2-${studentDni}` ||
+            (p.studentDni === studentDni && typeof p.concept === "string" && p.concept.includes("Ciclo II"))
+        );
+        if (found) {
+          setBackendCycle2Payment(found);
+        }
+      } catch {}
+    };
+    loadPayment();
+    window.addEventListener("focus", loadPayment);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", loadPayment);
+    };
+  }, [studentDni]);
 
   const rawSim = typeof window !== "undefined" ? (
     localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) ||
@@ -207,6 +235,23 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
     ))
   );
   const isPromotedToCycle2 = isCycle1Simulated;
+
+  const isCycle2PaymentSubmitted = Boolean(
+    backendCycle2Payment ||
+    (typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_cycle2_payment_${studentDni}`) === "true" ||
+      (isMateo && localStorage.getItem("sfa_cycle2_payment_74859612") === "true")
+    ))
+  );
+
+  const isCycle2Validated = Boolean(
+    isCycle2Simulated ||
+    (backendCycle2Payment && backendCycle2Payment.status === "APROBADO") ||
+    (typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_cycle2_validated_${studentDni}`) === "true" ||
+      (isMateo && localStorage.getItem("sfa_cycle2_validated_74859612") === "true")
+    ))
+  );
 
   const isGraduatedVI = typeof window !== "undefined" && Boolean(
     !isMateo && enrollment?.academicStatus === "MATRICULADO" && localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) !== "true"
@@ -277,7 +322,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
       }
     } catch {}
 
-    const isApprovedCourse = isGraduatedVI || (targetCycleNum === 1 && ((isMateo && isCycle1Simulated) || (directGrade !== undefined && directGrade >= 12.5)));
+    const isApprovedCourse = isGraduatedVI || (targetCycleNum === 1 && (isCycle1Simulated || (directGrade !== undefined && directGrade >= 12.5)));
     const simGrade = isGraduatedVI
       ? undefined
       : (directGrade !== undefined
@@ -288,12 +333,18 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
             ? (typeof simCourse?.grade === "number" ? simCourse.grade : (isMateo ? (planC.code === "EIND-101" ? 15.6 : 16.0) : undefined))
             : undefined)));
 
+    const cycle2EnrollmentStatus = isCycle2Validated
+      ? "Matriculado"
+      : isCycle2PaymentSubmitted
+        ? "En Validación"
+        : "Pendiente de Pago";
+
     return {
       code: planC.code,
       name: dbCourse?.name || enriched?.name || planC.name,
       type: planC.type,
       credits: dbCourse?.credits || enriched?.credits || planC.credits,
-      status: isApprovedCourse ? "Aprobado" : (targetCycleNum === 2 && isPromotedToCycle2 ? "Matriculado" : (targetCycleNum === 1 ? "Matriculado" : "Pendiente")),
+      status: isApprovedCourse ? "Aprobado" : (targetCycleNum === 2 && isPromotedToCycle2 ? cycle2EnrollmentStatus : (targetCycleNum === 1 ? "Matriculado" : "Pendiente")),
       teo: planC.teo || 2,
       pr: planC.pr || 4,
       simGrade
@@ -311,7 +362,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         simGrade: grade
       };
     }
-    if (targetCycleNum === 1 && ((isMateo && isCycle1Simulated) || c.status === "Aprobado")) {
+    if (targetCycleNum === 1 && (isCycle1Simulated || c.status === "Aprobado")) {
       return {
         ...c,
         status: "Aprobado",
@@ -358,7 +409,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
       }
       return {
         ...c,
-        status: "Matriculado",
+        status: isCycle2Validated ? "Matriculado" : isCycle2PaymentSubmitted ? "En Validación" : "Pendiente de Pago",
         simGrade: undefined
       };
     }
@@ -429,8 +480,27 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
           <span className="text-lg font-black text-[#800521] mt-1 uppercase tracking-tight">
             {isGraduatedVI ? "VI SEMESTRE (EGRESADO)" : isPromotedToCycle2 ? "II SEMESTRE" : "I SEMESTRE"}
           </span>
-          <div className="flex items-center gap-1.5 mt-2 bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded text-[9.5px] font-black w-max">
-            <Award className="w-3 h-3 text-emerald-600" /> {isGraduatedVI ? "APTO TITULACIÓN" : isPromotedToCycle2 ? "MATRICULADO ACTIVO" : "REGULAR"}
+          <div className={`flex items-center gap-1.5 mt-2 px-2 py-0.5 rounded text-[9.5px] font-black w-max ${
+            !isGraduatedVI && isPromotedToCycle2 && !isCycle2Validated
+              ? isCycle2PaymentSubmitted
+                ? "bg-blue-50 text-blue-800"
+                : "bg-amber-50 text-amber-800"
+              : "bg-emerald-50 text-emerald-800"
+          }`}>
+            {!isGraduatedVI && isPromotedToCycle2 && !isCycle2Validated ? (
+              <Clock className={`w-3 h-3 ${isCycle2PaymentSubmitted ? "text-blue-600" : "text-amber-600"}`} />
+            ) : (
+              <Award className="w-3 h-3 text-emerald-600" />
+            )}{" "}
+            {isGraduatedVI
+              ? "APTO TITULACIÓN"
+              : isPromotedToCycle2
+                ? isCycle2Validated
+                  ? "MATRICULADO ACTIVO"
+                  : isCycle2PaymentSubmitted
+                    ? "PAGO EN VALIDACIÓN"
+                    : "PENDIENTE DE PAGO"
+                : "REGULAR"}
           </div>
         </div>
 
@@ -457,10 +527,32 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
         <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-xs flex flex-col justify-between text-left min-h-[110px]">
           <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Estado de Matrícula</span>
           <span className="text-xs font-black text-slate-800 uppercase tracking-wide mt-1">
-            {isGraduatedVI ? "EGRESADO CONCLUIDO" : isPromotedToCycle2 ? "MATRICULADO (CICLO II)" : "MATRICULADO (CICLO I)"}
+            {isGraduatedVI
+              ? "EGRESADO CONCLUIDO"
+              : isPromotedToCycle2
+                ? isCycle2Validated
+                  ? "MATRICULADO (CICLO II)"
+                  : isCycle2PaymentSubmitted
+                    ? "EN VALIDACIÓN (CICLO II)"
+                    : "PENDIENTE DE PAGO (CICLO II)"
+                : "MATRICULADO (CICLO I)"}
           </span>
-          <span className="text-[9px] text-emerald-600 font-bold block mt-1 font-semibold">
-            {isGraduatedVI ? "Apto para Certificados Oficiales" : isPromotedToCycle2 ? "Periodo 2027-II Vigente" : "Periodo 2027-I Vigente"}
+          <span className={`text-[9px] font-bold block mt-1 font-semibold ${
+            !isGraduatedVI && isPromotedToCycle2 && !isCycle2Validated
+              ? isCycle2PaymentSubmitted
+                ? "text-blue-600"
+                : "text-amber-600"
+              : "text-emerald-600"
+          }`}>
+            {isGraduatedVI
+              ? "Apto para Certificados Oficiales"
+              : isPromotedToCycle2
+                ? isCycle2Validated
+                  ? "Periodo 2027-II Vigente"
+                  : isCycle2PaymentSubmitted
+                    ? "Comprobante enviado a Caja"
+                    : "Pago de Matrícula Pendiente (S/ 250.00)"
+                : "Periodo 2027-I Vigente"}
           </span>
         </div>
       </div>
@@ -548,6 +640,22 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 select-none shadow-3xs">
                                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                                   MATRICULADO
+                                </span>
+                              );
+                            }
+                            if (statusUpper.includes("PENDIENTE DE PAGO")) {
+                              return (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200 select-none shadow-3xs">
+                                  <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                  PENDIENTE DE PAGO
+                                </span>
+                              );
+                            }
+                            if (statusUpper.includes("VALIDACIÓN") || statusUpper.includes("VALIDACION")) {
+                              return (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200 select-none shadow-3xs">
+                                  <Clock className="w-3.5 h-3.5 text-blue-600" />
+                                  EN VALIDACIÓN
                                 </span>
                               );
                             }

@@ -222,7 +222,7 @@ export function useApplicantsManager(
   useEffect(() => {
     void reloadApplicants(false);
 
-    // Sincronización silenciosa cuando otra pestaña escribe o al volver a enfocar la ventana
+    // Sincronización silenciosa cuando otra pestaña escribe, al volver a enfocar o cada 4s (listado liviano ~2KB)
     let lastFocusSync = Date.now();
     const handleSync = (e: StorageEvent) => {
       if (e.key && e.key.startsWith("sfa_applicants")) {
@@ -232,16 +232,21 @@ export function useApplicantsManager(
     const handleFocusSync = () => {
       if (document.visibilityState === "hidden") return;
       const now = Date.now();
-      if (now - lastFocusSync < 5000) return;
+      if (now - lastFocusSync < 1000) return;
       lastFocusSync = now;
       void reloadApplicants(true);
     };
+    const pollInterval = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      void reloadApplicants(true);
+    }, 4000);
 
     window.addEventListener("storage", handleSync);
     window.addEventListener("focus", handleFocusSync);
     document.addEventListener("visibilitychange", handleFocusSync);
 
     return () => {
+      window.clearInterval(pollInterval);
       window.removeEventListener("storage", handleSync);
       window.removeEventListener("focus", handleFocusSync);
       document.removeEventListener("visibilitychange", handleFocusSync);

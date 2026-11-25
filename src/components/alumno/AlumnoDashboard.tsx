@@ -661,8 +661,11 @@ export default function AlumnoDashboard({
   // Map student shift and career to find their registered group in MPA
   const studentGroup = useMemo(() => {
     if (enrollment.groupId) {
+      const exact = mpaPlanningData.groups.find(
+        (g: any) => g.id === enrollment.groupId || g.name === enrollment.groupId
+      );
+      if (exact) return exact;
       const found = mpaPlanningData.groups.find((g: any) =>
-        g.id === enrollment.groupId ||
         (enrollment.groupId.includes("ele") && g.id.includes("electronica")) ||
         (enrollment.groupId.includes("con") && g.id.includes("contabilidad")) ||
         (enrollment.groupId.includes("CONT") && g.id.includes("CONT"))
@@ -1623,7 +1626,7 @@ export default function AlumnoDashboard({
         <main className="flex-1 overflow-y-auto h-full p-4 md:p-8 custom-scrollbar bg-[#F8F9FA] w-full">
           <AnimatePresence mode="wait">
             <motion.div
-              key={activeTab + (selectedCourseDetail ? `-${selectedCourseDetail}-${activeCourseComponentId || "comp"}` : "")}
+              key={activeTab === "classes" ? `${activeTab}-${selectedCourseDetail || "list"}-${activeCourseComponentId || "comp"}` : activeTab}
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
@@ -1695,6 +1698,8 @@ export default function AlumnoDashboard({
                   personalData={personalData}
                   onUpdateAssignments={onUpdateAssignments}
                   assignmentsLoading={assignmentsLoading}
+                  cycleStatuses={cycleStatuses}
+                  isGraduated={isGraduated}
                 />
               )}
 

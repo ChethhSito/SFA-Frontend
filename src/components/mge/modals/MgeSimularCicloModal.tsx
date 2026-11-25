@@ -28,7 +28,8 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
 
   if (!isOpen || !student) return null;
 
-  const isContabilidad = student.career?.toLowerCase().includes("contab") || student.dni === "71248596";
+  const careerStr = ((student as any).programId || (student as any).career || (student as any).program || "").toLowerCase();
+  const isContabilidad = careerStr.includes("cont");
   const isMateo = student.dni === "74859612";
   const manualCode = isContabilidad ? "CONT-101" : "EIND-101";
   const manualId = isContabilidad ? "cur_co_101" : "cur_ei_101";

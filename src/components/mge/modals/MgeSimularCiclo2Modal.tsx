@@ -23,7 +23,8 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
 
   if (!isOpen || !student) return null;
 
-  const isContabilidad = student.career?.toLowerCase().includes("contab") || student.dni === "71248596";
+  const careerStr = ((student as any).programId || (student as any).career || (student as any).program || "").toLowerCase();
+  const isContabilidad = careerStr.includes("cont");
 
   // The 5 official courses for Ciclo II
   const ciclo2Courses = isContabilidad ? [

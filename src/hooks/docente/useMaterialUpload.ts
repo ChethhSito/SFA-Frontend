@@ -107,10 +107,18 @@ export function useMaterialUpload() {
     const handleVisibilityChange = () => {
       if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
       if (syncingAssignments.current) return;
-      if (Date.now() - lastRefreshAt < 2000) return;
+      if (Date.now() - lastRefreshAt < 1000) return;
       lastRefreshAt = Date.now();
       void refreshAssignments();
     };
+
+    const pollInterval = typeof window !== "undefined"
+      ? window.setInterval(() => {
+          if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+          if (syncingAssignments.current) return;
+          void refreshAssignments();
+        }, 4000)
+      : undefined;
 
     if (typeof document !== "undefined") {
       document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -120,6 +128,7 @@ export function useMaterialUpload() {
     }
 
     return () => {
+      if (pollInterval !== undefined) window.clearInterval(pollInterval);
       if (channel) channel.close();
       if (typeof document !== "undefined") {
         document.removeEventListener("visibilitychange", handleVisibilityChange);

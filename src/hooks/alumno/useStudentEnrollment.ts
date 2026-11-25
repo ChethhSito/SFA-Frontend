@@ -96,13 +96,18 @@ export function useStudentEnrollment() {
     const handleFocusSync = () => {
       if (document.visibilityState === "hidden") return;
       const now = Date.now();
-      if (now - lastFocusSync < 5000) return;
+      if (now - lastFocusSync < 1000) return;
       lastFocusSync = now;
       void reloadEnrollments(true);
     };
+    const pollInterval = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      void reloadEnrollments(true);
+    }, 4000);
     window.addEventListener("focus", handleFocusSync);
     document.addEventListener("visibilitychange", handleFocusSync);
     return () => {
+      window.clearInterval(pollInterval);
       window.removeEventListener("focus", handleFocusSync);
       document.removeEventListener("visibilitychange", handleFocusSync);
     };

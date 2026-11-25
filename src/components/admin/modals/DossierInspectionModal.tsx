@@ -245,8 +245,8 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto animate-fade-in text-left">
-        <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-6 max-h-[92vh] animate-scale-up">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-hidden animate-fade-in text-left">
+        <div className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col h-[92vh] animate-scale-up">
           {/* Modal Header */}
           <div className="bg-slate-900 px-6 py-4 flex justify-between items-center text-white shrink-0 border-b border-slate-800">
             <div className="flex items-center gap-3">
@@ -280,11 +280,11 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
             </button>
           </div>
 
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left panel: the 4 documents */}
-              <div className="lg:col-span-8 space-y-4">
+          {/* Split Content: izquierda con scroll independiente, derecha fija y ajustada */}
+          <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden bg-slate-50">
+            <div className="grid grid-cols-1 lg:grid-cols-12 lg:h-full">
+              {/* Left panel: the 4 documents (scrollable) */}
+              <div className="lg:col-span-8 lg:h-full lg:overflow-y-auto p-5 space-y-4">
                 <div className="flex justify-between items-center bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs">
                   <h3 className="text-xs font-black text-slate-800 uppercase tracking-wide flex items-center gap-2">
                     <FileText className="w-4 h-4 text-[#9F062A]" /> Requisitos de Admisión Registrados
@@ -551,16 +551,16 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                 </div>
               </div>
 
-              {/* Right panel: Overall Folder Status & Decisions */}
-              <div className="lg:col-span-4 space-y-4">
-                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wide bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-2xs flex items-center gap-2">
+              {/* Right panel: Overall Folder Status & Decisions (fixed, compact, no scroll) */}
+              <div className="lg:col-span-4 lg:h-full lg:overflow-hidden p-5 lg:pl-2 flex flex-col gap-3 border-t lg:border-t-0 lg:border-l border-slate-200/70 bg-slate-50">
+                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wide bg-white px-3.5 py-2.5 rounded-xl border border-slate-200/80 shadow-2xs flex items-center gap-2 shrink-0">
                   <Compass className="w-4 h-4 text-[#9F062A]" /> Estado del Expediente
                 </h3>
 
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-3xs space-y-4">
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-3xs space-y-2.5 flex-1 flex flex-col justify-between min-h-0">
                   {/* Candidate Identity Card */}
-                  <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200/80 rounded-xl">
-                    <div className="w-10 h-10 rounded-full bg-[#9F062A] text-white flex items-center justify-center font-black text-sm shrink-0">
+                  <div className="flex items-center gap-2.5 p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl">
+                    <div className="w-9 h-9 rounded-full bg-[#9F062A] text-white flex items-center justify-center font-black text-xs shrink-0">
                       {app.name.charAt(0)}{app.lastName.charAt(0)}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -592,11 +592,11 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                   </div>
 
                   {/* Read-only Admission fee payment status */}
-                  <div className="space-y-1.5 pt-3 border-t border-slate-100">
+                  <div className="space-y-1 pt-2 border-t border-slate-100">
                     <span className="text-[10px] uppercase text-slate-500 font-extrabold block tracking-wider">
                       Estado del Pago (Tasa S/. 120):
                     </span>
-                    <div className="pt-0.5">
+                    <div>
                       {effectivePaymentStatus === "Validado" ? (
                         <span className="text-xs font-black text-emerald-800 bg-emerald-100/80 border border-emerald-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Pago Validado
@@ -618,17 +618,17 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                           Sin enviar
                         </span>
                       )}
-                      <p className="text-[9.5px] text-slate-400 mt-1.5 italic font-medium leading-relaxed">
+                      <p className="text-[9px] text-slate-400 mt-1 italic font-medium leading-snug">
                         * Solo lectura. La validación de tasas se gestiona exclusivamente por la división de Caja & Tesorería.
                       </p>
                     </div>
                   </div>
 
-                  <div className="space-y-1.5 pt-3 border-t border-slate-100">
+                  <div className="space-y-1 pt-2 border-t border-slate-100">
                     <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">
                       Período de Admisión Asociado:
                     </label>
-                    <div className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black text-slate-800 font-sans flex items-center gap-2">
+                    <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-black text-slate-800 font-sans flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#9F062A]"></span>
                       <span className="truncate">
                         {sanitizePeriodName(
@@ -638,11 +638,11 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="space-y-1.5 pt-3 border-t border-slate-100">
+                  <div className="space-y-1 pt-2 border-t border-slate-100">
                     <span className="text-[10px] uppercase text-slate-500 font-extrabold block tracking-wider">
                       Estado de Carpeta Registrado:
                     </span>
-                    <div className="pt-0.5">
+                    <div>
                       {effectiveFolderStatus === "Enrolled" ? (
                         <span className="text-xs font-black text-emerald-800 bg-emerald-100/80 border border-emerald-200 px-3 py-1 rounded-full inline-flex items-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Aprobada (Matriculado)
@@ -672,13 +672,13 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                     </div>
                   )}
 
-                  <div className="space-y-1.5 pt-3 border-t border-slate-100">
+                  <div className="space-y-1 pt-2 border-t border-slate-100">
                     <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">
                       Observación Global:
                     </label>
                     <textarea
-                      placeholder="Ingrese observaciones de carpeta generales (Requerido solo si va a marcar la carpeta como OBSERVADO)."
-                      rows={3}
+                      placeholder="Ingrese observaciones generales (Requerido solo si marca OBSERVADO)."
+                      rows={2}
                       value={folderObservationInput[app.dni] || ""}
                       onChange={(e) =>
                         setFolderObservationInput({
@@ -686,11 +686,11 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                           [app.dni]: e.target.value,
                         })
                       }
-                      className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] focus:bg-white shadow-3xs"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-[#9F062A] focus:bg-white shadow-3xs resize-none"
                     />
                   </div>
 
-                  <div className="space-y-2.5 pt-3 border-t border-slate-100">
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
                     <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider block">
                       Control de Carpeta (Carpeta Completa):
                     </span>

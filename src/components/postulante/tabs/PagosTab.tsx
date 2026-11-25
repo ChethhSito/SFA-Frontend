@@ -181,13 +181,49 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
 
             {/* Operational Status Display and Form Submission */}
             {effectivePaymentStatus === "Validado" ? (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-slate-750 text-xs text-left font-semibold space-y-2">
-                <p className="text-emerald-800 font-bold uppercase text-[11px] tracking-wide leading-none flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-emerald-600 stroke-[3]" /> Pago Validado con Éxito
-                </p>
-                <p className="text-slate-700 font-medium text-[11px] leading-relaxed">
-                  Su pago de derecho de admisión por S/. 120.00 ha sido aprobado de manera oficial por Tesorería. ¡Puede continuar con su expediente y asignación de aula de examen!
-                </p>
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-slate-750 text-xs text-left font-semibold space-y-3">
+                <div className="space-y-1.5">
+                  <p className="text-emerald-800 font-bold uppercase text-[11px] tracking-wide leading-none flex items-center gap-1.5">
+                    <Check className="w-4 h-4 text-emerald-600 stroke-[3]" /> Pago Validado con Éxito
+                  </p>
+                  <p className="text-slate-700 font-medium text-[11px] leading-relaxed">
+                    Su pago de derecho de admisión por S/. 120.00 ha sido aprobado de manera oficial por Tesorería. ¡Puede continuar con su expediente y asignación de aula de examen!
+                  </p>
+                </div>
+                {storedVoucherUrl ? (
+                  <div className="pt-2.5 border-t border-emerald-200/80 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[11px] text-emerald-950">
+                        Comprobante validado: <span className="font-mono font-black text-slate-900">{applicant.paymentVoucherFileName || applicant.paymentOperation || "voucher.jpg"}</span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => triggerPreview("Voucher Validado", applicant.paymentVoucherFileName || applicant.paymentOperation || "voucher.jpg", "image", {
+                          fileDataUrl: storedVoucherUrl,
+                          isVoucher: true
+                        })}
+                        className="text-emerald-800 hover:underline text-[10px] font-bold cursor-pointer uppercase tracking-wider shrink-0"
+                      >
+                        Ver Comprobante
+                      </button>
+                    </div>
+                    <div className="p-2 bg-white rounded-lg border border-emerald-200 inline-block shadow-2xs">
+                      <img
+                        src={storedVoucherUrl}
+                        alt="Voucher validado"
+                        className="max-h-32 max-w-[240px] object-contain rounded-md border border-slate-100 cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => triggerPreview("Voucher Validado", applicant.paymentVoucherFileName || applicant.paymentOperation || "voucher.jpg", "image", {
+                          fileDataUrl: storedVoucherUrl,
+                          isVoucher: true
+                        })}
+                      />
+                    </div>
+                  </div>
+                ) : applicant.paymentOperation ? (
+                  <p className="text-[11px] text-emerald-900 pt-2 border-t border-emerald-200/80">
+                    N° de operación validado: <span className="font-mono font-bold text-slate-900">{applicant.paymentOperation}</span>
+                  </p>
+                ) : null}
               </div>
             ) : (effectivePaymentStatus === "Pendiente" && !isEditingPayment) ? (
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-slate-700 text-xs text-left font-semibold space-y-3">
@@ -513,20 +549,33 @@ export const PagosTab: React.FC<PagosTabProps> = React.memo(({
                   </td>
                   <td className="p-3.5 pr-5">
                     {effectivePaymentStatus === "Validado" ? (
-                      <span 
-                        onClick={() => triggerPreview("Recibo de Examen de Admisión", applicant.paymentOperation || "Sin operación registrada", "receipt", { 
-                          amount: "S/. 120.00", 
-                          concept: `Derecho de Examen Ordinario ${periodLabel || periodYear}`, 
-                          date: paymentDate, 
-                          transactionId: applicant.paymentOperation || "Sin operación registrada",
-                          dni: applicant.dni,
-                          studentName: applicant.name,
-                          studentLastName: applicant.lastName
-                        })}
-                        className="text-[#8B0020] hover:underline font-extrabold cursor-pointer"
-                      >
-                        Ver Recibo
-                      </span>
+                      storedVoucherUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => triggerPreview("Voucher Validado", applicant.paymentVoucherFileName || applicant.paymentOperation || "voucher.jpg", "image", {
+                            fileDataUrl: storedVoucherUrl,
+                            isVoucher: true
+                          })}
+                          className="text-[#8B0020] hover:underline font-extrabold cursor-pointer"
+                        >
+                          Ver Voucher
+                        </button>
+                      ) : (
+                        <span
+                          onClick={() => triggerPreview("Recibo de Examen de Admisión", applicant.paymentOperation || "Sin operación registrada", "receipt", {
+                            amount: "S/. 120.00",
+                            concept: `Derecho de Examen Ordinario ${periodLabel || periodYear}`,
+                            date: paymentDate,
+                            transactionId: applicant.paymentOperation || "Sin operación registrada",
+                            dni: applicant.dni,
+                            studentName: applicant.name,
+                            studentLastName: applicant.lastName
+                          })}
+                          className="text-[#8B0020] hover:underline font-extrabold cursor-pointer"
+                        >
+                          Ver Recibo
+                        </span>
+                      )
                     ) : effectivePaymentStatus === "Observado" ? (
                       <span className="text-red-700 font-bold">Observado</span>
                     ) : effectivePaymentStatus === "Pendiente" ? (

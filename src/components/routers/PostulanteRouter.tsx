@@ -55,7 +55,6 @@ export default function PostulanteRouter({
             const apiEnr = await fetchEnrollmentByDni(realDni);
             if (!cancelled && apiEnr) {
               setLiveEnrollment(apiEnr);
-              onUpdateEnrollment(apiEnr);
             }
           }
         }
@@ -303,7 +302,10 @@ export default function PostulanteRouter({
       applicant={applicantToRender}
       enrollments={effectiveEnrollments}
       onUpdateApplicant={handleUpdateLiveApplicant}
-      onUpdateEnrollment={onUpdateEnrollment}
+      onUpdateEnrollment={(updatedEnr) => {
+        setLiveEnrollment(updatedEnr);
+        onUpdateEnrollment(updatedEnr);
+      }}
       onLogout={onLogout}
       onGoToPortal={onGoToPortal}
       onSwitchRole={onSwitchRole}
