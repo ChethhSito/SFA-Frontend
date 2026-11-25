@@ -284,8 +284,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
     enrollment?.programId === "electricidad_industrial" ||
     enrollment?.programId === "electricidad" ||
     currentProgram?.name?.toLowerCase().includes("electricidad")) &&
-    enrollment?.programId !== "contabilidad" &&
-    studentDni !== "71248596";
+    enrollment?.programId !== "contabilidad";
   const activePlanKey = isElectricidad ? "20" : "52";
   const activeSemesterKey = selectedQueryCycle || "I";
   const cycleMap: Record<string, number> = { "I": 1, "II": 2, "III": 3, "IV": 4, "V": 5, "VI": 6 };
@@ -853,7 +852,7 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({
                     studentName: personalData.name,
                     studentLastName: personalData.lastName,
                     dni: personalData.dni,
-                    studentCode: personalData?.dni ? `202710001` : "202710001",
+                    studentCode: personalData?.dni === "74859612" ? "202710001" : `2027-${(personalData?.dni || "0001").slice(-4)}`,
                     programName: currentProgram?.name || "Electricidad Industrial",
                     period: isPromotedToCycle2 && selectedQueryCycle === "II" ? "2027-II" : "2027-I",
                     cycle: selectedQueryCycle === "II" ? "Ciclo II" : "Ciclo I",

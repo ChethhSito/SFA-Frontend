@@ -54,7 +54,7 @@ export const MatriculaConfirmationModal: React.FC<MatriculaConfirmationModalProp
   if (!isOpen) return null;
 
   const studentFullName = `${applicant.name} ${applicant.lastName}`.trim();
-  const studentCode = applicant.applicantCode || `202710001`;
+  const studentCode = applicant.applicantCode || `2027-${(applicant.dni || "0001").slice(-4)}`;
   const assignedShift = enrollment?.shift || "Mañana";
 
   const handlePrintSheet = () => {

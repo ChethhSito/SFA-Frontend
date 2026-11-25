@@ -21,7 +21,7 @@ export const PracticasPreprofesionalesTab: React.FC<PracticasPreprofesionalesTab
 }) => {
   const currentDni = enrollment?.studentDni || personalData?.dni || studentDni;
   const isMateo = currentDni === "74859612";
-  const isContabilidad = enrollment?.programId === "contabilidad" || currentDni === "71248596";
+  const isContabilidad = enrollment?.programId === "contabilidad";
   const [, setSync] = useState(0);
 
   const savedEfsrt = (() => {

@@ -43,7 +43,7 @@ export const BoletaNotasModal: React.FC<BoletaNotasModalProps> = ({
     }
   });
 
-  const isContabilidad = careerName?.toLowerCase().includes("contab") || studentDni === "71248596";
+  const isContabilidad = careerName?.toLowerCase().includes("contab");
   const pfx = isContabilidad ? "CONT" : "EIND";
 
   const formattedCourses = filteredCourses.map((c, i) => {

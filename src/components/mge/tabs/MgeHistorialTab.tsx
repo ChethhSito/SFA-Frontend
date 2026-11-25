@@ -369,7 +369,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
           });
         }
       } else if (isC2Done) {
-        const isContab = Boolean(student?.career?.toLowerCase().includes("contab") || student?.dni === "71248596");
+        const isContab = ((student as any)?.programId || (student as any)?.career || "").toLowerCase().includes("contab");
         const c2Fallback = isContab ? [
           { code: "CONT-201", courseName: "Contabilidad General y Plan Contable General Empresarial", credits: 4, count: 1, grade: 16.6, cycle: 2 },
           { code: "CONT-202", courseName: "Títulos Valores y Operaciones Financieras", credits: 4, count: 1, grade: 17.0, cycle: 2 },
@@ -398,7 +398,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
       }));
     }
 
-    const isContabDefault = Boolean(student?.career?.toLowerCase().includes("contab") || student?.dni === "71248596");
+    const isContabDefault = ((student as any)?.programId || (student as any)?.career || "").toLowerCase().includes("contab");
     return isContabDefault ? [
       { code: "CONT-101", courseName: "Fundamentos de Contabilidad y Doctrina Contable", credits: 4, count: 0, grade: null, cycle: 1 },
       { code: "CONT-102", courseName: "Documentación Comercial, Mercantil y Bancaria", credits: 4, count: 0, grade: null, cycle: 1 },

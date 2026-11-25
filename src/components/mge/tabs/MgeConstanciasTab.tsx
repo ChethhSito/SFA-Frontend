@@ -493,7 +493,7 @@ function Application({
                   DNI: {record.studentDni}
                 </span>
                 <span className="bg-white/10 text-slate-300 text-[10px] font-mono px-2 py-0.5 rounded">
-                  Cód: 202710001
+                  Cód: {record.studentDni === "74859612" ? "202710001" : `2027-${record.studentDni.slice(-4)}`}
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-1 flex items-center gap-2 flex-wrap">
