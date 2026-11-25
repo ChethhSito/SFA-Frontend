@@ -32,13 +32,13 @@ export const DocumentosTab: React.FC<DocumentosTabProps> = React.memo(({
   triggerPreview,
 }) => {
   const { label: periodLabel, year: periodYear, period: admissionPeriod } = useApplicantPeriod();
-  // Helper to get doc: si NO tiene archivo de imagen real, figura estrictamente como No Enviado
+  // Helper to get doc: mantiene el estado real del expediente sin resetearlo falsamente a No Enviado
   const getDoc = (key: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile") => {
     const rawDoc = applicant.docs?.[key];
     const cachedUrl = rawDoc?.fileDataUrl || (applicant.dni ? localStorage.getItem(`sfa_file_data_${applicant.dni}_${key}`) : null) || undefined;
     
-    // Si no hay imagen física (cachedUrl), el documento figura como NO ENVIADO (no hay registro)
-    if (!cachedUrl) {
+    // Si no tiene nombre de archivo ni estado válido enviado
+    if (!rawDoc?.fileName && (!rawDoc?.status || rawDoc.status === "No Enviado") && !cachedUrl) {
       return {
         status: "No Enviado" as const,
         fileName: undefined,
@@ -50,7 +50,7 @@ export const DocumentosTab: React.FC<DocumentosTabProps> = React.memo(({
     return {
       status: (rawDoc?.status && rawDoc.status !== "No Enviado") ? rawDoc.status : ("Pendiente" as const),
       fileName: rawDoc?.fileName || `${key}.png`,
-      fileDataUrl: cachedUrl,
+      fileDataUrl: cachedUrl || rawDoc?.fileDataUrl,
       observations: rawDoc?.observations
     };
   };

@@ -334,26 +334,26 @@ function PostulanteDashboardInner({
         paymentVoucherUrl: storedVoucher || applicant.paymentVoucherUrl
       };
 
-  // Compress image helper
+  // Compress image helper (optimizado para carga rápida y almacenamiento sin bloqueos)
   const compressAndResizeImage = (file: File, callback: (resizedDataUrl: string) => void) => {
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const MAX_WIDTH = 1000;
-        const MAX_HEIGHT = 1000;
+        const MAX_WIDTH = 640;
+        const MAX_HEIGHT = 640;
         let width = img.width;
         let height = img.height;
 
         if (width > height) {
           if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
+            height = Math.round((height * MAX_WIDTH) / width);
             width = MAX_WIDTH;
           }
         } else {
           if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
+            width = Math.round((width * MAX_HEIGHT) / height);
             height = MAX_HEIGHT;
           }
         }
@@ -365,7 +365,7 @@ function PostulanteDashboardInner({
           ctx.fillStyle = "#FFFFFF";
           ctx.fillRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.58);
           callback(dataUrl);
         } else {
           callback(event.target?.result as string);
