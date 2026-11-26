@@ -255,7 +255,7 @@ export function ScheduleTab({ personalData, currentProgram, studentTasks = [], m
 
   const studentDni = personalData?.dni || "74859612";
   const isMateo = studentDni === "74859612";
-  const isContabilidad = studentDni === "71248596" || currentProgram?.id === "contabilidad" || currentProgram?.name?.toLowerCase().includes("contab");
+  const isContabilidad = currentProgram?.id === "contabilidad" || currentProgram?.name?.toLowerCase().includes("contab");
 
   const isCycle2 = typeof window !== "undefined" && Boolean(
     !isMateo && localStorage.getItem(`sfa_student_promoted_cycle2_${studentDni}`) !== "true" && localStorage.getItem(`sfa_student_cycle_${studentDni}`) !== "2"

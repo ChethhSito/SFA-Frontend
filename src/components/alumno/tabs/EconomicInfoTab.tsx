@@ -127,8 +127,8 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
     : "Contabilidad";
 
   const studentFullName = personalData
-    ? `${personalData.lastName || ""}, ${personalData.name || ""}`.trim() || "Quispe Rojas, Mateo Sebastián"
-    : "Quispe Rojas, Mateo Sebastián";
+    ? `${personalData.lastName || ""}, ${personalData.name || ""}`.trim() || `Estudiante ${studentDni}`
+    : `Estudiante ${studentDni}`;
 
   const currentDebt = isPromotedCycle2 && !isCycle2Paid ? 250.00 : 0.00;
 
@@ -489,7 +489,7 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                             period: "2028-I",
                             op: "OP-2028-01-BCO-38291",
                             date: "14/03/2028",
-                            studentName: personalData?.name ? `${personalData.lastName}, ${personalData.name}` : "QUISPE ROJAS, MATEO SEBASTIÁN",
+                            studentName: personalData?.name ? `${personalData.lastName}, ${personalData.name}` : `ESTUDIANTE ${studentDni}`,
                             dni: currentDni
                           }),
                           fileName: "Voucher_Matricula_2028_I.png"
@@ -547,7 +547,7 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                             period: "2028-II",
                             op: "OP-2028-02-BCO-47209",
                             date: "18/08/2028",
-                            studentName: personalData?.name ? `${personalData.lastName}, ${personalData.name}` : "QUISPE ROJAS, MATEO SEBASTIÁN",
+                            studentName: personalData?.name ? `${personalData.lastName}, ${personalData.name}` : `ESTUDIANTE ${studentDni}`,
                             dni: currentDni
                           }),
                           fileName: "Voucher_Matricula_2028_II.png"
@@ -605,7 +605,7 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                             period: "2029-I",
                             op: "OP-2029-01-BCO-59182",
                             date: "16/03/2029",
-                            studentName: personalData?.name ? `${personalData.lastName}, ${personalData.name}` : "QUISPE ROJAS, MATEO SEBASTIÁN",
+                            studentName: personalData?.name ? `${personalData.lastName}, ${personalData.name}` : `ESTUDIANTE ${studentDni}`,
                             dni: currentDni
                           }),
                           fileName: "Voucher_Matricula_2029_I.png"
@@ -663,7 +663,7 @@ export const EconomicInfoTab: React.FC<EconomicInfoTabProps> = ({
                             period: "2029-II",
                             op: "OP-2029-02-BCO-68403",
                             date: "17/08/2029",
-                            studentName: personalData?.name ? `${personalData.lastName}, ${personalData.name}` : "QUISPE ROJAS, MATEO SEBASTIÁN",
+                            studentName: personalData?.name ? `${personalData.lastName}, ${personalData.name}` : `ESTUDIANTE ${studentDni}`,
                             dni: currentDni
                           }),
                           fileName: "Voucher_Matricula_2029_II.png"

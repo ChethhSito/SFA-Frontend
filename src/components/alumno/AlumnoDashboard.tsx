@@ -655,7 +655,7 @@ export default function AlumnoDashboard({
     }
   ], []);
 
-  const isContabilidad = enrollment.programId === "contabilidad" || studentDni === "71248596" || currentProgram?.name?.toLowerCase().includes("contab");
+  const isContabilidad = enrollment.programId === "contabilidad" || currentProgram?.name?.toLowerCase().includes("contab");
   const isElectricidad = !isContabilidad && (studentDni === "74859612" || enrollment.programId === "electronica" || enrollment.programId === "electricidad_industrial" || currentProgram?.name?.toLowerCase().includes("electricidad"));
 
   // Map student shift and career to find their registered group in MPA
@@ -1780,7 +1780,7 @@ export default function AlumnoDashboard({
                   cycleStatuses={cycleStatuses}
                   studentInfo={{
                     dni: studentDni,
-                    name: personalData ? `${personalData.name} ${personalData.lastName}` : "Mateo Sebastián Quispe Rojas",
+                    name: personalData ? `${personalData.name} ${personalData.lastName}` : `Estudiante ${studentDni}`,
                     career: currentProgram?.name || "Electricidad Industrial"
                   }}
                 />

@@ -61,7 +61,7 @@ export function CierreCurso({
   
   const isContabilidadCourse = course.code?.startsWith("CONT") || course.id?.includes("cont");
   // Simulation Form State
-  const [simTargetDni, setSimTargetDni] = useState(isContabilidadCourse ? "71248596" : "74859612");
+  const [simTargetDni, setSimTargetDni] = useState(students[0]?.dni || "");
   const [simNpa, setSimNpa] = useState<number>(16);
   const [simPc1, setSimPc1] = useState<number>(16);
   const [simPc2, setSimPc2] = useState<number>(17);
@@ -71,10 +71,13 @@ export function CierreCurso({
 
   const [localSimGrades, setLocalSimGrades] = useState<Record<string, Record<string, number>>>(() => {
     try {
-      const cCode = course.code || course.id || (isContabilidadCourse ? "CONT-101" : "EIND-201");
-      const target = isContabilidadCourse ? "71248596" : "74859612";
-      const raw = localStorage.getItem(`sfa_grades_${cCode}_${target}`) || (target === "74859612" ? localStorage.getItem("sfa_grades_EIND-201_74859612") : null);
-      return raw ? { [target]: JSON.parse(raw) } : {};
+      const cCode = course.code || course.id || "";
+      const map: Record<string, Record<string, number>> = {};
+      students.forEach((st) => {
+        const raw = localStorage.getItem(`sfa_grades_${cCode}_${st.dni}`);
+        if (raw) map[st.dni] = JSON.parse(raw);
+      });
+      return map;
     } catch {
       return {};
     }
@@ -188,28 +191,6 @@ export function CierreCurso({
         email: r.email,
         phone: r.phone
       } as StudentPersonalData));
-    }
-    // Guarantee student is included in effective roster depending on course career
-    if (isContabilidadCourse) {
-      if (!list.some((s) => s.dni === "71248596")) {
-        list.unshift({
-          dni: "71248596",
-          name: "Valeria Nicole",
-          lastName: "Ramos Mendoza",
-          email: "valeria.ramos@iestpsfa.edu.pe",
-          phone: "987112233"
-        } as StudentPersonalData);
-      }
-    } else {
-      if (!list.some((s) => s.dni === "74859612")) {
-        list.unshift({
-          dni: "74859612",
-          name: "Mateo Sebastián",
-          lastName: "Quispe Rojas",
-          email: "mateo.quispe@iestpsfa.edu.pe",
-          phone: "987654321"
-        } as StudentPersonalData);
-      }
     }
     return list;
   }, [students]);
@@ -522,7 +503,7 @@ export function CierreCurso({
       }));
 
       setShowSimulateModal(false);
-      notify(`Calificaciones registradas con éxito para Mateo Quispe Rojas. Promedio Final calculado: ${simCalculatedFinal.toFixed(1)} (APROBADO).`, "success");
+      notify(`Calificaciones registradas con éxito para ${targetFullName}. Promedio Final calculado: ${simCalculatedFinal.toFixed(1)} (${simCalculatedFinal >= 12.5 ? "APROBADO" : "DESAPROBADO"}).`, "success");
     } catch (err) {
       console.error("Error saving simulation grades:", err);
       notify("Ocurrió un error al registrar las calificaciones.", "error");

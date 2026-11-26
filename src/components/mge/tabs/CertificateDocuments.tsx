@@ -35,7 +35,7 @@ interface CertificateDocumentsProps {
 export default function CertificateDocuments({
   dni,
   ready,
-  studentName = "Mateo Sebastián Quispe Rojas",
+  studentName = "Estudiante",
   program = "Electricidad Industrial",
   record,
   extra,

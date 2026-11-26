@@ -112,7 +112,7 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
 
     try {
       const studentDni = student.dni || "74859612";
-      const studentName = `${student.name || "Mateo Sebastián"} ${student.lastName || "Quispe Rojas"}`;
+      const studentName = `${student.name || ""} ${student.lastName || ""}`.trim() || `Estudiante ${studentDni}`;
 
       // 1. Simulation payload for Ciclo II
       const simulationData = {

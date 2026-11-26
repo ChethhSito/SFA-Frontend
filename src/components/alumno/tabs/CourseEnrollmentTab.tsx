@@ -246,12 +246,10 @@ export default function CourseEnrollmentTab({
   const cycleNum = isGraduated ? 6 : isPromotedCycle2 ? 2 : (studentGroup?.cycle || 1);
   const period = data.periods.find((item) => item.id === studentGroup?.periodId);
   const periodLabel = isPromotedCycle2 ? "2027-II" : (period?.name || "2027-I");
-  const studentCode = personalData?.dni === "71248596"
-    ? "202710002"
-    : (enrollment as any)?.studentCode || (personalData as any)?.studentCode || (personalData?.dni === "74859612" ? "202710001" : `20271000${personalData?.dni ? personalData.dni.slice(-1) : "1"}`);
+  const studentCode = (enrollment as any)?.studentCode || (personalData as any)?.studentCode || `2027-${(personalData?.dni || currentStudentDni || "0001").slice(-4)}`;
   const studentFullName = personalData
-    ? `${personalData.lastName || ''}, ${personalData.name || ''}`.trim() || "Quispe Rojas, Mateo Sebastián"
-    : "Quispe Rojas, Mateo Sebastián";
+    ? `${personalData.lastName || ''}, ${personalData.name || ''}`.trim() || `Estudiante ${currentStudentDni}`
+    : `Estudiante ${currentStudentDni}`;
   const programName = currentProgram?.name || (enrollment.programId === "electronica" ? "Electricidad Industrial" : "Contabilidad");
 
   const handleSubmitPayment = (e: React.FormEvent) => {
@@ -471,8 +469,8 @@ export default function CourseEnrollmentTab({
       return;
     }
     await generateMatriculaPdf({
-      studentName: personalData?.name || "Mateo Sebastián",
-      studentLastName: personalData?.lastName || "Quispe Rojas",
+      studentName: personalData?.name || "Estudiante",
+      studentLastName: personalData?.lastName || "",
       dni: enrollment.studentDni || personalData?.dni || "74859612",
       studentCode,
       programName,

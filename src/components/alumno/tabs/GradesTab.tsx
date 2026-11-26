@@ -1347,7 +1347,7 @@ export const GradesTab: React.FC<GradesTabProps> = ({
         isOpen={showBoletaModal}
         onClose={() => setShowBoletaModal(false)}
         studentDni={studentInfo?.dni || "74859612"}
-        studentName={studentInfo?.name || "Mateo Sebastián Quispe Rojas"}
+        studentName={studentInfo?.name || `Estudiante ${studentDni}`}
         careerName={studentInfo?.career || "Electricidad Industrial"}
         cycleNumber={selectedSemester === "2027-I" ? 1 : 2}
         courses={semesterCourses.map((c) => {

@@ -487,7 +487,7 @@ function Application({
             <div>
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h3 className="font-extrabold text-lg text-white">
-                  {student ? `${student.lastName}, ${student.name}` : record.studentDni === "74859612" ? "Quispe Rojas, Mateo Sebastián" : "Estudiante"}
+                  {student ? `${student.lastName}, ${student.name}` : `Estudiante DNI ${record.studentDni}`}
                 </h3>
                 <span className="bg-amber-400 text-slate-950 font-black text-[10px] uppercase font-mono px-2 py-0.5 rounded">
                   DNI: {record.studentDni}
@@ -1079,7 +1079,7 @@ function Application({
                   <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2.5">
                     <div className="flex justify-between border-b border-slate-100 pb-2">
                       <span className="text-slate-500 font-bold uppercase text-[10px]">Administrado Solicitante:</span>
-                      <strong className="text-slate-900">{student ? `${student.name} ${student.lastName}` : "Quispe Rojas, Mateo Sebastián"}</strong>
+                      <strong className="text-slate-900">{student ? `${student.name} ${student.lastName}` : `Estudiante DNI ${record.studentDni}`}</strong>
                     </div>
                     <div className="flex justify-between border-b border-slate-100 pb-2">
                       <span className="text-slate-500 font-bold uppercase text-[10px]">Documento de Identidad:</span>
@@ -1160,7 +1160,7 @@ function Application({
                 <div className="bg-slate-100 px-6 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs font-mono shrink-0">
                   <div>
                     <span className="text-slate-500 block text-[10px] uppercase font-bold">Estudiante Egresado</span>
-                    <strong className="text-slate-900 text-sm font-sans">{student ? `${student.name} ${student.lastName}` : "Quispe Rojas, Mateo Sebastián"}</strong>
+                    <strong className="text-slate-900 text-sm font-sans">{student ? `${student.name} ${student.lastName}` : `Estudiante DNI ${record.studentDni}`}</strong>
                   </div>
                   <div>
                     <span className="text-slate-500 block text-[10px] uppercase font-bold">Créditos Acumulados</span>
