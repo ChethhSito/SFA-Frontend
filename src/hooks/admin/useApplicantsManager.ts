@@ -253,10 +253,21 @@ export function useApplicantsManager(
       lastFocusSync = now;
       void reloadApplicants(true);
     };
+    const hasRelevantSession = () => {
+      try {
+        return Boolean(
+          localStorage.getItem("sfa_session_admin") ||
+          localStorage.getItem("sfa_session_mge") ||
+          localStorage.getItem("sfa_session_superadmin")
+        );
+      } catch {
+        return false;
+      }
+    };
     const pollInterval = window.setInterval(() => {
-      if (document.visibilityState !== "visible") return;
+      if (document.visibilityState !== "visible" || !hasRelevantSession()) return;
       void reloadApplicants(true);
-    }, 4000);
+    }, 5000);
 
     window.addEventListener("storage", handleSync);
     window.addEventListener("focus", handleFocusSync);

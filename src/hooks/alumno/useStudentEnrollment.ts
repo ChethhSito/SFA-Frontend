@@ -106,10 +106,22 @@ export function useStudentEnrollment() {
       lastFocusSync = now;
       void reloadEnrollments(true);
     };
+    const hasRelevantSession = () => {
+      try {
+        return Boolean(
+          localStorage.getItem("sfa_session_admin") ||
+          localStorage.getItem("sfa_session_mge") ||
+          localStorage.getItem("sfa_session_alumno") ||
+          localStorage.getItem("sfa_session_superadmin")
+        );
+      } catch {
+        return false;
+      }
+    };
     const pollInterval = window.setInterval(() => {
-      if (document.visibilityState !== "visible") return;
+      if (document.visibilityState !== "visible" || !hasRelevantSession()) return;
       void reloadEnrollments(true);
-    }, 4000);
+    }, 5000);
     window.addEventListener("focus", handleFocusSync);
     document.addEventListener("visibilitychange", handleFocusSync);
     return () => {

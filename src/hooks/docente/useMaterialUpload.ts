@@ -116,12 +116,24 @@ export function useMaterialUpload() {
       void refreshAssignments();
     };
 
+    const hasRelevantSession = () => {
+      try {
+        return Boolean(
+          localStorage.getItem("sfa_session_docente") ||
+          localStorage.getItem("sfa_session_alumno") ||
+          localStorage.getItem("sfa_session_mge")
+        );
+      } catch {
+        return false;
+      }
+    };
+
     const pollInterval = typeof window !== "undefined"
       ? window.setInterval(() => {
           if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
-          if (syncingAssignments.current || Date.now() - lastAssignmentWriteRef.current < 5000) return;
+          if (!hasRelevantSession() || syncingAssignments.current || Date.now() - lastAssignmentWriteRef.current < 5000) return;
           void refreshAssignments();
-        }, 4000)
+        }, 5000)
       : undefined;
 
     if (typeof document !== "undefined") {
