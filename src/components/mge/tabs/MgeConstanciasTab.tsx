@@ -615,7 +615,11 @@ function Application({
                 <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
                   <div className="bg-emerald-600 h-1.5 rounded-full" style={{ width: "100%" }}></div>
                 </div>
-                <span className="text-[9.5px] font-bold text-emerald-700 mt-1 block">137% del mínimo legal cumplido</span>
+                <span className={`text-[9.5px] font-bold mt-1 block ${(efsrtData?.hours || 0) >= 350 ? "text-emerald-700" : "text-amber-700"}`}>
+                  {(efsrtData?.hours || 0) > 0
+                    ? `${Math.round(((efsrtData?.hours || 0) / 350) * 100)}% del mínimo legal cumplido`
+                    : "Pendiente de registro por el estudiante"}
+                </span>
               </div>
 
               <div className="bg-white p-3.5 rounded-xl border border-slate-200">

@@ -257,7 +257,7 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
               </span>
             </div>
             <div className="text-[11px] text-slate-600 font-medium flex items-center gap-3">
-              <span>Carrera: <b className="text-slate-800">{student.programId.toUpperCase()}</b></span>
+              <span>Carrera: <b className="text-slate-800">{isContabilidad ? "CONTABILIDAD" : "ELECTRICIDAD INDUSTRIAL"}</b></span>
               <span>•</span>
               <span>Ciclo Actual: <b className="text-slate-800">Ciclo I</b></span>
               <span>•</span>

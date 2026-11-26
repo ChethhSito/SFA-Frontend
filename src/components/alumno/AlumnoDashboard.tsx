@@ -1807,6 +1807,7 @@ export default function AlumnoDashboard({
                 <ProceduresTab
                   studentDni={studentDni}
                   period={isGraduated ? "Periodo 2029-II (Egresado)" : isPromotedCycle2 ? "Periodo 2027-II" : "Periodo 2027-I"}
+                  isGraduatedFromBackend={isGraduated}
                 />
               )}
               {activeTab === "guias" && <GuidesLibrary audience="student" />}

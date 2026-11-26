@@ -279,7 +279,7 @@ export const MgeAcreditarPlanCompletoModal: React.FC<Props> = ({
     });
   });
 
-  const handleExecuteConsolidation = () => {
+  const handleExecuteConsolidation = async () => {
     setIsProcessing(true);
     try {
       // 1. Activar estado de promoción total y egreso (incluso si no se simuló Ciclo I ni II previamente)
@@ -364,18 +364,18 @@ export const MgeAcreditarPlanCompletoModal: React.FC<Props> = ({
             })),
           };
         });
-        void updateStudentCycleStatuses(studentDni, allCycleEntries);
-      } catch {}
+        await updateStudentCycleStatuses(studentDni, allCycleEntries);
+      } catch (err) {
+        console.error("Error persistiendo 6 ciclos en MongoDB:", err);
+      }
 
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("storage"));
       }
 
-      setTimeout(() => {
-        setIsProcessing(false);
-        onConfirm();
-        onClose();
-      }, 500);
+      setIsProcessing(false);
+      onConfirm();
+      onClose();
     } catch (err) {
       console.error("Error al consolidar plan completo:", err);
       setIsProcessing(false);

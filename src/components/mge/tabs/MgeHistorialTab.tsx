@@ -274,9 +274,30 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
     if (isStudentPromoted) {
       const isElec = !student?.programId || student.programId === "electronica" || student.programId.toLowerCase().includes("elec");
       const baseCurriculum = isElec ? ACCREDITED_CURRICULUM_ELECTRICIDAD : ACCREDITED_CURRICULUM_CONTABILIDAD;
+      const realGradesByCode: Record<string, number> = {};
+      try {
+        const backendCycles = Array.isArray((student as any)?.cycleStatuses) ? (student as any).cycleStatuses : [];
+        backendCycles.forEach((cyc: any) => {
+          (cyc.courses || []).forEach((sc: any) => {
+            const codePart = sc?.code || (typeof sc?.name === "string" && sc.name.includes("::") ? sc.name.split("::")[0] : "");
+            if (codePart && typeof sc.grade === "number") realGradesByCode[codePart] = sc.grade;
+          });
+        });
+        if (typeof window !== "undefined" && student?.dni) {
+          for (const simKey of [`sfa_simulated_cycle1_${student.dni}`, `sfa_simulated_cycle2_${student.dni}`]) {
+            const raw = localStorage.getItem(simKey);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              (parsed?.courses || []).forEach((sc: any) => {
+                if (sc?.code && typeof sc.grade === "number") realGradesByCode[sc.code] = sc.grade;
+              });
+            }
+          }
+        }
+      } catch {}
       return baseCurriculum.map((c) => {
-        if (c.code === "EIND-101") {
-          return { ...c, grade: 15.5 };
+        if (realGradesByCode[c.code] !== undefined) {
+          return { ...c, grade: realGradesByCode[c.code] };
         }
         return c;
       });
@@ -406,7 +427,7 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
       { code: "CONT-104", courseName: "Legislación Comercial y Societaria", credits: 3, count: 0, grade: null, cycle: 1 },
       { code: "CONT-105", courseName: "Comunicación y Competencias Digitales", credits: 2, count: 0, grade: null, cycle: 1 },
     ] : [
-      { code: "EIND-101", courseName: "Fundamentos de Electricidad y Circuitos CC", credits: 4, count: 1, grade: 15.5, cycle: 1 },
+      { code: "EIND-101", courseName: "Fundamentos de Electricidad y Circuitos CC", credits: 4, count: 0, grade: null, cycle: 1 },
       { code: "EIND-102", courseName: "Instalaciones Eléctricas de Edificaciones", credits: 4, count: 0, grade: null, cycle: 1 },
       { code: "EIND-103", courseName: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, count: 0, grade: null, cycle: 1 },
       { code: "EIND-104", courseName: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, count: 0, grade: null, cycle: 1 },

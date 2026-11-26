@@ -178,7 +178,7 @@ const safeStorageSet = (key: string, value: string) => {
   }
 };
 
-export function ProceduresTab({ studentDni, period }: { studentDni: string; period: string }) {
+export function ProceduresTab({ studentDni, period, isGraduatedFromBackend = false }: { studentDni: string; period: string; isGraduatedFromBackend?: boolean }) {
   const [, setSync] = useState(0);
   useEffect(() => {
     const handleSync = () => setSync((v) => v + 1);
@@ -192,23 +192,26 @@ export function ProceduresTab({ studentDni, period }: { studentDni: string; peri
 
   // Contexto curricular del estudiante
   const isMateo = studentDni === "74859612";
-  const isGraduatedLectivo = typeof window !== "undefined" && Boolean(
-    !isMateo && localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) !== "true"
-      ? false
-      : (
-        localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
-        localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
-        localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "6" ||
-        localStorage.getItem(`sfa_student_status_${studentDni}`)?.includes("Egresado") ||
-        (isMateo && (
-          localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
-          localStorage.getItem("sfa_student_promoted") === "true" ||
-          localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
-          localStorage.getItem("sfa_student_graduated_all") === "true" ||
-          localStorage.getItem("sfa_student_cycle_74859612") === "6" ||
-          localStorage.getItem("sfa_student_cycle") === "6"
-        ))
-      )
+  const isGraduatedLectivo = Boolean(
+    isGraduatedFromBackend ||
+    (typeof window !== "undefined" && (
+      !isMateo && localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) !== "true"
+        ? false
+        : (
+          localStorage.getItem(`sfa_student_promoted_${studentDni}`) === "true" ||
+          localStorage.getItem(`sfa_student_graduated_all_${studentDni}`) === "true" ||
+          localStorage.getItem(`sfa_student_cycle_${studentDni}`) === "6" ||
+          localStorage.getItem(`sfa_student_status_${studentDni}`)?.includes("Egresado") ||
+          (isMateo && (
+            localStorage.getItem("sfa_student_promoted_74859612") === "true" ||
+            localStorage.getItem("sfa_student_promoted") === "true" ||
+            localStorage.getItem("sfa_student_graduated_all_74859612") === "true" ||
+            localStorage.getItem("sfa_student_graduated_all") === "true" ||
+            localStorage.getItem("sfa_student_cycle_74859612") === "6" ||
+            localStorage.getItem("sfa_student_cycle") === "6"
+          ))
+        )
+    ))
   );
 
   const isPracticesValidated = typeof window !== "undefined" && Boolean(
