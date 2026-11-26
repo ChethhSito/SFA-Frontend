@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import PostulanteDashboard from "../postulante";
 import { Applicant, Enrollment } from "../../types";
 import { Lock, ArrowLeft, Loader2 } from "lucide-react";
@@ -31,6 +31,7 @@ export default function PostulanteRouter({
   const [liveEnrollment, setLiveEnrollment] = useState<Enrollment | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncTick, setSyncTick] = useState(0);
+  const lastLocalWriteRef = useRef<number>(0);
 
   useEffect(() => {
     const s = localStorage.getItem("sfa_session_postulante");
@@ -43,17 +44,24 @@ export default function PostulanteRouter({
 
     let cancelled = false;
     const loadFromMongo = async (showSpinner: boolean) => {
+      // No pisar cambios locales recientes (subida de documentos o vouchers en curso)
+      if (!showSpinner && Date.now() - lastLocalWriteRef.current < 5000) {
+        return;
+      }
+      const fetchStartedAt = Date.now();
       if (showSpinner) setLoading(true);
       try {
         const apiApp = await fetchApplicantByDni(s);
         if (cancelled) return;
+        // Si el usuario guardó un documento/voucher mientras esta lectura viajaba, descartar lectura obsoleta
+        if (!showSpinner && lastLocalWriteRef.current >= fetchStartedAt) return;
         if (apiApp) {
           setLiveApplicant(apiApp);
           const isAdmitted = apiApp.admitted === true || apiApp.admitted === "ADMITIDO" || apiApp.folderStatus === "Approved" || apiApp.folderStatus === "Enrolled";
           if (isAdmitted) {
             const realDni = apiApp.dni || s;
             const apiEnr = await fetchEnrollmentByDni(realDni);
-            if (!cancelled && apiEnr) {
+            if (!cancelled && apiEnr && (showSpinner || lastLocalWriteRef.current < fetchStartedAt)) {
               setLiveEnrollment(apiEnr);
             }
           }
@@ -259,6 +267,7 @@ export default function PostulanteRouter({
     }
 
     // Actualiza el estado global y persiste en MongoDB con fileDataUrl completo
+    lastLocalWriteRef.current = Date.now();
     onUpdateApplicant(updated);
   };
 
@@ -303,6 +312,7 @@ export default function PostulanteRouter({
       enrollments={effectiveEnrollments}
       onUpdateApplicant={handleUpdateLiveApplicant}
       onUpdateEnrollment={(updatedEnr) => {
+        lastLocalWriteRef.current = Date.now();
         setLiveEnrollment(updatedEnr);
         onUpdateEnrollment(updatedEnr);
       }}
