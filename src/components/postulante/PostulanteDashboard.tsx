@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import {
   FileText, CreditCard, Award, Upload, CheckCircle2,
   XCircle, LayoutDashboard, Landmark, Headset, Info,
-  GraduationCap, Coins, Sparkles, ArrowRight
+  GraduationCap, Coins, Sparkles, ArrowRight, Loader2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Applicant, Enrollment } from "../../types";
@@ -973,8 +973,8 @@ function PostulanteDashboardInner({
                   onClick={handleConfirmUploadModal}
                   className="px-5 py-2.5 rounded-xl bg-[#8B0020] hover:bg-[#6e0019] disabled:opacity-60 text-white font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{isUploadingDoc ? "Guardando..." : "Confirmar y Guardar"}</span>
+                  {isUploadingDoc ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                  <span>{isUploadingDoc ? "Subiendo documento..." : "Confirmar y Guardar"}</span>
                 </button>
               </div>
             </motion.div>
