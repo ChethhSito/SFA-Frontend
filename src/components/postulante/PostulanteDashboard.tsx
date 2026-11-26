@@ -159,11 +159,18 @@ function PostulanteDashboardInner({
     setStagedUploadModal(null);
   };
 
-  const handleConfirmUploadModal = () => {
-    if (!stagedUploadModal) return;
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+
+  const handleConfirmUploadModal = async () => {
+    if (!stagedUploadModal || isUploadingDoc) return;
     const key = stagedUploadModal.docKey;
-    handleSaveDocument(key);
-    setStagedUploadModal(null);
+    setIsUploadingDoc(true);
+    try {
+      await handleSaveDocument(key);
+    } finally {
+      setIsUploadingDoc(false);
+      setStagedUploadModal(null);
+    }
   };
 
   // Image preview modal states
@@ -946,7 +953,7 @@ function PostulanteDashboardInner({
                     const inputId = stagedUploadModal.docKey === "dniFile"
                       ? "file-input-dni"
                       : stagedUploadModal.docKey === "certificadoFile"
-                        ? "file-input-cert"
+                        ? "file-input-certificado"
                         : stagedUploadModal.docKey === "partidaFile"
                           ? "file-input-partida"
                           : "file-input-foto";
@@ -962,11 +969,12 @@ function PostulanteDashboardInner({
 
                 <button
                   type="button"
+                  disabled={isUploadingDoc}
                   onClick={handleConfirmUploadModal}
-                  className="px-5 py-2.5 rounded-xl bg-[#8B0020] hover:bg-[#6e0019] text-white font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
+                  className="px-5 py-2.5 rounded-xl bg-[#8B0020] hover:bg-[#6e0019] disabled:opacity-60 text-white font-extrabold text-xs uppercase tracking-wider transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Confirmar y Guardar</span>
+                  <span>{isUploadingDoc ? "Guardando..." : "Confirmar y Guardar"}</span>
                 </button>
               </div>
             </motion.div>

@@ -102,20 +102,22 @@ function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([bytes], { type: mime });
 }
 
+let firebaseStorageUnavailable = false;
+
 /**
  * Uploads an image (Data URL or File) to Firebase Storage so MongoDB only stores a short URL.
- * Uses a 4-second timeout and falls back gracefully to the compressed Data URL if Storage rules
- * or network reject the upload, guaranteeing uploads never hang or break the UI.
+ * Uses a fast 1.8-second timeout and session circuit-breaker so if Storage rules/CORS block
+ * uploads, subsequent calls fall back to the compressed JPEG Data URL in 0ms without delay.
  */
 export async function uploadImageToFirebase(
   destinationPath: string,
   dataUrl: string,
-  timeoutMs = 4000
+  timeoutMs = 1800
 ): Promise<string> {
   if (!dataUrl || dataUrl.startsWith("http://") || dataUrl.startsWith("https://")) {
     return dataUrl;
   }
-  if (!isFirebaseEnabled || !storage) {
+  if (!isFirebaseEnabled || !storage || firebaseStorageUnavailable) {
     return dataUrl;
   }
   try {
@@ -142,6 +144,7 @@ export async function uploadImageToFirebase(
     );
     return await Promise.race([uploadPromise, timeoutPromise]);
   } catch (err) {
+    firebaseStorageUnavailable = true;
     console.warn("Firebase Storage fallback to compressed DataURL:", err);
     return dataUrl;
   }
