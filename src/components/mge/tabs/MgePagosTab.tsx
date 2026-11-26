@@ -11,11 +11,12 @@ import {
   Search,
   Building,
   Calendar,
-  Receipt
+  Receipt,
+  Loader2
 } from "lucide-react";
 import { Enrollment } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
-import { fetchPayments, createPayment, updatePayment } from "../../../services/api";
+import { fetchPayments, createPayment, updatePayment, fetchEnrollmentByDni } from "../../../services/api";
 
 interface Props {
   processedStudents: ProcessedStudent[];
@@ -105,6 +106,8 @@ export default function MgePagosTab({
   const [operations, setOperations] = useState<Record<string, string>>({});
   const [auditingStudent, setAuditingStudent] = useState<ProcessedStudent | null>(null);
   const [auditingIsCycle2, setAuditingIsCycle2] = useState(false);
+  const [freshAuditVoucherUrl, setFreshAuditVoucherUrl] = useState<string | null>(null);
+  const [loadingAuditVoucher, setLoadingAuditVoucher] = useState(false);
   const [obsReason, setObsReason] = useState<string>("Importe arancelario no coincide con el tarifario oficial (S/ 250.00)");
   const [, setStorageSync] = useState(0);
   const [cycle2PaymentsByDni, setCycle2PaymentsByDni] = useState<Record<string, any>>(() => cachedCycle2PaymentsByDni || {});
@@ -209,14 +212,27 @@ export default function MgePagosTab({
       ...base,
       paymentOperation: base.paymentOperation || cycleMeta.operation,
       paymentVoucherFileName: base.paymentVoucherFileName || cycleMeta.fileName,
-      paymentVoucherUrl: base.paymentVoucherUrl
+      paymentVoucherUrl: freshAuditVoucherUrl || base.paymentVoucherUrl
     };
-  }, [auditingStudent, enrollments, cycleMeta]);
+  }, [auditingStudent, enrollments, cycleMeta, freshAuditVoucherUrl]);
 
   const handleOpenAudit = (st: ProcessedStudent, isCycle2 = isPeriodCycle2) => {
     setAuditingStudent(st);
     setAuditingIsCycle2(isCycle2);
+    setFreshAuditVoucherUrl(null);
     setObsReason("Importe arancelario no coincide con el tarifario oficial (S/ 250.00)");
+    if (!isCycle2) {
+      const base = enrollments.find((e) => e.studentDni === st.dni);
+      if (!base?.paymentVoucherUrl) {
+        setLoadingAuditVoucher(true);
+        fetchEnrollmentByDni(st.dni)
+          .then((full) => {
+            if (full?.paymentVoucherUrl) setFreshAuditVoucherUrl(full.paymentVoucherUrl);
+          })
+          .catch(() => {})
+          .finally(() => setLoadingAuditVoucher(false));
+      }
+    }
   };
 
   const handleConfirmValidar = () => {
@@ -614,7 +630,12 @@ export default function MgePagosTab({
                   </span>
                 </div>
 
-                {activeEnrollmentForAudit?.paymentVoucherUrl ? (
+                {loadingAuditVoucher ? (
+                  <div className="flex flex-col items-center justify-center bg-white p-6 rounded-xl border border-slate-300 shadow-inner gap-2 min-h-[150px]">
+                    <Loader2 className="w-6 h-6 text-[#800521] animate-spin" />
+                    <span className="text-xs font-bold text-slate-500">Cargando comprobante bancario...</span>
+                  </div>
+                ) : activeEnrollmentForAudit?.paymentVoucherUrl ? (
                   <div className="flex flex-col items-center justify-center bg-white p-2.5 rounded-xl border border-slate-300 shadow-inner">
                     <img
                       src={activeEnrollmentForAudit.paymentVoucherUrl}

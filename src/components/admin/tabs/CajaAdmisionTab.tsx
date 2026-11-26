@@ -1,6 +1,7 @@
-import React from "react";
-import { CreditCard, CheckCircle2, AlertTriangle, XCircle, Clock, Eye, RefreshCw, FileText, Check } from "lucide-react";
+import React, { useState } from "react";
+import { CreditCard, CheckCircle2, AlertTriangle, XCircle, Clock, Eye, RefreshCw, FileText, Check, Loader2 } from "lucide-react";
 import { Applicant, StudentPersonalData } from "../../../types";
+import { fetchApplicantByDni } from "../../../services/api";
 import { useAcademicCatalog } from "../../../context/AcademicCatalogContext";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../ui/Card";
 import PageHeader from "../../ui/PageHeader";
@@ -29,6 +30,7 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
   handleResetApplicantPayment,
 }) => {
   const { programs: ACADEMIC_PROGRAMS } = useAcademicCatalog();
+  const [loadingVoucherDni, setLoadingVoucherDni] = useState<string | null>(null);
 
   const filteredApplicants = applicants.filter((app) => {
     const matchesPeriod =
@@ -119,6 +121,7 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
                           {(() => {
                             const hasVoucherFile = Boolean(
                               app.paymentVoucherUrl ||
+                              (app as any).hasPaymentVoucher ||
                               app.paymentVoucherFileName ||
                               (app.paymentOperation && /\.(png|jpe?g|webp|pdf)$/i.test(app.paymentOperation))
                             );
@@ -146,7 +149,18 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
                                 </div>
                                 <button
                                   type="button"
-                                  onClick={() =>
+                                  disabled={loadingVoucherDni === app.dni}
+                                  onClick={async () => {
+                                    let resolvedUrl = app.paymentVoucherUrl || (typeof window !== "undefined" ? localStorage.getItem(`sfa_voucher_data_${app.dni}`) || undefined : undefined);
+                                    if (hasVoucherFile && !resolvedUrl) {
+                                      setLoadingVoucherDni(app.dni);
+                                      try {
+                                        const full = await fetchApplicantByDni(app.dni).catch(() => null);
+                                        resolvedUrl = full?.paymentVoucherUrl || undefined;
+                                      } finally {
+                                        setLoadingVoucherDni(null);
+                                      }
+                                    }
                                     triggerAdminPreview(
                                       "Voucher Admisión - " + fullName,
                                       voucherFileName,
@@ -161,19 +175,19 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
                                         amount: "S/. 120.00",
                                         date: app.paymentValidatedAt || app.registeredAt || new Date().toISOString().split("T")[0],
                                         concept: "Derecho de Examen de Admisión",
-                                        fileDataUrl: app.paymentVoucherUrl,
+                                        fileDataUrl: resolvedUrl,
                                         fileName: voucherFileName,
                                         docLabel: "Comprobante de Pago de Admisión",
                                         paymentStatus: app.paymentStatus,
                                         isVoucher: true,
                                       }
-                                    )
-                                  }
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#9F062A] hover:bg-[#800521] text-white text-xs font-bold shadow-3xs transition-all hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap select-none"
+                                    );
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#9F062A] hover:bg-[#800521] disabled:opacity-60 text-white text-xs font-bold shadow-3xs transition-all hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap select-none"
                                   title="Ver comprobante adjunto"
                                 >
-                                  <Eye className="w-3.5 h-3.5 text-rose-200" />
-                                  <span>Ver</span>
+                                  {loadingVoucherDni === app.dni ? <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-200" /> : <Eye className="w-3.5 h-3.5 text-rose-200" />}
+                                  <span>{loadingVoucherDni === app.dni ? "..." : "Ver"}</span>
                                 </button>
                               </div>
                             );
@@ -207,7 +221,7 @@ export const CajaAdmisionTab: React.FC<CajaAdmisionTabProps> = ({
                         </td>
 
                         <td className="p-3.5 text-center whitespace-nowrap">
-                          {!app.paymentOperation && !app.paymentVoucherUrl ? (
+                          {!app.paymentOperation && !app.paymentVoucherUrl && !(app as any).hasPaymentVoucher ? (
                             <span className="text-[11px] font-semibold text-slate-400 italic">Sin pago registrado</span>
                           ) : app.paymentStatus === "Pendiente" ? (
                             <div className="flex items-center justify-center gap-1.5">
