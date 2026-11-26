@@ -415,8 +415,67 @@ export const GradesTab: React.FC<GradesTabProps> = ({
       ];
     }
 
-    // 1. Ciclo I oficial
+    // 1. Ciclo I oficial (Electricidad Industrial — 100% dinámico por estudiante)
     if (selectedSemester === "2027-I") {
+      const getGrades = (code: string) => {
+        try {
+          const raw = localStorage.getItem(`sfa_grades_${code}_${studentDni}`) ||
+            localStorage.getItem(`sfa_grades_${code.toLowerCase()}_${studentDni}`);
+          if (raw) return JSON.parse(raw);
+        } catch {}
+        return null;
+      };
+
+      const g101 = getGrades("EIND-101");
+      const g102 = getGrades("EIND-102");
+      const g103 = getGrades("EIND-103");
+      const g104 = getGrades("EIND-104");
+      const g105 = getGrades("EIND-105");
+
+      const findEnriched = (code: string) =>
+        enrichedCourses.find((x: any) =>
+          x.code === code ||
+          x.id === `cur_${code.toLowerCase().replace("eind-", "ei_")}` ||
+          x.id === `cur-cur_${code.toLowerCase().replace("eind-", "ei_")}`
+        );
+
+      const simCycle1Map: Record<string, number> = {};
+      try {
+        if (Array.isArray(cycleStatuses)) {
+          const backendC1 = cycleStatuses.find((c: any) => c.cycleNumber === 1 && c.status === "Aprobado");
+          if (backendC1 && Array.isArray(backendC1.courses)) {
+            backendC1.courses.forEach((sc: any) => {
+              const codePart = sc?.code || (typeof sc?.name === "string" && sc.name.includes("::") ? sc.name.split("::")[0] : "");
+              if (codePart && typeof sc.grade === "number") {
+                simCycle1Map[codePart] = sc.grade;
+              }
+            });
+          }
+        }
+        const rawSim1 = localStorage.getItem(`sfa_simulated_cycle1_${studentDni}`) ||
+          (isMateo ? (localStorage.getItem("sfa_simulated_cycle1_74859612") || localStorage.getItem("sfa_simulated_cycle1")) : null);
+        if (rawSim1) {
+          const parsed = JSON.parse(rawSim1);
+          if (Array.isArray(parsed?.courses)) {
+            parsed.courses.forEach((sc: any) => {
+              if (sc?.code && typeof sc.grade === "number") {
+                simCycle1Map[sc.code] = sc.grade;
+              }
+            });
+          }
+        }
+      } catch {}
+
+      const resolveEind1 = (code: string, prefix: string, localObj: any, mateoFallback: number) => {
+        const ec = findEnriched(code);
+        const ecEval = ec?.evaluations?.find((ev: any) => ev.prefix === prefix || ev.id === prefix);
+        if (ecEval && typeof ecEval.grade === "number") return ecEval.grade;
+        if (localObj && localObj[prefix] !== undefined) return Number(localObj[prefix]);
+        if (localObj && typeof localObj.finalGrade === "number") return Number(localObj.finalGrade);
+        if (simCycle1Map[code] !== undefined) return simCycle1Map[code];
+        return isMateo ? mateoFallback : undefined;
+      };
+
       return [
         {
           id: "cur_ei_101",
@@ -427,11 +486,12 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           classroom: "Aula 101 • Pabellón A",
           iconType: "Zap",
           formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+          weeklyTasks: findEnriched("EIND-101")?.weeklyTasks || [],
           evaluations: [
-            { id: "NPA", name: "Nota de Participación Activa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: 16.0, isCurricular: true },
-            { id: "PC1", name: "Práctica Calificada 1 (Circuitos)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: 15.0, isCurricular: true },
-            { id: "PC2", name: "Práctica Calificada 2 (Leyes Kirchhoff)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: 15.0, isCurricular: true },
-            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 16.0, isCurricular: true }
+            { id: "NPA", name: "Nota de Participación Activa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: resolveEind1("EIND-101", "NPA", g101, 16.0), isCurricular: true },
+            { id: "PC1", name: "Práctica Calificada 1 (Circuitos)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: resolveEind1("EIND-101", "PC1", g101, 15.0), isCurricular: true },
+            { id: "PC2", name: "Práctica Calificada 2 (Leyes Kirchhoff)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: resolveEind1("EIND-101", "PC2", g101, 15.0), isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveEind1("EIND-101", "EX_FINAL", g101, 16.0), isCurricular: true }
           ]
         },
         {
@@ -443,11 +503,12 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           classroom: "Aula 102 • Pabellón A",
           iconType: "Sliders",
           formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
+          weeklyTasks: findEnriched("EIND-102")?.weeklyTasks || [],
           evaluations: [
-            { id: "NPA", name: "Nota de Participación Activa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: 16.0, isCurricular: true },
-            { id: "PC1", name: "Práctica Calificada 1 (Tableros)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: 16.0, isCurricular: true },
-            { id: "PC2", name: "Práctica Calificada 2 (Canalizaciones)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: 17.0, isCurricular: true },
-            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 17.0, isCurricular: true }
+            { id: "NPA", name: "Nota de Participación Activa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: resolveEind1("EIND-102", "NPA", g102, 16.0), isCurricular: true },
+            { id: "PC1", name: "Práctica Calificada 1 (Tableros)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: resolveEind1("EIND-102", "PC1", g102, 16.0), isCurricular: true },
+            { id: "PC2", name: "Práctica Calificada 2 (Canalizaciones)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: resolveEind1("EIND-102", "PC2", g102, 17.0), isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveEind1("EIND-102", "EX_FINAL", g102, 17.0), isCurricular: true }
           ]
         },
         {
@@ -459,10 +520,11 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           classroom: "Aula 101 • Pabellón A",
           iconType: "Cpu",
           formula: "NF = 0.20*NPA + 0.30*PC1 + 0.50*EX_FINAL",
+          weeklyTasks: findEnriched("EIND-103")?.weeklyTasks || [],
           evaluations: [
-            { id: "NPA", name: "Participación y Normativa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: 17.0, isCurricular: true },
-            { id: "PC1", name: "Práctica Calificada 1 (EPP y Riesgo)", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: 17.0, isCurricular: true },
-            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "50%", weightDecimal: 0.5, grade: 17.0, isCurricular: true }
+            { id: "NPA", name: "Participación y Normativa", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: resolveEind1("EIND-103", "NPA", g103, 17.0), isCurricular: true },
+            { id: "PC1", name: "Práctica Calificada 1 (EPP y Riesgo)", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: resolveEind1("EIND-103", "PC1", g103, 17.0), isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "50%", weightDecimal: 0.5, grade: resolveEind1("EIND-103", "EX_FINAL", g103, 17.0), isCurricular: true }
           ]
         },
         {
@@ -474,10 +536,11 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           classroom: "Aula 101 • Pabellón A",
           iconType: "BarChart3",
           formula: "NF = 0.30*PC1 + 0.30*PC2 + 0.40*EX_FINAL",
+          weeklyTasks: findEnriched("EIND-104")?.weeklyTasks || [],
           evaluations: [
-            { id: "PC1", name: "Práctica Calificada 1 (Trigonometría)", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: 15.0, isCurricular: true },
-            { id: "PC2", name: "Práctica Calificada 2 (Fasores Básicos)", prefix: "PC2", weight: "30%", weightDecimal: 0.3, grade: 15.0, isCurricular: true },
-            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 15.0, isCurricular: true }
+            { id: "PC1", name: "Práctica Calificada 1 (Trigonometría)", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: resolveEind1("EIND-104", "PC1", g104, 15.0), isCurricular: true },
+            { id: "PC2", name: "Práctica Calificada 2 (Fasores Básicos)", prefix: "PC2", weight: "30%", weightDecimal: 0.3, grade: resolveEind1("EIND-104", "PC2", g104, 15.0), isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveEind1("EIND-104", "EX_FINAL", g104, 15.0), isCurricular: true }
           ]
         },
         {
@@ -489,35 +552,64 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           classroom: "Aula 101 • Pabellón A",
           iconType: "Award",
           formula: "NF = 0.30*ACT + 0.30*ORAL + 0.40*EX_FINAL",
+          weeklyTasks: findEnriched("EIND-105")?.weeklyTasks || [],
           evaluations: [
-            { id: "ACT", name: "Actividades Digitales", prefix: "ACT", weight: "30%", weightDecimal: 0.3, grade: 16.0, isCurricular: true },
-            { id: "ORAL", name: "Exposición de Proyectos", prefix: "ORAL", weight: "30%", weightDecimal: 0.3, grade: 16.0, isCurricular: true },
-            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 16.0, isCurricular: true }
+            { id: "ACT", name: "Actividades Digitales", prefix: "ACT", weight: "30%", weightDecimal: 0.3, grade: resolveEind1("EIND-105", "ACT", g105, 16.0), isCurricular: true },
+            { id: "ORAL", name: "Exposición de Proyectos", prefix: "ORAL", weight: "30%", weightDecimal: 0.3, grade: resolveEind1("EIND-105", "ORAL", g105, 16.0), isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo I", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveEind1("EIND-105", "EX_FINAL", g105, 16.0), isCurricular: true }
           ]
         }
       ];
-    } else {
-      // 2. Ciclo II oficial
-      const studentDni = studentInfo?.dni || "74859612";
-
-      let g201Npa: number = 16.0;
-      let g201Pc1: number = 16.0;
-      let g201Pc2: number = 17.0;
-      let g201Ex: number = 17.0;
-
+    } else if (selectedSemester === "2027-II") {
+      // 2. Ciclo II oficial (Electricidad Industrial — 100% dinámico por estudiante)
+      const simCycle2Map: Record<string, number> = {};
       try {
-        const raw = localStorage.getItem(`sfa_grades_EIND-201_${studentDni}`) ||
-          localStorage.getItem("sfa_grades_EIND-201_74859612") ||
-          localStorage.getItem(`sfa_grades_cur_ei_201_${studentDni}`) ||
-          localStorage.getItem("sfa_grades_cur_ei_201_74859612");
-        if (raw) {
-          const p = JSON.parse(raw);
-          if (p.NPA !== undefined) g201Npa = Number(p.NPA);
-          if (p.PC1 !== undefined) g201Pc1 = Number(p.PC1);
-          if (p.PC2 !== undefined) g201Pc2 = Number(p.PC2);
-          if (p.EX_FINAL !== undefined) g201Ex = Number(p.EX_FINAL);
+        if (Array.isArray(cycleStatuses)) {
+          const backendC2 = cycleStatuses.find((c: any) => c.cycleNumber === 2 && c.status === "Aprobado");
+          if (backendC2 && Array.isArray(backendC2.courses)) {
+            backendC2.courses.forEach((sc: any) => {
+              const codePart = sc?.code || (typeof sc?.name === "string" && sc.name.includes("::") ? sc.name.split("::")[0] : "");
+              if (codePart && typeof sc.grade === "number") {
+                simCycle2Map[codePart] = sc.grade;
+              }
+            });
+          }
+        }
+        const rawSim2 = localStorage.getItem(`sfa_simulated_cycle2_${studentDni}`) ||
+          (isMateo ? localStorage.getItem("sfa_simulated_cycle2_74859612") : null);
+        if (rawSim2) {
+          const parsed = JSON.parse(rawSim2);
+          if (Array.isArray(parsed?.courses)) {
+            parsed.courses.forEach((sc: any) => {
+              if (sc?.code && typeof sc.grade === "number") {
+                simCycle2Map[sc.code] = sc.grade;
+              }
+            });
+          }
         }
       } catch {}
+
+      const getGrades2 = (code: string) => {
+        try {
+          const raw = localStorage.getItem(`sfa_grades_${code}_${studentDni}`) ||
+            (isMateo ? localStorage.getItem(`sfa_grades_${code}_74859612`) : null);
+          if (raw) return JSON.parse(raw);
+        } catch {}
+        return null;
+      };
+
+      const resolveEind2 = (code: string, prefix: string, localObj: any, mateoFallback: number) => {
+        if (localObj && localObj[prefix] !== undefined) return Number(localObj[prefix]);
+        if (localObj && typeof localObj.finalGrade === "number") return Number(localObj.finalGrade);
+        if (simCycle2Map[code] !== undefined) return simCycle2Map[code];
+        return isMateo ? mateoFallback : undefined;
+      };
+
+      const g201 = getGrades2("EIND-201");
+      const g202 = getGrades2("EIND-202");
+      const g203 = getGrades2("EIND-203");
+      const g204 = getGrades2("EIND-204");
+      const g205 = getGrades2("EIND-205");
 
       return [
         {
@@ -530,10 +622,10 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           iconType: "Zap",
           formula: "NF = 0.20*NPA + 0.20*PC1 + 0.20*PC2 + 0.40*EX_FINAL",
           evaluations: [
-            { id: "NPA", name: "Nota de Participación / Informes", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: g201Npa, isCurricular: true },
-            { id: "PC1", name: "Práctica Calificada 1 (CA)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: g201Pc1, isCurricular: true },
-            { id: "PC2", name: "Práctica Calificada 2 (Mediciones)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: g201Pc2, isCurricular: true },
-            { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: g201Ex, isCurricular: true }
+            { id: "NPA", name: "Nota de Participación / Informes", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: resolveEind2("EIND-201", "NPA", g201, 16.0), isCurricular: true },
+            { id: "PC1", name: "Práctica Calificada 1 (CA)", prefix: "PC1", weight: "20%", weightDecimal: 0.2, grade: resolveEind2("EIND-201", "PC1", g201, 16.0), isCurricular: true },
+            { id: "PC2", name: "Práctica Calificada 2 (Mediciones)", prefix: "PC2", weight: "20%", weightDecimal: 0.2, grade: resolveEind2("EIND-201", "PC2", g201, 17.0), isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular Ciclo II", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveEind2("EIND-201", "EX_FINAL", g201, 17.0), isCurricular: true }
           ]
         },
         {
@@ -546,10 +638,10 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           iconType: "Sliders",
           formula: "NF = 0.20*NPA + 0.20*LAB1 + 0.20*LAB2 + 0.40*EX_FINAL",
           evaluations: [
-            { id: "NPA", name: "Nota de Participación", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: 17.0, isCurricular: true },
-            { id: "LAB1", name: "Laboratorio Diodos y Tiristores", prefix: "LAB1", weight: "20%", weightDecimal: 0.2, grade: 17.0, isCurricular: true },
-            { id: "LAB2", name: "Laboratorio Circuitos Rectificadores", prefix: "LAB2", weight: "20%", weightDecimal: 0.2, grade: 17.0, isCurricular: true },
-            { id: "EX_FINAL", name: "Evaluación Modular", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 17.0, isCurricular: true }
+            { id: "NPA", name: "Nota de Participación", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: resolveEind2("EIND-202", "NPA", g202, 17.0), isCurricular: true },
+            { id: "LAB1", name: "Laboratorio Diodos y Tiristores", prefix: "LAB1", weight: "20%", weightDecimal: 0.2, grade: resolveEind2("EIND-202", "LAB1", g202, 17.0), isCurricular: true },
+            { id: "LAB2", name: "Laboratorio Circuitos Rectificadores", prefix: "LAB2", weight: "20%", weightDecimal: 0.2, grade: resolveEind2("EIND-202", "LAB2", g202, 17.0), isCurricular: true },
+            { id: "EX_FINAL", name: "Evaluación Modular", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveEind2("EIND-202", "EX_FINAL", g202, 17.0), isCurricular: true }
           ]
         },
         {
@@ -562,9 +654,9 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           iconType: "Cpu",
           formula: "NF = 0.20*NPA + 0.30*PC1 + 0.50*PROY",
           evaluations: [
-            { id: "NPA", name: "Participación y Seguridad", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: 16.0, isCurricular: true },
-            { id: "PC1", name: "Práctica de Osciloscopio y Fasores", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: 16.0, isCurricular: true },
-            { id: "PROY", name: "Proyecto de Calibración", prefix: "PROY", weight: "50%", weightDecimal: 0.5, grade: 16.0, isCurricular: true }
+            { id: "NPA", name: "Participación y Seguridad", prefix: "NPA", weight: "20%", weightDecimal: 0.2, grade: resolveEind2("EIND-203", "NPA", g203, 16.0), isCurricular: true },
+            { id: "PC1", name: "Práctica de Osciloscopio y Fasores", prefix: "PC1", weight: "30%", weightDecimal: 0.3, grade: resolveEind2("EIND-203", "PC1", g203, 16.0), isCurricular: true },
+            { id: "PROY", name: "Proyecto de Calibración", prefix: "PROY", weight: "50%", weightDecimal: 0.5, grade: resolveEind2("EIND-203", "PROY", g203, 16.0), isCurricular: true }
           ]
         },
         {
@@ -577,9 +669,9 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           iconType: "Sliders",
           formula: "NF = 0.30*PL1 + 0.30*PL2 + 0.40*PROY_CAD",
           evaluations: [
-            { id: "PL1", name: "Plano Unifilar en CAD", prefix: "PL1", weight: "30%", weightDecimal: 0.3, grade: 16.0, isCurricular: true },
-            { id: "PL2", name: "Plano Multifilar de Tableros", prefix: "PL2", weight: "30%", weightDecimal: 0.3, grade: 17.0, isCurricular: true },
-            { id: "PROY_CAD", name: "Proyecto Final Planimetría", prefix: "PROY_CAD", weight: "40%", weightDecimal: 0.4, grade: 17.0, isCurricular: true }
+            { id: "PL1", name: "Plano Unifilar en CAD", prefix: "PL1", weight: "30%", weightDecimal: 0.3, grade: resolveEind2("EIND-204", "PL1", g204, 16.0), isCurricular: true },
+            { id: "PL2", name: "Plano Multifilar de Tableros", prefix: "PL2", weight: "30%", weightDecimal: 0.3, grade: resolveEind2("EIND-204", "PL2", g204, 17.0), isCurricular: true },
+            { id: "PROY_CAD", name: "Proyecto Final Planimetría", prefix: "PROY_CAD", weight: "40%", weightDecimal: 0.4, grade: resolveEind2("EIND-204", "PROY_CAD", g204, 17.0), isCurricular: true }
           ]
         },
         {
@@ -592,9 +684,9 @@ export const GradesTab: React.FC<GradesTabProps> = ({
           iconType: "Award",
           formula: "NF = 0.30*ACT + 0.30*ORAL + 0.40*EX_FINAL",
           evaluations: [
-            { id: "ACT", name: "Technical Vocabulary", prefix: "ACT", weight: "30%", weightDecimal: 0.3, grade: 15.0, isCurricular: true },
-            { id: "ORAL", name: "Oral Presentation (Diagrams)", prefix: "ORAL", weight: "30%", weightDecimal: 0.3, grade: 15.0, isCurricular: true },
-            { id: "EX_FINAL", name: "Final Technical Test", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: 16.0, isCurricular: true }
+            { id: "ACT", name: "Technical Vocabulary", prefix: "ACT", weight: "30%", weightDecimal: 0.3, grade: resolveEind2("EIND-205", "ACT", g205, 15.0), isCurricular: true },
+            { id: "ORAL", name: "Oral Presentation (Diagrams)", prefix: "ORAL", weight: "30%", weightDecimal: 0.3, grade: resolveEind2("EIND-205", "ORAL", g205, 15.0), isCurricular: true },
+            { id: "EX_FINAL", name: "Final Technical Test", prefix: "EX_FINAL", weight: "40%", weightDecimal: 0.4, grade: resolveEind2("EIND-205", "EX_FINAL", g205, 16.0), isCurricular: true }
           ]
         }
       ];

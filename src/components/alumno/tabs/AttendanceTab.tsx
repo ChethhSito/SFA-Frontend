@@ -615,7 +615,6 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
     selectedSemester === "2027-II" ? "Periodo 2027-II" : "Periodo 2027-I";
 
   const isContabilidad = enrollment?.programId === "contabilidad" ||
-    activeDni === "71248596" ||
     studentCourses.some(c => c.code?.startsWith("CONT") || c.name?.toLowerCase().includes("contab"));
 
   // Determinar la lista de cursos del ciclo seleccionado
@@ -661,7 +660,17 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
     });
   }, [selectedSemester, studentCourses, isContabilidad, isCycle2, isGraduated]);
 
-  // Cálculo de asistencia con 16 semanas garantizadas para el récord consolidado
+  // Cálculo de asistencia real (solo sintetiza 16 semanas históricas en ciclos ya concluidos/cerrados)
+  const isSelectedSemesterConcluded = Boolean(
+    isGraduated ||
+    (selectedSemester === "2027-I" && isCycle2) ||
+    (selectedSemester === "2027-II" && typeof window !== "undefined" && (
+      localStorage.getItem(`sfa_simulated_cycle2_${activeDni}`) ||
+      localStorage.getItem(`sfa_student_promoted_cycle3_${activeDni}`) === "true" ||
+      (isMateo && localStorage.getItem("sfa_simulated_cycle2_74859612"))
+    ))
+  );
+
   const currentAttendanceCourses = useMemo(() => {
     const semesterDates = 
       selectedSemester === "2029-II" ? DATES_2029_II :
@@ -677,15 +686,17 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
         activeDni
       );
 
-      // Si no hay registros crudos en el backend para este curso, generar las 16 semanas oficiales
-      const generatedRecords = semesterDates.map((dateStr, idx) => ({
-        id: `att-${c.code}-w${idx + 1}-s1`,
-        courseId: c.id || c.code,
-        date: dateStr,
-        week: idx + 1,
-        topic: `Semana ${idx + 1}: Sesión Práctica y Formativa de Taller`,
-        statusMap: { [activeDni]: "Presente" as const }
-      }));
+      // Solo generar 16 semanas consolidadas si el semestre ya concluyó y no hay registros crudos
+      const generatedRecords = isSelectedSemesterConcluded
+        ? semesterDates.map((dateStr, idx) => ({
+            id: `att-${c.code}-w${idx + 1}-s1`,
+            courseId: c.id || c.code,
+            date: dateStr,
+            week: idx + 1,
+            topic: `Semana ${idx + 1}: Sesión Práctica y Formativa de Taller`,
+            statusMap: { [activeDni]: "Presente" as const }
+          }))
+        : [];
 
       const courseRecords = rawRecords.length > 0 ? rawRecords : generatedRecords;
       const sesDictadas = courseRecords.length;
@@ -706,12 +717,15 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
         }
       });
 
-      const effectiveSesDictadas = Math.max(sesDictadas, 16);
-      const effectiveAsistencias = Math.max(asistencias, 16);
+      const effectiveSesDictadas = isSelectedSemesterConcluded ? Math.max(sesDictadas, 16) : sesDictadas;
+      const effectiveAsistencias = isSelectedSemesterConcluded ? Math.max(asistencias, 16) : asistencias;
       const effectiveFaltas = faltas;
 
-      const attendanceRate = Math.round((effectiveAsistencias / effectiveSesDictadas) * 100);
-      const puntualidad = `${Math.round(((effectiveAsistencias - tardanzas) / Math.max(effectiveAsistencias, 1)) * 100)}%`;
+      const hasRecords = effectiveSesDictadas > 0;
+      const attendanceRate = hasRecords ? Math.round((effectiveAsistencias / effectiveSesDictadas) * 100) : 0;
+      const puntualidad = hasRecords
+        ? `${Math.round(((effectiveAsistencias - tardanzas) / Math.max(effectiveAsistencias, 1)) * 100)}%`
+        : "—";
 
       return {
         id: c.id,
@@ -719,9 +733,11 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
         name: c.name,
         group: c.group || (selectedSemester === "2027-II" ? "EI-II-A" : "EI-I-A"),
         attendanceRate,
-        statusText: `${attendanceRate}% Asistencia`,
-        statusDesc: "REGULAR • 16/16 SEMANAS",
-        statusType: "excellent",
+        statusText: hasRecords ? `${attendanceRate}% Asistencia` : "Sin registros aún",
+        statusDesc: hasRecords
+          ? (isSelectedSemesterConcluded ? "CONCLUIDO • 16/16 SEMANAS" : `EN CURSO • ${effectiveSesDictadas} SESIÓN${effectiveSesDictadas === 1 ? "" : "ES"}`)
+          : "SIN SESIONES REGISTRADAS",
+        statusType: !hasRecords ? "neutral" : attendanceRate >= 70 ? "excellent" : "danger",
         sesRealizadas: String(effectiveSesDictadas),
         sesDictadas: effectiveSesDictadas,
         records: courseRecords,
@@ -735,12 +751,12 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
         teacher: c.teacherName || "Docente Titular"
       };
     });
-  }, [displayCourses, attendance, activeDni, selectedSemester]);
+  }, [displayCourses, attendance, activeDni, selectedSemester, isSelectedSemesterConcluded]);
 
   const totalInasistencias = currentAttendanceCourses.reduce((acc, c) => acc + c.faltasCount, 0);
   const totalSesiones = currentAttendanceCourses.reduce((acc, c) => acc + c.sesDictadas, 0);
   const totalAsistencias = currentAttendanceCourses.reduce((acc, c) => acc + c.asistenciasCount, 0);
-  const overallRate = totalSesiones > 0 ? Math.round((totalAsistencias / totalSesiones) * 100) : 100;
+  const overallRate = totalSesiones > 0 ? Math.round((totalAsistencias / totalSesiones) * 100) : 0;
   const totalAlertsCount = currentAttendanceCourses.filter((c) => c.attendanceRate < 70 && c.sesDictadas > 0).length;
 
   return (
