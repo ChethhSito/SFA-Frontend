@@ -81,31 +81,42 @@ function preserveExistingDocBinaries(prevApp: any, nextApp: any): any {
 function buildDeltaPatchPayload(prevApp: any, nextApp: any): any {
   if (!prevApp) return nextApp;
   const docKeys = ["dniFile", "certificadoFile", "partidaFile", "fotoFile"] as const;
-  const patchDocs: any = nextApp.docs ? { ...nextApp.docs } : undefined;
-  if (patchDocs) {
+  let patchDocs: any = undefined;
+  if (nextApp.docs) {
+    const changedDocs: Record<string, any> = {};
     for (const key of docKeys) {
       const prevDoc = prevApp.docs?.[key];
       const nextDoc = nextApp.docs?.[key];
-      if (nextDoc && prevDoc && nextDoc.fileDataUrl && nextDoc.fileDataUrl === prevDoc.fileDataUrl) {
-        patchDocs[key] = { ...nextDoc };
-        delete patchDocs[key].fileDataUrl;
+      if (!nextDoc) continue;
+      const docChanged =
+        !prevDoc ||
+        prevDoc.status !== nextDoc.status ||
+        prevDoc.fileName !== nextDoc.fileName ||
+        (prevDoc.observations || "") !== (nextDoc.observations || "") ||
+        (nextDoc.fileDataUrl && nextDoc.fileDataUrl !== prevDoc.fileDataUrl);
+      if (docChanged) {
+        const cleaned = { ...nextDoc };
+        delete cleaned.hasFile;
+        if (prevDoc && cleaned.fileDataUrl && cleaned.fileDataUrl === prevDoc.fileDataUrl) {
+          delete cleaned.fileDataUrl;
+        }
+        changedDocs[key] = cleaned;
       }
+    }
+    if (Object.keys(changedDocs).length > 0) {
+      patchDocs = changedDocs;
     }
   }
   const payload: any = {
     ...nextApp,
-    docs: patchDocs,
   };
+  if (patchDocs) {
+    payload.docs = patchDocs;
+  } else {
+    delete payload.docs;
+  }
   // Marcadores del listado liviano: son solo de lectura, no se guardan en la base de datos
   delete payload.hasPaymentVoucher;
-  if (payload.docs) {
-    for (const key of DOC_KEYS) {
-      if (payload.docs[key]) {
-        payload.docs[key] = { ...payload.docs[key] };
-        delete payload.docs[key].hasFile;
-      }
-    }
-  }
   if (
     prevApp.paymentVoucherUrl &&
     nextApp.paymentVoucherUrl &&
@@ -165,6 +176,7 @@ export function useApplicantsManager(
   const [error, setError] = useState<string | null>(null);
 
   const hydrationRunRef = useRef(0);
+  const lastLocalWriteRef = useRef<number>(0);
 
   /** Descarga las imágenes en segundo plano (de a 3), sin bloquear la pantalla ni el listado. */
   const hydrateBinaries = useCallback(async (list: any[]) => {
@@ -187,10 +199,15 @@ export function useApplicantsManager(
   }, []);
 
   const reloadApplicants = useCallback((silent = false) => {
+    if (silent && Date.now() - lastLocalWriteRef.current < 5000) {
+      return Promise.resolve();
+    }
+    const fetchStartedAt = Date.now();
     if (!silent) setLoading(true);
     return fetchApplicants()
       .then((apiApps) => {
         if (!apiApps) throw new Error("No se pudo consultar postulantes");
+        if (silent && lastLocalWriteRef.current >= fetchStartedAt) return;
         const prevByDni = new Map(applicantsRef.current.map((a) => [a.dni, a]));
         const merged = apiApps.map((app) => preserveExistingDocBinaries(prevByDni.get(app.dni), app));
         setApplicants(merged);
@@ -254,6 +271,7 @@ export function useApplicantsManager(
   }, [reloadApplicants]);
 
   const handleUpdateApplicantsFromAdmin = async (updatedList: any[]) => {
+    lastLocalWriteRef.current = Date.now();
     const prevByDni = new Map(applicantsRef.current.map((a) => [a.dni, a]));
     const hydratedList = updatedList.map((app) =>
       preserveExistingDocBinaries(prevByDni.get(app.dni), app)
@@ -312,12 +330,13 @@ export function useApplicantsManager(
    * Actualiza el estado de un postulante por DNI.
    */
   const handleUpdateApplicantByDni = async (dni: string, data: any) => {
+    lastLocalWriteRef.current = Date.now();
     const prev = applicantsRef.current.find((a) => a.dni === dni);
     const merged = preserveExistingDocBinaries(prev, { ...(prev || {}), ...data });
-    await apiUpdateApplicant(dni, merged);
     const updatedList = applicantsRef.current.map((a) => (a.dni === dni ? merged : a));
     setApplicants(updatedList);
     applicantsRef.current = updatedList;
+    await apiUpdateApplicant(dni, buildDeltaPatchPayload(prev, merged));
   };
 
   /**
