@@ -348,6 +348,10 @@ export async function fetchPayments(): Promise<any[] | null> {
   return fetchJson<any[]>("/payments");
 }
 
+export async function fetchPaymentById(id: string): Promise<any | null> {
+  return fetchJson<any>(`/payments/${encodeURIComponent(id)}`);
+}
+
 export async function createPayment(payment: any): Promise<any | null> {
   return fetchJson<any>("/payments", {
     method: "POST",

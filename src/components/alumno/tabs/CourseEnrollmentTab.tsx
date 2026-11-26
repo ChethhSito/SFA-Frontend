@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { BookOpen, CheckCircle2, Download, FileText, Printer, ShieldCheck, CreditCard, Building, X, Upload, Clock, AlertCircle, Lock, Eye, Receipt } from 'lucide-react';
 import { Enrollment, MpaAcademicGroup, MpaClassroom, MpaCourse, MpaCurriculumItem, MpaPeriod, MpaProgramTask, MpaShift, Program, StudentPersonalData } from '../../../types';
 import { generateMatriculaPdf, generateManualMatriculaPdf } from '../../../utils/matriculaPdf';
-import { fetchPayments, createPayment, updatePayment } from '../../../services/api';
+import { fetchPayments, fetchPaymentById, createPayment, updatePayment } from '../../../services/api';
 import { uploadImageToFirebase } from '../../../firebase/storage';
 
 interface PlanningData {
@@ -73,6 +73,21 @@ export default function CourseEnrollmentTab({
   });
 
   const [backendCycle2Payment, setBackendCycle2Payment] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (!showVoucherModal || voucherPreviewUrl || !backendCycle2Payment?.paymentId) return;
+    let active = true;
+    fetchPaymentById(backendCycle2Payment.paymentId)
+      .then((full) => {
+        if (!active || !full?.notes) return;
+        try {
+          const parsed = JSON.parse(full.notes);
+          if (parsed?.voucherDataUrl) setVoucherPreviewUrl(parsed.voucherDataUrl);
+        } catch {}
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [showVoucherModal, voucherPreviewUrl, backendCycle2Payment]);
 
   useEffect(() => {
     let active = true;

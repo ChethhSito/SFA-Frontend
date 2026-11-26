@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Enrollment } from "../../../types";
 import { ProcessedStudent } from "../mgeTypes";
-import { fetchPayments, createPayment, updatePayment, fetchEnrollmentByDni } from "../../../services/api";
+import { fetchPayments, fetchPaymentById, createPayment, updatePayment, fetchEnrollmentByDni } from "../../../services/api";
 
 interface Props {
   processedStudents: ProcessedStudent[];
@@ -187,6 +187,7 @@ export default function MgePagosTab({
         (auditingStudent.dni === "74859612" ? localStorage.getItem("sfa_cycle2_voucher_file_74859612") : null) ||
         cycleMeta.fileName;
       const cycle2Url =
+        freshAuditVoucherUrl ||
         parsedNotes.voucherDataUrl ||
         localStorage.getItem(`sfa_cycle2_voucher_data_${auditingStudent.dni}`) ||
         (auditingStudent.dni === "74859612" ? localStorage.getItem("sfa_cycle2_voucher_data_74859612") : null) ||
@@ -221,7 +222,21 @@ export default function MgePagosTab({
     setAuditingIsCycle2(isCycle2);
     setFreshAuditVoucherUrl(null);
     setObsReason("Importe arancelario no coincide con el tarifario oficial (S/ 250.00)");
-    if (!isCycle2) {
+    if (isCycle2) {
+      const backendC2 = cycle2PaymentsByDni[st.dni];
+      const parsed = parseVoucherNotes(backendC2?.notes);
+      const localC2 = typeof window !== "undefined" ? localStorage.getItem(`sfa_cycle2_voucher_data_${st.dni}`) : null;
+      if (!parsed.voucherDataUrl && !localC2) {
+        setLoadingAuditVoucher(true);
+        fetchPaymentById(backendC2?.paymentId || `PAY-C2-${st.dni}`)
+          .then((full) => {
+            const fullNotes = parseVoucherNotes(full?.notes);
+            if (fullNotes.voucherDataUrl) setFreshAuditVoucherUrl(fullNotes.voucherDataUrl);
+          })
+          .catch(() => {})
+          .finally(() => setLoadingAuditVoucher(false));
+      }
+    } else {
       const base = enrollments.find((e) => e.studentDni === st.dni);
       if (!base?.paymentVoucherUrl) {
         setLoadingAuditVoucher(true);
