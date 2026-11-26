@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { updateStudentCycleStatuses } from "../../../services/api";
+import { Course, CourseAssignment } from "../../../types";
+import { getCourseFormula } from "../../../constants/courseFormulas";
 import {
   GraduationCap,
   XCircle,
@@ -21,6 +23,8 @@ interface Props {
   onClose: () => void;
   student: ProcessedStudent;
   program: string;
+  courses?: Course[];
+  assignments?: CourseAssignment[];
   onConfirm: () => void;
 }
 
@@ -150,96 +154,213 @@ export const MgeAcreditarPlanCompletoModal: React.FC<Props> = ({
   onClose,
   student,
   program,
+  courses = [],
+  assignments = [],
   onConfirm,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [activeCycleTab, setActiveCycleTab] = useState<number>(2); // Por defecto en Ciclo II para contrastar
+  const [activeCycleTab, setActiveCycleTab] = useState<number>(1);
 
   if (!isOpen || !student) return null;
 
   const studentDni = student.dni || "74859612";
   const isContabilidad = (program || student.programId || "").toLowerCase().includes("cont");
-  const activeCurriculum = isContabilidad ? CONT_FULL_CURRICULUM_COURSES : FULL_CURRICULUM_COURSES;
+  const baseCurriculum = isContabilidad ? CONT_FULL_CURRICULUM_COURSES : FULL_CURRICULUM_COURSES;
+
+  // Detector inteligente: revisa asignaturas de Ciclo I y II contra notas reales del docente
+  // (assignments + localStorage + cycleStatuses existentes). Si un curso ya fue calificado manualmente,
+  // conserva su nota exacta; si no, lo simula automáticamente para poder acreditar los 6 ciclos de una sola vez.
+  const detectRealCourseGrade = (courseCode: string) => {
+    const formula = getCourseFormula(courseCode);
+    const shortId = courseCode.toLowerCase().replace("cont-", "cur_co_").replace("eind-", "cur_ei_");
+    const matchIds = new Set<string>([courseCode, shortId, `cur-${shortId}`]);
+    courses.forEach((c: any) => {
+      if (c.code === courseCode || c.code?.startsWith(`${courseCode}-`) || c.id === shortId || c.id === `cur-${shortId}`) {
+        if (c.id) matchIds.add(c.id);
+        if (c._id) matchIds.add(c._id);
+        if (c.code) matchIds.add(c.code);
+      }
+    });
+
+    const courseAssignments = assignments.filter((a) => matchIds.has(a.courseId));
+    const regularHomeworks = courseAssignments.filter((a) =>
+      !a.title.startsWith("[Planilla] ") &&
+      a.kind !== "assessment" &&
+      !a.curricularComponent &&
+      !/\[PC\d+\]|PC\d+|EX_FINAL|EXAMEN|FINAL|TABLEROS|MONTAJE|SIMULACION|MEDICIONES|PRACT_FINAL/i.test(a.title)
+    );
+
+    let localParsed: Record<string, any> | null = null;
+    try {
+      const rawLocal = localStorage.getItem(`sfa_grades_${courseCode}_${studentDni}`) ||
+        localStorage.getItem(`sfa_grades_${shortId}_${studentDni}`);
+      if (rawLocal) {
+        const parsed = JSON.parse(rawLocal);
+        if (typeof parsed === "number") localParsed = { finalGrade: parsed };
+        else if (parsed && typeof parsed === "object") localParsed = parsed;
+      }
+    } catch {}
+
+    let weightedSum = 0;
+    let gradedWeight = 0;
+    let gradedCount = 0;
+
+    formula.variables.forEach((v) => {
+      let val: number | null = null;
+      if (v.id === "NPA") {
+        const hwGrades = regularHomeworks
+          .map((a) => a.submissions?.find((s) => s.studentDni === studentDni && typeof s.grade === "number")?.grade)
+          .filter((g): g is number => typeof g === "number");
+        if (hwGrades.length > 0) {
+          val = Number((hwGrades.reduce((a, b) => a + b, 0) / hwGrades.length).toFixed(1));
+        }
+      } else {
+        const matchingAsg = courseAssignments.find((a) =>
+          !a.title.startsWith("[Planilla] ") && (
+            a.curricularComponent === v.id ||
+            a.title.toUpperCase().includes(`[${v.id}]`) ||
+            a.title.toUpperCase().includes(v.id) ||
+            (v.id === "EX_FINAL" && /EX_FINAL|EXAMEN FINAL/i.test(a.title))
+          )
+        );
+        const sub = matchingAsg?.submissions?.find((s) => s.studentDni === studentDni && typeof s.grade === "number");
+        if (sub && typeof sub.grade === "number") {
+          val = sub.grade;
+        } else {
+          const planillaAsg = courseAssignments.find((a) => a.title === `[Planilla] ${v.id}`);
+          const planSub = planillaAsg?.submissions?.find((s) => s.studentDni === studentDni && typeof s.grade === "number");
+          if (planSub && typeof planSub.grade === "number") val = planSub.grade;
+        }
+      }
+      if ((val === null || val === undefined) && localParsed && typeof localParsed[v.id] === "number") {
+        val = Number(localParsed[v.id]);
+      }
+      if (typeof val === "number" && Number.isFinite(val)) {
+        weightedSum += val * v.weight;
+        gradedWeight += v.weight;
+        gradedCount += 1;
+      }
+    });
+
+    if (gradedCount > 0) {
+      const hasAll = gradedCount === formula.variables.length;
+      return {
+        hasReal: true,
+        grade: Math.round((hasAll ? weightedSum : weightedSum / Math.max(gradedWeight, 0.01)) * 10) / 10,
+      };
+    }
+    if (localParsed && typeof localParsed.finalGrade === "number") {
+      return { hasReal: true, grade: Number(localParsed.finalGrade) };
+    }
+    return { hasReal: false, grade: 0 };
+  };
+
+  const existingCyclesArr = Array.isArray((student as any)?.cycleStatuses) ? (student as any).cycleStatuses : [];
+
+  const activeCurriculum: typeof baseCurriculum = { ...baseCurriculum };
+  ([1, 2] as const).forEach((cycNum) => {
+    const existingCyc = existingCyclesArr.find(
+      (c: any) => c.cycleNumber === cycNum && c.status === "Aprobado" && Array.isArray(c.courses) && c.courses.length > 0
+    );
+    activeCurriculum[cycNum] = (baseCurriculum[cycNum] || []).map((c) => {
+      if (existingCyc) {
+        const found = existingCyc.courses.find(
+          (sc: any) => sc.code === c.code || (typeof sc.name === "string" && sc.name.startsWith(`${c.code}::`))
+        );
+        if (found && typeof found.grade === "number") {
+          return { ...c, grade: found.grade, isReal: true, notes: "Acta Cerrada" };
+        }
+      }
+      const detected = detectRealCourseGrade(c.code);
+      if (detected.hasReal) {
+        return { ...c, grade: detected.grade, isReal: true, notes: "Manual Docente" };
+      }
+      return { ...c, isReal: false, notes: "Simulado MGE" };
+    });
+  });
 
   const handleExecuteConsolidation = () => {
     setIsProcessing(true);
     try {
-      // 1. Activar estado de promoción total y egreso (dinámico por DNI)
+      // 1. Activar estado de promoción total y egreso (incluso si no se simuló Ciclo I ni II previamente)
+      localStorage.setItem(`sfa_student_promoted_cycle2_${studentDni}`, "true");
+      localStorage.setItem(`sfa_student_promoted_cycle3_${studentDni}`, "true");
       localStorage.setItem(`sfa_student_promoted_${studentDni}`, "true");
       localStorage.setItem(`sfa_student_graduated_all_${studentDni}`, "true");
       localStorage.setItem(`sfa_student_cycle_${studentDni}`, "6");
       localStorage.setItem(`sfa_student_status_${studentDni}`, "Egresado Lectivo");
 
       // Las Prácticas Preprofesionales (EFSRT) quedan PENDIENTES de trámite y validación por Secretaría
-      // NO se auto-acreditan aquí para respetar el flujo ministerial estricto
       localStorage.removeItem(`sfa_efsrt_validated_${studentDni}`);
       localStorage.removeItem(`sfa_efsrt_all_approved_${studentDni}`);
       localStorage.removeItem(`sfa_titulacion_enabled_${studentDni}`);
 
-      // 3. Registrar notas oficiales y 16 semanas de asistencia para cada asignatura de Ciclos III, IV, V y VI
+      // 2. Asegurar payloads de Ciclo I y II en localStorage si se saltaron las simulaciones previas
+      ([1, 2] as const).forEach((cycNum) => {
+        const simKey = cycNum === 1 ? `sfa_simulated_cycle1_${studentDni}` : `sfa_simulated_cycle2_${studentDni}`;
+        const coursesInCyc = activeCurriculum[cycNum] || [];
+        const totalCr = coursesInCyc.reduce((sum, c) => sum + c.credits, 0) || 16;
+        const avg = Number(
+          (coursesInCyc.reduce((sum, c) => sum + c.credits * c.grade, 0) / totalCr).toFixed(1)
+        );
+        if (!localStorage.getItem(simKey)) {
+          localStorage.setItem(
+            simKey,
+            JSON.stringify({
+              studentDni,
+              studentName: `${student.name} ${student.lastName}`,
+              cycle: cycNum,
+              period: cycNum === 1 ? "2027-I" : "2027-II",
+              completedAt: new Date().toISOString(),
+              weightedAverage: avg,
+              courses: coursesInCyc.map((c) => ({
+                code: c.code,
+                name: c.name,
+                credits: c.credits,
+                grade: c.grade,
+                isManual: c.isReal,
+                approved: true,
+              })),
+            })
+          );
+        }
+        localStorage.setItem(`sfa_attendance_complete_cycle${cycNum}_${studentDni}`, "true");
+      });
+
+      // 3. Registrar notas oficiales y 16 semanas de asistencia para Ciclos III, IV, V y VI
       [3, 4, 5, 6].forEach((cycNum) => {
         const coursesInCyc = activeCurriculum[cycNum];
         coursesInCyc.forEach((c) => {
-          // Notas
           localStorage.setItem(`sfa_grades_${c.code}_${studentDni}`, String(c.grade));
           localStorage.setItem(`sfa_acta_signed_${c.code}_${studentDni}`, "true");
           localStorage.setItem(`sfa_acta_signed_${c.code}_date_${studentDni}`, "20/11/2026 12:00");
-
-          // Asistencias (16 semanas completas = 100%)
           localStorage.setItem(`sfa_attendance_complete_${c.code}_${studentDni}`, "true");
           localStorage.setItem(`sfa_attendance_count_${c.code}_${studentDni}`, "16");
         });
       });
 
-      // Asistencias globales de ciclo
       ["cycle3", "cycle4", "cycle5", "cycle6"].forEach((cycKey) => {
         localStorage.setItem(`sfa_attendance_complete_${cycKey}_${studentDni}`, "true");
       });
 
-      // 4. Persistir los 6 ciclos en MongoDB conservando las notas reales ya cerradas de Ciclo I y II
+      // 4. Persistir los 6 ciclos en MongoDB conservando notas reales detectadas de Ciclo I y II
       try {
-        const existingCycles = Array.isArray((student as any)?.cycleStatuses) ? (student as any).cycleStatuses : [];
         const allCycleEntries = [1, 2, 3, 4, 5, 6].map((cycNum) => {
-          if (cycNum <= 2) {
-            const existingCyc = existingCycles.find((c: any) => c.cycleNumber === cycNum && c.status === "Aprobado" && Array.isArray(c.courses) && c.courses.length > 0);
-            if (existingCyc) {
-              return existingCyc;
-            }
-            const rawSimKey = cycNum === 1 ? `sfa_simulated_cycle1_${studentDni}` : `sfa_simulated_cycle2_${studentDni}`;
-            const rawSim = typeof window !== "undefined" ? localStorage.getItem(rawSimKey) : null;
-            if (rawSim) {
-              try {
-                const parsed = JSON.parse(rawSim);
-                if (Array.isArray(parsed?.courses) && parsed.courses.length > 0) {
-                  return {
-                    cycleNumber: cycNum,
-                    year: 2027,
-                    status: "Aprobado",
-                    average: Number(parsed.weightedAverage) || CYCLE_META[cycNum]?.avg || 16.5,
-                    credits: 16,
-                    courses: parsed.courses.map((sc: any) => ({
-                      name: sc.code ? `${sc.code}::${sc.name}` : sc.name,
-                      grade: Number(sc.grade) || 16.0,
-                      approved: true,
-                    })),
-                  };
-                }
-              } catch {}
-            }
-          }
           const coursesInCyc = activeCurriculum[cycNum] || [];
-          const meta = CYCLE_META[cycNum];
-          const totalCr = coursesInCyc.reduce((sum, c) => sum + c.credits, 0);
+          const totalCr = coursesInCyc.reduce((sum, c) => sum + c.credits, 0) || 16;
+          const computedAvg = Number(
+            (coursesInCyc.reduce((sum, c) => sum + c.credits * c.grade, 0) / totalCr).toFixed(1)
+          );
           return {
             cycleNumber: cycNum,
             year: cycNum <= 2 ? 2027 : cycNum <= 4 ? 2028 : 2029,
             status: "Aprobado",
-            average: meta?.avg || 17.0,
-            credits: totalCr || 16,
+            average: computedAvg || CYCLE_META[cycNum]?.avg || 17.0,
+            credits: totalCr,
             courses: coursesInCyc.map((c) => ({
               name: `${c.code}::${c.name}`,
               grade: c.grade,
-              approved: true,
+              approved: c.grade >= 12.5,
             })),
           };
         });

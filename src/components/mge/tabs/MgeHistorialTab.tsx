@@ -1034,6 +1034,8 @@ export default function MgeHistorialTab({ processedStudents, courses, assignment
             onClose={() => setShowEgresadoModal(false)}
             student={student}
             program={program}
+            courses={courses}
+            assignments={assignments}
             onConfirm={() => {
               setPromotedState((prev) => ({ ...prev, [student.dni]: true }));
               setCycle1SimState((prev) => prev + 1);
