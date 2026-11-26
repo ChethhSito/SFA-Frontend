@@ -30,16 +30,15 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
 
   const careerStr = ((student as any).programId || (student as any).career || (student as any).program || "").toLowerCase();
   const isContabilidad = careerStr.includes("cont");
-  const isMateo = student.dni === "74859612";
-  const manualCode = isContabilidad ? "CONT-101" : "EIND-101";
-  const manualId = isContabilidad ? "cur_co_101" : "cur_ei_101";
 
-  // Compute real manual grade for CONT-101 / EIND-101 from assignments + localStorage
-  const computeRealManualCourse = () => {
-    const formula = getCourseFormula(manualCode);
-    const matchIds = new Set<string>([manualCode, manualId, `cur-${manualId}`]);
+  // Detector inteligente por asignatura: revisa los 5 cursos del Ciclo I y detecta
+  // automáticamente cuáles ya tienen notas reales del docente (los conserva intactos)
+  // y cuáles no tienen notas aún (los simula con acta oficial MGE).
+  const computeRealCourseGrade = (courseCode: string, courseId: string) => {
+    const formula = getCourseFormula(courseCode);
+    const matchIds = new Set<string>([courseCode, courseId, `cur-${courseId}`]);
     courses.forEach((c: any) => {
-      if (c.code === manualCode || c.code?.startsWith(`${manualCode}-`) || c.id === manualId || c.id === `cur-${manualId}`) {
+      if (c.code === courseCode || c.code?.startsWith(`${courseCode}-`) || c.id === courseId || c.id === `cur-${courseId}`) {
         if (c.id) matchIds.add(c.id);
         if (c._id) matchIds.add(c._id);
         if (c.code) matchIds.add(c.code);
@@ -56,13 +55,14 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
 
     let localParsed: Record<string, any> | null = null;
     try {
-      const rawLocal = localStorage.getItem(`sfa_grades_${manualCode}_${student.dni}`) ||
-        localStorage.getItem(`sfa_grades_${manualId}_${student.dni}`) ||
-        localStorage.getItem(`sfa_grades_cur-${manualId}_${student.dni}`);
+      const rawLocal = localStorage.getItem(`sfa_grades_${courseCode}_${student.dni}`) ||
+        localStorage.getItem(`sfa_grades_${courseId}_${student.dni}`) ||
+        localStorage.getItem(`sfa_grades_cur-${courseId}_${student.dni}`);
       if (rawLocal) localParsed = JSON.parse(rawLocal);
     } catch {}
 
     let weightedSum = 0;
+    let gradedWeight = 0;
     let gradedCount = 0;
 
     formula.variables.forEach((v) => {
@@ -99,35 +99,58 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
 
       if (typeof val === "number" && Number.isFinite(val)) {
         weightedSum += val * v.weight;
+        gradedWeight += v.weight;
         gradedCount += 1;
       }
     });
 
-    const hasAnyGrade = gradedCount > 0;
-    const hasAllGrades = gradedCount === formula.variables.length;
-    const computedGrade = hasAnyGrade
-      ? Math.round(weightedSum * 10) / 10
-      : (isMateo ? 15.5 : 0);
+    const hasAnyGrade = gradedCount > 0 || (localParsed !== null && typeof localParsed.finalGrade === "number");
+    const hasAllGrades = gradedCount === formula.variables.length || (localParsed !== null && typeof localParsed.finalGrade === "number");
+    const computedGrade = gradedCount > 0
+      ? Math.round((hasAllGrades ? weightedSum : weightedSum / Math.max(gradedWeight, 0.01)) * 10) / 10
+      : (localParsed && typeof localParsed.finalGrade === "number" ? Number(localParsed.finalGrade) : 0);
 
     return { computedGrade, hasAnyGrade, hasAllGrades };
   };
 
-  const { computedGrade: manualGrade, hasAnyGrade: hasManualGrade, hasAllGrades: hasAllManualGrades } = computeRealManualCourse();
-
-  // Determine Ciclo I courses dynamically based on career
-  const ciclo1Courses = isContabilidad ? [
-    { code: "CONT-101", name: "Fundamentos de Contabilidad y Doctrina Contable", credits: 4, simulatedGrade: manualGrade, isManual: true },
-    { code: "CONT-102", name: "Documentación Comercial, Mercantil y Bancaria", credits: 4, simulatedGrade: 16.5, isManual: false },
-    { code: "CONT-103", name: "Matemática Financiera y Comercial", credits: 3, simulatedGrade: 16.0, isManual: false },
-    { code: "CONT-104", name: "Legislación Comercial y Societaria", credits: 3, simulatedGrade: 15.5, isManual: false },
-    { code: "CONT-105", name: "Comunicación y Competencias Digitales", credits: 2, simulatedGrade: 16.0, isManual: false },
+  const baseCiclo1 = isContabilidad ? [
+    { id: "cur_co_101", code: "CONT-101", name: "Fundamentos de Contabilidad y Doctrina Contable", credits: 4, defaultGrade: 16.4 },
+    { id: "cur_co_102", code: "CONT-102", name: "Documentación Comercial, Mercantil y Bancaria", credits: 4, defaultGrade: 16.5 },
+    { id: "cur_co_103", code: "CONT-103", name: "Matemática Financiera y Comercial", credits: 3, defaultGrade: 16.0 },
+    { id: "cur_co_104", code: "CONT-104", name: "Legislación Comercial y Societaria", credits: 3, defaultGrade: 15.5 },
+    { id: "cur_co_105", code: "CONT-105", name: "Comunicación y Competencias Digitales", credits: 2, defaultGrade: 16.0 },
   ] : [
-    { code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, simulatedGrade: manualGrade, isManual: true },
-    { code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, simulatedGrade: 16.5, isManual: false },
-    { code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, simulatedGrade: 17.0, isManual: false },
-    { code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, simulatedGrade: 15.0, isManual: false },
-    { code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2, simulatedGrade: 16.0, isManual: false },
+    { id: "cur_ei_101", code: "EIND-101", name: "Fundamentos de Electricidad y Circuitos CC", credits: 4, defaultGrade: 16.4 },
+    { id: "cur_ei_102", code: "EIND-102", name: "Instalaciones Eléctricas de Edificaciones", credits: 4, defaultGrade: 16.5 },
+    { id: "cur_ei_103", code: "EIND-103", name: "Seguridad e Higiene Industrial en Baja Tensión", credits: 3, defaultGrade: 17.0 },
+    { id: "cur_ei_104", code: "EIND-104", name: "Matemática Aplicada a la Tecnología Eléctrica", credits: 3, defaultGrade: 15.5 },
+    { id: "cur_ei_105", code: "EIND-105", name: "Comunicación y Tecnologías Digitales", credits: 2, defaultGrade: 16.0 },
   ];
+
+  const ciclo1Courses = baseCiclo1.map((c) => {
+    const detected = computeRealCourseGrade(c.code, c.id);
+    if (detected.hasAnyGrade) {
+      return {
+        code: c.code,
+        name: c.name,
+        credits: c.credits,
+        simulatedGrade: detected.computedGrade,
+        isManual: true,
+        hasAllGrades: detected.hasAllGrades,
+      };
+    }
+    return {
+      code: c.code,
+      name: c.name,
+      credits: c.credits,
+      simulatedGrade: c.defaultGrade,
+      isManual: false,
+      hasAllGrades: true,
+    };
+  });
+
+  const manualCoursesCount = ciclo1Courses.filter((c) => c.isManual).length;
+  const simulatedCoursesCount = ciclo1Courses.length - manualCoursesCount;
 
   const totalCredits = ciclo1Courses.reduce((sum, c) => sum + c.credits, 0);
   const weightedAverage = (
@@ -250,7 +273,10 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
                 Esta acción auditará y cerrará las actas oficiales del Ciclo I para este estudiante.
               </p>
               <p className="text-[11px] text-amber-800/90 font-medium">
-                La asignatura evaluada manualmente en el portal docente mantendrá su calificación real intacta. Las 4 asignaturas restantes se completarán con actas oficiales y notas aprobatorias realistas. Al confirmar, el estudiante quedará formalmente promovido y con la <b>Matrícula del Ciclo II habilitada</b>.
+                {manualCoursesCount > 0
+                  ? `Se detectaron ${manualCoursesCount} asignatura(s) con calificaciones reales del docente (se conservarán intactas) y se completarán automáticamente las ${simulatedCoursesCount} restante(s) con actas oficiales MGE.`
+                  : "No se registran calificaciones manuales aún; se completarán las 5 asignaturas del Ciclo I con actas oficiales MGE y notas aprobatorias realistas."}{" "}
+                Al confirmar, el estudiante quedará formalmente promovido y con la <b>Matrícula del Ciclo II habilitada</b>.
               </p>
             </div>
           </div>
@@ -294,19 +320,13 @@ export const MgeSimularCicloModal: React.FC<MgeSimularCicloModalProps> = ({
                     <td className="p-2.5 text-center">
                       <span className={`px-2 py-0.5 rounded text-[9.5px] font-black uppercase font-mono ${
                         c.isManual
-                          ? (!hasManualGrade && !isMateo
-                              ? "bg-red-100 text-red-800 border border-red-300"
-                              : !hasAllManualGrades && !isMateo
-                                ? "bg-amber-100 text-amber-800 border border-amber-300"
-                                : "bg-emerald-100 text-emerald-800 border border-emerald-300")
+                          ? (!c.hasAllGrades
+                              ? "bg-amber-100 text-amber-800 border border-amber-300"
+                              : "bg-emerald-100 text-emerald-800 border border-emerald-300")
                           : "bg-blue-50 text-blue-800 border border-blue-200"
                       }`}>
                         {c.isManual
-                          ? (!hasManualGrade && !isMateo
-                              ? "Manual Docente (Sin notas)"
-                              : !hasAllManualGrades && !isMateo
-                                ? "Manual Docente (Parcial)"
-                                : "Manual Docente")
+                          ? (!c.hasAllGrades ? "Manual Docente (Parcial)" : "Manual Docente")
                           : "Oficial MGE"}
                       </span>
                     </td>

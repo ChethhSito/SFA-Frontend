@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { GraduationCap, XCircle, CheckCircle2, ShieldCheck, AlertCircle, Award } from "lucide-react";
 import { ProcessedStudent } from "../mgeTypes";
 import { Course, CourseAssignment } from "../../../types";
+import { getCourseFormula } from "../../../constants/courseFormulas";
 import { updateStudentCycleStatuses } from "../../../services/api";
 
 interface MgeSimularCiclo2ModalProps {
@@ -17,6 +18,8 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
   isOpen = true,
   onClose,
   student,
+  courses = [],
+  assignments = [],
   onSimulated,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -26,20 +29,78 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
   const careerStr = ((student as any).programId || (student as any).career || (student as any).program || "").toLowerCase();
   const isContabilidad = careerStr.includes("cont");
 
-  // The 5 official courses for Ciclo II
-  const ciclo2Courses = isContabilidad ? [
-    { code: "CONT-201", name: "Contabilidad General Aplicada", credits: 4, simulatedGrade: 16.5, doc: "Lic. Patricia Elena Benavides Silva" },
-    { code: "CONT-202", name: "Administración de Archivos Contables", credits: 3, simulatedGrade: 17.0, doc: "Lic. Patricia Elena Benavides Silva" },
-    { code: "CONT-203", name: "Sistema de Información Contable I", credits: 3, simulatedGrade: 16.0, doc: "Lic. Fernando Gabriel Díaz Torres" },
-    { code: "CONT-204", name: "Tributación y Legislación Comercial", credits: 3, simulatedGrade: 16.5, doc: "Lic. Carlos Alberto Mendoza Quispe" },
-    { code: "CONT-205", name: "Estadística Aplicada a los Negocios", credits: 3, simulatedGrade: 15.5, doc: "Lic. Jorge Luis Paucar Silva" },
+  const detectRealCourseGrade2 = (courseCode: string, courseId: string) => {
+    const formula = getCourseFormula(courseCode);
+    const matchIds = new Set<string>([courseCode, courseId, `cur-${courseId}`]);
+    courses.forEach((c: any) => {
+      if (c.code === courseCode || c.code?.startsWith(`${courseCode}-`) || c.id === courseId || c.id === `cur-${courseId}`) {
+        if (c.id) matchIds.add(c.id);
+        if (c._id) matchIds.add(c._id);
+        if (c.code) matchIds.add(c.code);
+      }
+    });
+    const courseAssignments = assignments.filter((a) => matchIds.has(a.courseId));
+    let localParsed: Record<string, any> | null = null;
+    try {
+      const rawLocal = localStorage.getItem(`sfa_grades_${courseCode}_${student.dni}`) ||
+        localStorage.getItem(`sfa_grades_${courseId}_${student.dni}`);
+      if (rawLocal) localParsed = JSON.parse(rawLocal);
+    } catch {}
+
+    let weightedSum = 0;
+    let gradedWeight = 0;
+    let gradedCount = 0;
+    formula.variables.forEach((v) => {
+      let val: number | null = null;
+      const matchingAsg = courseAssignments.find((a) =>
+        a.curricularComponent === v.id ||
+        a.title === `[Planilla] ${v.id}` ||
+        a.title.toUpperCase().includes(`[${v.id}]`)
+      );
+      const sub = matchingAsg?.submissions?.find((s) => s.studentDni === student.dni && typeof s.grade === "number");
+      if (sub && typeof sub.grade === "number") val = sub.grade;
+      if ((val === null || val === undefined) && localParsed && typeof localParsed[v.id] === "number") {
+        val = Number(localParsed[v.id]);
+      }
+      if (typeof val === "number" && Number.isFinite(val)) {
+        weightedSum += val * v.weight;
+        gradedWeight += v.weight;
+        gradedCount += 1;
+      }
+    });
+    const hasAnyGrade = gradedCount > 0 || (localParsed !== null && typeof localParsed.finalGrade === "number");
+    const grade = gradedCount > 0
+      ? Math.round((gradedCount === formula.variables.length ? weightedSum : weightedSum / Math.max(gradedWeight, 0.01)) * 10) / 10
+      : (localParsed && typeof localParsed.finalGrade === "number" ? Number(localParsed.finalGrade) : 0);
+    return { hasAnyGrade, grade };
+  };
+
+  // The 5 official courses for Ciclo II (con detector inteligente de notas docentes)
+  const baseCiclo2 = isContabilidad ? [
+    { id: "cur_co_201", code: "CONT-201", name: "Contabilidad General Aplicada", credits: 4, defaultGrade: 16.5, doc: "Lic. Patricia Elena Benavides Silva" },
+    { id: "cur_co_202", code: "CONT-202", name: "Administración de Archivos Contables", credits: 3, defaultGrade: 17.0, doc: "Lic. Patricia Elena Benavides Silva" },
+    { id: "cur_co_203", code: "CONT-203", name: "Sistema de Información Contable I", credits: 3, defaultGrade: 16.0, doc: "Lic. Fernando Gabriel Díaz Torres" },
+    { id: "cur_co_204", code: "CONT-204", name: "Tributación y Legislación Comercial", credits: 3, defaultGrade: 16.5, doc: "Lic. Carlos Alberto Mendoza Quispe" },
+    { id: "cur_co_205", code: "CONT-205", name: "Estadística Aplicada a los Negocios", credits: 3, defaultGrade: 15.5, doc: "Lic. Jorge Luis Paucar Silva" },
   ] : [
-    { code: "EIND-201", name: "Circuitos Eléctricos en Corriente Alterna", credits: 4, simulatedGrade: 16.5, doc: "Ing. Manuel Ramos Salazar" },
-    { code: "EIND-202", name: "Electrónica Analógica y de Potencia Básica", credits: 4, simulatedGrade: 17.0, doc: "Ing. Roberto Chávez Peña" },
-    { code: "EIND-203", name: "Mediciones Eléctricas e Instrumentación", credits: 3, simulatedGrade: 16.0, doc: "Ing. Walter Fernández" },
-    { code: "EIND-204", name: "Máquinas Eléctricas Estáticas (Transformadores)", credits: 4, simulatedGrade: 16.5, doc: "Ing. Manuel Ramos Salazar" },
-    { code: "EIND-205", name: "Inglés Técnico Aplicado a la Electricidad", credits: 2, simulatedGrade: 15.5, doc: "Lic. Carmen Luzardo" },
+    { id: "cur_ei_201", code: "EIND-201", name: "Circuitos Eléctricos en Corriente Alterna", credits: 4, defaultGrade: 16.5, doc: "Ing. Manuel Ramos Salazar" },
+    { id: "cur_ei_202", code: "EIND-202", name: "Electrónica Analógica y de Potencia Básica", credits: 4, defaultGrade: 17.0, doc: "Ing. Roberto Chávez Peña" },
+    { id: "cur_ei_203", code: "EIND-203", name: "Mediciones Eléctricas e Instrumentación", credits: 3, defaultGrade: 16.0, doc: "Ing. Walter Fernández" },
+    { id: "cur_ei_204", code: "EIND-204", name: "Máquinas Eléctricas Estáticas (Transformadores)", credits: 4, defaultGrade: 16.5, doc: "Ing. Manuel Ramos Salazar" },
+    { id: "cur_ei_205", code: "EIND-205", name: "Inglés Técnico Aplicado a la Electricidad", credits: 2, defaultGrade: 15.5, doc: "Lic. Carmen Luzardo" },
   ];
+
+  const ciclo2Courses = baseCiclo2.map((c) => {
+    const detected = detectRealCourseGrade2(c.code, c.id);
+    return {
+      code: c.code,
+      name: c.name,
+      credits: c.credits,
+      doc: c.doc,
+      simulatedGrade: detected.hasAnyGrade ? detected.grade : c.defaultGrade,
+      isManual: detected.hasAnyGrade,
+    };
+  });
 
   const totalCredits = ciclo2Courses.reduce((sum, c) => sum + c.credits, 0);
   const weightedAverage = (
@@ -103,10 +164,12 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
         localStorage.setItem(`sfa_simulated_cycle1_${studentDni}`, JSON.stringify(c1Payload));
       }
 
-      // Individual grades for courses
+      // Individual grades for simulated courses only (preserve teacher-graded courses)
       ciclo2Courses.forEach(c => {
-        const obj = { NPA: 16.0, PC1: 16.0, PC2: 17.0, EX_FINAL: 17.0, finalGrade: c.simulatedGrade };
-        localStorage.setItem(`sfa_grades_${c.code}_${studentDni}`, JSON.stringify(obj));
+        if (!c.isManual) {
+          const obj = { NPA: c.simulatedGrade, PC1: c.simulatedGrade, PC2: c.simulatedGrade, EX_FINAL: c.simulatedGrade, finalGrade: c.simulatedGrade };
+          localStorage.setItem(`sfa_grades_${c.code}_${studentDni}`, JSON.stringify(obj));
+        }
       });
 
       // Attendance consolidation
@@ -211,7 +274,7 @@ export const MgeSimularCiclo2Modal: React.FC<MgeSimularCiclo2ModalProps> = ({
                 {student.name} {student.lastName}
               </p>
               <p className="text-[11px] text-slate-500 font-medium">
-                DNI: {student.dni} • Programa: Electricidad Industrial • Período 2027-II
+                DNI: {student.dni} • Programa: {isContabilidad ? "Contabilidad" : "Electricidad Industrial"} • Período 2027-II
               </p>
             </div>
             <div className="flex items-center gap-4">
