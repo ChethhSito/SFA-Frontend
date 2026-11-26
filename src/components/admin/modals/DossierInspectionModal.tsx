@@ -16,6 +16,7 @@ import {
   GraduationCap,
   ShieldCheck,
   Check,
+  Loader2,
 } from "lucide-react";
 import { Applicant, AdmissionPeriod } from "../../../types";
 import { fetchApplicantByDni } from "../../../services/api";
@@ -57,6 +58,7 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
   notify,
 }) => {
   const [freshApp, setFreshApp] = useState<Applicant | null>(null);
+  const [loadingFreshDossier, setLoadingFreshDossier] = useState(false);
   const [lightboxDoc, setLightboxDoc] = useState<{
     url: string;
     title: string;
@@ -86,21 +88,25 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
 
     let cancelled = false;
 
-    const syncApplicant = () => {
+    const syncApplicant = (showLoading = false) => {
+      if (showLoading) setLoadingFreshDossier(true);
       fetchApplicantByDni(selectedDossierAppDni)
         .then((apiApp) => {
           if (!cancelled && apiApp) {
             setFreshApp(apiApp);
           }
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => {
+          if (!cancelled && showLoading) setLoadingFreshDossier(false);
+        });
     };
 
     // Sincronización inmediata al abrir
-    syncApplicant();
+    syncApplicant(true);
 
     // Sincronización instantánea ante enfoque de ventana o eventos de storage en otra pestaña
-    const handleSync = () => syncApplicant();
+    const handleSync = () => syncApplicant(false);
     window.addEventListener("focus", handleSync);
     window.addEventListener("storage", handleSync);
 
@@ -136,11 +142,18 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
       typeof window !== "undefined" ? localStorage.getItem(`sfa_file_data_${app.dni}_${key}`) : null;
     const fileDataUrl = freshRaw.fileDataUrl || baseRaw.fileDataUrl || storedUrl || undefined;
 
+    const hasRemoteFilePending = Boolean(
+      loadingFreshDossier &&
+      (!freshApp || freshApp.dni !== selectedDossierAppDni) &&
+      (baseRaw.hasFile || baseRaw.fileName || (baseRaw.status && baseRaw.status !== "No Enviado"))
+    );
+
     if (!fileDataUrl) {
       return {
-        status: override?.status || "No Enviado" as const,
-        fileName: undefined,
+        status: override?.status || (hasRemoteFilePending ? (baseRaw.status || "Pendiente") : ("No Enviado" as const)),
+        fileName: hasRemoteFilePending ? baseRaw.fileName : undefined,
         fileDataUrl: undefined,
+        isLoadingFile: hasRemoteFilePending,
         observations: override?.observations ?? freshRaw.observations ?? baseRaw.observations,
       };
     }
@@ -461,6 +474,12 @@ export const DossierInspectionModal: React.FC<DossierInspectionModalProps> = ({
                                 <span>Clic para ampliar</span>
                               </button>
                             </div>
+                          </div>
+                        ) : docState.isLoadingFile ? (
+                          <div className="border-2 border-dashed border-slate-200 bg-slate-50/70 rounded-xl p-7 text-center flex flex-col items-center justify-center gap-2 min-h-[150px]">
+                            <Loader2 className="w-7 h-7 text-[#9F062A] animate-spin" />
+                            <span className="text-xs font-bold text-slate-600">Cargando documento digitalizado...</span>
+                            <span className="text-[11px] text-slate-400">Obteniendo archivo oficial desde el servidor</span>
                           </div>
                         ) : (
                           <div className="border-2 border-dashed border-slate-200 bg-slate-50/60 rounded-xl p-5 text-center flex flex-col items-center justify-center gap-1.5">
