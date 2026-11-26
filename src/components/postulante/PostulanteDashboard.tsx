@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Applicant, Enrollment } from "../../types";
+import { uploadImageToFirebase } from "../../firebase/storage";
 import { useAcademicCatalog } from "../../context/AcademicCatalogContext";
 import { ApplicantPeriodProvider, useApplicantPeriod } from "./applicantPeriod";
 
@@ -416,7 +417,7 @@ function PostulanteDashboardInner({
     e.target.value = "";
   };
 
-  const handleSaveDocument = (docKey: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile") => {
+  const handleSaveDocument = async (docKey: "dniFile" | "certificadoFile" | "partidaFile" | "fotoFile") => {
     let filename = "";
     let dataUrl = "";
     if (docKey === "dniFile") {
@@ -453,6 +454,11 @@ function PostulanteDashboardInner({
       setStagedFotoFile("");
     }
 
+    const finalUrl = await uploadImageToFirebase(
+      `applicants/${applicant.dni}/docs/${docKey}_${Date.now()}.jpg`,
+      dataUrl
+    );
+
     const updatedApplicant: Applicant = {
       ...applicant,
       docs: {
@@ -460,13 +466,13 @@ function PostulanteDashboardInner({
         [docKey]: {
           status: "Pendiente" as const,
           fileName: filename,
-          fileDataUrl: dataUrl
+          fileDataUrl: finalUrl
         }
       }
     };
 
     try {
-      localStorage.setItem(`sfa_file_data_${applicant.dni}_${docKey}`, dataUrl);
+      localStorage.setItem(`sfa_file_data_${applicant.dni}_${docKey}`, finalUrl);
     } catch (e) {
       console.warn("Could not cache fileDataUrl in localStorage:", e);
     }
@@ -475,7 +481,7 @@ function PostulanteDashboardInner({
     notify(`¡Documento "${filename}" enviado a validación por secretaría!`, "success");
   };
 
-  const handleSubmitPaymentVoucher = (e: React.FormEvent) => {
+  const handleSubmitPaymentVoucher = async (e: React.FormEvent) => {
     e.preventDefault();
     if (paymentType === "number") {
       if (!paymentVoucher.trim()) {
@@ -497,29 +503,37 @@ function PostulanteDashboardInner({
         notify("Por favor seleccione la imagen de su voucher de pago primero.", "warning");
         return;
       }
+      const voucherFileNameToSave = stagedVoucherFile;
+      const voucherPreviewToUpload = stagedVoucherPreview;
+      setStagedVoucherFile("");
+      setStagedVoucherPreview("");
+
+      const finalVoucherUrl = await uploadImageToFirebase(
+        `applicants/${applicant.dni}/vouchers/exam_${Date.now()}.jpg`,
+        voucherPreviewToUpload
+      );
+
       const updatedApplicant: Applicant = {
         ...applicant,
         paymentStatus: "Pendiente" as const,
-        paymentOperation: stagedVoucherFile || "VOUCHER-IMG",
+        paymentOperation: voucherFileNameToSave || "VOUCHER-IMG",
         paymentType: "voucher",
-        paymentVoucherFileName: stagedVoucherFile,
-        paymentVoucherUrl: stagedVoucherPreview
+        paymentVoucherFileName: voucherFileNameToSave,
+        paymentVoucherUrl: finalVoucherUrl
       };
 
       try {
-        localStorage.setItem(`sfa_voucher_data_${applicant.dni}`, stagedVoucherPreview);
+        localStorage.setItem(`sfa_voucher_data_${applicant.dni}`, finalVoucherUrl);
       } catch (e) {
         console.warn("Could not cache voucher url in localStorage:", e);
       }
 
       onUpdateApplicant(updatedApplicant);
-      setStagedVoucherFile("");
-      setStagedVoucherPreview("");
       notify("¡Voucher de pago enviado correctamente! Estado actualizado a Pendiente de validación por Tesorería.", "success");
     }
   };
 
-  const handleSubmitMatriculaVoucher = (e: React.FormEvent) => {
+  const handleSubmitMatriculaVoucher = async (e: React.FormEvent) => {
     e.preventDefault();
     let currentEnr = enrollments.find(enr => enr.studentDni === applicant.dni);
     if (!currentEnr) {
@@ -561,23 +575,31 @@ function PostulanteDashboardInner({
         notify("Por favor seleccione la foto de su voucher de depósito de matrícula.", "warning");
         return;
       }
+      const matFileNameToSave = stagedMatriculaFile;
+      const matPreviewToUpload = stagedMatriculaPreview;
+      setIsEditingMatricula(false);
+      setStagedMatriculaFile("");
+      setStagedMatriculaPreview("");
+
+      const finalMatUrl = await uploadImageToFirebase(
+        `enrollments/${applicant.dni}/vouchers/ciclo1_${Date.now()}.jpg`,
+        matPreviewToUpload
+      );
+
       try {
-        localStorage.setItem(`sfa_matricula_voucher_data_${applicant.dni}`, stagedMatriculaPreview);
+        localStorage.setItem(`sfa_matricula_voucher_data_${applicant.dni}`, finalMatUrl);
       } catch (err) {
         console.warn("Could not cache matricula voucher in localStorage:", err);
       }
       const updatedEnr: Enrollment = {
         ...currentEnr,
         paymentStatus: "Pendiente" as const,
-        paymentOperation: stagedMatriculaFile || "VOUCHER-MATRICULA",
+        paymentOperation: matFileNameToSave || "VOUCHER-MATRICULA",
         paymentType: "voucher",
-        paymentVoucherFileName: stagedMatriculaFile,
-        paymentVoucherUrl: stagedMatriculaPreview
+        paymentVoucherFileName: matFileNameToSave,
+        paymentVoucherUrl: finalMatUrl
       };
       if (onUpdateEnrollment) onUpdateEnrollment(updatedEnr);
-      setIsEditingMatricula(false);
-      setStagedMatriculaFile("");
-      setStagedMatriculaPreview("");
       notify("¡Foto de voucher de matrícula enviada! La oficina de caja verificará el comprobante.", "success");
     }
   };

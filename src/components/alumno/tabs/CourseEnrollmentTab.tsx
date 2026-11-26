@@ -3,6 +3,7 @@ import { BookOpen, CheckCircle2, Download, FileText, Printer, ShieldCheck, Credi
 import { Enrollment, MpaAcademicGroup, MpaClassroom, MpaCourse, MpaCurriculumItem, MpaPeriod, MpaProgramTask, MpaShift, Program, StudentPersonalData } from '../../../types';
 import { generateMatriculaPdf, generateManualMatriculaPdf } from '../../../utils/matriculaPdf';
 import { fetchPayments, createPayment, updatePayment } from '../../../services/api';
+import { uploadImageToFirebase } from '../../../firebase/storage';
 
 interface PlanningData {
   periods: MpaPeriod[];
@@ -980,7 +981,10 @@ export default function CourseEnrollmentTab({
                               const ctx = canvas.getContext("2d");
                               if (ctx) {
                                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                                saveImage(canvas.toDataURL("image/jpeg", 0.72));
+                                const compressed = canvas.toDataURL("image/jpeg", 0.72);
+                                uploadImageToFirebase(`enrollments/${currentStudentDni}/vouchers/ciclo2_${Date.now()}.jpg`, compressed)
+                                  .then(saveImage)
+                                  .catch(() => saveImage(compressed));
                               } else {
                                 saveImage(rawResult);
                               }
@@ -988,7 +992,9 @@ export default function CourseEnrollmentTab({
                             img.onerror = () => saveImage(rawResult);
                             img.src = rawResult;
                           } else {
-                            saveImage(rawResult);
+                            uploadImageToFirebase(`enrollments/${currentStudentDni}/vouchers/ciclo2_${Date.now()}.jpg`, rawResult)
+                              .then(saveImage)
+                              .catch(() => saveImage(rawResult));
                           }
                         };
                         reader.readAsDataURL(file);

@@ -16,6 +16,7 @@ import { generateOfficialCertificatePdf } from '../../../utils/officialCertifica
 import { academicToday } from '../../../utils/attendance';
 import { Pagination, usePagination } from '../../ui/Pagination';
 import PageTransition from '../../ui/PageTransition';
+import { uploadImageToFirebase } from '../../../firebase/storage';
 
 interface ProcedureDef {
   code: StudentProcedureCode;
@@ -152,7 +153,10 @@ const compressImageFile = (file: File): Promise<string> => {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.68));
+          const compressed = canvas.toDataURL('image/jpeg', 0.68);
+          uploadImageToFirebase(`service-requests/vouchers/${Date.now()}.jpg`, compressed)
+            .then(resolve)
+            .catch(() => resolve(compressed));
         } else {
           resolve(rawDataUrl);
         }

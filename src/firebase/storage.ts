@@ -86,3 +86,63 @@ export async function deleteFileFromStorage(destinationPath: string): Promise<vo
     throw error;
   }
 }
+
+/**
+ * Converts a data URL to a Blob without using fetch (safe against CSP restrictions).
+ */
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, base64] = dataUrl.split(",");
+  const mimeMatch = header.match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : "image/jpeg";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mime });
+}
+
+/**
+ * Uploads an image (Data URL or File) to Firebase Storage so MongoDB only stores a short URL.
+ * Uses a 4-second timeout and falls back gracefully to the compressed Data URL if Storage rules
+ * or network reject the upload, guaranteeing uploads never hang or break the UI.
+ */
+export async function uploadImageToFirebase(
+  destinationPath: string,
+  dataUrl: string,
+  timeoutMs = 4000
+): Promise<string> {
+  if (!dataUrl || dataUrl.startsWith("http://") || dataUrl.startsWith("https://")) {
+    return dataUrl;
+  }
+  if (!isFirebaseEnabled || !storage) {
+    return dataUrl;
+  }
+  try {
+    const blob = dataUrlToBlob(dataUrl);
+    const storageRef = ref(storage, destinationPath);
+    const uploadPromise = new Promise<string>((resolve, reject) => {
+      const task = uploadBytesResumable(storageRef, blob, { contentType: blob.type || "image/jpeg" });
+      task.on(
+        "state_changed",
+        undefined,
+        (err) => reject(err),
+        async () => {
+          try {
+            const url = await getDownloadURL(task.snapshot.ref);
+            resolve(url);
+          } catch (e) {
+            reject(e);
+          }
+        }
+      );
+    });
+    const timeoutPromise = new Promise<string>((_, reject) =>
+      setTimeout(() => reject(new Error("Firebase Storage upload timeout")), timeoutMs)
+    );
+    return await Promise.race([uploadPromise, timeoutPromise]);
+  } catch (err) {
+    console.warn("Firebase Storage fallback to compressed DataURL:", err);
+    return dataUrl;
+  }
+}
