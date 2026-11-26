@@ -196,9 +196,37 @@ export const MgeAcreditarPlanCompletoModal: React.FC<Props> = ({
         localStorage.setItem(`sfa_attendance_complete_${cycKey}_${studentDni}`, "true");
       });
 
-      // 4. Persistir los 6 ciclos en MongoDB para sincronización entre navegadores/pestañas
+      // 4. Persistir los 6 ciclos en MongoDB conservando las notas reales ya cerradas de Ciclo I y II
       try {
+        const existingCycles = Array.isArray((student as any)?.cycleStatuses) ? (student as any).cycleStatuses : [];
         const allCycleEntries = [1, 2, 3, 4, 5, 6].map((cycNum) => {
+          if (cycNum <= 2) {
+            const existingCyc = existingCycles.find((c: any) => c.cycleNumber === cycNum && c.status === "Aprobado" && Array.isArray(c.courses) && c.courses.length > 0);
+            if (existingCyc) {
+              return existingCyc;
+            }
+            const rawSimKey = cycNum === 1 ? `sfa_simulated_cycle1_${studentDni}` : `sfa_simulated_cycle2_${studentDni}`;
+            const rawSim = typeof window !== "undefined" ? localStorage.getItem(rawSimKey) : null;
+            if (rawSim) {
+              try {
+                const parsed = JSON.parse(rawSim);
+                if (Array.isArray(parsed?.courses) && parsed.courses.length > 0) {
+                  return {
+                    cycleNumber: cycNum,
+                    year: 2027,
+                    status: "Aprobado",
+                    average: Number(parsed.weightedAverage) || CYCLE_META[cycNum]?.avg || 16.5,
+                    credits: 16,
+                    courses: parsed.courses.map((sc: any) => ({
+                      name: sc.code ? `${sc.code}::${sc.name}` : sc.name,
+                      grade: Number(sc.grade) || 16.0,
+                      approved: true,
+                    })),
+                  };
+                }
+              } catch {}
+            }
+          }
           const coursesInCyc = activeCurriculum[cycNum] || [];
           const meta = CYCLE_META[cycNum];
           const totalCr = coursesInCyc.reduce((sum, c) => sum + c.credits, 0);

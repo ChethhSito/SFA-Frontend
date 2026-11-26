@@ -330,7 +330,11 @@ export function CierreCurso({
   const handleApplySimulation = async () => {
     setIsSavingSim(true);
     try {
-      const targetDni = simTargetDni || "74859612";
+      const targetDni = simTargetDni || enrolledStudents[0]?.dni || "74859612";
+      const targetStudentObj = enrolledStudents.find((s) => s.dni === targetDni);
+      const targetFullName = targetStudentObj
+        ? `${targetStudentObj.lastName}, ${targetStudentObj.name}`
+        : `Estudiante ${targetDni}`;
       const courseIdKey = course.code || course.id || "EIND-201";
       const numNpa = Number(simNpa) || 0;
       const numPc1 = Number(simPc1) || 0;
@@ -342,7 +346,7 @@ export function CierreCurso({
           id: `asg_npa_${courseIdKey}_${Date.now()}`,
           courseId: courseIdKey,
           title: "[Semana 2] Taller de Laboratorio y Participación Continua",
-          description: "Evaluación continua de participación, orden y reportes técnicos en taller de CA.",
+          description: "Evaluación continua de participación, orden y reportes técnicos.",
           dueDate: "2027-09-05",
           dueTime: "23:59",
           points: 20,
@@ -351,19 +355,19 @@ export function CierreCurso({
           submissions: [
             {
               studentDni: targetDni,
-              studentName: "Quispe Rojas, Mateo Sebastián",
-              fileName: "informe_taller_ca.pdf",
+              studentName: targetFullName,
+              fileName: "informe_taller.pdf",
               submitDate: "2027-09-04",
               grade: numNpa,
-              feedback: "Excelente participación en taller y cumplimiento de protocolos de seguridad."
+              feedback: "Excelente participación en taller y cumplimiento de protocolos."
             }
           ]
         },
         {
           id: `asg_pc1_${courseIdKey}_${Date.now()}`,
           courseId: courseIdKey,
-          title: "[Semana 4] [PC1] Práctica Calificada 1 (CA)",
-          description: "Práctica calificada sobre análisis de formas de onda senoidales y fasores.",
+          title: "[Semana 4] [PC1] Práctica Calificada 1",
+          description: "Práctica calificada de la primera unidad curricular.",
           dueDate: "2027-09-26",
           dueTime: "23:59",
           points: 20,
@@ -373,19 +377,19 @@ export function CierreCurso({
           submissions: [
             {
               studentDni: targetDni,
-              studentName: "Quispe Rojas, Mateo Sebastián",
+              studentName: targetFullName,
               fileName: "practica_calificada_1.pdf",
               submitDate: "2027-09-26",
               grade: numPc1,
-              feedback: "Dominio de fasores y cálculo de valores eficaces en régimen senoidal."
+              feedback: "Buen dominio técnico en la primera evaluación."
             }
           ]
         },
         {
           id: `asg_pc2_${courseIdKey}_${Date.now()}`,
           courseId: courseIdKey,
-          title: "[Semana 8] [PC2] Práctica Calificada 2 (Mediciones)",
-          description: "Práctica calificada sobre instrumentación de potencia activa, reactiva y factor de potencia.",
+          title: "[Semana 8] [PC2] Práctica Calificada 2",
+          description: "Práctica calificada de la segunda unidad curricular.",
           dueDate: "2027-10-24",
           dueTime: "23:59",
           points: 20,
@@ -395,19 +399,19 @@ export function CierreCurso({
           submissions: [
             {
               studentDni: targetDni,
-              studentName: "Quispe Rojas, Mateo Sebastián",
+              studentName: targetFullName,
               fileName: "practica_calificada_2.pdf",
               submitDate: "2027-10-24",
               grade: numPc2,
-              feedback: "Cálculo preciso del factor de potencia y diseño de bancos de condensadores."
+              feedback: "Resolución técnica adecuada y precisa."
             }
           ]
         },
         {
           id: `asg_exfinal_${courseIdKey}_${Date.now()}`,
           courseId: courseIdKey,
-          title: "[Semana 16] [EX_FINAL] Evaluación Modular Ciclo II",
-          description: "Examen integral modular sobre circuitos en corriente alterna y compensación de reactivos.",
+          title: "[Semana 16] [EX_FINAL] Evaluación Modular Final",
+          description: "Examen integral modular de cierre de asignatura.",
           dueDate: "2027-12-12",
           dueTime: "23:59",
           points: 20,
@@ -417,7 +421,7 @@ export function CierreCurso({
           submissions: [
             {
               studentDni: targetDni,
-              studentName: "Quispe Rojas, Mateo Sebastián",
+              studentName: targetFullName,
               fileName: "evaluacion_modular_final.pdf",
               submitDate: "2027-12-12",
               grade: numExFinal,
@@ -433,7 +437,7 @@ export function CierreCurso({
           points: 20,
           kind: "assessment",
           status: "published",
-          submissions: [{ studentDni: targetDni, studentName: "Quispe Rojas, Mateo Sebastián", fileName: "acta_npa.pdf", submitDate: "2027-12-12", grade: numNpa }]
+          submissions: [{ studentDni: targetDni, studentName: targetFullName, fileName: "acta_npa.pdf", submitDate: "2027-12-12", grade: numNpa }]
         },
         {
           id: `plan_pc1_${courseIdKey}`,
@@ -443,7 +447,7 @@ export function CierreCurso({
           points: 20,
           kind: "assessment",
           status: "published",
-          submissions: [{ studentDni: targetDni, studentName: "Quispe Rojas, Mateo Sebastián", fileName: "acta_pc1.pdf", submitDate: "2027-12-12", grade: numPc1 }]
+          submissions: [{ studentDni: targetDni, studentName: targetFullName, fileName: "acta_pc1.pdf", submitDate: "2027-12-12", grade: numPc1 }]
         },
         {
           id: `plan_pc2_${courseIdKey}`,
@@ -453,17 +457,17 @@ export function CierreCurso({
           points: 20,
           kind: "assessment",
           status: "published",
-          submissions: [{ studentDni: targetDni, studentName: "Quispe Rojas, Mateo Sebastián", fileName: "acta_pc2.pdf", submitDate: "2027-12-12", grade: numPc2 }]
+          submissions: [{ studentDni: targetDni, studentName: targetFullName, fileName: "acta_pc2.pdf", submitDate: "2027-12-12", grade: numPc2 }]
         },
         {
           id: `plan_exfinal_${courseIdKey}`,
           courseId: courseIdKey,
           title: "[Planilla] EX_FINAL",
-          description: "Evaluación Modular Ciclo II",
+          description: "Evaluación Modular Final",
           points: 20,
           kind: "assessment",
           status: "published",
-          submissions: [{ studentDni: targetDni, studentName: "Quispe Rojas, Mateo Sebastián", fileName: "acta_exfinal.pdf", submitDate: "2027-12-12", grade: numExFinal }]
+          submissions: [{ studentDni: targetDni, studentName: targetFullName, fileName: "acta_exfinal.pdf", submitDate: "2027-12-12", grade: numExFinal }]
         }
       ] as any);
 
@@ -1463,13 +1467,25 @@ export function CierreCurso({
             <div className="p-6 font-sans space-y-5 text-slate-800 text-xs font-medium leading-normal overflow-y-auto flex-1">
               {/* Estudiante Target Banner */}
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between gap-4">
-                <div>
-                  <span className="text-slate-400 block text-[9px] uppercase font-black tracking-wider">Estudiante Seleccionado</span>
-                  <span className="text-slate-900 font-extrabold text-sm block">Quispe Rojas, Mateo Sebastián</span>
-                  <span className="text-slate-500 text-[11px] font-mono">DNI: 74859612 • Código Oficial: 202710001</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-slate-400 block text-[9px] uppercase font-black tracking-wider mb-1">Estudiante Seleccionado</span>
+                  <select
+                    value={simTargetDni}
+                    onChange={(e) => setSimTargetDni(e.target.value)}
+                    className="w-full max-w-sm bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-slate-900 outline-none focus:border-[#800521]"
+                  >
+                    {enrolledStudents.map((st) => (
+                      <option key={st.dni} value={st.dni}>
+                        {st.lastName}, {st.name} (DNI: {st.dni})
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-slate-500 text-[11px] font-mono block mt-1">
+                    DNI: {simTargetDni} • Código Oficial: {simTargetDni === "74859612" ? "202710001" : `2027-${(simTargetDni || "0001").slice(-4)}`}
+                  </span>
                 </div>
-                <Badge variant="success" className="font-extrabold text-[10px] uppercase px-3 py-1">
-                  Matriculado Ciclo II
+                <Badge variant="success" className="font-extrabold text-[10px] uppercase px-3 py-1 shrink-0">
+                  Matriculado
                 </Badge>
               </div>
 
