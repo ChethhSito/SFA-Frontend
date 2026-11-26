@@ -37,6 +37,7 @@ export function useStudentEnrollment() {
   const [error, setError] = useState<string | null>(null);
 
   const hydrationRunRef = useRef(0);
+  const lastLocalWriteRef = useRef<number>(0);
 
   /** El listado no trae el voucher en base64: se descarga en segundo plano, de a 3, sin bloquear la pantalla. */
   const hydrateVouchers = useCallback(async (list: any[]) => {
@@ -59,10 +60,15 @@ export function useStudentEnrollment() {
   }, []);
 
   const reloadEnrollments = useCallback((silent = false) => {
+    if (silent && Date.now() - lastLocalWriteRef.current < 5000) {
+      return Promise.resolve();
+    }
+    const fetchStartedAt = Date.now();
     if (!silent) setLoading(true);
     return fetchEnrollments()
       .then((apiEnrolls) => {
         if (!apiEnrolls) throw new Error("No se pudo consultar matrículas");
+        if (silent && lastLocalWriteRef.current >= fetchStartedAt) return;
         const prevByDni = new Map(enrollmentsRef.current.map((e) => [e.studentDni, e]));
         const withVouchers = apiEnrolls.map((enr: any) => {
           const prev: any = prevByDni.get(enr.studentDni);
@@ -114,6 +120,7 @@ export function useStudentEnrollment() {
   }, [reloadEnrollments]);
 
   const handleUpdateEnrollments = (updatedList: any[]) => {
+    lastLocalWriteRef.current = Date.now();
     const normalized = normalizeEnrollmentList(updatedList);
     const prevByDni = new Map(enrollmentsRef.current.map((e) => [e.studentDni, e]));
     setEnrollments(normalized);

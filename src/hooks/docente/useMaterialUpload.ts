@@ -55,9 +55,13 @@ export function useMaterialUpload() {
     }
   };
 
+  const lastAssignmentWriteRef = useRef<number>(0);
+
   const refreshAssignments = async () => {
+    const fetchStartedAt = Date.now();
     try {
       const apiAsgs = await fetchCourseAssignments();
+      if (lastAssignmentWriteRef.current >= fetchStartedAt) return;
       if (Array.isArray(apiAsgs)) {
         setAssignments(apiAsgs);
         setAssignmentsError(null);
@@ -115,7 +119,7 @@ export function useMaterialUpload() {
     const pollInterval = typeof window !== "undefined"
       ? window.setInterval(() => {
           if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
-          if (syncingAssignments.current) return;
+          if (syncingAssignments.current || Date.now() - lastAssignmentWriteRef.current < 5000) return;
           void refreshAssignments();
         }, 4000)
       : undefined;
@@ -163,6 +167,7 @@ export function useMaterialUpload() {
 
   const handleUpdateAssignments = async (updatedList: any[]): Promise<boolean> => {
     if (syncingAssignments.current) return false;
+    lastAssignmentWriteRef.current = Date.now();
     syncingAssignments.current = true;
     let confirmed = [...assignments];
     const keep = (list: any[]) => {
